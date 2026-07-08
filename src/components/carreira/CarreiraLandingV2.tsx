@@ -213,7 +213,9 @@ export function CarreiraLandingV2() {
         <div className="relative container max-w-6xl mx-auto px-4 py-20 md:py-28">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
-            <SectionBadge>Plataforma Nacional</SectionBadge>
+            <span className="inline-block text-sm font-semibold px-4 py-1.5 rounded-full border border-emerald-400/40 text-emerald-400 bg-emerald-400/10">
+              Plataforma Nacional
+            </span>
             <h1 className="mt-6 text-4xl sm:text-5xl md:text-[3.5rem] font-extrabold leading-[1.1] tracking-tight">
               O futebol de base brasileiro precisa de{' '}
               <span className="text-orange-400">registro, organização e valorização</span>.
