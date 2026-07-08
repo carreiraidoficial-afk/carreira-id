@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2, Mail, Lock, User, ArrowLeft, LogOut, Rocket } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowLeft, LogOut, Rocket, Eye, EyeOff } from 'lucide-react';
 import { z } from 'zod';
 import { ProfileTypeSelector, type ProfileType } from '@/components/carreira/ProfileTypeSelector';
 import { ProfileTypeForm } from '@/components/carreira/ProfileTypeForm';
@@ -62,6 +62,7 @@ export default function CarreiraCadastroPage() {
   const [createdChildName, setCreatedChildName] = useState<string | null>(null);
   const [profileSlug, setProfileSlug] = useState<string | null>(null);
   const [showPwaPopup, setShowPwaPopup] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Persist ?ref params so they survive OAuth redirect / email confirmation
   useEffect(() => {
@@ -529,7 +530,10 @@ export default function CarreiraCadastroPage() {
                     <Label htmlFor="password" style={{ color: 'hsl(0 0% 80%)' }}>Senha</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'hsl(0 0% 40%)' }} />
-                      <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10" style={{ backgroundColor: 'hsl(220 15% 8%)', borderColor: 'hsl(220 10% 20%)', color: 'hsl(0 0% 95%)' }} disabled={isLoading} />
+                      <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10 pr-10" style={{ backgroundColor: 'hsl(220 15% 8%)', borderColor: 'hsl(220 10% 20%)', color: 'hsl(0 0% 95%)' }} disabled={isLoading} />
+                      <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(0 0% 55%)' }} tabIndex={-1} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
                   <Button type="submit" className="w-full" size="lg" disabled={isLoading}
