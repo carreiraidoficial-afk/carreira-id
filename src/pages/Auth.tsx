@@ -11,6 +11,7 @@ import { SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
 import { z } from 'zod';
 import logoCarreiraId from '@/assets/logo-carreira-id-dark.png';
 import PwaInstallButton from '@/components/shared/PwaInstallButton';
+import { supabase } from '@/integrations/supabase/client';
 
 const loginSchema = z.object({
   email: z.string().email('Email invalido'),
@@ -32,6 +33,39 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { login, signup, user } = useAuth();
   const navigate = useNavigate();
+
+  const handleGoogleLogin = async () => {
+    try {
+      const redirectUrl = `${window.location.origin}/auth`;
+      const isCustomDomain =
+        !window.location.hostname.includes('lovable.app') &&
+        !window.location.hostname.includes('lovableproject.com') &&
+        !window.location.hostname.includes('localhost');
+
+      if (isCustomDomain) {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: redirectUrl },
+        });
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: redirectUrl, skipBrowserRedirect: true },
+        });
+        if (error) throw error;
+        if (!data?.url) throw new Error('Não foi possível iniciar o login com Google');
+        window.location.href = data.url;
+      }
+    } catch (error: any) {
+      console.error('Google login error:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao fazer login com Google',
+        variant: 'destructive',
+      });
+    }
+  };
 
   // Redirecionar se ja estiver logado
   useEffect(() => {
