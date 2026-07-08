@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
 
     // Get subscription value based on plan
     const planoConfig: Record<string, { chave: string; fallback: number }> = {
-      competidor: { chave: 'carreira_valor_competidor', fallback: 15.90 },
+      competidor: { chave: 'carreira_valor_competidor', fallback: 17.90 },
       elite: { chave: 'carreira_valor_elite', fallback: 29.90 },
     };
     const cfg = planoConfig[planoSelecionado] || planoConfig.competidor;
