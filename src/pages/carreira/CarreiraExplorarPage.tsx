@@ -17,6 +17,7 @@ import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
+import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 
 const TYPE_LABELS: Record<string, string> = {
   professor: 'Professor',

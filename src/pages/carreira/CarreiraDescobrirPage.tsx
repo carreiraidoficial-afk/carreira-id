@@ -6,11 +6,13 @@ import { DescobrirAtletasSection } from '@/components/carreira/DescobrirAtletasS
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
 import logoCarreira from '@/assets/logo-carreira-id-dark.png';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
+import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 
 export default function CarreiraDescobrirPage() {
   const navigate = useNavigate();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [profileSlug, setProfileSlug] = useState<string | null>(null);
+  const { theme } = useCarreiraTheme();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -28,9 +30,9 @@ export default function CarreiraDescobrirPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background" data-theme="dark-orange">
+    <div className="min-h-screen bg-background" data-theme={theme}>
       <div className="h-1 w-full bg-[hsl(25_95%_55%)]" />
-      <header className="sticky top-0 z-50 bg-[hsl(0_0%_0%/0.97)] border-b border-[hsl(25_95%_55%/0.4)]">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="container flex items-center h-14 lg:h-16 px-4 max-w-6xl gap-3">
           <button onClick={() => navigate(carreiraPath('/feed'))} className="flex items-center gap-2 text-muted-foreground hover:text-foreground shrink-0">
             <ArrowLeft className="w-4 h-4" />

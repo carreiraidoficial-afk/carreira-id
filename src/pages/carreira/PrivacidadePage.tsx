@@ -3,17 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
 import logoCarreiraId from '@/assets/logo-carreira-id-dark.png';
 import logoAtletaId from '@/assets/logo-atleta-id.png';
+import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 
 export default function PrivacidadePage() {
   const navigate = useNavigate();
   const isCarreira = isCarreiraDomain();
   const logo = isCarreira ? logoCarreiraId : logoAtletaId;
   const brand = isCarreira ? 'Carreira ID' : 'Atleta ID';
+  const { theme } = useCarreiraTheme();
 
   return (
-    <div className="min-h-screen bg-background" data-theme="dark-orange">
+    <div className="min-h-screen bg-background" data-theme={theme}>
       <div className="h-1 w-full bg-[hsl(25_95%_55%)]" />
-      <header className="sticky top-0 z-50 bg-[hsl(0_0%_0%/0.97)] border-b border-[hsl(25_95%_55%/0.4)]">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="container flex items-center h-14 px-4">
           <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />

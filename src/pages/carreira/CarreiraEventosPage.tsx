@@ -12,11 +12,13 @@ import { useQuery } from '@tanstack/react-query';
 import logoCarreira from '@/assets/logo-carreira-id-dark.png';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 
 export default function CarreiraEventosPage() {
   const navigate = useNavigate();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const { theme } = useCarreiraTheme();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -58,15 +60,15 @@ export default function CarreiraEventosPage() {
 
   if (!currentUserId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background" data-theme="dark-orange">
+      <div className="min-h-screen flex items-center justify-center bg-background" data-theme={theme}>
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background" data-theme="dark-orange">
-      <header className="sticky top-0 z-50 bg-[hsl(220_12%_10%/0.95)] backdrop-blur border-b border-[hsl(220_10%_18%)]">
+    <div className="min-h-screen bg-background" data-theme={theme}>
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="container flex items-center justify-between h-16 px-4">
           <button
             onClick={() => navigate(carreiraPath('/feed'))}
