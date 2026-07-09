@@ -25,6 +25,7 @@ import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
+import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 
 export default function PerfilPage() {
   const { userId } = useParams<{ userId: string }>();
