@@ -25,6 +25,7 @@ import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
+import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 
 export default function PerfilPage() {
   const { userId } = useParams<{ userId: string }>();
@@ -66,8 +67,7 @@ export default function PerfilPage() {
     enabled: !!userId,
   });
 
-  const tema = 'dark-orange';
-  const isDarkTheme = true;
+  const { theme: tema, isDarkTheme } = useCarreiraTheme();
 
   useEffect(() => {
     if (perfil?.type === 'atleta_redirect' && perfil.slug) {
@@ -77,7 +77,7 @@ export default function PerfilPage() {
 
   if (isLoading || perfil?.type === 'atleta_redirect') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background" data-theme="dark-orange">
+      <div className="min-h-screen flex items-center justify-center bg-background" data-theme={tema}>
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -87,7 +87,7 @@ export default function PerfilPage() {
 
   if (!redeProfile) {
     return (
-      <div className="min-h-screen bg-background" data-theme="dark-orange">
+      <div className="min-h-screen bg-background" data-theme={tema}>
         <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
           <div className="container flex items-center h-20 px-4">
             <button onClick={() => navigate(carreiraPath('/feed'))} className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
@@ -123,7 +123,7 @@ export default function PerfilPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background" data-theme="dark-orange">
+    <div className="min-h-screen bg-background" data-theme={tema}>
       <header className={`sticky top-0 z-50 backdrop-blur border-b ${isDarkTheme ? 'bg-[hsl(220_12%_10%/0.95)] border-[hsl(220_10%_18%)]' : 'bg-background/95'}`}>
         <div className="container flex items-center justify-between h-20 px-4">
           <button onClick={() => window.history.length > 1 ? navigate(-1) : navigate(carreiraPath('/feed'))} className="flex items-center gap-2 text-muted-foreground hover:text-foreground">

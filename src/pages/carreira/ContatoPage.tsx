@@ -3,17 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
 import logoCarreiraId from '@/assets/logo-carreira-id-dark.png';
 import logoAtletaId from '@/assets/logo-atleta-id.png';
+import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 
 export default function ContatoPage() {
   const navigate = useNavigate();
   const isCarreira = isCarreiraDomain();
   const logo = isCarreira ? logoCarreiraId : logoAtletaId;
   const brand = isCarreira ? 'Carreira ID' : 'Atleta ID';
+  const { theme } = useCarreiraTheme();
 
   return (
-    <div className="min-h-screen bg-background" data-theme="dark-orange">
+    <div className="min-h-screen bg-background" data-theme={theme}>
       <div className="h-1 w-full bg-[hsl(25_95%_55%)]" />
-      <header className="sticky top-0 z-50 bg-[hsl(0_0%_0%/0.97)] border-b border-[hsl(25_95%_55%/0.4)]">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="container flex items-center h-14 px-4">
           <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
@@ -27,7 +29,7 @@ export default function ContatoPage() {
         <p className="text-sm text-muted-foreground mb-8">Entre em contato conosco. Estamos prontos para ajudar!</p>
 
         <div className="space-y-4">
-          <div className="flex items-start gap-4 p-5 rounded-xl border border-[hsl(25_95%_55%/0.3)] bg-[hsl(25_10%_8%)]">
+          <div className="flex items-start gap-4 p-5 rounded-xl border border-border bg-card">
             <Mail className="w-6 h-6 text-[hsl(25_95%_55%)] mt-0.5 shrink-0" />
             <div>
               <h2 className="font-semibold text-foreground">Email</h2>
@@ -37,7 +39,7 @@ export default function ContatoPage() {
             </div>
           </div>
 
-          <div className="flex items-start gap-4 p-5 rounded-xl border border-[hsl(25_95%_55%/0.3)] bg-[hsl(25_10%_8%)]">
+          <div className="flex items-start gap-4 p-5 rounded-xl border border-border bg-card">
             <MessageCircle className="w-6 h-6 text-green-500 mt-0.5 shrink-0" />
             <div>
               <h2 className="font-semibold text-foreground">WhatsApp</h2>
@@ -48,7 +50,7 @@ export default function ContatoPage() {
             </div>
           </div>
 
-          <div className="flex items-start gap-4 p-5 rounded-xl border border-[hsl(25_95%_55%/0.3)] bg-[hsl(25_10%_8%)]">
+          <div className="flex items-start gap-4 p-5 rounded-xl border border-border bg-card">
             <MapPin className="w-6 h-6 text-[hsl(25_95%_55%)] mt-0.5 shrink-0" />
             <div>
               <h2 className="font-semibold text-foreground">Localização</h2>

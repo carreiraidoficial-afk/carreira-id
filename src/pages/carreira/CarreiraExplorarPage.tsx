@@ -17,6 +17,7 @@ import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
+import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 
 const TYPE_LABELS: Record<string, string> = {
   professor: 'Professor',
@@ -259,6 +260,7 @@ function useSearchPeopleExplorar(query: string) {
 export default function CarreiraExplorarPage() {
   const { sessionUserId, loading: sessionLoading } = useCarreiraSession();
   const navigate = useNavigate();
+  const { theme } = useCarreiraTheme();
   const { data: meuPerfil, isLoading: perfilLoading } = useMyPerfilAtletaBySession(sessionUserId);
   const { data: meuPerfilRede, isLoading: perfilRedeLoading } = useMyPerfilRede(sessionUserId);
   const { data: connectionIds = [] } = useMyConnections(sessionUserId);
@@ -288,7 +290,7 @@ export default function CarreiraExplorarPage() {
 
   if (isStillLoading && !loadingTimedOut) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background" data-theme="dark-orange">
+      <div className="min-h-screen flex items-center justify-center bg-background" data-theme={theme}>
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -332,11 +334,11 @@ export default function CarreiraExplorarPage() {
   const profileType = meuPerfilRede?.tipo ? TYPE_LABELS[meuPerfilRede.tipo] : 'Atleta';
 
   return (
-    <div className="min-h-screen bg-background" data-theme="dark-orange">
+    <div className="min-h-screen bg-background" data-theme={theme}>
       {/* Accent top bar */}
       <div className="h-1 w-full bg-[hsl(25_95%_55%)]" />
       {/* Header */}
-        <header className="sticky top-0 z-50 bg-[hsl(0_0%_0%/0.97)] border-b border-[hsl(25_95%_55%/0.4)]">
+        <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
         {/* Row 1: Logo + Search (desktop inline) + Actions */}
         <div className="container flex items-center justify-between h-14 lg:h-16 px-4 max-w-6xl">
           <Link to={carreiraPath('/feed')} className="flex items-center gap-2 shrink-0">

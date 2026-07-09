@@ -1,55 +1,26 @@
-import { lazy, Suspense, useEffect, useState, useRef } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const CarreiraLandingV2Page = lazy(() => import('./carreira/CarreiraLandingV2Page'));
 
-/** Tempo máximo (ms) que o app espera pela resposta do getSession antes de assumir "não autenticado" */
-const SESSION_TIMEOUT_MS = 5000;
+/** Fallback máximo antes de assumir "não autenticado" se o AuthContext demorar. */
+const AUTH_TIMEOUT_MS = 3000;
 
 export default function RootRoute() {
-  const [status, setStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
-  const resolved = useRef(false);
+  // Reaproveita a resolução de sessão global feita pelo AuthProvider
+  // (antes cada rota chamava seu próprio getSession, somando timeouts de 5s).
+  const { session, isLoading } = useAuth();
+  const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
+    if (!isLoading) return;
+    const t = setTimeout(() => setTimedOut(true), AUTH_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [isLoading]);
 
-    const resolve = (s: 'authenticated' | 'unauthenticated') => {
-      if (!mounted || resolved.current) return;
-      resolved.current = true;
-      setStatus(s);
-    };
-
-    // Safety timeout — se getSession() travar (rede lenta, offline), não fica em branco
-    const timer = setTimeout(() => {
-      console.warn('[RootRoute] session check timed out after', SESSION_TIMEOUT_MS, 'ms');
-      resolve('unauthenticated');
-    }, SESSION_TIMEOUT_MS);
-
-    // Verificar sessão existente
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => {
-        resolve(session ? 'authenticated' : 'unauthenticated');
-      })
-      .catch((err) => {
-        console.error('[RootRoute] getSession error:', err);
-        resolve('unauthenticated');
-      });
-
-    // Listener backup — se o evento chegar antes do getSession resolver
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      resolve(session ? 'authenticated' : 'unauthenticated');
-    });
-
-    return () => {
-      mounted = false;
-      clearTimeout(timer);
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  if (status === 'loading') {
+  if (isLoading && !timedOut) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background" data-theme="dark-orange">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -57,7 +28,7 @@ export default function RootRoute() {
     );
   }
 
-  if (status === 'authenticated') {
+  if (session?.user) {
     return <Navigate to="/feed" replace />;
   }
 
