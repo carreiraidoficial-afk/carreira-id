@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { compressImage } from '@/lib/image-compressor';
 import type {
   CampeonatoPremiacao,
   CreateCampeonatoInput,
@@ -39,18 +41,11 @@ function mapMidia(row: any): JogoMidia {
 }
 
 export function useJornada(criancaId: string | undefined | null) {
-  const [data, setData] = useState<JornadaEsportivaData>(EMPTY);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const queryKey = ['jornada', criancaId] as const;
 
-  const fetchData = useCallback(async () => {
-    if (!criancaId) {
-      setData(EMPTY);
-      return;
-    }
-    setIsLoading(true);
-    setError(null);
-    try {
+  const fetchJornada = useCallback(async (): Promise<JornadaEsportivaData> => {
+    if (!criancaId) return EMPTY;
       const [campRes, jogosRes] = await Promise.all([
         (supabase as any)
           .from('carreira_campeonatos')
@@ -168,49 +163,69 @@ export function useJornada(criancaId: string | undefined | null) {
         posicoesMais,
       };
 
-      setData({ campeonatos: campeonatosComJogos, amistosos, estatisticas });
-    } catch (e: any) {
-      console.error('[useJornada] fetch error', e);
-      setError(e.message || 'Erro ao carregar jornada');
-    } finally {
-      setIsLoading(false);
-    }
+    return { campeonatos: campeonatosComJogos, amistosos, estatisticas };
   }, [criancaId]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const query = useQuery({
+    queryKey,
+    queryFn: fetchJornada,
+    enabled: !!criancaId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
+
+  const data = query.data ?? EMPTY;
+  const isLoading = query.isLoading;
+  const error = query.error ? (query.error as Error).message : null;
+
+  const invalidate = useCallback(() => {
+    return queryClient.invalidateQueries({ queryKey });
+  }, [queryClient, criancaId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchData = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey });
+  }, [queryClient, criancaId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Realtime: refetch automaticamente ao detectar mudanças nas tabelas da Jornada
+  const invalidateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!criancaId) return;
+    const debouncedInvalidate = () => {
+      if (invalidateTimer.current) clearTimeout(invalidateTimer.current);
+      invalidateTimer.current = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['jornada', criancaId] });
+      }, 300);
+    };
     const channel = supabase
       .channel(`jornada-${criancaId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'carreira_campeonatos', filter: `crianca_id=eq.${criancaId}` },
-        () => { fetchData(); },
+        debouncedInvalidate,
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'carreira_jogos', filter: `crianca_id=eq.${criancaId}` },
-        () => { fetchData(); },
+        debouncedInvalidate,
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'carreira_jogo_midias' },
-        () => { fetchData(); },
+        debouncedInvalidate,
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'carreira_campeonato_premiacoes', filter: `crianca_id=eq.${criancaId}` },
-        () => { fetchData(); },
+        debouncedInvalidate,
       )
       .subscribe();
     return () => {
+      if (invalidateTimer.current) clearTimeout(invalidateTimer.current);
       supabase.removeChannel(channel);
     };
-  }, [criancaId, fetchData]);
+  }, [criancaId, queryClient]);
 
   const criarCampeonato = useCallback(
     async (input: CreateCampeonatoInput): Promise<string> => {
@@ -354,10 +369,14 @@ export function useJornada(criancaId: string | undefined | null) {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
       if (!uid) throw new Error('Não autenticado');
-      const ext = file.name.split('.').pop() || 'bin';
+      // Comprime imagens antes do upload (vídeos passam intactos)
+      const toUpload = file.type.startsWith('image/')
+        ? await compressImage(file, { maxWidth: 1600, quality: 0.82 })
+        : file;
+      const ext = (toUpload.type === 'image/jpeg' ? 'jpg' : (toUpload.name.split('.').pop() || 'bin'));
       const path = `${uid}/${subdir}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('jornada-midias').upload(path, file, {
-        contentType: file.type,
+      const { error: upErr } = await supabase.storage.from('jornada-midias').upload(path, toUpload, {
+        contentType: toUpload.type,
         upsert: false,
       });
       if (upErr) throw upErr;
