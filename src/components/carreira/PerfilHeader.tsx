@@ -22,6 +22,7 @@ function calcularCategoria(dataNascimento: string): string {
 }
 import { toast } from 'sonner';
 import { EditPerfilDialog } from './EditPerfilDialog';
+import { CompartilharPerfilDialog } from './CompartilharPerfilDialog';
 
 function TorcedoresCount({ perfilId }: { perfilId: string }) {
   const { data: count } = useQuery({
@@ -128,15 +129,7 @@ export function PerfilHeader({ perfil, isOwner = false }: PerfilHeaderProps) {
     }
   };
 
-  const handleShare = async () => {
-    const url = `${window.location.origin}/carreira/${perfil.slug}`;
-    if (navigator.share) {
-      try { await navigator.share({ title: `${perfil.nome} - Carreira Esportiva`, text: `Confira a carreira de ${perfil.nome}`, url }); } catch { /* cancelled */ }
-    } else {
-      await navigator.clipboard.writeText(url);
-      toast.success('Link copiado!');
-    }
-  };
+  const [shareOpen, setShareOpen] = useState(false);
 
   const handleFollow = () => {
     if (!user) { toast.error('Faça login para seguir'); return; }
@@ -300,7 +293,7 @@ export function PerfilHeader({ perfil, isOwner = false }: PerfilHeaderProps) {
                   </Button>
                 </>
               )}
-              <Button variant="outline" size="sm" className="h-7 text-xs px-2.5" onClick={handleShare}
+              <Button variant="outline" size="sm" className="h-7 text-xs px-2.5" onClick={() => setShareOpen(true)}
                 style={{ borderColor: `${perfil.cor_destaque || '#3b82f6'}50`, color: perfil.cor_destaque || '#3b82f6' }}>
                 <Share2 className="w-3 h-3 mr-1" />Compartilhar
               </Button>
@@ -310,6 +303,14 @@ export function PerfilHeader({ perfil, isOwner = false }: PerfilHeaderProps) {
       </Card>
 
       {isOwner && <EditPerfilDialog open={editDialogOpen} onOpenChange={setEditDialogOpen} perfil={perfil} />}
+      <CompartilharPerfilDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        ownerUserId={perfil.user_id}
+        atletaNome={perfil.nome}
+        atletaSlug={perfil.slug}
+        accentColor={perfil.cor_destaque || undefined}
+      />
     </>
   );
 }
