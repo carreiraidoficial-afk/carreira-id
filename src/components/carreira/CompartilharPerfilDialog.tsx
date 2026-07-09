@@ -118,10 +118,10 @@ export function CompartilharPerfilDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg p-0 sm:p-0 h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col gap-0 sm:overflow-y-auto">
-        <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)} className="w-full flex-1 flex flex-col min-h-0 sm:min-h-0">
-          {/* Sticky header */}
-          <div className="sticky top-0 sm:static bg-background z-10 border-b sm:border-b-0 px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-2">
+      <DialogContent className="max-w-lg p-0 gap-0 max-h-[95vh] sm:max-h-[90vh] overflow-y-auto block">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)} className="w-full">
+          {/* Header */}
+          <div className="bg-background px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-2">
             <DialogHeader className="mb-3 text-left">
               <DialogTitle>Compartilhar perfil</DialogTitle>
               <DialogDescription>Escolha quem você quer convidar e a mensagem.</DialogDescription>
@@ -142,8 +142,8 @@ export function CompartilharPerfilDialog({
             </TabsList>
           </div>
 
-          {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto sm:overflow-visible px-4 py-3 sm:px-6 sm:py-3 min-h-0">
+          {/* Content */}
+          <div className="px-4 py-3 sm:px-6 sm:py-3">
           <div className="mb-3">
             {tab === 'torcedor' && (
               <p className="text-xs text-muted-foreground">
@@ -222,8 +222,8 @@ export function CompartilharPerfilDialog({
           </TabsContent>
           </div>
 
-          {/* Sticky footer */}
-          <div className="sticky bottom-0 sm:static bg-background border-t sm:border-t-0 px-4 py-3 sm:px-6 sm:pb-6">
+          {/* Footer */}
+          <div className="bg-background border-t sm:border-t-0 px-4 py-3 sm:px-6 sm:pb-6">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <Button
                 type="button"
