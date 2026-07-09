@@ -15,9 +15,20 @@ export function GaleriaJogo({ midias, onDelete }: Props) {
     <div className="space-y-2">
       <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
         {active.tipo_midia === 'video' ? (
-          <video src={active.url_midia} controls className="w-full h-full object-contain" />
+          <video
+            src={active.url_midia}
+            controls
+            preload="metadata"
+            className="w-full h-full object-contain"
+          />
         ) : (
-          <img src={active.url_midia} alt="Mídia do jogo" className="w-full h-full object-contain" />
+          <img
+            src={active.url_midia}
+            alt="Mídia do jogo"
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-contain"
+          />
         )}
         <span className="absolute top-2 left-2 text-xs bg-black/60 text-white px-2 py-0.5 rounded">
           {active.tipo_midia}
@@ -48,7 +59,13 @@ export function GaleriaJogo({ midias, onDelete }: Props) {
                   ▶
                 </div>
               ) : (
-                <img src={m.url_midia} alt="" className="w-full h-full object-cover" />
+                <img
+                  src={m.url_midia}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover"
+                />
               )}
             </button>
           ))}
