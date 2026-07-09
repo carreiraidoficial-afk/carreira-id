@@ -37,6 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface CarreiraTimelineProps {
   perfil: PerfilAtleta;
@@ -44,11 +45,11 @@ interface CarreiraTimelineProps {
 }
 
 const INSTITUTIONAL_TABS = [
-  { value: 'experiencia', label: 'Experiência', icon: Building2 },
-  { value: 'estatisticas', label: 'Estatísticas', icon: BarChart3 },
-  { value: 'atividades', label: 'Atividades Extras', icon: Dumbbell },
-  { value: 'jornada', label: 'Jornada Esportiva', icon: Swords },
-  { value: 'premiacoes', label: 'Premiações', icon: Medal },
+  { value: 'experiencia', label: 'Experiência', icon: Building2, hint: 'Clubes, escolinhas e passagens do atleta' },
+  { value: 'estatisticas', label: 'Estatísticas', icon: BarChart3, hint: 'Números consolidados de jogos, gols e assistências' },
+  { value: 'atividades', label: 'Atividades Extras', icon: Dumbbell, hint: 'Treinos e atividades fora do clube' },
+  { value: 'jornada', label: 'Jornada Esportiva', icon: Swords, hint: 'Campeonatos e jogos disputados' },
+  { value: 'premiacoes', label: 'Premiações', icon: Medal, hint: 'Títulos e prêmios individuais' },
 ];
 
 const CARREIRA_TABS = [
@@ -372,26 +373,33 @@ export function CarreiraTimeline({ perfil, isOwner = false }: CarreiraTimelinePr
     <div className="space-y-4">
       {/* Tab buttons */}
       {!isPlatformProfile && (
+      <TooltipProvider delayDuration={200}>
       <div className="flex flex-wrap gap-2 justify-center">
-        {activeTabs.map(({ value, label, icon: Icon }) => {
+        {activeTabs.map(({ value, label, icon: Icon, hint }) => {
           const isActive = activeTab === value;
           return (
-            <button
-              key={value}
-              onClick={() => handleTabClick(value)}
-              className="flex items-center gap-1.5 text-xs font-semibold rounded-full border-2 px-4 py-2 transition-all duration-200"
-              style={{
-                backgroundColor: isActive ? accentColor : `${accentColor}15`,
-                color: isActive ? '#fff' : accentColor,
-                borderColor: accentColor,
-              }}
-            >
-              <Icon className="w-4 h-4" />
-              {label}
-            </button>
+            <Tooltip key={value}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => handleTabClick(value)}
+                  aria-label={hint}
+                  className="flex items-center gap-1.5 text-xs font-semibold rounded-full border-2 px-4 py-2 transition-all duration-200"
+                  style={{
+                    backgroundColor: isActive ? accentColor : `${accentColor}15`,
+                    color: isActive ? '#fff' : accentColor,
+                    borderColor: accentColor,
+                  }}
+                >
+                  <Icon className="w-4 h-4" />
+                  {label}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">{hint}</TooltipContent>
+            </Tooltip>
           );
         })}
       </div>
+      </TooltipProvider>
       )}
 
       {/* Tab content */}

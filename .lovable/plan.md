@@ -1,63 +1,48 @@
-## Diagnóstico
+## Diagnóstico — por que as fotos "carregam toda vez"
 
-Encontrei três problemas distintos, todos em componentes de compartilhamento:
+Investiguei `useJornada.ts`, `GaleriaJogo.tsx` e o upload no bucket `jornada-midias` e encontrei três causas somadas:
 
-### 1) No celular abre um compartilhamento diferente (sem as opções)
+1. **Sem cache entre navegações.** `useJornada` é um `useState`+`useEffect` puro (não usa React Query como o resto do app). Cada vez que a aba Jornada é aberta, o hook desmonta/remonta e refaz TODOS os `SELECT` no Supabase, resetando `data` para vazio. Isso derruba as `<img>` e força o navegador a rebuscar as URLs.
+2. **Sem dicas de cache no `<img>`.** As tags `<img>`/`<video>` em `GaleriaJogo.tsx` não têm `loading="lazy"`, `decoding="async"` nem dimensões (`width`/`height`), então o navegador re-decodifica a cada render.
+3. **Upload sem compressão.** `uploadArquivo` envia o arquivo original (foto de celular pode ter 3–8 MB). O projeto já tem `src/lib/image-compressor.ts` usado em outros lugares (ex.: `AtividadeExternaPhotoUpload`), mas a Jornada não usa. Fotos grandes fazem cada primeiro carregamento demorar muito.
 
-O botão "Compartilhar" que aparece no card do perfil no celular **não é o mesmo** do desktop.
+## O que vou implementar
 
-- **Desktop** (`CarreiraPerfilPage.tsx` linha 942) usa `ShareButton` → abre o `CompartilharPerfilDialog` com abas Torcedores/Atletas/Rede, chips de template e botões WhatsApp/Email/Copiar.
-- **Mobile** (`CarreiraPerfilPage.tsx` linha 1017-1022, `lg:hidden`) renderiza o `PerfilHeader`, que tem seu **próprio** botão Compartilhar chamando `handleShare` (linhas 131-139 de `PerfilHeader.tsx`). Esse handler chama `navigator.share(...)` — abre o sheet nativo do Android/iOS com só o link, sem templates nem escolha de público.
+### 1) Cache real das fotos e dados da Jornada
+Migrar `useJornada` para React Query (padrão do app):
+- `useQuery(['jornada', criancaId], fetchJornada, { staleTime: 5 min, gcTime: 30 min, refetchOnWindowFocus: false })`.
+- Mutations (`criar/atualizar/excluir` campeonato, jogo, mídia) fazem `queryClient.setQueryData` ou `invalidateQueries(['jornada', criancaId])` em vez do `fetchData()` manual.
+- Realtime continua, mas dispara `invalidateQueries` (com debounce leve para não invalidar 4x seguidas ao inserir várias mídias).
+- Resultado: ao fechar/reabrir a aba, os dados vêm do cache instantaneamente e as `<img>` mantêm o mesmo `src`, então o navegador reutiliza a imagem já decodificada — sem "loading" reaparecendo.
 
-É por isso que no celular "não aparecem as mesmas opções".
+### 2) Dicas de renderização nas mídias
+Em `GaleriaJogo.tsx`:
+- Adicionar `loading="lazy"` e `decoding="async"` nas `<img>` (thumbs e principal).
+- Adicionar `preload="metadata"` nos `<video>`.
+- Renderizar a mídia principal com `key={active.id}` estável (já é) e manter os thumbs montados para o browser aproveitar o cache HTTP.
 
-### 2) No desktop o texto do preview aparece cortado
+### 3) Compressão no upload (evita o problema na origem)
+Em `useJornada.uploadArquivo`:
+- Se `file.type.startsWith('image/')`, passar por `compressImage` (já existente em `src/lib/image-compressor.ts`) antes do `supabase.storage.upload`, com limites tipo 1600px / 0.82 de qualidade.
+- Vídeos permanecem intocados.
 
-Na reestruturação anterior o `DialogContent` ficou com `max-h-[90vh]` + header sticky + footer sticky + `flex-1 overflow-y-auto` na área do meio, e a textarea foi reduzida para `rows={6}`. Como o footer sticky reserva bastante altura, sobra pouco espaço para a textarea no desktop e ela mostra só ~3 linhas com scroll interno — a mensagem que antes aparecia inteira agora fica cortada.
+### 4) Tooltips nos botões da barra (Experiência, Estatísticas, Atividades Extras, Jornada Esportiva, Premiações)
+Em `CarreiraTimeline.tsx`:
+- Envolver cada `<button>` do map em `<Tooltip><TooltipTrigger asChild>…</TooltipTrigger><TooltipContent>{descrição}</TooltipContent></Tooltip>` do `@/components/ui/tooltip` (shadcn, já usado no projeto).
+- Adicionar `TooltipProvider` no wrapper (delay ~200 ms).
+- Textos curtos, por aba:
+  - Experiência — "Clubes, escolinhas e passagens do atleta"
+  - Estatísticas — "Números consolidados de jogos, gols e assistências"
+  - Atividades Extras — "Treinos e atividades fora do clube"
+  - Jornada Esportiva — "Campeonatos e jogos disputados"
+  - Premiações — "Títulos e prêmios individuais"
+- No mobile (touch, sem hover) os tooltips do shadcn abrem no toque longo; comportamento padrão, sem mudança extra.
 
-### 3) WhatsApp abre `api.whatsapp.com` e dá "bloqueado" (imagem 3)
+## Arquivos que serão alterados
+- `src/hooks/useJornada.ts` — migração para React Query + compressão no upload.
+- `src/components/jornada/GaleriaJogo.tsx` — atributos de cache/lazy nas mídias.
+- `src/components/carreira/CarreiraTimeline.tsx` — tooltips nos botões das abas.
 
-O `enviar('whatsapp')` usa `https://wa.me/?text=...`. Quando não há número, o `wa.me` redireciona para `api.whatsapp.com/send/?text=...` no desktop, e esse domínio é bloqueado por muitos antivírus/extensões/proxies corporativos (é o `ERR_BLOCKED_BY_RESPONSE` da terceira imagem). No celular esse mesmo link abre o app nativo sem passar pelo redirect e funciona.
-
-## Plano de correção
-
-Um único arquivo além do dialog. Sem mexer em templates nem backend.
-
-### A) Unificar o botão Compartilhar no mobile (`src/components/carreira/PerfilHeader.tsx`)
-
-- Remover a função `handleShare` (que usa `navigator.share`) e o import de `Share2` se ficar sem uso.
-- Adicionar estado `const [shareOpen, setShareOpen] = useState(false)` e trocar o botão da linha 303-306 para abrir o mesmo `CompartilharPerfilDialog` usado no desktop.
-- Passar `ownerUserId={perfil.user_id}`, `atletaNome={perfil.nome}`, `atletaSlug={perfil.slug}`, `accentColor={perfil.cor_destaque}` para o dialog.
-- Assim o botão Compartilhar do card grande no celular passa a abrir exatamente o mesmo modal do desktop, com Torcedores/Atletas/Rede, chips e ações.
-
-### B) Ajustar o layout do dialog para não cortar texto no desktop (`src/components/carreira/CompartilharPerfilDialog.tsx`)
-
-Manter o modo "tela cheia + header/footer sticky" apenas no mobile e voltar ao layout natural no desktop:
-
-- `DialogContent`: manter `h-[100dvh] sm:h-auto sm:max-h-[90vh]` mas trocar `flex flex-col gap-0` por classes responsivas: no `sm:` remover o `flex-1 overflow-y-auto` do meio e deixar o próprio `DialogContent` rolar (o comportamento original). Ou seja, sticky só com `sm:static` no header/footer a partir de `sm:`.
-- Aumentar a textarea no desktop: `rows={6}` no mobile e `sm:min-h-[220px]` (ou classe `sm:[&]:h-56`) para caber a mensagem inteira sem scroll interno. Manter `resize-y`.
-- Reduzir a "dica" no desktop para uma linha só (`sm:line-clamp-1`) ou mantê-la — mas garantir que o footer não consuma mais que ~120px no desktop.
-- Verificar visualmente com Playwright em `1280×900` que a mensagem inteira do template "Direto" aparece sem scroll na textarea, e em `390×844` que header/chips/preview/ações continuam alcançáveis com footer sticky.
-
-### C) Corrigir o link do WhatsApp para não cair em `api.whatsapp.com` (mesmo arquivo)
-
-Na função `enviar`, ramificar por dispositivo:
-
-```ts
-if (canal === 'whatsapp') {
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const url = isMobile
-    ? `https://wa.me/?text=${encodeURIComponent(texto)}`               // abre app nativo
-    : `https://web.whatsapp.com/send?text=${encodeURIComponent(texto)}`; // abre WhatsApp Web
-  window.open(url, '_blank', 'noopener,noreferrer');
-}
-```
-
-`web.whatsapp.com/send?text=` abre direto o WhatsApp Web no desktop sem passar por `api.whatsapp.com`, evitando o bloqueio da imagem 3. No celular o `wa.me` continua abrindo o app.
-
-### D) Verificação
-
-- `tsgo` para garantir que a remoção do `handleShare`/`Share2` não deixou referências penduradas.
-- Playwright em `390×844` e `1280×900`:
-  - Mobile: tocar em "Compartilhar" no card grande → confirmar que abre o dialog com abas (não o sheet nativo).
-  - Desktop: abrir o dialog → confirmar que a textarea mostra a mensagem inteira sem scroll interno; clicar em WhatsApp → confirmar que a nova aba aponta para `web.whatsapp.com/send?text=...` (não `wa.me`/`api.whatsapp.com`).
+## Fora de escopo
+- Não vou criar variantes/thumbnails no servidor (exigiria edge function). A compressão no upload já reduz muito o peso.
+- Não vou mexer na UI/estilo dos botões, só adicionar o tooltip.
