@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { MessageCircle, Mail, Copy, Check, Smartphone, Users, Trophy, Network } from 'lucide-react';
+import { MessageCircle, Mail, Copy, Check, Users, Trophy, Network } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import {
@@ -91,7 +91,7 @@ export function CompartilharPerfilDialog({
     setMensagemEditada(aplicarTemplate(t.body, atletaNome || 'eu', link));
   }, [templateId, templates, atletaNome, link]);
 
-  const enviar = (canal: 'whatsapp' | 'sms' | 'email' | 'copy') => {
+  const enviar = (canal: 'whatsapp' | 'email' | 'copy') => {
     const texto = mensagemEditada;
     if (!texto.trim()) {
       toast.error('A mensagem está vazia');
@@ -99,8 +99,6 @@ export function CompartilharPerfilDialog({
     }
     if (canal === 'whatsapp') {
       window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank', 'noopener,noreferrer');
-    } else if (canal === 'sms') {
-      window.location.href = `sms:?&body=${encodeURIComponent(texto)}`;
     } else if (canal === 'email') {
       const subject = `Convite — ${atletaNome}`;
       window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(texto)}`;
@@ -116,14 +114,15 @@ export function CompartilharPerfilDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Compartilhar perfil</DialogTitle>
-          <DialogDescription>Escolha quem você quer convidar e a mensagem.</DialogDescription>
-        </DialogHeader>
-
-        <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+      <DialogContent className="max-w-lg p-0 sm:p-0 h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col gap-0">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)} className="w-full flex-1 flex flex-col min-h-0">
+          {/* Sticky header */}
+          <div className="sticky top-0 bg-background z-10 border-b px-4 pt-4 pb-3 sm:px-6 sm:pt-6">
+            <DialogHeader className="mb-3 text-left">
+              <DialogTitle>Compartilhar perfil</DialogTitle>
+              <DialogDescription>Escolha quem você quer convidar e a mensagem.</DialogDescription>
+            </DialogHeader>
+            <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="torcedor" className="text-xs gap-1">
               <Users className="w-3.5 h-3.5" style={tab === 'torcedor' ? tabIconStyle : undefined} />
               Torcedores
@@ -136,10 +135,12 @@ export function CompartilharPerfilDialog({
               <Network className="w-3.5 h-3.5" style={tab === 'rede' ? tabIconStyle : undefined} />
               Rede
             </TabsTrigger>
-          </TabsList>
+            </TabsList>
+          </div>
 
-          {/* Header de cada tab */}
-          <div className="mt-3 mb-2">
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto px-4 py-3 sm:px-6 min-h-0">
+          <div className="mb-3">
             {tab === 'torcedor' && (
               <p className="text-xs text-muted-foreground">
                 Convide avó, tio, primo ou amigos pra torcer pelo {atletaNome || 'atleta'}.
@@ -210,12 +211,16 @@ export function CompartilharPerfilDialog({
               <Textarea
                 value={mensagemEditada}
                 onChange={(e) => setMensagemEditada(e.target.value)}
-                rows={9}
+                rows={6}
                 className="text-sm resize-y"
               />
             </div>
+          </TabsContent>
+          </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {/* Sticky footer */}
+          <div className="sticky bottom-0 bg-background border-t px-4 py-3 sm:px-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <Button
                 type="button"
                 size="sm"
@@ -224,10 +229,6 @@ export function CompartilharPerfilDialog({
               >
                 <MessageCircle className="w-4 h-4 mr-1" />
                 WhatsApp
-              </Button>
-              <Button type="button" size="sm" variant="outline" onClick={() => enviar('sms')}>
-                <Smartphone className="w-4 h-4 mr-1" />
-                SMS
               </Button>
               <Button type="button" size="sm" variant="outline" onClick={() => enviar('email')}>
                 <Mail className="w-4 h-4 mr-1" />
@@ -239,11 +240,11 @@ export function CompartilharPerfilDialog({
               </Button>
             </div>
 
-            <p className="text-[10px] text-muted-foreground leading-relaxed">
+            <p className="text-[10px] text-muted-foreground leading-relaxed mt-2">
               Dica: peça para um(a) responsável enviar a mensagem pelo WhatsApp dele(a) — assim a pessoa
               recebe de um número conhecido.
             </p>
-          </TabsContent>
+          </div>
         </Tabs>
       </DialogContent>
     </Dialog>
