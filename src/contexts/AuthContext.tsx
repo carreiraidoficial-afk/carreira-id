@@ -45,22 +45,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserData = async (userId: string): Promise<AuthUser | null> => {
     try {
       console.log('[AuthContext] fetchUserData starting for:', userId);
-      // Buscar role do usuario
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
+      const t0 = performance.now();
+      // Buscar role + profile em paralelo (economia perceptível no login)
+      const [rolesRes, profileRes] = await Promise.all([
+        supabase.from('user_roles').select('role').eq('user_id', userId),
+        supabase
+          .from('profiles')
+          .select('nome, avatar_url, email, password_needs_change')
+          .eq('user_id', userId)
+          .single(),
+      ]);
+      const { data: roleData, error: roleError } = rolesRes;
+      const { data: profileData, error: profileError } = profileRes;
 
       if (roleError) {
         console.error('[AuthContext] fetchUserData: role query error', roleError);
       }
-
-      // Buscar profile do usuario
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('nome, avatar_url, email, password_needs_change')
-        .eq('user_id', userId)
-        .single();
 
       if (!profileData) {
         console.warn('[AuthContext] fetchUserData: missing profile', { profileError });
@@ -110,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       console.log('[AuthContext] fetchUserData success:', userRole, profileData.nome);
+      console.log('[AuthContext] fetchUserData duration ms:', Math.round(performance.now() - t0));
 
       return {
         id: userId,
