@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -63,8 +63,27 @@ function StatusPill({ status }: { status: string | null | undefined }) {
   );
 }
 
+async function extractFunctionError(error: unknown, fallback = 'Erro ao executar função') {
+  const context = (error as any)?.context;
+  if (context instanceof Response) {
+    try {
+      const payload = await context.clone().json();
+      return payload?.error || payload?.message || fallback;
+    } catch {
+      try {
+        const text = await context.clone().text();
+        return text || fallback;
+      } catch {
+        return fallback;
+      }
+    }
+  }
+  return (error as Error)?.message || fallback;
+}
+
 export default function CarreiraAdminBancoPage() {
   const qc = useQueryClient();
+  const [submitFeedback, setSubmitFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
 
   const { data: cadastro, isLoading } = useQuery({
     queryKey: ['carreira-cadastro-bancario'],
@@ -93,6 +112,15 @@ export default function CarreiraAdminBancoPage() {
       return data as any;
     },
     enabled: !cadastro,
+  });
+
+  const { data: docs = [] } = useQuery({
+    queryKey: ['carreira-documentos'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('carreira_documentos').select('id, tipo_documento, nome_arquivo');
+      if (error) throw error;
+      return data as Array<{ id: string; tipo_documento: string; nome_arquivo: string }>;
+    },
   });
 
   const form = useForm<FormData>({
@@ -207,16 +235,24 @@ export default function CarreiraAdminBancoPage() {
 
   const submit = useMutation({
     mutationFn: async () => {
+      setSubmitFeedback(null);
       const { data, error } = await supabase.functions.invoke('carreira-asaas-submit-registration', { body: {} });
-      if (error) throw error;
+      if (error) throw new Error(await extractFunctionError(error, 'Erro ao enviar cadastro ao Asaas'));
       if (!(data as any)?.success) throw new Error((data as any)?.error || 'Erro');
       return data;
     },
-    onSuccess: () => {
-      toast.success('Enviado ao Asaas');
+    onSuccess: async (data: any) => {
+      const message = data?.message || 'Enviado ao Asaas';
+      setSubmitFeedback({ type: 'success', message });
+      toast.success(message);
+      await qc.invalidateQueries({ queryKey: ['carreira-cadastro-bancario'] });
+      await qc.refetchQueries({ queryKey: ['carreira-cadastro-bancario'], type: 'active' });
+    },
+    onError: (e: Error) => {
+      setSubmitFeedback({ type: 'error', message: e.message });
+      toast.error(e.message);
       qc.invalidateQueries({ queryKey: ['carreira-cadastro-bancario'] });
     },
-    onError: (e: Error) => toast.error(e.message),
   });
 
   const check = useMutation({
@@ -242,6 +278,48 @@ export default function CarreiraAdminBancoPage() {
   }
 
   const tipoPessoa = form.watch('tipoPessoa');
+  const requiredDocs = tipoPessoa === 'cnpj'
+    ? [
+        { key: 'contrato_social', label: 'Contrato Social' },
+        { key: 'documento_responsavel_pj', label: 'Documento do responsável' },
+      ]
+    : [{ key: 'documento_foto_pf', label: 'Documento com foto' }];
+
+  const pendingItems = useMemo(() => {
+    const items: string[] = [];
+    if (!cadastro) {
+      items.push('Salve o cadastro bancário antes de enviar.');
+      return items;
+    }
+
+    const requiredFields: Array<[string, string | null | undefined]> = [
+      ['CPF/CNPJ', cadastro.cpf_cnpj],
+      ['Nome / Razão Social', cadastro.nome],
+      ['Email', cadastro.email],
+      ['Telefone', cadastro.telefone],
+      ['Faturamento mensal', cadastro.income_value],
+      ['CEP', cadastro.cep],
+      ['Rua', cadastro.rua],
+      ['Número', cadastro.numero],
+      ['Bairro', cadastro.bairro],
+      ['Cidade', cadastro.cidade],
+      ['UF', cadastro.estado],
+      ['Banco', cadastro.banco],
+      ['Agência', cadastro.agencia],
+      ['Conta', cadastro.conta],
+    ];
+    if (cadastro.tipo_pessoa === 'cpf') requiredFields.push(['Data de nascimento', cadastro.data_nascimento]);
+
+    requiredFields.forEach(([label, value]) => {
+      if (value === null || value === undefined || String(value).trim() === '') items.push(`Preencha: ${label}.`);
+    });
+
+    requiredDocs.forEach((doc) => {
+      if (!docs.some((d) => d.tipo_documento === doc.key)) items.push(`Envie o documento: ${doc.label}.`);
+    });
+
+    return items;
+  }, [cadastro, docs, requiredDocs]);
 
   return (
     <CarreiraAdminLayout>
@@ -262,7 +340,31 @@ export default function CarreiraAdminBancoPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
-            <Button onClick={() => submit.mutate()} disabled={submit.isPending || !cadastro}>
+            {pendingItems.length > 0 && (
+              <div className="w-full rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                <p className="font-medium">Antes de enviar, ajuste:</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {pendingItems.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              </div>
+            )}
+            {submitFeedback && (
+              <div className={`w-full rounded-md border p-3 text-sm ${submitFeedback.type === 'error' ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-primary/30 bg-primary/10 text-primary'}`}>
+                {submitFeedback.message}
+              </div>
+            )}
+            <Button
+              onClick={() => {
+                if (pendingItems.length > 0) {
+                  const message = 'Existem pendências no cadastro antes do envio.';
+                  setSubmitFeedback({ type: 'error', message });
+                  toast.error(message);
+                  return;
+                }
+                submit.mutate();
+              }}
+              disabled={submit.isPending || !cadastro}
+            >
               {submit.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
               Enviar para validação
             </Button>
