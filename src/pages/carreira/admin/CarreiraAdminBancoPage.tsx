@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -285,7 +285,7 @@ export default function CarreiraAdminBancoPage() {
       ]
     : [{ key: 'documento_foto_pf', label: 'Documento com foto' }];
 
-  const pendingItems = useMemo(() => {
+  const pendingItems = (() => {
     const items: string[] = [];
     if (!cadastro) {
       items.push('Salve o cadastro bancário antes de enviar.');
@@ -319,7 +319,7 @@ export default function CarreiraAdminBancoPage() {
     });
 
     return items;
-  }, [cadastro, docs, requiredDocs]);
+  })();
 
   return (
     <CarreiraAdminLayout>
