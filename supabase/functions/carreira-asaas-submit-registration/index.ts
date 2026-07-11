@@ -40,31 +40,48 @@ serve(async (req) => {
 
     const baseUrl = supabaseUrl.replace("/rest/v1", "");
 
-    // Fire and forget
-    (async () => {
-      try {
-        const r = await fetch(`${baseUrl}/functions/v1/carreira-asaas-create-subaccount`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-          body: JSON.stringify({}),
-        });
-        const result = await r.json();
-        console.log("[carreira submit] create result:", result);
-        if (result.success && result.account_id) {
-          const r2 = await fetch(`${baseUrl}/functions/v1/carreira-asaas-send-documents`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-            body: JSON.stringify({}),
-          });
-          console.log("[carreira submit] send-docs status:", r2.status);
-        }
-      } catch (e) {
-        console.error("[carreira submit] chain error:", e);
+    // Executa em modo síncrono para propagar erros reais ao frontend
+    const createResp = await fetch(`${baseUrl}/functions/v1/carreira-asaas-create-subaccount`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+      body: JSON.stringify({}),
+    });
+    const createText = await createResp.text();
+    let createResult: any;
+    try { createResult = JSON.parse(createText); } catch { createResult = { success: false, error: createText }; }
+    console.log("[carreira submit] create result:", createResult);
+
+    if (!createResult?.success) {
+      throw new Error(
+        `Falha ao criar subconta Asaas: ${createResult?.error || createText || "erro desconhecido"}`,
+      );
+    }
+
+    let docsResult: any = null;
+    if (createResult.account_id) {
+      const r2 = await fetch(`${baseUrl}/functions/v1/carreira-asaas-send-documents`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+        body: JSON.stringify({}),
+      });
+      const docsText = await r2.text();
+      try { docsResult = JSON.parse(docsText); } catch { docsResult = { success: false, error: docsText }; }
+      console.log("[carreira submit] send-docs result:", docsResult);
+      if (!docsResult?.success) {
+        throw new Error(
+          `Subconta criada, mas falhou ao enviar documentos: ${docsResult?.error || docsText || "erro desconhecido"}`,
+        );
       }
-    })();
+    }
 
     return new Response(
-      JSON.stringify({ success: true, message: "Cadastro Carreira enviado para análise", status: "submitted" }),
+      JSON.stringify({
+        success: true,
+        message: "Cadastro Carreira enviado para análise",
+        status: "submitted",
+        account_id: createResult.account_id,
+        documents: docsResult,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
