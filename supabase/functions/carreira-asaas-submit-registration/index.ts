@@ -10,10 +10,13 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  let supabase: any = null;
+  let cadastroId: string | null = null;
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceKey);
+    supabase = createClient(supabaseUrl, serviceKey);
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Autorização necessária");
@@ -29,14 +32,51 @@ serve(async (req) => {
 
     const { data: cadastro } = await supabase
       .from("carreira_cadastro_bancario")
-      .select("id, asaas_account_id")
+      .select("id, tipo_pessoa, cpf_cnpj, nome, email, telefone, data_nascimento, income_value, cep, rua, numero, bairro, cidade, estado, banco, agencia, conta, asaas_account_id")
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle();
     if (!cadastro) throw new Error("Cadastro bancário Carreira não encontrado");
+    cadastroId = cadastro.id;
 
-    const { data: docs } = await supabase.from("carreira_documentos").select("id").limit(1);
-    if (!docs || docs.length === 0) throw new Error("Envie os documentos obrigatórios antes de submeter");
+    const missingFields: string[] = [];
+    const requiredFields: Array<[string, unknown]> = [
+      ["CPF/CNPJ", cadastro.cpf_cnpj],
+      ["Nome/Razão Social", cadastro.nome],
+      ["Email", cadastro.email],
+      ["Telefone", cadastro.telefone],
+      ["Faturamento mensal", cadastro.income_value],
+      ["CEP", cadastro.cep],
+      ["Rua", cadastro.rua],
+      ["Número", cadastro.numero],
+      ["Bairro", cadastro.bairro],
+      ["Cidade", cadastro.cidade],
+      ["UF", cadastro.estado],
+      ["Banco", cadastro.banco],
+      ["Agência", cadastro.agencia],
+      ["Conta", cadastro.conta],
+    ];
+    if (cadastro.tipo_pessoa === "cpf") requiredFields.push(["Data de nascimento", cadastro.data_nascimento]);
+    for (const [label, value] of requiredFields) {
+      if (value === null || value === undefined || String(value).trim() === "") missingFields.push(label);
+    }
+    if (missingFields.length > 0) {
+      throw new Error(`Complete os campos obrigatórios antes de enviar: ${missingFields.join(", ")}`);
+    }
+
+    const { data: docs } = await supabase.from("carreira_documentos").select("tipo_documento");
+    const requiredDocs = cadastro.tipo_pessoa === "cnpj"
+      ? [
+          ["contrato_social", "Contrato Social"],
+          ["documento_responsavel_pj", "Documento do responsável"],
+        ]
+      : [["documento_foto_pf", "Documento com foto"]];
+    const missingDocs = requiredDocs
+      .filter(([tipo]) => !(docs || []).some((doc: any) => doc.tipo_documento === tipo))
+      .map(([, label]) => label);
+    if (missingDocs.length > 0) {
+      throw new Error(`Envie os documentos obrigatórios antes de submeter: ${missingDocs.join(", ")}`);
+    }
 
     const baseUrl = supabaseUrl.replace("/rest/v1", "");
 
@@ -86,6 +126,18 @@ serve(async (req) => {
     );
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Erro desconhecido";
+    try {
+      if (supabase && cadastroId) {
+        await supabase
+          .from("carreira_cadastro_bancario")
+          .update({
+            asaas_status: "awaiting_action",
+            asaas_status_detail: { error: msg, source: "carreira-asaas-submit-registration" },
+            asaas_atualizado_em: new Date().toISOString(),
+          })
+          .eq("id", cadastroId);
+      }
+    } catch (_) {}
     return new Response(JSON.stringify({ success: false, error: msg }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
