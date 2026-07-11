@@ -292,7 +292,7 @@ export default function CarreiraAdminBancoPage() {
       return items;
     }
 
-    const requiredFields: Array<[string, string | null | undefined]> = [
+    const requiredFields: Array<[string, unknown]> = [
       ['CPF/CNPJ', cadastro.cpf_cnpj],
       ['Nome / Razão Social', cadastro.nome],
       ['Email', cadastro.email],
