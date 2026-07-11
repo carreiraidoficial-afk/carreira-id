@@ -2,7 +2,7 @@ import { ReactNode, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
-  LayoutDashboard, Users, FileText, CreditCard, Activity, LogOut, Loader2, Trophy, Shield
+  LayoutDashboard, Users, FileText, CreditCard, Activity, LogOut, Loader2, Trophy, Shield, Landmark
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +22,7 @@ const navItems = [
   { title: 'Comunicados', url: '/carreira/admin/comunicados', icon: Megaphone },
   { title: 'Notificações Push', url: '/carreira/admin/push', icon: Bell },
   { title: 'Assinaturas', url: '/carreira/admin/assinaturas', icon: CreditCard },
+  { title: 'Banco', url: '/carreira/admin/banco', icon: Landmark },
   { title: 'Planos & Features', url: '/carreira/admin/planos', icon: Settings2 },
   { title: 'Atividades Externas', url: '/carreira/admin/atividades', icon: Activity },
   { title: 'Gamificação', url: '/carreira/admin/gamificacao', icon: Trophy },
