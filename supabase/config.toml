@@ -18,3 +18,9 @@ verify_jwt = false
 [functions.disable-asaas-notifications]
 verify_jwt = false
 
+[functions.create-carreira-card-subscription]
+verify_jwt = true
+
+[functions.cleanup-asaas-duplicates]
+verify_jwt = false
+

@@ -78,13 +78,24 @@ Deno.serve(async (req) => {
       } else {
         console.warn('No matching sub for payment', asaasPaymentId, 'sub', asaasSubId);
       }
-    } else if (event === 'PAYMENT_OVERDUE' || event === 'PAYMENT_REFUSED_BY_ACQUIRER') {
+    } else if (
+      event === 'PAYMENT_OVERDUE' ||
+      event === 'PAYMENT_REFUSED_BY_ACQUIRER' ||
+      event === 'PAYMENT_REFUSED'
+    ) {
       const sub = await findSub();
       if (sub) {
-        await supabase
+        const refusal = payment?.refusalReason || payment?.description || event;
+        const upd: any = { status: 'inadimplente' };
+        const withObs = await supabase
           .from('carreira_assinaturas')
-          .update({ status: 'inadimplente' })
+          .update({ ...upd, observacoes: `[${new Date().toISOString()}] ${event}: ${refusal}` })
           .eq('id', sub.id);
+        if (withObs.error) {
+          // Column observacoes may not exist yet — fallback to status only
+          await supabase.from('carreira_assinaturas').update(upd).eq('id', sub.id);
+        }
+        console.log('Sub marked inadimplente:', sub.id, 'reason:', refusal);
       }
     } else if (event === 'PAYMENT_REFUNDED' || event === 'PAYMENT_DELETED') {
       const sub = await findSub();

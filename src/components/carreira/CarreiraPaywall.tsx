@@ -21,7 +21,7 @@ interface CarreiraPaywallProps {
   onSubscribed?: () => void;
 }
 
-type PaywallStep = 'info' | 'loading' | 'pix' | 'checking' | 'success';
+type PaywallStep = 'info' | 'loading' | 'pix' | 'checking' | 'card_form' | 'success';
 type PaymentMethod = 'pix' | 'cartao';
 
 const formatCpf = (value: string) => {
@@ -30,6 +30,18 @@ const formatCpf = (value: string) => {
   if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
   if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+};
+
+const formatCardNumber = (v: string) => v.replace(/\D/g, '').slice(0, 19).replace(/(\d{4})(?=\d)/g, '$1 ');
+const formatCep = (v: string) => {
+  const d = v.replace(/\D/g, '').slice(0, 8);
+  return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+};
+const formatPhone = (v: string) => {
+  const d = v.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 2) return d;
+  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 };
 
 export function CarreiraPaywall({ limitResult, childName, criancaId, planoSelecionado, onClose, onSubscribed }: CarreiraPaywallProps) {
@@ -55,6 +67,11 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
   } | null>(null);
   const [copied, setCopied] = useState(false);
   const [pollCount, setPollCount] = useState(0);
+  const [cardForm, setCardForm] = useState({
+    number: '', expiry: '', ccv: '', holderName: '',
+    holderCpf: '', cep: '', addressNumber: '', phone: '',
+  });
+  const [cardSubmitting, setCardSubmitting] = useState(false);
 
   const cpfDigits = cpfInput.replace(/\D/g, '');
   const cpfValid = cpfDigits.length === 11;
@@ -150,7 +167,93 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
     if (paymentMethod === 'pix') {
       generatePix();
     } else {
-      generateCheckout();
+      // Novo fluxo: capturar cartão dentro do app (assinatura recorrente real)
+      setCardForm((f) => ({
+        ...f,
+        holderCpf: f.holderCpf || cpfInput,
+      }));
+      setStep('card_form');
+    }
+  };
+
+  const submitCardSubscription = async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const sessionUser = sessionData.session?.user;
+    const resolvedUser = user || (sessionUser ? { id: sessionUser.id, name: sessionUser.user_metadata?.nome || sessionUser.user_metadata?.full_name || 'Usuário', email: sessionUser.email || '' } : null);
+    if (!resolvedUser || !criancaId) {
+      toast.error(!criancaId ? 'Atleta não identificado' : 'Sessão expirada. Faça login novamente.');
+      return;
+    }
+
+    const numberDigits = cardForm.number.replace(/\D/g, '');
+    const expiryDigits = cardForm.expiry.replace(/\D/g, '');
+    const holderCpfDigits = cardForm.holderCpf.replace(/\D/g, '');
+    const cepDigits = cardForm.cep.replace(/\D/g, '');
+    const phoneDigits = cardForm.phone.replace(/\D/g, '');
+
+    if (numberDigits.length < 13) return toast.error('Número do cartão inválido');
+    if (expiryDigits.length !== 4) return toast.error('Validade inválida (use MM/AA)');
+    if (cardForm.ccv.length < 3) return toast.error('CVV inválido');
+    if (!cardForm.holderName.trim()) return toast.error('Informe o nome impresso no cartão');
+    if (holderCpfDigits.length !== 11) return toast.error('CPF do titular inválido');
+    if (cepDigits.length !== 8) return toast.error('CEP inválido');
+    if (!cardForm.addressNumber.trim()) return toast.error('Informe o número do endereço');
+    if (phoneDigits.length < 10) return toast.error('Telefone inválido');
+
+    setCardSubmitting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-carreira-card-subscription', {
+        body: {
+          user_id: resolvedUser.id,
+          crianca_id: criancaId,
+          cpf: cpfInput.replace(/\D/g, ''),
+          nome: resolvedUser.name,
+          email: resolvedUser.email,
+          card: {
+            holderName: cardForm.holderName.trim().toUpperCase(),
+            number: numberDigits,
+            expiryMonth: expiryDigits.slice(0, 2),
+            expiryYear: expiryDigits.slice(2, 4),
+            ccv: cardForm.ccv,
+          },
+          holderInfo: {
+            name: cardForm.holderName.trim(),
+            email: resolvedUser.email,
+            cpfCnpj: holderCpfDigits,
+            postalCode: cepDigits,
+            addressNumber: cardForm.addressNumber.trim(),
+            phone: phoneDigits,
+          },
+        },
+      });
+
+      if (error) {
+        // Tenta extrair mensagem detalhada do body 4xx
+        let msg = error.message;
+        try {
+          const anyErr = error as any;
+          const txt = anyErr?.context && typeof anyErr.context.text === 'function'
+            ? await anyErr.context.text()
+            : null;
+          if (txt) {
+            const parsed = JSON.parse(txt);
+            if (parsed?.error) msg = parsed.error;
+          }
+        } catch (_) {}
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
+
+      toast.success('Assinatura ativada! Cobrança mensal automática configurada.');
+      queryClient.invalidateQueries({ queryKey: ['carreira-plano'] });
+      queryClient.invalidateQueries({ queryKey: ['carreira-atividade-limit'] });
+      setStep('success');
+      onSubscribed?.();
+    } catch (err: any) {
+      console.error('Erro ao assinar com cartão:', err);
+      toast.error(err.message || 'Erro ao processar cartão');
+    } finally {
+      setCardSubmitting(false);
     }
   };
 
@@ -283,6 +386,121 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
             Cancelar
           </Button>
         )}
+      </div>
+    );
+  }
+
+  if (step === 'card_form') {
+    return (
+      <div className="space-y-3 py-2 max-h-[80vh] overflow-y-auto">
+        <div className="text-center space-y-1">
+          <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <CreditCard className="w-6 h-6 text-primary" />
+          </div>
+          <h3 className="text-lg font-bold text-foreground">Dados do cartão</h3>
+          <p className="text-xs text-muted-foreground">
+            Cobrança mensal automática de <strong>R$ {planInfo.preco.toFixed(2).replace('.', ',')}</strong>. Cancele quando quiser.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <div className="space-y-1">
+            <Label className="text-xs">Número do cartão</Label>
+            <Input
+              placeholder="0000 0000 0000 0000"
+              inputMode="numeric"
+              value={cardForm.number}
+              onChange={(e) => setCardForm((f) => ({ ...f, number: formatCardNumber(e.target.value) }))}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Validade (MM/AA)</Label>
+              <Input
+                placeholder="MM/AA"
+                inputMode="numeric"
+                value={cardForm.expiry}
+                onChange={(e) => {
+                  const d = e.target.value.replace(/\D/g, '').slice(0, 4);
+                  const formatted = d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
+                  setCardForm((f) => ({ ...f, expiry: formatted }));
+                }}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">CVV</Label>
+              <Input
+                placeholder="123"
+                inputMode="numeric"
+                maxLength={4}
+                value={cardForm.ccv}
+                onChange={(e) => setCardForm((f) => ({ ...f, ccv: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Nome impresso no cartão</Label>
+            <Input
+              placeholder="Nome completo"
+              value={cardForm.holderName}
+              onChange={(e) => setCardForm((f) => ({ ...f, holderName: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">CPF do titular</Label>
+            <Input
+              placeholder="000.000.000-00"
+              inputMode="numeric"
+              value={cardForm.holderCpf}
+              onChange={(e) => setCardForm((f) => ({ ...f, holderCpf: formatCpf(e.target.value) }))}
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-1 col-span-2">
+              <Label className="text-xs">CEP</Label>
+              <Input
+                placeholder="00000-000"
+                inputMode="numeric"
+                value={cardForm.cep}
+                onChange={(e) => setCardForm((f) => ({ ...f, cep: formatCep(e.target.value) }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Nº</Label>
+              <Input
+                placeholder="123"
+                value={cardForm.addressNumber}
+                onChange={(e) => setCardForm((f) => ({ ...f, addressNumber: e.target.value.slice(0, 10) }))}
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Telefone do titular</Label>
+            <Input
+              placeholder="(00) 00000-0000"
+              inputMode="tel"
+              value={cardForm.phone}
+              onChange={(e) => setCardForm((f) => ({ ...f, phone: formatPhone(e.target.value) }))}
+            />
+          </div>
+        </div>
+
+        <Button
+          type="button"
+          className="w-full text-white gap-2"
+          style={{ backgroundColor: planInfo.cor }}
+          disabled={cardSubmitting}
+          onClick={submitCardSubscription}
+        >
+          {cardSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
+          {cardSubmitting ? 'Processando...' : `Assinar por R$ ${planInfo.preco.toFixed(2).replace('.', ',')}/mês`}
+        </Button>
+        <p className="text-[10px] text-center text-muted-foreground">
+          Seus dados são enviados diretamente para a Asaas (PCI compliant). Não armazenamos número nem CVV.
+        </p>
+        <Button variant="ghost" className="w-full" onClick={() => setStep('info')} disabled={cardSubmitting}>
+          Voltar
+        </Button>
       </div>
     );
   }
