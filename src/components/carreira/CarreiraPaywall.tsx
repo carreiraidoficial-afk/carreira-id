@@ -231,8 +231,10 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
         // Tenta extrair mensagem detalhada do body 4xx
         let msg = error.message;
         try {
-          // @ts-expect-error runtime FunctionsHttpError has context
-          const txt = error.context ? await error.context.text() : null;
+          const anyErr = error as any;
+          const txt = anyErr?.context && typeof anyErr.context.text === 'function'
+            ? await anyErr.context.text()
+            : null;
           if (txt) {
             const parsed = JSON.parse(txt);
             if (parsed?.error) msg = parsed.error;
