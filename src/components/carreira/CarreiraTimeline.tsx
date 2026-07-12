@@ -7,7 +7,6 @@ import { PostCard } from './PostCard';
 import { AtividadePublicaCard } from './AtividadePublicaCard';
 import { ExperienciaSection } from './ExperienciaSection';
 import { CarreiraStatsCards } from './CarreiraStatsCards';
-import { JornadaTimeline } from './JornadaTimeline';
 import { SalaTrofeusAtleta } from './SalaTrofeusAtleta';
 import { CarreiraAtividadeFormDialog } from './CarreiraAtividadeFormDialog';
 import { ExperienciaFormDialog } from './ExperienciaFormDialog';
