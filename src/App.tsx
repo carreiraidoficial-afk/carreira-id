@@ -11,18 +11,11 @@ const RootRoute = lazy(() => import("./pages/RootRoute"));
 
 // Lazy load pages not needed on initial render
 const Auth = lazy(() => import("./pages/Auth"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const InstallApp = lazy(() => import("./pages/InstallApp"));
-const IndicacaoPage = lazy(() => import("./pages/IndicacaoPage"));
-const ShortIndicacaoRedirect = lazy(() => import("./pages/ShortIndicacaoRedirect"));
 const CarreiraLinkedinPage = lazy(() => import("./pages/carreira/CarreiraLinkedinPage"));
 const CarreiraPerfilPage = lazy(() => import("./pages/carreira/CarreiraPerfilPage"));
 const CarreiraExplorarPage = lazy(() => import("./pages/carreira/CarreiraExplorarPage"));
 const CarreiraPostPage = lazy(() => import("./pages/carreira/CarreiraPostPage"));
-// Retrocompatibilidade com links antigos do Atleta ID
-const AtletaIdLinkedinPage = lazy(() => import("./pages/atletaid/AtletaIdLinkedinPage"));
-const AtletaIdPerfilPage = lazy(() => import("./pages/atletaid/AtletaIdPerfilPage"));
 const EscolaPerfilPage = lazy(() => import("./pages/carreira/EscolaPerfilPage"));
 const CarreiraCadastroPage = lazy(() => import("./pages/carreira/CarreiraCadastroPage"));
 const PerfilPage = lazy(() => import("./pages/carreira/PerfilPage"));
@@ -49,7 +42,6 @@ const CarreiraAdminPushPage = lazy(() => import("./pages/carreira/admin/Carreira
 const CarreiraAdminBancoPage = lazy(() => import("./pages/carreira/admin/CarreiraAdminBancoPage"));
 const ResetPasswordPage = lazy(() => import("./pages/carreira/ResetPasswordPage"));
 const CarreiraPlanosPage = lazy(() => import("./pages/carreira/CarreiraPlanosPage"));
-const JornadaEsportivaPage = lazy(() => import("./pages/atleta/jornada-esportiva"));
 const CarreiraEventosPage = lazy(() => import("./pages/carreira/CarreiraEventosPage"));
 
 const queryClient = new QueryClient({
@@ -108,8 +100,6 @@ const App = () => (
               <Route path="/contato" element={<ContatoPage />} />
               <Route path="/planos" element={<CarreiraPlanosPage />} />
               <Route path="/eventos" element={<CarreiraEventosPage />} />
-              <Route path="/jornada-esportiva" element={<JornadaEsportivaPage />} />
-              <Route path="/atleta/jornada-esportiva" element={<JornadaEsportivaPage />} />
               {/* Carreira ID — Admin */}
               <Route path="/carreira/admin" element={<CarreiraAdminDashboard />} />
               <Route path="/carreira/admin/perfis" element={<CarreiraAdminPerfisPage />} />
@@ -127,15 +117,9 @@ const App = () => (
               <Route path="/carreira/admin/banco" element={<CarreiraAdminBancoPage />} />
               <Route path="/perfil/:userId" element={<PerfilPage />} />
               <Route path="/escola/:slug" element={<EscolaPerfilPage />} />
-              {/* Atleta ID / escolinhas — rotas secundárias */}
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/login" element={<Auth />} />
-              <Route path="/install" element={<InstallApp />} />
-              <Route path="/indicacao" element={<IndicacaoPage />} />
-              <Route path="/i" element={<ShortIndicacaoRedirect />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/dashboard/*" element={<Dashboard />} />
               {/* Perfil público por slug — deve ficar por último */}
               <Route path="/:slug" element={<CarreiraPerfilPage />} />
               <Route path="*" element={<NotFound />} />
