@@ -62,19 +62,6 @@ export function CarreiraLayout({ children }: CarreiraLayoutProps) {
               />
             )}
 
-            {/* Voltar para o app da escolinha — só mostra para quem tem vínculo */}
-            {user && (user.role === 'guardian' || user.role === 'school' || user.role === 'teacher') && user.escolinhaId && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleBackToDashboard}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <ArrowLeft className="w-4 h-4 mr-1.5" />
-                <span className="hidden sm:inline">Voltar ao App</span>
-              </Button>
-            )}
-
             {/* Menu do usuário */}
             {user && (
               <DropdownMenu>
@@ -100,12 +87,6 @@ export function CarreiraLayout({ children }: CarreiraLayoutProps) {
                     <Settings className="w-4 h-4 mr-2" />
                     Editar Minha Conta
                   </DropdownMenuItem>
-                  {user.escolinhaId && (
-                    <DropdownMenuItem onClick={handleBackToDashboard}>
-                      <Home className="w-4 h-4 mr-2" />
-                      App da Escolinha
-                    </DropdownMenuItem>
-                  )}
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                     <LogOut className="w-4 h-4 mr-2" />
                     Sair
