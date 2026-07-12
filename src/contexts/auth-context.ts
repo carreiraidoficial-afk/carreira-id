@@ -8,8 +8,6 @@ export interface AuthUser {
   role: UserRole;
   name: string;
   avatarUrl?: string;
-  escolinhaId?: string;
-  escolinhaNome?: string;
   passwordNeedsChange?: boolean;
 }
 
