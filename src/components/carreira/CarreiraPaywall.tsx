@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Lock, Star, Zap, Trophy, Copy, CheckCircle, Loader2, CreditCard, QrCode, Crown } from 'lucide-react';
+import { Lock, Star, Zap, Trophy, Copy, CheckCircle, Loader2, CreditCard, QrCode, Crown, AlertCircle } from 'lucide-react';
 import { CarreiraLimitResult } from '@/hooks/useCarreiraFreemium';
 import { PLANOS, CarreiraPlano, normalizePlano } from '@/config/carreiraPlanos';
 import { supabase } from '@/integrations/supabase/client';
@@ -72,6 +72,19 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
     holderCpf: '', cep: '', addressNumber: '', phone: '',
   });
   const [cardSubmitting, setCardSubmitting] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
+  const cardErrorRef = useRef<HTMLDivElement | null>(null);
+
+  const updateCard = (patch: Partial<typeof cardForm>) => {
+    setCardForm((f) => ({ ...f, ...patch }));
+    if (cardError) setCardError(null);
+  };
+
+  useEffect(() => {
+    if (cardError && cardErrorRef.current) {
+      cardErrorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [cardError]);
 
   const cpfDigits = cpfInput.replace(/\D/g, '');
   const cpfValid = cpfDigits.length === 11;
@@ -177,11 +190,13 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
   };
 
   const submitCardSubscription = async () => {
+    setCardError(null);
     const { data: sessionData } = await supabase.auth.getSession();
     const sessionUser = sessionData.session?.user;
     const resolvedUser = user || (sessionUser ? { id: sessionUser.id, name: sessionUser.user_metadata?.nome || sessionUser.user_metadata?.full_name || 'Usuário', email: sessionUser.email || '' } : null);
+    console.log('[card-submit]', { hasUser: !!resolvedUser, hasCrianca: !!criancaId });
     if (!resolvedUser || !criancaId) {
-      toast.error(!criancaId ? 'Atleta não identificado' : 'Sessão expirada. Faça login novamente.');
+      setCardError(!criancaId ? 'Atleta não identificado' : 'Sessão expirada. Faça login novamente.');
       return;
     }
 
@@ -191,14 +206,14 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
     const cepDigits = cardForm.cep.replace(/\D/g, '');
     const phoneDigits = cardForm.phone.replace(/\D/g, '');
 
-    if (numberDigits.length < 13) return toast.error('Número do cartão inválido');
-    if (expiryDigits.length !== 4) return toast.error('Validade inválida (use MM/AA)');
-    if (cardForm.ccv.length < 3) return toast.error('CVV inválido');
-    if (!cardForm.holderName.trim()) return toast.error('Informe o nome impresso no cartão');
-    if (holderCpfDigits.length !== 11) return toast.error('CPF do titular inválido');
-    if (cepDigits.length !== 8) return toast.error('CEP inválido');
-    if (!cardForm.addressNumber.trim()) return toast.error('Informe o número do endereço');
-    if (phoneDigits.length < 10) return toast.error('Telefone inválido');
+    if (numberDigits.length < 13) return setCardError('Número do cartão inválido');
+    if (expiryDigits.length !== 4) return setCardError('Validade inválida (use MM/AA)');
+    if (cardForm.ccv.length < 3) return setCardError('CVV inválido');
+    if (!cardForm.holderName.trim()) return setCardError('Informe o nome impresso no cartão');
+    if (holderCpfDigits.length !== 11) return setCardError('CPF do titular inválido');
+    if (cepDigits.length !== 8) return setCardError('CEP inválido');
+    if (!cardForm.addressNumber.trim()) return setCardError('Informe o número do endereço');
+    if (phoneDigits.length < 10) return setCardError('Telefone inválido (com DDD)');
 
     setCardSubmitting(true);
     try {
@@ -251,7 +266,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
       onSubscribed?.();
     } catch (err: any) {
       console.error('Erro ao assinar com cartão:', err);
-      toast.error(err.message || 'Erro ao processar cartão');
+      setCardError(err.message || 'Erro ao processar cartão. Tente novamente ou use outro cartão.');
     } finally {
       setCardSubmitting(false);
     }
@@ -410,7 +425,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
               placeholder="0000 0000 0000 0000"
               inputMode="numeric"
               value={cardForm.number}
-              onChange={(e) => setCardForm((f) => ({ ...f, number: formatCardNumber(e.target.value) }))}
+              onChange={(e) => updateCard({ number: formatCardNumber(e.target.value) })}
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -423,7 +438,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
                 onChange={(e) => {
                   const d = e.target.value.replace(/\D/g, '').slice(0, 4);
                   const formatted = d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
-                  setCardForm((f) => ({ ...f, expiry: formatted }));
+                  updateCard({ expiry: formatted });
                 }}
               />
             </div>
@@ -434,7 +449,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
                 inputMode="numeric"
                 maxLength={4}
                 value={cardForm.ccv}
-                onChange={(e) => setCardForm((f) => ({ ...f, ccv: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
+                onChange={(e) => updateCard({ ccv: e.target.value.replace(/\D/g, '').slice(0, 4) })}
               />
             </div>
           </div>
@@ -443,7 +458,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
             <Input
               placeholder="Nome completo"
               value={cardForm.holderName}
-              onChange={(e) => setCardForm((f) => ({ ...f, holderName: e.target.value }))}
+              onChange={(e) => updateCard({ holderName: e.target.value })}
             />
           </div>
           <div className="space-y-1">
@@ -452,7 +467,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
               placeholder="000.000.000-00"
               inputMode="numeric"
               value={cardForm.holderCpf}
-              onChange={(e) => setCardForm((f) => ({ ...f, holderCpf: formatCpf(e.target.value) }))}
+              onChange={(e) => updateCard({ holderCpf: formatCpf(e.target.value) })}
             />
           </div>
           <div className="grid grid-cols-3 gap-2">
@@ -462,7 +477,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
                 placeholder="00000-000"
                 inputMode="numeric"
                 value={cardForm.cep}
-                onChange={(e) => setCardForm((f) => ({ ...f, cep: formatCep(e.target.value) }))}
+                onChange={(e) => updateCard({ cep: formatCep(e.target.value) })}
               />
             </div>
             <div className="space-y-1">
@@ -470,7 +485,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
               <Input
                 placeholder="123"
                 value={cardForm.addressNumber}
-                onChange={(e) => setCardForm((f) => ({ ...f, addressNumber: e.target.value.slice(0, 10) }))}
+                onChange={(e) => updateCard({ addressNumber: e.target.value.slice(0, 10) })}
               />
             </div>
           </div>
@@ -480,14 +495,25 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
               placeholder="(00) 00000-0000"
               inputMode="tel"
               value={cardForm.phone}
-              onChange={(e) => setCardForm((f) => ({ ...f, phone: formatPhone(e.target.value) }))}
+              onChange={(e) => updateCard({ phone: formatPhone(e.target.value) })}
             />
           </div>
         </div>
 
+        {cardError && (
+          <div
+            ref={cardErrorRef}
+            role="alert"
+            className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            <span>{cardError}</span>
+          </div>
+        )}
+
         <Button
           type="button"
-          className="w-full text-white gap-2"
+          className="w-full text-white gap-2 mb-4"
           style={{ backgroundColor: planInfo.cor }}
           disabled={cardSubmitting}
           onClick={submitCardSubscription}
