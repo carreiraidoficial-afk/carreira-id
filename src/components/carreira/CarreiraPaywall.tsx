@@ -21,7 +21,7 @@ interface CarreiraPaywallProps {
   onSubscribed?: () => void;
 }
 
-type PaywallStep = 'info' | 'loading' | 'pix' | 'checking' | 'success';
+type PaywallStep = 'info' | 'loading' | 'pix' | 'checking' | 'card_form' | 'success';
 type PaymentMethod = 'pix' | 'cartao';
 
 const formatCpf = (value: string) => {
@@ -30,6 +30,18 @@ const formatCpf = (value: string) => {
   if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
   if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+};
+
+const formatCardNumber = (v: string) => v.replace(/\D/g, '').slice(0, 19).replace(/(\d{4})(?=\d)/g, '$1 ');
+const formatCep = (v: string) => {
+  const d = v.replace(/\D/g, '').slice(0, 8);
+  return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+};
+const formatPhone = (v: string) => {
+  const d = v.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 2) return d;
+  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 };
 
 export function CarreiraPaywall({ limitResult, childName, criancaId, planoSelecionado, onClose, onSubscribed }: CarreiraPaywallProps) {
@@ -55,6 +67,11 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
   } | null>(null);
   const [copied, setCopied] = useState(false);
   const [pollCount, setPollCount] = useState(0);
+  const [cardForm, setCardForm] = useState({
+    number: '', expiry: '', ccv: '', holderName: '',
+    holderCpf: '', cep: '', addressNumber: '', phone: '',
+  });
+  const [cardSubmitting, setCardSubmitting] = useState(false);
 
   const cpfDigits = cpfInput.replace(/\D/g, '');
   const cpfValid = cpfDigits.length === 11;
@@ -150,7 +167,91 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
     if (paymentMethod === 'pix') {
       generatePix();
     } else {
-      generateCheckout();
+      // Novo fluxo: capturar cartão dentro do app (assinatura recorrente real)
+      setCardForm((f) => ({
+        ...f,
+        holderCpf: f.holderCpf || cpfInput,
+      }));
+      setStep('card_form');
+    }
+  };
+
+  const submitCardSubscription = async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const sessionUser = sessionData.session?.user;
+    const resolvedUser = user || (sessionUser ? { id: sessionUser.id, name: sessionUser.user_metadata?.nome || sessionUser.user_metadata?.full_name || 'Usuário', email: sessionUser.email || '' } : null);
+    if (!resolvedUser || !criancaId) {
+      toast.error(!criancaId ? 'Atleta não identificado' : 'Sessão expirada. Faça login novamente.');
+      return;
+    }
+
+    const numberDigits = cardForm.number.replace(/\D/g, '');
+    const expiryDigits = cardForm.expiry.replace(/\D/g, '');
+    const holderCpfDigits = cardForm.holderCpf.replace(/\D/g, '');
+    const cepDigits = cardForm.cep.replace(/\D/g, '');
+    const phoneDigits = cardForm.phone.replace(/\D/g, '');
+
+    if (numberDigits.length < 13) return toast.error('Número do cartão inválido');
+    if (expiryDigits.length !== 4) return toast.error('Validade inválida (use MM/AA)');
+    if (cardForm.ccv.length < 3) return toast.error('CVV inválido');
+    if (!cardForm.holderName.trim()) return toast.error('Informe o nome impresso no cartão');
+    if (holderCpfDigits.length !== 11) return toast.error('CPF do titular inválido');
+    if (cepDigits.length !== 8) return toast.error('CEP inválido');
+    if (!cardForm.addressNumber.trim()) return toast.error('Informe o número do endereço');
+    if (phoneDigits.length < 10) return toast.error('Telefone inválido');
+
+    setCardSubmitting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-carreira-card-subscription', {
+        body: {
+          user_id: resolvedUser.id,
+          crianca_id: criancaId,
+          cpf: cpfInput.replace(/\D/g, ''),
+          nome: resolvedUser.name,
+          email: resolvedUser.email,
+          card: {
+            holderName: cardForm.holderName.trim().toUpperCase(),
+            number: numberDigits,
+            expiryMonth: expiryDigits.slice(0, 2),
+            expiryYear: expiryDigits.slice(2, 4),
+            ccv: cardForm.ccv,
+          },
+          holderInfo: {
+            name: cardForm.holderName.trim(),
+            email: resolvedUser.email,
+            cpfCnpj: holderCpfDigits,
+            postalCode: cepDigits,
+            addressNumber: cardForm.addressNumber.trim(),
+            phone: phoneDigits,
+          },
+        },
+      });
+
+      if (error) {
+        // Tenta extrair mensagem detalhada do body 4xx
+        let msg = error.message;
+        try {
+          // @ts-expect-error runtime FunctionsHttpError has context
+          const txt = error.context ? await error.context.text() : null;
+          if (txt) {
+            const parsed = JSON.parse(txt);
+            if (parsed?.error) msg = parsed.error;
+          }
+        } catch (_) {}
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
+
+      toast.success('Assinatura ativada! Cobrança mensal automática configurada.');
+      queryClient.invalidateQueries({ queryKey: ['carreira-plano'] });
+      queryClient.invalidateQueries({ queryKey: ['carreira-atividade-limit'] });
+      setStep('success');
+      onSubscribed?.();
+    } catch (err: any) {
+      console.error('Erro ao assinar com cartão:', err);
+      toast.error(err.message || 'Erro ao processar cartão');
+    } finally {
+      setCardSubmitting(false);
     }
   };
 
