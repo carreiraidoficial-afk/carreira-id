@@ -1,67 +1,79 @@
-# Limpar Atleta ID deste projeto (Supabase + código)
+# Fase 3 — DROP das tabelas Atleta ID + Jornada Esportiva independente
 
-Você confirmou: **Atleta ID roda 100% no Supabase próprio (`vxzktyklzkfqitptzctk`)** e este projeto Lovable/Supabase (`fppsotlycinwqsjpoybg`) vai ficar **exclusivo do Carreira ID**. A ponte `receive-atleta-data` (webhook que o Atleta ID chama pra popular perfis do Carreira) fica.
+**Confirmação:** trabalhando exclusivamente no Supabase Carreira ID (`fppsotlycinwqsjpoybg`). Atleta ID (`vxzktyklzkfqitptzctk`) intocado.
 
-Faço em 4 fases, cada uma reversível na History, começando pelo mais seguro (código) e terminando no destrutivo (drop de tabelas).
-
----
-
-## Fase 1 — Rotas, layouts e páginas Atleta ID (sem risco de dados)
-
-**Remover do `src/`:**
-- `src/pages/dashboard/` inteiro (Admin/Guardian/School/Teacher + subpastas `admin/`, `guardian/`, `school/`)
-- `src/pages/Dashboard.tsx`, `src/pages/InstallApp.tsx`, `src/pages/IndicacaoPage.tsx`, `src/pages/ShortIndicacaoRedirect.tsx`
-- `src/pages/atleta/`, `src/pages/atletaid/`
-- `src/components/layout/`: `DashboardLayout`, `GuardianDashboardLayout`, `GuardianSidebar`, `MobileGuardianLayout`, `MobileHeader`, `MobileBottomNav`, `SchoolDashboardLayout`, `SchoolSidebar`, `AtletaIdLayout`
-- `src/components/guardian/`, `src/components/school/`, `src/components/admin/`, `src/components/atleta-id/`, `src/components/jornada/`
-- Hooks Atleta-only: `useGuardianData`, `useSchoolData`, `useTeacherData`, `useAdminData`, `useEnrollmentData`, `useAulasData`, `useAulaHistoricoData`, `useAlunoHistoricoData`, `useAmistosoConvocacoesData`, `useCampeonatosData`, `useCampeonatoConvocacoesData`, `useComunicadosData`, `useComunicadosEscolaData`, `useEscolaPostsData`, `useEscolaPublicaData`, `useAdminAulasData`, `useAccessLogData`, `useAtividadesExternasData`, `useAtletaIdData`, `useConquistasData`, `useConsolidatedViewEnabled`, `useEventosData` (+ `useEvento*`), `useExistingGuardianLookup`, `useGuardianConvocacoesData`, `useGuardianEventosData`, `useGuardianNotifications`, `useIndicacoesData`, `useJornada`, `useLojaData`, `useMensal*`, `useParentAccessAnalytics`, `usePeneirasData`, `usePwaInstall*`
-- `src/contexts/StudentRegistrationContext.tsx`
-- `src/data/mockData.ts`, `src/types/jornada-esportiva.ts`
-- `src/lib/processar-convite-ref.ts`
-
-**Atualizar:**
-- `src/App.tsx`: remover todas rotas `/dashboard/*`, `/install`, `/indicacao/*`, `/atleta/*`, `/atletaid/*`. `RootRoute` passa a redirecionar direto pra Carreira (landing / `/carreira/minha`).
-- `src/pages/RootRoute.tsx`, `src/pages/Auth.tsx`: retirar branches por role escolinha; todos usuários viram fluxo Carreira.
-- `src/contexts/AuthContext.tsx`: remover `escolinhaId`, roles `school`/`teacher`/`guardian` (fica só `admin` + user carreira). `src/types/index.ts` idem.
-- `src/components/layout/CarreiraLayout.tsx`: remover botão "Voltar ao App" e item "App da Escolinha".
-- `public/sitemap.xml`: remover bloco `atletaid.com.br`.
-- `index.html`: se houver título/meta genéricos, ajustar para Carreira ID.
-
-## Fase 2 — Edge functions Atleta ID
-
-**Deletar** (`supabase/functions/`):
-`asaas-check-account-status`, `asaas-configure-webhook`, `asaas-create-subaccount`, `asaas-disable-notifications`, `asaas-send-documents`, `asaas-submit-registration`, `asaas-webhook-handler`, `cancel-amistoso-payment`, `cancel-asaas-payment-only`, `cancel-enrollment-payment`, `cancel-mensalidade-payment`, `check-amistoso-payment`, `check-campeonato-payment`, `check-enrollment-payment`, `check-mensalidade-payment`, `check-pedido-payment`, `create-escolinha-admin`, `create-escolinha-socio`, `create-teacher-with-login`, `generate-amistoso-pix`, `generate-campeonato-pix`, `generate-enrollment-pix`, `generate-mensalidade-pix`, `generate-pedido-pix`, `generate-student-billing-asaas`, `notify-school-indicacao`, `register-student-initial`, `register-student-with-guardian`, `reset-escolinha-password`, `reset-escolinha-socio-password`, `reset-responsavel-password`, `reset-teacher-password`, `seed-test-data`, `send-guardian-credentials`, `send-peneira-push`, `send-teacher-welcome-email`, `whatsapp-bot`.
-
-**Manter:** `receive-atleta-data` (ponte com Atleta ID), todas `carreira-*` / `create-carreira-checkout` / `check-carreira-payment` / `generate-carreira-pix` / `renew-carreira-pix` / `send-carreira-push`, `asaas-webhook` (Carreira), e utilitários compartilhados: `moderate-content`, `share-post`, `change-password`, `delete-account`, `fetch-link-preview`, `send-welcome-email`, `send-password-reset-email`, `update-user-email`, `send-push-notification`, `process-push-reminders`, `run-diagnostico`, `n8n-query`.
-
-Atualizar `supabase/config.toml` removendo blocos das functions deletadas.
-
-## Fase 3 — Levantamento das tabelas antes de dropar
-
-Antes de gerar a migration destrutiva, listo pra você aprovar. Candidatas a drop (Atleta ID puro):
-`escolinhas`, `professores`, `alunos`, `turmas`, `aulas`, `aulas_extras`, `presencas`, `mensalidades`, `enrollments`, `enrollment_payments`, `amistosos`, `amistoso_convocacoes`, `campeonatos`, `campeonato_*`, `eventos`, `evento_*`, `comunicados`, `comunicados_escola`, `comunicado_leituras`, `posts_escola`, `pedidos`, `loja_*`, `peneiras`, `peneira_*`, `indicacoes`, `atividades_externas`, `access_logs`, `pwa_installs`, `conquistas`, `perfil_atleta`, `posts_atleta`, `jornada_*`, `escolinha_cadastro_bancario`.
-
-**Manter:** `carreira_*` (todas), `saas_config`, `user_roles`, tabelas usadas por `receive-atleta-data` (identifico ao rodar Fase 3).
-
-Nesta fase eu ainda **não apago nada** — só te apresento a lista final `KEEP / DROP` lendo `information_schema` + grep de `.from('...')` no código restante, e você aprova.
-
-## Fase 4 — Migration destrutiva + dashboard Supabase
-
-- Uma migration `DROP TABLE ... CASCADE` pra cada tabela aprovada na Fase 3, junto com functions/triggers/enums só delas.
-- Remover secrets órfãos (`ASAAS_API_KEY` root do Atleta, tokens de escolinha etc.) — te aviso quais antes.
-- No painel Supabase (manual, te passo o passo-a-passo): remover domínio `atletaid.com.br` deste projeto Lovable, desconectar webhooks Asaas da conta-mãe Atleta.
+**Decisão registrada:** Jornada Esportiva permanece no Carreira, editável pelo próprio atleta, **sem depender da ponte** com o Atleta ID.
 
 ---
 
-## Detalhes técnicos
+## Bloco A — DROP: tabelas Atleta puras (sem uso em `src/` nem em edge functions Carreira)
 
-- **Ordem obrigatória:** Fases 1 → 2 → 3 → 4. Cada fase é 1 commit revertível pela History.
-- **`receive-atleta-data` preservado:** identifico as colunas/tabelas que ele grava (provavelmente `carreira_perfis` + tabela ponte) antes da Fase 3, pra não dropar por engano.
-- **Auth:** hoje `AuthContext` deriva role de `user_roles` + fallback guardian. Depois da limpeza, quem não for `admin` vira usuário Carreira comum (sem role especial).
-- **Rotas /auth e reset password:** ficam, servem Carreira também.
-- **Sem alteração no fluxo Asaas Carreira** desta limpeza — os ajustes de subconta/valor R$ 12 ficam para um plano separado depois.
+Uma migration única com `DROP TABLE ... CASCADE`:
 
-## Fora do escopo
-- Ajuste de valor R$ 17,90 → R$ 12,00 (plano separado).
-- Refatorar webhook Carreira pra token próprio (plano separado).
-- Migrar/mexer qualquer coisa no Supabase do Atleta ID (`vxzktyklzkfqitptzctk`).
+```
+access_logs, pwa_installs, push_notifications_log,
+mensalidades, presencas, aulas, aulas_extras, turmas, professores,
+responsaveis, crianca_responsavel, crianca_turma,
+escolinha_financeiro, escolinha_cadastro_bancario,
+comunicados, comunicados_escola, comunicado_leituras,
+escola_push_config, pedidos, historico_cobrancas, cobrancas_entrada,
+loja_estoque, loja_pedidos, loja_relatorio,
+enrollments, enrollment_payments,
+amistosos, amistoso_convocacoes,
+campeonatos, campeonato_jogos, campeonato_convocacoes,
+eventos, eventos_esportivos, evento_gols, evento_premiacoes,
+evento_presencas, evento_times, evento_conquistas,
+conquistas, conquistas_coletivas,
+indicacoes, motivos_cancelamento, motivos_aula_extra
+```
+
+Antes de rodar, listo a existência real de cada tabela via `information_schema` (algumas podem já não existir).
+
+## Bloco B — Ponte Atleta → Carreira: remover só o transporte, manter os dados
+
+**Remover:**
+- Edge function `receive-atleta-data` (arquivo + entrada em `supabase/config.toml`)
+- Secret `CARREIRA_SYNC_SECRET` (marcar para deleção manual no painel)
+- Colunas de rastreamento da ponte em `perfil_atleta`: `atleta_id_vinculado`, `atleta_id_sync_at`
+- Componente `MigrarPerfilBanner` se ele existir só pra vincular Atleta ID (confirmo antes)
+
+**Manter as tabelas de dados** (deixam de ser "sync", viram tabelas normais editáveis pelo próprio atleta):
+- `atividades_externas_sync`, `evento_gols_sync`, `evento_premiacoes_sync`
+- `amistoso_convocacoes_sync`, `campeonato_convocacoes_sync`, `conquistas_coletivas_sync`
+- `atividades_externas_whitelist`
+
+Não vou renomear as tabelas agora (evita quebrar 6 hooks). Trato como dívida técnica pra depois; funcionam iguais.
+
+## Bloco C — Jornada Esportiva editável (nova UI de escrita)
+
+Hoje `useCarreiraJornadaData` só **lê** os `_sync`. Preciso adicionar mutations e ligar aos dialogs que já existem:
+
+- Adicionar em `useCarreiraJornadaData`: `createCampeonatoConvocacao`, `updateCampeonatoConvocacao`, `deleteCampeonatoConvocacao`, e o equivalente para `amistoso_convocacoes_sync`, `evento_gols_sync`, `evento_premiacoes_sync`, `conquistas_coletivas_sync`.
+- Cada insert manual gera um `atleta_id_convocacao_id` local (UUID v4) só pra respeitar o unique — flag `origem: 'manual'` ajuda a distinguir de dado sincronizado futuro.
+- Ligar `JornadaCampeonatoFormDialog` e `JornadaJogoFormDialog` (que já existem) à nova API.
+- Ajustar RLS: policies `INSERT/UPDATE/DELETE WHERE user_id = auth.uid()` nas 6 tabelas (hoje só têm SELECT porque só a service_role escrevia).
+- `atividades_externas_sync` já tem CRUD pelo `useAtividadesExternasData` — só verifico policies e adiciono `INSERT/UPDATE/DELETE` do próprio dono, se faltar.
+
+## Bloco D — Cleanup adicional
+
+- `useCarreiraDiagnostico`: remover checagens que consultavam tabelas do Bloco A.
+- `CarreiraAdminDiagnosticoPage`: remover o health-check em `criancas` que faz `insert/delete` de teste (não faz mais sentido).
+- Enums órfãos (`app_role` valores `school|teacher|guardian`, motivos, status Asaas Atleta) e functions Postgres (`get_guardian_escolinha_id`, `has_school_role`, etc.): mapeio e removo em migration separada, se seguros.
+
+---
+
+## Ordem de execução
+
+1. **Ler** `information_schema` p/ confirmar quais tabelas do Bloco A ainda existem.
+2. **Migration 1**: `DROP TABLE CASCADE` (Bloco A).
+3. **Migration 2**: adicionar policies `INSERT/UPDATE/DELETE` nas 6 tabelas do Bloco C; remover colunas `atleta_id_vinculado`/`atleta_id_sync_at` de `perfil_atleta`.
+4. **Deletar** `supabase/functions/receive-atleta-data/` e sua entrada em `supabase/config.toml`.
+5. **Código Bloco C**: mutations no `useCarreiraJornadaData` + wiring dos dialogs existentes.
+6. **Código Bloco D**: cleanup de diagnóstico.
+7. **Migration 3** (opcional, após validar): DROP dos enums/functions órfãs.
+8. **Build check** — se sobrar `.from('tabela_dropada')`, ajusto.
+
+## Fora do escopo desta fase
+- Renomear `*_sync` para nomes finais (dívida técnica).
+- Tocar em qualquer coisa no Supabase do Atleta ID.
+- Storage buckets órfãos e limpeza de secrets do Asaas antigo (fica pra Fase 4).
