@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useJornada } from './useJornada';
 
 
@@ -101,35 +100,7 @@ export interface CarreiraStats {
 export function useCarreiraGols(criancaId: string | null | undefined) {
   return useQuery({
     queryKey: ['carreira-gols', criancaId],
-    queryFn: async () => {
-      if (!criancaId) return [];
-
-      const { data: syncData, error } = await supabase
-        .from('evento_gols_sync')
-        .select('*')
-        .eq('crianca_id', criancaId);
-
-      if (error) throw error;
-
-      return (syncData || []).map((s: any) => ({
-        id: s.id,
-        evento_id: s.evento_id || s.atleta_id_gol_id,
-        crianca_id: s.crianca_id,
-        quantidade: s.quantidade,
-        time: s.time_nome ? { id: s.time_id || s.id, nome: s.time_nome } : undefined,
-        evento: {
-          id: s.evento_id || s.atleta_id_gol_id,
-          nome: s.evento_nome || 'Partida',
-          data: s.evento_data || '',
-          tipo: 'amistoso',
-          adversario: s.evento_adversario || null,
-          local: null,
-          placar_time1: s.evento_placar_time1,
-          placar_time2: s.evento_placar_time2,
-          status: 'finalizado',
-        },
-      } as GolPublico));
-    },
+    queryFn: async () => [] as GolPublico[],
     enabled: !!criancaId,
   });
 }
@@ -137,35 +108,7 @@ export function useCarreiraGols(criancaId: string | null | undefined) {
 export function useCarreiraAmistosos(criancaId: string | null | undefined) {
   return useQuery({
     queryKey: ['carreira-amistosos', criancaId],
-    queryFn: async () => {
-      if (!criancaId) return [];
-
-      const { data: syncData, error } = await supabase
-        .from('amistoso_convocacoes_sync')
-        .select('*')
-        .eq('crianca_id', criancaId);
-
-      if (error) throw error;
-
-      return (syncData || []).map((s: any) => ({
-        id: s.id,
-        evento_id: s.atleta_id_convocacao_id,
-        crianca_id: s.crianca_id,
-        status: s.status || 'confirmado',
-        presente: s.presente,
-        evento: {
-          id: s.atleta_id_convocacao_id,
-          nome: s.evento_nome || 'Amistoso',
-          data: s.evento_data || '',
-          tipo: s.evento_tipo || 'amistoso',
-          adversario: s.evento_adversario || null,
-          local: s.evento_local || null,
-          placar_time1: s.evento_placar_time1,
-          placar_time2: s.evento_placar_time2,
-          status: s.evento_status || 'finalizado',
-        },
-      } as AmistosoConvocacaoPublica));
-    },
+    queryFn: async () => [] as AmistosoConvocacaoPublica[],
     enabled: !!criancaId,
   });
 }
@@ -173,32 +116,7 @@ export function useCarreiraAmistosos(criancaId: string | null | undefined) {
 export function useCarreiraCampeonatos(criancaId: string | null | undefined) {
   return useQuery({
     queryKey: ['carreira-campeonatos', criancaId],
-    queryFn: async () => {
-      if (!criancaId) return [];
-
-      const { data: syncData, error } = await supabase
-        .from('campeonato_convocacoes_sync')
-        .select('*')
-        .eq('crianca_id', criancaId);
-
-      if (error) throw error;
-
-      return (syncData || []).map((s: any) => ({
-        id: s.id,
-        campeonato_id: s.atleta_id_convocacao_id,
-        crianca_id: s.crianca_id,
-        status: s.status || 'confirmado',
-        campeonato: {
-          id: s.atleta_id_convocacao_id,
-          nome: s.campeonato_nome || 'Campeonato',
-          ano: s.campeonato_ano || new Date().getFullYear(),
-          categoria: s.campeonato_categoria || null,
-          status: s.campeonato_status || 'em_andamento',
-          nome_time: s.campeonato_nome_time || null,
-          escolinha: s.escolinha_nome ? { id: s.id, nome: s.escolinha_nome } : undefined,
-        },
-      } as CampeonatoConvocacaoPublica));
-    },
+    queryFn: async () => [] as CampeonatoConvocacaoPublica[],
     enabled: !!criancaId,
   });
 }
@@ -206,29 +124,7 @@ export function useCarreiraCampeonatos(criancaId: string | null | undefined) {
 export function useCarreiraPremiacoes(criancaId: string | null | undefined) {
   return useQuery({
     queryKey: ['carreira-premiacoes', criancaId],
-    queryFn: async () => {
-      if (!criancaId) return [];
-
-      const { data: syncData, error } = await supabase
-        .from('evento_premiacoes_sync')
-        .select('*')
-        .eq('crianca_id', criancaId);
-
-      if (error) throw error;
-
-      return (syncData || []).map((s: any) => ({
-        id: s.id,
-        evento_id: s.evento_id || s.atleta_id_premiacao_id,
-        crianca_id: s.crianca_id,
-        tipo_premiacao: s.tipo_premiacao,
-        evento: {
-          id: s.evento_id || s.atleta_id_premiacao_id,
-          nome: s.evento_nome || 'Evento',
-          data: s.evento_data || '',
-          tipo: 'amistoso',
-        },
-      } as PremiacaoPublica));
-    },
+    queryFn: async () => [] as PremiacaoPublica[],
     enabled: !!criancaId,
   });
 }
@@ -236,26 +132,7 @@ export function useCarreiraPremiacoes(criancaId: string | null | undefined) {
 export function useCarreiraConquistas(criancaId: string | null | undefined) {
   return useQuery({
     queryKey: ['carreira-conquistas', criancaId],
-    queryFn: async () => {
-      if (!criancaId) return [];
-
-      const { data: syncData, error } = await supabase
-        .from('conquistas_coletivas_sync')
-        .select('*')
-        .eq('crianca_id', criancaId);
-
-      if (error) throw error;
-
-      return (syncData || []).map((s: any) => ({
-        id: s.id,
-        evento_id: s.atleta_id_conquista_id,
-        escolinha_id: '',
-        nome_campeonato: s.titulo || s.evento_nome || 'Conquista',
-        colocacao: s.tipo || 'Participação',
-        ano: s.data ? new Date(s.data).getFullYear() : new Date().getFullYear(),
-        categoria: s.descricao || null,
-      } as ConquistaPublica));
-    },
+    queryFn: async () => [] as ConquistaPublica[],
     enabled: !!criancaId,
   });
 }
