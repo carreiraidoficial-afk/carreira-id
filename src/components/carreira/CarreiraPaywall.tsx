@@ -390,10 +390,6 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
     );
   }
 
-  if (step === 'pix' && pixData) {
-    // handled below
-  }
-
   if (step === 'card_form') {
     return (
       <div className="space-y-3 py-2 max-h-[80vh] overflow-y-auto">
