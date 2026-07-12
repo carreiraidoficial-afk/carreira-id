@@ -51,7 +51,7 @@ export default function CarreiraLinkedinPage() {
 
   const isLoading = perfilLoading;
   const planoInfo = PLANOS[plano];
-  const showUpgradeBanner = plano !== 'elite' && perfil && !planoLoading;
+  const showUpgradeBanner = plano === 'base' && perfil && !planoLoading;
 
   return (
     <CarreiraLayout>
