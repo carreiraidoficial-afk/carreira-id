@@ -96,38 +96,46 @@ Deno.serve(async (req) => {
       customerId = customerResult.id;
     }
 
-    // Create payment with notifications disabled
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 1);
+    // Create RECURRING subscription (monthly credit card) with notifications disabled
+    const nextDueDate = new Date();
+    nextDueDate.setDate(nextDueDate.getDate() + 1);
 
-    const paymentResp = await fetch(`${ASAAS_API_URL}/payments`, {
+    const subResp = await fetch(`${ASAAS_API_URL}/subscriptions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'access_token': ASAAS_API_KEY },
       body: JSON.stringify({
         customer: customerId,
-        billingType: 'UNDEFINED',
+        billingType: 'CREDIT_CARD',
+        cycle: 'MONTHLY',
         value: valor,
-        dueDate: dueDate.toISOString().split('T')[0],
+        nextDueDate: nextDueDate.toISOString().split('T')[0],
         description: `Carreira ID Premium - Assinatura mensal`,
         externalReference: `carreira_premium_${user_id}_${crianca_id}`,
-        notificationDisabled: true,
       }),
     });
 
-    const paymentResult = await paymentResp.json();
-    console.log('Payment result:', JSON.stringify(paymentResult));
+    const subResult = await subResp.json();
+    console.log('Subscription result:', JSON.stringify(subResult));
 
-    if (paymentResult.errors) {
+    if (subResult.errors) {
       return new Response(
-        JSON.stringify({ error: paymentResult.errors[0]?.description || 'Erro ao criar cobrança' }),
+        JSON.stringify({ error: subResult.errors[0]?.description || 'Erro ao criar assinatura' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const checkoutUrl = paymentResult.invoiceUrl || null;
-    console.log('Checkout URL:', checkoutUrl);
+    // Fetch first payment from subscription to get the invoice URL for card capture
+    const paymentsResp = await fetch(
+      `${ASAAS_API_URL}/subscriptions/${subResult.id}/payments?limit=1`,
+      { headers: { 'Content-Type': 'application/json', 'access_token': ASAAS_API_KEY } }
+    );
+    const paymentsResult = await paymentsResp.json();
+    const firstPayment = paymentsResult.data?.[0];
+    const checkoutUrl = firstPayment?.invoiceUrl || null;
+    const firstPaymentId = firstPayment?.id || null;
+    console.log('Checkout URL:', checkoutUrl, 'firstPaymentId:', firstPaymentId);
 
-    // Save subscription record as pending
+    // Save subscription record as pending. gateway_subscription_id = Asaas subscription id.
     const expiraEm = new Date();
     expiraEm.setDate(expiraEm.getDate() + 30);
 
@@ -140,7 +148,8 @@ Deno.serve(async (req) => {
         status: 'pendente',
         valor,
         gateway: 'asaas',
-        gateway_subscription_id: paymentResult.id,
+        gateway_subscription_id: subResult.id,
+        metodo_pagamento: 'cartao_credito',
         inicio_em: new Date().toISOString().split('T')[0],
         expira_em: expiraEm.toISOString().split('T')[0],
       });
@@ -149,7 +158,8 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         data: {
-          paymentId: paymentResult.id,
+          subscriptionId: subResult.id,
+          paymentId: firstPaymentId,
           checkoutUrl,
           valor,
         },
