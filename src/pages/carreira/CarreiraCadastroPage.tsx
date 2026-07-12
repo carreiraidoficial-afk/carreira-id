@@ -15,7 +15,7 @@ import { OnboardingTutorial } from '@/components/carreira/OnboardingTutorial';
 
 import { CarreiraPaywall } from '@/components/carreira/CarreiraPaywall';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { PLANOS, CarreiraPlano, normalizePlano } from '@/config/carreiraPlanos';
+import { PLANOS, CarreiraPlano, normalizePlano, PRECO_PREMIUM, TRIAL_DIAS } from '@/config/carreiraPlanos';
 import logoAtletaId from '@/assets/logo-atleta-id.png';
 import logoCarreiraId from '@/assets/logo-carreira-id-dark.png';
 import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
@@ -363,6 +363,33 @@ export default function CarreiraCadastroPage() {
 
         // Show PWA install popup after profile creation
         setProfileSlug(perfilAtleta.slug);
+
+        // Auto-create trial subscription for new athlete (if none exists yet)
+        if (perfilAtleta.crianca_id) {
+          try {
+            const { data: existing } = await supabase
+              .from('carreira_assinaturas')
+              .select('id')
+              .eq('user_id', userId)
+              .eq('crianca_id', perfilAtleta.crianca_id)
+              .limit(1);
+            if (!existing || existing.length === 0) {
+              const trialEnd = new Date();
+              trialEnd.setDate(trialEnd.getDate() + TRIAL_DIAS);
+              await supabase.from('carreira_assinaturas').insert({
+                user_id: userId,
+                crianca_id: perfilAtleta.crianca_id,
+                plano: 'premium',
+                status: 'trial',
+                valor: PRECO_PREMIUM,
+                trial_termina_em: trialEnd.toISOString(),
+                inicio_em: new Date().toISOString(),
+              } as any);
+            }
+          } catch (err) {
+            console.error('Erro ao criar trial:', err);
+          }
+        }
 
         // If user came from a paid plan button, show subscription popup
         if (hasPaidPlan && perfilAtleta.crianca_id) {
