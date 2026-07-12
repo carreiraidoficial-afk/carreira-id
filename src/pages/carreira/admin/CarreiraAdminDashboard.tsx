@@ -102,7 +102,7 @@ function useAdminDashboardData(range: { start: string; end: string }) {
         .select('plano, valor, status')
         .eq('status', 'ativa');
 
-      const byPlan = { base: 0, competidor: 0, elite: 0 };
+      const byPlan = { base: 0, premium: 0 };
       (activeSubs || []).forEach((s: any) => {
         const p = normalizePlano(s.plano);
         byPlan[p] = (byPlan[p] || 0) + 1;
@@ -124,11 +124,11 @@ function useAdminDashboardData(range: { start: string; end: string }) {
         .lte('inicio_em', range.end)
         .eq('status', 'ativa');
 
-      const receitaPorPlano = { competidor: 0, elite: 0 };
+      const receitaPorPlano = { premium: 0 };
       (receitaSubs || []).forEach((s: any) => {
         const p = normalizePlano(s.plano);
-        if (p === 'competidor' || p === 'elite') {
-          receitaPorPlano[p] += Number(s.valor) || 0;
+        if (p === 'premium') {
+          receitaPorPlano.premium += Number(s.valor) || 0;
         }
       });
 
@@ -137,7 +137,7 @@ function useAdminDashboardData(range: { start: string; end: string }) {
         totalAtivas: (activeSubs || []).length,
         cancelamentos: (cancelados || []).length,
         receita: receitaPorPlano,
-        receitaTotal: receitaPorPlano.competidor + receitaPorPlano.elite,
+        receitaTotal: receitaPorPlano.premium,
       };
     },
     staleTime: 30_000,
@@ -146,9 +146,8 @@ function useAdminDashboardData(range: { start: string; end: string }) {
   return { perfisQuery, financeQuery };
 }
 
-function normalizePlano(plano: string): 'base' | 'competidor' | 'elite' {
-  if (plano === 'elite') return 'elite';
-  if (['competidor', 'mensal', 'pro_mensal'].includes(plano)) return 'competidor';
+function normalizePlano(plano: string): 'base' | 'premium' {
+  if (['premium', 'elite', 'competidor', 'mensal', 'pro_mensal'].includes(plano)) return 'premium';
   return 'base';
 }
 
@@ -286,7 +285,7 @@ export default function CarreiraAdminDashboard() {
 
               {/* Assinaturas Ativas */}
               <h3 className="text-sm font-medium text-muted-foreground mb-2">Assinaturas Ativas</h3>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-6">
                 <StatCard
                   label="Total Ativas"
                   value={finance?.totalAtivas ?? 0}
@@ -300,14 +299,8 @@ export default function CarreiraAdminDashboard() {
                   color="text-gray-600 bg-gray-100"
                 />
                 <StatCard
-                  label="⚡ Competidor"
-                  value={finance?.ativas.competidor ?? 0}
-                  icon={<CreditCard className="w-5 h-5" />}
-                  color="text-amber-600 bg-amber-100"
-                />
-                <StatCard
-                  label="👑 Elite"
-                  value={finance?.ativas.elite ?? 0}
+                  label="👑 Premium"
+                  value={finance?.ativas.premium ?? 0}
                   icon={<CreditCard className="w-5 h-5" />}
                   color="text-violet-600 bg-violet-100"
                 />
@@ -315,7 +308,7 @@ export default function CarreiraAdminDashboard() {
 
               {/* Cancelamentos + Receita */}
               <h3 className="text-sm font-medium text-muted-foreground mb-2">Cancelamentos & Receita no período</h3>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <StatCard
                   label="Cancelamentos"
                   value={finance?.cancelamentos ?? 0}
@@ -329,14 +322,8 @@ export default function CarreiraAdminDashboard() {
                   color="text-emerald-600 bg-emerald-100"
                 />
                 <StatCard
-                  label="Receita Competidor"
-                  value={formatCurrency(finance?.receita.competidor ?? 0)}
-                  icon={<DollarSign className="w-5 h-5" />}
-                  color="text-amber-600 bg-amber-100"
-                />
-                <StatCard
-                  label="Receita Elite"
-                  value={formatCurrency(finance?.receita.elite ?? 0)}
+                  label="Receita Premium"
+                  value={formatCurrency(finance?.receita.premium ?? 0)}
                   icon={<DollarSign className="w-5 h-5" />}
                   color="text-violet-600 bg-violet-100"
                 />
