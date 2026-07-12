@@ -427,7 +427,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
               placeholder="0000 0000 0000 0000"
               inputMode="numeric"
               value={cardForm.number}
-              onChange={(e) => setCardForm((f) => ({ ...f, number: formatCardNumber(e.target.value) }))}
+              onChange={(e) => updateCard({ number: formatCardNumber(e.target.value) })}
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -440,7 +440,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
                 onChange={(e) => {
                   const d = e.target.value.replace(/\D/g, '').slice(0, 4);
                   const formatted = d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
-                  setCardForm((f) => ({ ...f, expiry: formatted }));
+                  updateCard({ expiry: formatted });
                 }}
               />
             </div>
@@ -451,7 +451,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
                 inputMode="numeric"
                 maxLength={4}
                 value={cardForm.ccv}
-                onChange={(e) => setCardForm((f) => ({ ...f, ccv: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
+                onChange={(e) => updateCard({ ccv: e.target.value.replace(/\D/g, '').slice(0, 4) })}
               />
             </div>
           </div>
@@ -460,7 +460,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
             <Input
               placeholder="Nome completo"
               value={cardForm.holderName}
-              onChange={(e) => setCardForm((f) => ({ ...f, holderName: e.target.value }))}
+              onChange={(e) => updateCard({ holderName: e.target.value })}
             />
           </div>
           <div className="space-y-1">
@@ -469,7 +469,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
               placeholder="000.000.000-00"
               inputMode="numeric"
               value={cardForm.holderCpf}
-              onChange={(e) => setCardForm((f) => ({ ...f, holderCpf: formatCpf(e.target.value) }))}
+              onChange={(e) => updateCard({ holderCpf: formatCpf(e.target.value) })}
             />
           </div>
           <div className="grid grid-cols-3 gap-2">
@@ -479,7 +479,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
                 placeholder="00000-000"
                 inputMode="numeric"
                 value={cardForm.cep}
-                onChange={(e) => setCardForm((f) => ({ ...f, cep: formatCep(e.target.value) }))}
+                onChange={(e) => updateCard({ cep: formatCep(e.target.value) })}
               />
             </div>
             <div className="space-y-1">
@@ -487,7 +487,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
               <Input
                 placeholder="123"
                 value={cardForm.addressNumber}
-                onChange={(e) => setCardForm((f) => ({ ...f, addressNumber: e.target.value.slice(0, 10) }))}
+                onChange={(e) => updateCard({ addressNumber: e.target.value.slice(0, 10) })}
               />
             </div>
           </div>
@@ -497,14 +497,25 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
               placeholder="(00) 00000-0000"
               inputMode="tel"
               value={cardForm.phone}
-              onChange={(e) => setCardForm((f) => ({ ...f, phone: formatPhone(e.target.value) }))}
+              onChange={(e) => updateCard({ phone: formatPhone(e.target.value) })}
             />
           </div>
         </div>
 
+        {cardError && (
+          <div
+            ref={cardErrorRef}
+            role="alert"
+            className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            <span>{cardError}</span>
+          </div>
+        )}
+
         <Button
           type="button"
-          className="w-full text-white gap-2"
+          className="w-full text-white gap-2 mb-4"
           style={{ backgroundColor: planInfo.cor }}
           disabled={cardSubmitting}
           onClick={submitCardSubscription}
