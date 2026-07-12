@@ -29,15 +29,29 @@ Deno.serve(async (req) => {
 
     console.log('Checking Carreira payment:', payment_id, 'subscription:', subscription_id);
 
-    // Check payment status with Asaas Production
-    const response = await fetch(`${ASAAS_API_URL}/payments/${payment_id}`, {
-      headers: { 'Content-Type': 'application/json', 'access_token': ASAAS_API_KEY },
-    });
+    // Try to detect whether payment_id is actually an Asaas subscription id (sub_...)
+    // If so, resolve the latest payment of that subscription.
+    let paymentData: any = null;
+    let asaasSubscriptionId: string | null = null;
 
-    const paymentData = await response.json();
+    if (typeof payment_id === 'string' && payment_id.startsWith('sub_')) {
+      asaasSubscriptionId = payment_id;
+      const listResp = await fetch(
+        `${ASAAS_API_URL}/subscriptions/${payment_id}/payments?limit=1`,
+        { headers: { 'Content-Type': 'application/json', 'access_token': ASAAS_API_KEY } }
+      );
+      const listData = await listResp.json();
+      paymentData = listData.data?.[0] || {};
+    } else {
+      const response = await fetch(`${ASAAS_API_URL}/payments/${payment_id}`, {
+        headers: { 'Content-Type': 'application/json', 'access_token': ASAAS_API_KEY },
+      });
+      paymentData = await response.json();
+      if (paymentData?.subscription) asaasSubscriptionId = paymentData.subscription;
+    }
     console.log('Payment status:', JSON.stringify(paymentData));
 
-    if (paymentData.errors) {
+    if (paymentData?.errors) {
       return new Response(
         JSON.stringify({ error: 'Erro ao verificar pagamento' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -45,7 +59,7 @@ Deno.serve(async (req) => {
     }
 
     const paidStatuses = ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH'];
-    const isPaid = paidStatuses.includes(paymentData.status);
+    const isPaid = paidStatuses.includes(paymentData?.status);
 
     if (isPaid) {
       const expiraEm = new Date();
@@ -68,10 +82,12 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Match by either the payment_id passed in (PIX flow) or the Asaas subscription id (card flow)
+      const matchIds = [payment_id, asaasSubscriptionId].filter(Boolean) as string[];
       const { data: pendingSub } = await supabase
         .from('carreira_assinaturas')
         .select('id')
-        .eq('gateway_subscription_id', payment_id)
+        .in('gateway_subscription_id', matchIds)
         .eq('status', 'pendente')
         .maybeSingle();
 
@@ -95,7 +111,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ data: { isPaid, status: paymentData.status } }),
+      JSON.stringify({ data: { isPaid, status: paymentData?.status } }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
