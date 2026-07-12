@@ -5,30 +5,6 @@ import type { UserRole } from '@/types';
 import { AuthContext, type AuthContextType, type AuthUser } from './auth-context';
 import { useQueryClient } from '@tanstack/react-query';
 
-// Função para registrar acesso (definida aqui para evitar dependência circular)
-async function registrarAcesso(
-  userId: string,
-  userRole: string,
-  escolinhaId?: string | null
-) {
-  try {
-    const { error } = await supabase
-      .from('acessos_log')
-      .insert({
-        user_id: userId,
-        user_role: userRole,
-        escolinha_id: escolinhaId || null,
-        user_agent: navigator.userAgent,
-      });
-
-    if (error) {
-      console.error('Erro ao registrar acesso:', error);
-    }
-  } catch (err) {
-    console.error('Erro ao registrar acesso:', err);
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -67,47 +43,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
-      // Se houver múltiplas roles, aplica prioridade para evitar travar no .single()
-      const rolePriority: UserRole[] = ['admin', 'school', 'teacher', 'guardian'];
+      // Só admin é role privilegiada no Carreira ID; demais são usuários comuns.
+      const rolePriority: UserRole[] = ['admin', 'guardian'];
       const roleList = (roleData ?? []).map((item) => item.role as UserRole);
       const userRole = rolePriority.find((role) => roleList.includes(role)) || 'guardian';
-
-      let escolinhaId: string | undefined;
-      let escolinhaNome: string | undefined;
-
-      // Se for escola, buscar a escolinha
-      if (userRole === 'school') {
-        // Primeiro tenta como admin principal
-        const { data: escolinhaAdmin } = await supabase
-          .from('escolinhas')
-          .select('id, nome')
-          .eq('admin_user_id', userId)
-          .single();
-
-        if (escolinhaAdmin) {
-          escolinhaId = escolinhaAdmin.id;
-          escolinhaNome = escolinhaAdmin.nome;
-        } else {
-          // Se não encontrou como admin, tenta como sócio
-          const { data: escolinhaSocio } = await supabase
-            .from('escolinhas')
-            .select('id, nome')
-            .eq('socio_user_id', userId)
-            .single();
-          escolinhaId = escolinhaSocio?.id;
-          escolinhaNome = escolinhaSocio?.nome;
-        }
-      }
-
-      // Se for professor, buscar a escolinha
-      if (userRole === 'teacher') {
-        const { data: professorData } = await supabase
-          .from('professores')
-          .select('escolinha_id')
-          .eq('user_id', userId)
-          .single();
-        escolinhaId = professorData?.escolinha_id;
-      }
 
       console.log('[AuthContext] fetchUserData success:', userRole, profileData.nome);
       console.log('[AuthContext] fetchUserData duration ms:', Math.round(performance.now() - t0));
@@ -118,8 +57,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: userRole as UserRole,
         name: profileData.nome,
         avatarUrl: profileData.avatar_url,
-        escolinhaId,
-        escolinhaNome,
         passwordNeedsChange: profileData.password_needs_change || false,
       };
     } catch (error) {
@@ -269,11 +206,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           sessionRef.current = data.session;
           setIsLoading(false);
           fetchingRef.current = false;
-          
-          // Fire-and-forget: registra acesso sem bloquear
-          if (userData) {
-            registrarAcesso(userId, userData.role, userData.escolinhaId || null).catch(() => {});
-          }
         } catch (fetchErr) {
           console.error('[AuthContext] login: fetchUserData failed:', fetchErr);
           setIsLoading(false);
