@@ -85,16 +85,14 @@ export default function CarreiraLinkedinPage() {
           <div
             className="flex items-center justify-between gap-3 p-3 rounded-lg border"
             style={{
-              borderColor: `${PLANOS[plano === 'base' ? 'competidor' : 'elite'].cor}30`,
-              backgroundColor: `${PLANOS[plano === 'base' ? 'competidor' : 'elite'].cor}08`,
+              borderColor: `${PLANOS.premium.cor}30`,
+              backgroundColor: `${PLANOS.premium.cor}08`,
             }}
           >
             <div className="flex items-center gap-2 text-sm">
-              {plano === 'base' ? <Zap className="w-4 h-4 text-amber-500" /> : <Crown className="w-4 h-4 text-violet-500" />}
+              <Crown className="w-4 h-4 text-violet-500" />
               <span>
-                {plano === 'base'
-                  ? 'Desbloqueie mais recursos com o plano Competidor'
-                  : 'Maximize sua visibilidade com o plano Elite'}
+                Comece agora seus <strong>7 dias grátis</strong> do Premium — depois R$ 12/mês
               </span>
             </div>
             <Button
