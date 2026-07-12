@@ -1,69 +1,29 @@
-# Plano: Cartão recorrente real + limpeza Asaas
+## Objetivo
+Fazer o botão "Assinar por R$ 12,00/mês" dar sequência de forma clara e mostrar qualquer erro (validação local ou recusa do Asaas) dentro do próprio formulário.
 
-## 1. Ajustar valor oficial
-- Garantir `saas_config.carreira_valor_premium = 12.00` (via insert tool).
+## O que muda no `CarreiraPaywall.tsx` (etapa `card_form`)
 
-## 2. Nova tabela / colunas
-Migration:
-- Adicionar em `carreira_assinaturas`:
-  - `gateway_card_token TEXT` (token retornado pela Asaas)
-  - `card_last4 TEXT`
-  - `card_brand TEXT`
+1. **Novo estado local** `cardError: string | null` (limpa sempre que o usuário edita qualquer campo do cartão).
+2. **Trocar todos os `toast.error(...)` do `submitCardSubscription` por `setCardError(...)`** (validações + erro da Edge Function + erro genérico do catch). Remover os toasts desse fluxo — vira exclusivamente inline conforme sua escolha.
+3. **Caixa vermelha inline** renderizada logo acima do botão "Assinar…":
+   - Fundo `bg-destructive/10`, borda `border-destructive/40`, texto `text-destructive`, ícone de alerta.
+   - Só aparece quando `cardError` tem conteúdo.
+   - Ao aparecer, faz `scrollIntoView({ block: 'center' })` para garantir visibilidade acima do teclado no celular.
+4. **Log de diagnóstico**: `console.log('[card-submit]', { step, hasUser, hasCrianca, validationOk })` no início de `submitCardSubscription` para conseguirmos ver no console se o botão está executando quando você tocar.
+5. **Ajuste de layout do botão**: adicionar `pb-4` no container e remover barreira do teclado — o botão hoje fica no final do `overflow-y-auto`; garantir que ele role até a visualização quando o formulário tem foco.
 
-## 3. Nova edge function `create-carreira-card-subscription`
-Recebe do frontend:
-```
-user_id, crianca_id, cpf, nome, email,
-card: { holderName, number, expiryMonth, expiryYear, ccv },
-holderInfo: { name, email, cpfCnpj, postalCode, addressNumber, phone },
-remoteIp
-```
-Fluxo:
-1. Valida sessão + assinatura ativa (mesma lógica atual).
-2. Busca/cria customer na Asaas (já existe).
-3. `POST /subscriptions` com:
-   - `billingType: 'CREDIT_CARD'`
-   - `cycle: 'MONTHLY'`, `value: 12.00`
-   - `nextDueDate: hoje` (não +1)
-   - `creditCard`, `creditCardHolderInfo`, `remoteIp`
-   - `notificationDisabled: true`
-4. Se Asaas retornar erro de autorização, devolve `refusalReason` legível.
-5. Se sucesso: salva assinatura como `ativa`, com `gateway_card_token`, `card_last4`, `card_brand`, `expira_em = hoje + 30d`.
+## Sobre o motivo de "não dar sequência"
+Provável causa: um `toast.error` disparado por validação (ex.: CVV, telefone) que fica escondido atrás do teclado do Android — o botão executa, mas você não vê feedback. Ao trocar para caixa inline visível dentro do próprio formulário, o problema some por definição.
 
-## 4. Nova tela `CarreiraCartaoPage` (`/carreira/planos/cartao`)
-- Formulário: número, validade (MM/AA), CVV, nome do titular, CPF do titular, CEP, número do endereço, telefone.
-- Máscaras e validações (CPF, cartão via Luhn).
-- Captura `remoteIp` no backend (`req.headers.get('x-forwarded-for')`).
-- Botão "Assinar R$ 12,00/mês".
-- Ao sucesso: toast + redirect para `/carreira/perfil`.
-- Ao erro: exibe mensagem específica (recusa do banco, CPF divergente, etc.).
+Se, mesmo assim, o clique não disparar nada, o log `[card-submit]` no console vai confirmar (ou negar) que o `onClick` foi acionado, e o próximo passo será verificar `disabled={cardSubmitting}` travado por render anterior.
 
-## 5. `CarreiraPlanosPage` — trocar destino do botão "Cartão"
-Hoje chama `create-carreira-checkout` e abre `invoiceUrl` da Asaas. Passa a navegar para `/carreira/planos/cartao` (form interno).
+## CEP e Número
+Mantidos exatamente como estão — a API `/subscriptions` da Asaas com `billingType: CREDIT_CARD` exige `creditCardHolderInfo.postalCode` e `addressNumber` para autorização/antifraude. Nenhuma alteração nesses campos.
 
-`create-carreira-checkout` fica para compatibilidade (não removo agora).
+## Fora de escopo
+- Edge Function `create-carreira-card-subscription` não muda.
+- Fluxo PIX, webhook, cleanup não mudam.
+- Nenhuma migration.
 
-## 6. Logar recusa no webhook
-`asaas-webhook`: ao receber `PAYMENT_REFUSED` ou payment status `REFUSED`, gravar `refusalReason` em `carreira_assinaturas.observacoes` (nova coluna TEXT nullable) e marcar `status='pendente'`.
-
-## 7. Limpeza William Nogueira + duplicatas
-Edge function utilitária `cleanup-asaas-duplicates` (one-shot, chamada por mim via curl):
-- Para cada `customer` Asaas com múltiplas subscriptions ativas do mesmo `externalReference`, mantém a mais recente e cancela as outras via `DELETE /subscriptions/{id}`.
-- Marca as linhas correspondentes em `carreira_assinaturas` como `cancelada`.
-
-## 8. Reset do teste `marcos.silva.teste2`
-- Cancelar todas as assinaturas Asaas dele (via mesma função de cleanup ou manualmente).
-- `UPDATE carreira_assinaturas SET status='cancelada' WHERE user_id=<marcos>`.
-- Você refaz o fluxo pelo app usando a nova tela de cartão.
-
-## Ordem de execução
-1. Migration (colunas novas + observacoes)
-2. Insert `carreira_valor_premium = 12.00`
-3. Edge function `create-carreira-card-subscription` + `cleanup-asaas-duplicates`
-4. Página `CarreiraCartaoPage` + rota + ajuste em `CarreiraPlanosPage`
-5. Ajuste no `asaas-webhook`
-6. Deploy → rodo cleanup do William Nogueira e reset do marcos
-7. Você testa o cartão real
-
-## Aviso PCI
-O cartão vai direto para a Asaas via nossa edge function server-to-server (a Asaas é PCI-compliant e aceita esse formato). Não persistimos número/CVV em lugar nenhum — só o `creditCardToken` que a Asaas devolve.
+## Arquivo tocado
+- `src/components/carreira/CarreiraPaywall.tsx`
