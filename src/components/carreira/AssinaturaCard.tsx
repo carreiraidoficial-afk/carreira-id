@@ -3,8 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, QrCode, Crown, Trophy, Zap, ArrowUp, ArrowDown, Loader2, CheckCircle2, XCircle } from 'lucide-react';
-import { PLANOS, CarreiraPlano, planoNivel } from '@/config/carreiraPlanos';
+import { CreditCard, QrCode, Crown, Zap, ArrowUp, ArrowDown, Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { PLANOS, CarreiraPlano, planoNivel, normalizePlano } from '@/config/carreiraPlanos';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -24,25 +24,18 @@ interface Assinatura {
   valor: number | null;
   inicio_em: string;
   expira_em: string | null;
+  trial_termina_em?: string | null;
 }
 
 const PLANO_ICONS: Record<string, React.ReactNode> = {
   base: <Zap className="w-4 h-4" />,
-  competidor: <Trophy className="w-4 h-4" />,
-  elite: <Crown className="w-4 h-4" />,
+  premium: <Crown className="w-4 h-4" />,
 };
 
 const METODO_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
   cartao_credito: { label: 'Cartão de Crédito', icon: <CreditCard className="w-3.5 h-3.5" /> },
   pix: { label: 'PIX', icon: <QrCode className="w-3.5 h-3.5" /> },
 };
-
-function normalizePlano(raw: string): CarreiraPlano {
-  if (raw === 'mensal' || raw === 'pro_mensal') return 'competidor';
-  if (raw === 'elite') return 'elite';
-  if (raw === 'competidor') return 'competidor';
-  return 'base';
-}
 
 export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: AssinaturaCardProps) {
   const navigate = useNavigate();
@@ -54,10 +47,10 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
     queryFn: async (): Promise<Assinatura | null> => {
       const { data, error } = await supabase
         .from('carreira_assinaturas')
-        .select('id, plano, status, metodo_pagamento, valor, inicio_em, expira_em')
+        .select('id, plano, status, metodo_pagamento, valor, inicio_em, expira_em, trial_termina_em')
         .eq('user_id', userId)
         .eq('crianca_id', criancaId)
-        .eq('status', 'ativa')
+        .in('status', ['ativa', 'trial'])
         .order('created_at', { ascending: false })
         .limit(1);
       if (error) throw error;
@@ -146,13 +139,22 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
     },
   });
 
-  const currentPlano = assinatura ? normalizePlano(assinatura.plano) : 'base';
+  const isTrialActive = !!assinatura && assinatura.status === 'trial'
+    && !!assinatura.trial_termina_em
+    && new Date(assinatura.trial_termina_em) > new Date();
+  const currentPlano: CarreiraPlano = assinatura
+    ? (isTrialActive ? 'premium' : (assinatura.status === 'ativa' ? normalizePlano(assinatura.plano) : 'base'))
+    : 'base';
   const currentPlanoInfo = PLANOS[currentPlano];
   const metodo = assinatura?.metodo_pagamento ? METODO_LABELS[assinatura.metodo_pagamento] : null;
   const currentLevel = planoNivel(currentPlano);
 
   // Available plan changes
-  const availablePlans = (['base', 'competidor', 'elite'] as CarreiraPlano[]).filter(p => p !== currentPlano);
+  const availablePlans = (['base', 'premium'] as CarreiraPlano[]).filter(p => p !== currentPlano);
+
+  const diasRestantesTrial = isTrialActive && assinatura?.trial_termina_em
+    ? Math.max(0, Math.ceil((new Date(assinatura.trial_termina_em).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
 
   if (isLoading) {
     return (
@@ -186,10 +188,19 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
             </div>
           </div>
           <Badge className="text-[10px]" style={{ backgroundColor: `${currentPlanoInfo.cor}20`, color: currentPlanoInfo.cor, border: `1px solid ${currentPlanoInfo.cor}40` }}>
-            <CheckCircle2 className="w-3 h-3 mr-0.5" />
-            Ativo
+            {isTrialActive ? (
+              <><Clock className="w-3 h-3 mr-0.5" /> Trial</>
+            ) : (
+              <><CheckCircle2 className="w-3 h-3 mr-0.5" /> Ativo</>
+            )}
           </Badge>
         </div>
+
+        {isTrialActive && (
+          <div className="mt-2 pt-2 border-t text-xs" style={{ borderColor: `${currentPlanoInfo.cor}20`, color: currentPlanoInfo.cor }}>
+            <strong>{diasRestantesTrial} {diasRestantesTrial === 1 ? 'dia restante' : 'dias restantes'}</strong> — depois, R$ 12,00/mês para continuar.
+          </div>
+        )}
 
         {/* Payment method */}
         {metodo && (
