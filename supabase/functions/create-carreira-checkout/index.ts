@@ -111,6 +111,7 @@ Deno.serve(async (req) => {
         nextDueDate: nextDueDate.toISOString().split('T')[0],
         description: `Carreira ID Premium - Assinatura mensal`,
         externalReference: `carreira_premium_${user_id}_${crianca_id}`,
+        notificationDisabled: true,
       }),
     });
 
