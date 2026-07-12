@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Lock, Star, Zap, Trophy, Copy, CheckCircle, Loader2, CreditCard, QrCode, Crown } from 'lucide-react';
 import { CarreiraLimitResult } from '@/hooks/useCarreiraFreemium';
-import { PLANOS, CarreiraPlano } from '@/config/carreiraPlanos';
+import { PLANOS, CarreiraPlano, normalizePlano } from '@/config/carreiraPlanos';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
@@ -38,8 +38,8 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
   const [step, setStep] = useState<PaywallStep>('info');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cartao');
   const [cpfInput, setCpfInput] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState<CarreiraPlano>(
-    (planoSelecionado as CarreiraPlano) || 'competidor'
+  const [selectedPlan] = useState<CarreiraPlano>(
+    planoSelecionado ? normalizePlano(planoSelecionado) : 'premium'
   );
   const [pixData, setPixData] = useState<{
     paymentId: string;
@@ -59,7 +59,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
   const cpfDigits = cpfInput.replace(/\D/g, '');
   const cpfValid = cpfDigits.length === 11;
   const planInfo = PLANOS[selectedPlan];
-  const isElite = selectedPlan === 'elite';
+  const isPremium = selectedPlan === 'premium';
 
   const generatePix = async () => {
     const cleanCpf = cpfInput.replace(/\D/g, '');
@@ -366,31 +366,15 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
         </div>
       )}
 
-      {/* Plan selector */}
-      <div className="grid grid-cols-2 gap-2">
-        {(['competidor', 'elite'] as CarreiraPlano[]).map((p) => {
-          const info = PLANOS[p];
-          const isSelected = selectedPlan === p;
-          return (
-            <button
-              key={p}
-              onClick={() => setSelectedPlan(p)}
-              className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all ${
-                isSelected ? 'ring-1' : 'opacity-70 hover:opacity-100'
-              }`}
-              style={{
-                borderColor: isSelected ? info.cor : 'transparent',
-                backgroundColor: isSelected ? `${info.cor}08` : undefined,
-              }}
-            >
-              <span className="text-lg">{info.icone}</span>
-              <span className="text-sm font-bold">{info.nome}</span>
-              <span className="text-xs font-semibold" style={{ color: info.cor }}>
-                R$ {info.preco.toFixed(2).replace('.', ',')}/mês
-              </span>
-            </button>
-          );
-        })}
+      {/* Único plano pago: Premium */}
+      <div className="rounded-lg border-2 p-3 text-center" style={{ borderColor: `${planInfo.cor}40`, backgroundColor: `${planInfo.cor}08` }}>
+        <div className="flex items-center justify-center gap-2">
+          <span className="text-lg">{planInfo.icone}</span>
+          <span className="text-sm font-bold" style={{ color: planInfo.cor }}>Plano {planInfo.nome}</span>
+        </div>
+        <p className="text-xs mt-1" style={{ color: planInfo.cor }}>
+          R$ {planInfo.preco.toFixed(2).replace('.', ',')}/mês
+        </p>
       </div>
 
       {/* Upgrade Card */}
@@ -398,7 +382,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
         <CardContent className="pt-4 pb-4 space-y-3">
           <div className="flex items-center gap-2">
             <Badge style={{ backgroundColor: planInfo.cor }} className="text-white">
-              {isElite ? <Crown className="w-3 h-3 mr-1" /> : <Star className="w-3 h-3 mr-1" />}
+              {isPremium ? <Crown className="w-3 h-3 mr-1" /> : <Star className="w-3 h-3 mr-1" />}
               {planInfo.nome}
             </Badge>
           </div>

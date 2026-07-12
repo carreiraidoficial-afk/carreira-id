@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Crown, Zap, ArrowLeft, Lock } from 'lucide-react';
-import { CarreiraPlano, PLANOS, planoNivel } from '@/config/carreiraPlanos';
+import { Check, Crown, Zap, ArrowLeft, Lock, Sparkles } from 'lucide-react';
+import { CarreiraPlano, PLANOS, planoNivel, TRIAL_DIAS } from '@/config/carreiraPlanos';
 import { useCarreiraPlano } from '@/hooks/useCarreiraPlano';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -38,7 +38,7 @@ export default function CarreiraPlanos() {
   const { plano: planoAtual } = useCarreiraPlano(criancaId);
   const [selectedPlano, setSelectedPlano] = useState<CarreiraPlano | null>(null);
 
-  const planos: CarreiraPlano[] = ['base', 'competidor', 'elite'];
+  const planos: CarreiraPlano[] = ['base', 'premium'];
 
   return (
     <div className="min-h-screen bg-[hsl(220,15%,6%)] text-white">
@@ -80,13 +80,13 @@ export default function CarreiraPlanos() {
         </div>
 
         {/* Plan cards */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 max-w-2xl mx-auto">
           {planos.map((plano) => {
             const info = PLANOS[plano];
             const isAtual = plano === planoAtual;
             const isUpgrade = planoNivel(plano) > planoNivel(planoAtual);
             const isDowngrade = planoNivel(plano) < planoNivel(planoAtual);
-            const isPopular = plano === 'competidor';
+            const isPopular = plano === 'premium';
 
             return (
               <div
@@ -106,8 +106,8 @@ export default function CarreiraPlanos() {
                 }}
               >
                 {isPopular && (
-                  <div className="absolute top-0 right-0 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-black rounded-bl-lg bg-amber-500">
-                    Popular
+                  <div className="absolute top-0 right-0 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white rounded-bl-lg" style={{ backgroundColor: info.cor }}>
+                    {TRIAL_DIAS} dias grátis
                   </div>
                 )}
                 {isAtual && (
@@ -188,11 +188,7 @@ export default function CarreiraPlanos() {
                           setSelectedPlano(plano);
                         }}
                       >
-                        {plano === 'elite' ? (
-                          <Crown className="w-4 h-4" />
-                        ) : (
-                          <Zap className="w-4 h-4" />
-                        )}
+                        {plano === 'premium' ? <Crown className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
                         {isUpgrade ? 'Fazer upgrade' : 'Assinar'}
                       </Button>
                     )}

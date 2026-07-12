@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export interface CarreiraLimitResult {
   status: 'allowed' | 'limit_reached' | 'subscribed';
   source: 'legacy_access' | 'carreira_subscription' | 'freemium';
-  plano?: 'base' | 'competidor' | 'elite';
+  plano?: 'base' | 'premium';
   count: number;
   limit: number;
 }

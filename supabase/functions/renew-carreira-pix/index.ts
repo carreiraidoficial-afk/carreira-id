@@ -88,8 +88,7 @@ Deno.serve(async (req) => {
         }
 
         const customerId = searchResult.data[0].id;
-        const valor = sub.valor || 17.90;
-        const planoLabel = (sub.plano || 'competidor').charAt(0).toUpperCase() + (sub.plano || 'competidor').slice(1);
+        const valor = 12.0; // Preço fixo Premium
 
         // Create new PIX payment with notifications disabled
         const dueDate = new Date(sub.expira_em!);
@@ -103,8 +102,8 @@ Deno.serve(async (req) => {
             billingType: 'PIX',
             value: valor,
             dueDate: dueDateStr,
-            description: `Carreira ID ${planoLabel} - Renovação mensal`,
-            externalReference: `carreira_renew_${sub.plano}_${sub.user_id}_${sub.crianca_id}`,
+            description: `Carreira ID Premium - Renovação mensal`,
+            externalReference: `carreira_renew_premium_${sub.user_id}_${sub.crianca_id}`,
             notificationDisabled: true,
           }),
         });

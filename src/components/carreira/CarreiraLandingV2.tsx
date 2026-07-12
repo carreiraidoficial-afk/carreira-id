@@ -566,7 +566,7 @@ export function CarreiraLandingV2() {
           <h2 className="mt-6 text-3xl sm:text-4xl md:text-5xl font-extrabold">
             Comece gratuito. <span className="text-orange-400">Evolua quando quiser</span>.
           </h2>
-          <div className="grid md:grid-cols-3 gap-5 mt-14">
+          <div className="grid md:grid-cols-2 gap-5 mt-14 max-w-3xl mx-auto">
             {/* Base */}
             <div className="bg-[#1a2332] border border-[#2a3a4e] rounded-2xl p-7 text-left flex flex-col">
               <div className="flex items-center gap-2">
@@ -602,64 +602,31 @@ export function CarreiraLandingV2() {
               </Link>
             </div>
 
-            {/* Competidor */}
-            <div className="bg-gradient-to-b from-amber-900/40 to-[#1a2332] border-2 border-amber-500/40 rounded-2xl p-7 text-left flex flex-col relative overflow-hidden">
-              <div className="absolute top-3 right-3">
-                <span className="text-[10px] font-bold bg-amber-500 text-black px-3 py-1 rounded-full uppercase tracking-wider">Popular</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🏆</span>
-                <h3 className="text-amber-400 font-bold text-xl">Competidor</h3>
-              </div>
-              <p className="text-gray-400 text-sm mt-1">Acelere sua carreira esportiva</p>
-              <p className="mt-4">
-                <span className="text-sm text-gray-400">R$</span>
-                <span className="text-3xl font-extrabold text-white mx-0.5">17,90</span>
-                <span className="text-sm text-gray-400">/mês</span>
-              </p>
-              <div className="border-t border-amber-500/20 my-4" />
-              <ul className="space-y-2.5 flex-1">
-                {[
-                  'Tudo do Base',
-                  'Registro ampliado da Jornada (3/mês)',
-                  'Histórico de carreira — até 3 registros/mês',
-                  'Publicações com vídeos de até 20 segundos',
-                  'Perfil esportivo mais completo',
-                ].map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
-                    <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" /> {f}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                to={`${cadastroLink}?plano=competidor`}
-                className="mt-6 block text-center bg-amber-500 hover:bg-amber-600 text-black font-semibold py-3 rounded-xl transition"
-              >
-                Assinar Competidor
-              </Link>
-            </div>
-
-            {/* Elite */}
+            {/* Premium */}
             <div className="bg-gradient-to-b from-purple-900/40 to-[#1a2332] border border-purple-500/30 rounded-2xl p-7 text-left flex flex-col relative overflow-hidden">
+              <div className="absolute top-3 right-3">
+                <span className="text-[10px] font-bold bg-purple-500 text-white px-3 py-1 rounded-full uppercase tracking-wider">7 dias grátis</span>
+              </div>
               <div className="flex items-center gap-2">
                 <span className="text-2xl">👑</span>
-                <h3 className="text-purple-400 font-bold text-xl">Elite</h3>
+                <h3 className="text-purple-400 font-bold text-xl">Premium</h3>
               </div>
-              <p className="text-gray-400 text-sm mt-1">Máxima visibilidade e recursos</p>
+              <p className="text-gray-400 text-sm mt-1">Acesso completo à plataforma</p>
               <p className="mt-4">
                 <span className="text-sm text-gray-400">R$</span>
-                <span className="text-3xl font-extrabold text-white mx-0.5">29,90</span>
+                <span className="text-3xl font-extrabold text-white mx-0.5">12,00</span>
                 <span className="text-sm text-gray-400">/mês</span>
               </p>
+              <p className="text-xs text-purple-300 mt-1">Experimente 7 dias grátis — sem cartão</p>
               <div className="border-t border-purple-500/20 my-4" />
               <ul className="space-y-2.5 flex-1">
                 {[
-                  'Tudo do Competidor',
+                  'Tudo do Base',
                   'Jornada Esportiva ilimitada',
                   'Vídeos de até 1 minuto',
                   'Vídeos do YouTube (highlights)',
                   'Prioridade nas buscas',
-                  'Selo de perfil Elite',
+                  'Selo Premium',
                   'Destaque em listagens',
                   'Estatísticas avançadas',
                   'Ver quem visualizou o perfil',
@@ -671,10 +638,10 @@ export function CarreiraLandingV2() {
                 ))}
               </ul>
               <Link
-                to={`${cadastroLink}?plano=elite`}
+                to={`${cadastroLink}?plano=premium`}
                 className="mt-6 block text-center bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-xl transition"
               >
-                Assinar Elite
+                Começar 7 dias grátis
               </Link>
             </div>
           </div>

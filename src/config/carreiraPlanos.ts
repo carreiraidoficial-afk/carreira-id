@@ -1,4 +1,14 @@
-export type CarreiraPlano = 'base' | 'competidor' | 'elite';
+export type CarreiraPlano = 'base' | 'premium';
+
+/** Legacy plan strings that map to the new Premium plan */
+const LEGACY_PREMIUM = new Set(['premium', 'competidor', 'elite', 'mensal', 'pro_mensal']);
+
+/** Normalize any plan string (legacy or new) to a CarreiraPlano */
+export function normalizePlano(raw: string | null | undefined): CarreiraPlano {
+  if (!raw) return 'base';
+  if (LEGACY_PREMIUM.has(raw)) return 'premium';
+  return 'base';
+}
 
 export interface PlanoLimites {
   jornada_mes: number;
@@ -24,6 +34,11 @@ export interface PlanoInfo {
   limites: PlanoLimites;
   destaques: string[];
 }
+
+/** Preço fixo do plano Premium (usado em toda a UI). */
+export const PRECO_PREMIUM = 12.0;
+/** Duração do trial gratuito, em dias. */
+export const TRIAL_DIAS = 7;
 
 export const PLANOS: Record<CarreiraPlano, PlanoInfo> = {
   base: {
@@ -57,40 +72,12 @@ export const PLANOS: Record<CarreiraPlano, PlanoInfo> = {
       'Participação na Liga de Conexões do Atleta',
     ],
   },
-  competidor: {
-    nome: 'Competidor',
-    preco: 17.90,
-    cor: '#f59e0b',
-    icone: '🏆',
-    descricao: 'Acelere sua carreira esportiva',
-    limites: {
-      jornada_mes: 3,
-      carreira_mes: 3,
-      posts_dia: 3,
-      video_seg: 20,
-      video_max_mb: 20,
-      youtube: false,
-      selo_elite: false,
-      ver_views: false,
-      prioridade_busca: false,
-      destaque_listagem: false,
-      stats_avancadas: false,
-      liga_conexoes: true,
-    },
-    destaques: [
-      'Tudo do Base',
-      'Registro ampliado da Jornada (3 registros por mês)',
-      'Histórico de carreira (Escolinhas e Clubes) — até 3 registros por mês',
-      'Publicações com mais recursos (texto, foto e vídeos de até 20 segundos)',
-      'Perfil esportivo mais completo (mais campos de informação e histórico)',
-    ],
-  },
-  elite: {
-    nome: 'Elite',
-    preco: 29.90,
+  premium: {
+    nome: 'Premium',
+    preco: PRECO_PREMIUM,
     cor: '#8b5cf6',
     icone: '👑',
-    descricao: 'Máxima visibilidade e recursos',
+    descricao: 'Acesso completo à plataforma',
     limites: {
       jornada_mes: 9999,
       carreira_mes: 9999,
@@ -106,15 +93,15 @@ export const PLANOS: Record<CarreiraPlano, PlanoInfo> = {
       liga_conexoes: true,
     },
     destaques: [
-      'Tudo do Competidor',
-      'Registro ilimitado da Jornada Esportiva',
-      'Publicações com mais recursos (texto, foto e vídeos de até 1 minuto)',
-      'Publicação de vídeos da plataforma YouTube (treinos, jogos e highlights)',
+      'Tudo do Base',
+      'Registro ilimitado da Jornada Esportiva e do Histórico de carreira',
+      'Publicações no feed sem limite diário',
+      'Vídeos de até 1 minuto e vídeos do YouTube (treinos, jogos e highlights)',
       'Prioridade nas buscas para scouts e clubes',
-      'Selo de perfil Elite',
+      'Selo Premium no perfil',
       'Destaque em listagens de atletas',
       'Estatísticas avançadas',
-      'Verifica quem visualizou o perfil',
+      'Ver quem visualizou o perfil',
       'Acesso antecipado a novos recursos da plataforma',
     ],
   },
@@ -123,13 +110,12 @@ export const PLANOS: Record<CarreiraPlano, PlanoInfo> = {
 /** Returns the minimum plan required for a given feature */
 export function planoMinimoParaFeature(feature: keyof PlanoLimites): CarreiraPlano {
   if (PLANOS.base.limites[feature]) return 'base';
-  if (PLANOS.competidor.limites[feature]) return 'competidor';
-  return 'elite';
+  return 'premium';
 }
 
 /** Returns plan hierarchy level (for comparison) */
 export function planoNivel(plano: CarreiraPlano): number {
-  return plano === 'base' ? 0 : plano === 'competidor' ? 1 : 2;
+  return plano === 'base' ? 0 : 1;
 }
 
 /** Check if current plan has access to required plan */

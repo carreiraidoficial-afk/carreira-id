@@ -34,7 +34,7 @@ export function FeatureGate({
   if (temAcesso) return <>{children}</>;
 
   const planoInfo = PLANOS[planoRequerido];
-  const isElite = planoRequerido === 'elite';
+  const isPremium = planoRequerido === 'premium';
 
   const handleUpgrade = () => {
     navigate(carreiraPath('/planos'));
@@ -46,7 +46,7 @@ export function FeatureGate({
         onClick={handleUpgrade}
         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors bg-muted/80 text-muted-foreground hover:bg-primary/10 hover:text-primary"
       >
-        {isElite ? <Crown className="w-3 h-3" /> : <Zap className="w-3 h-3" />}
+        {isPremium ? <Crown className="w-3 h-3" /> : <Zap className="w-3 h-3" />}
         {planoInfo.nome}
       </button>
     );
@@ -85,7 +85,7 @@ export function FeatureGate({
           className="gap-1.5"
           style={{ backgroundColor: planoInfo.cor }}
         >
-          {isElite ? <Crown className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
+          {isPremium ? <Crown className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
           Ver planos
         </Button>
       </div>
@@ -101,7 +101,7 @@ export function PlanBadge({ plano }: { plano: CarreiraPlano }) {
       className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide"
       style={{ backgroundColor: `${info.cor}15`, color: info.cor }}
     >
-      {plano === 'elite' ? <Crown className="w-3 h-3" /> : <Zap className="w-3 h-3" />}
+      {plano === 'premium' ? <Crown className="w-3 h-3" /> : <Zap className="w-3 h-3" />}
       {info.nome}
     </span>
   );
