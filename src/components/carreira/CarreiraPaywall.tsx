@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Lock, Star, Zap, Trophy, Copy, CheckCircle, Loader2, CreditCard, QrCode, Crown } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import { useRef } from 'react';
 import { CarreiraLimitResult } from '@/hooks/useCarreiraFreemium';
 import { PLANOS, CarreiraPlano, normalizePlano } from '@/config/carreiraPlanos';
 import { supabase } from '@/integrations/supabase/client';
@@ -72,6 +74,19 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
     holderCpf: '', cep: '', addressNumber: '', phone: '',
   });
   const [cardSubmitting, setCardSubmitting] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
+  const cardErrorRef = useRef<HTMLDivElement | null>(null);
+
+  const updateCard = (patch: Partial<typeof cardForm>) => {
+    setCardForm((f) => ({ ...f, ...patch }));
+    if (cardError) setCardError(null);
+  };
+
+  useEffect(() => {
+    if (cardError && cardErrorRef.current) {
+      cardErrorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [cardError]);
 
   const cpfDigits = cpfInput.replace(/\D/g, '');
   const cpfValid = cpfDigits.length === 11;
@@ -177,11 +192,13 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
   };
 
   const submitCardSubscription = async () => {
+    setCardError(null);
     const { data: sessionData } = await supabase.auth.getSession();
     const sessionUser = sessionData.session?.user;
     const resolvedUser = user || (sessionUser ? { id: sessionUser.id, name: sessionUser.user_metadata?.nome || sessionUser.user_metadata?.full_name || 'Usuário', email: sessionUser.email || '' } : null);
+    console.log('[card-submit]', { hasUser: !!resolvedUser, hasCrianca: !!criancaId });
     if (!resolvedUser || !criancaId) {
-      toast.error(!criancaId ? 'Atleta não identificado' : 'Sessão expirada. Faça login novamente.');
+      setCardError(!criancaId ? 'Atleta não identificado' : 'Sessão expirada. Faça login novamente.');
       return;
     }
 
@@ -191,14 +208,14 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
     const cepDigits = cardForm.cep.replace(/\D/g, '');
     const phoneDigits = cardForm.phone.replace(/\D/g, '');
 
-    if (numberDigits.length < 13) return toast.error('Número do cartão inválido');
-    if (expiryDigits.length !== 4) return toast.error('Validade inválida (use MM/AA)');
-    if (cardForm.ccv.length < 3) return toast.error('CVV inválido');
-    if (!cardForm.holderName.trim()) return toast.error('Informe o nome impresso no cartão');
-    if (holderCpfDigits.length !== 11) return toast.error('CPF do titular inválido');
-    if (cepDigits.length !== 8) return toast.error('CEP inválido');
-    if (!cardForm.addressNumber.trim()) return toast.error('Informe o número do endereço');
-    if (phoneDigits.length < 10) return toast.error('Telefone inválido');
+    if (numberDigits.length < 13) return setCardError('Número do cartão inválido');
+    if (expiryDigits.length !== 4) return setCardError('Validade inválida (use MM/AA)');
+    if (cardForm.ccv.length < 3) return setCardError('CVV inválido');
+    if (!cardForm.holderName.trim()) return setCardError('Informe o nome impresso no cartão');
+    if (holderCpfDigits.length !== 11) return setCardError('CPF do titular inválido');
+    if (cepDigits.length !== 8) return setCardError('CEP inválido');
+    if (!cardForm.addressNumber.trim()) return setCardError('Informe o número do endereço');
+    if (phoneDigits.length < 10) return setCardError('Telefone inválido (com DDD)');
 
     setCardSubmitting(true);
     try {
@@ -251,7 +268,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
       onSubscribed?.();
     } catch (err: any) {
       console.error('Erro ao assinar com cartão:', err);
-      toast.error(err.message || 'Erro ao processar cartão');
+      setCardError(err.message || 'Erro ao processar cartão. Tente novamente ou use outro cartão.');
     } finally {
       setCardSubmitting(false);
     }
