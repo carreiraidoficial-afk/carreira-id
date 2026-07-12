@@ -26,8 +26,6 @@ export interface PerfilAtleta {
   conexoes_count: number;
   origem: string;
   atleta_app_id: string | null;
-  atleta_id_vinculado: boolean;
-  atleta_id_sync_at: string | null;
   pe_dominante: string | null;
   posicao_principal: string | null;
   posicao_secundaria: string | null;
@@ -144,7 +142,7 @@ export function usePerfilAtletaBySlug(slug: string) {
   });
 }
 
-// Hook to get public activities for a profile (merges own + synced from Atleta ID)
+// Hook to get public activities for a profile
 export function useAtividadesPublicas(criancaId: string | null | undefined) {
   return useQuery({
     queryKey: ['atividades-publicas', criancaId],
@@ -165,38 +163,10 @@ export function useAtividadesPublicas(criancaId: string | null | undefined) {
         .order('data', { ascending: false });
 
       if (error) throw error;
-      const original = (data || []).map((item: any) => ({
+      return (data || []).map((item: any) => ({
         ...item,
         origem: item.origem || 'carreira',
       })) as AtividadeExternaPublica[];
-
-      // Synced activities from Atleta ID
-      const { data: syncData } = await supabase
-        .from('atividades_externas_sync')
-        .select('*')
-        .eq('crianca_id', criancaId);
-
-      const synced = (syncData || []).map((s: any) => ({
-        id: s.id,
-        crianca_id: s.crianca_id,
-        tipo: s.tipo,
-        tipo_outro_descricao: s.tipo_outro_descricao,
-        data: s.data,
-        data_fim: s.data_fim,
-        local_atividade: s.local_atividade,
-        profissional_instituicao: s.profissional_instituicao,
-        torneio_nome: s.torneio_nome,
-        torneio_abrangencia: s.torneio_abrangencia,
-        observacoes: s.observacoes,
-        fotos_urls: s.fotos_urls,
-        created_at: s.created_at,
-        origem: s.origem || 'atleta_id',
-      } as AtividadeExternaPublica));
-
-      // Merge and sort by date descending
-      return [...original, ...synced].sort((a, b) => 
-        new Date(b.data).getTime() - new Date(a.data).getTime()
-      );
     },
     enabled: !!criancaId,
   });
