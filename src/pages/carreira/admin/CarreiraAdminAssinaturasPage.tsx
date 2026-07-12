@@ -13,18 +13,20 @@ import { toast } from 'sonner';
 import CarreiraAdminLayout from '@/components/layout/CarreiraAdminLayout';
 
 const PLANO_DISPLAY: Record<string, string> = {
-  pro_mensal: 'Competidor',
-  mensal: 'Competidor',
-  competidor: 'Competidor',
-  elite: 'Elite',
+  pro_mensal: 'Premium',
+  mensal: 'Premium',
+  competidor: 'Premium',
+  elite: 'Premium',
+  premium: 'Premium',
   base: 'Base',
 };
 
 const PLANO_PRECO: Record<string, number> = {
-  competidor: 17.90,
-  pro_mensal: 17.90,
-  mensal: 17.90,
-  elite: 29.90,
+  competidor: 12.00,
+  pro_mensal: 12.00,
+  mensal: 12.00,
+  elite: 12.00,
+  premium: 12.00,
   base: 0,
 };
 
@@ -208,8 +210,17 @@ export default function CarreiraAdminAssinaturasPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant={ass.status === 'ativa' ? 'default' : 'secondary'}
-                          className={ass.status === 'ativa' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : ''}>
-                          {ass.status === 'ativa' ? 'Ativa' : ass.status === 'cancelada' ? 'Cancelada' : ass.status === 'pendente' ? 'Pendente' : ass.status}
+                          className={
+                            ass.status === 'ativa' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                            : ass.status === 'trial' ? 'bg-violet-500/10 text-violet-600 border-violet-500/20'
+                            : ''
+                          }>
+                          {ass.status === 'ativa' ? 'Ativa'
+                            : ass.status === 'trial' ? 'Trial'
+                            : ass.status === 'cancelada' ? 'Cancelada'
+                            : ass.status === 'pendente' ? 'Pendente'
+                            : ass.status === 'expirada' ? 'Expirada'
+                            : ass.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{format(new Date(ass.inicio_em), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
