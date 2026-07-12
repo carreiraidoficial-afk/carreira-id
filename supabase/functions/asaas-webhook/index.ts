@@ -1,3 +1,4 @@
+// Public webhook endpoint — verify_jwt=false (see supabase/config.toml)
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
