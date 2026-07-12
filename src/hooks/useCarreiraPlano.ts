@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { CarreiraPlano, PLANOS, PlanoLimites, temAcessoAoPlano } from '@/config/carreiraPlanos';
+import { CarreiraPlano, PLANOS, PlanoLimites, temAcessoAoPlano, normalizePlano } from '@/config/carreiraPlanos';
 
 export interface CarreiraPlanoResult {
   plano: CarreiraPlano;
@@ -61,7 +61,7 @@ export function useCarreiraPlano(criancaId: string | null): CarreiraPlanoResult 
 
       if (!userId || !criancaId) return 'base';
 
-      // Check for whitelist (legacy access = elite equivalent)
+      // Check for whitelist (legacy access = premium equivalent)
       const { data: whitelist } = await supabase
         .from('atividades_externas_whitelist')
         .select('id')
@@ -69,26 +69,30 @@ export function useCarreiraPlano(criancaId: string | null): CarreiraPlanoResult 
         .eq('ativo', true)
         .limit(1);
 
-      if (whitelist && whitelist.length > 0) return 'elite';
+      if (whitelist && whitelist.length > 0) return 'premium';
 
-      // Check active subscription
+      // Check active subscription OR active trial
       const { data: assinatura } = await supabase
         .from('carreira_assinaturas')
-        .select('plano, status, expira_em')
+        .select('plano, status, expira_em, trial_termina_em')
         .eq('user_id', userId)
         .eq('crianca_id', criancaId)
-        .eq('status', 'ativa')
+        .in('status', ['ativa', 'trial'])
         .order('created_at', { ascending: false })
         .limit(1);
 
       if (assinatura && assinatura.length > 0) {
-        const sub = assinatura[0];
+        const sub = assinatura[0] as any;
+        // Trial: valid while trial_termina_em is in the future
+        if (sub.status === 'trial') {
+          if (sub.trial_termina_em && new Date(sub.trial_termina_em) > new Date()) {
+            return 'premium';
+          }
+          return 'base';
+        }
+        // Paid subscription: valid while expira_em is in the future
         if (!sub.expira_em || new Date(sub.expira_em) > new Date()) {
-          const planoValue = (sub.plano || 'base') as string;
-          if (planoValue === 'competidor' || planoValue === 'pro_mensal') return 'competidor';
-          if (planoValue === 'elite') return 'elite';
-          if (planoValue === 'mensal') return 'competidor';
-          return 'competidor';
+          return normalizePlano(sub.plano);
         }
       }
 
