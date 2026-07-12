@@ -6,9 +6,6 @@ verify_jwt = false
 [functions.share-post]
 verify_jwt = false
 
-[functions.receive-atleta-data]
-verify_jwt = false
-
 [functions.renew-carreira-pix]
 verify_jwt = false
 
