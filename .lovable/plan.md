@@ -1,72 +1,51 @@
-## Diagnóstico
+# Verificação da integração Asaas (assinatura recorrente + webhook)
 
-A cobrança recorrente no cartão **NÃO está funcionando** hoje. O que existe:
+Agora que o `ASAAS_WEBHOOK_TOKEN` está salvo no Supabase, faltam 2 passos de configuração + 3 testes.
 
-- `create-carreira-checkout` chama `POST /v3/payments` do Asaas com `billingType: 'UNDEFINED'` e devolve o `invoiceUrl`. Isso cria **uma cobrança avulsa** (o cliente escolhe cartão ou PIX na tela do Asaas), sem qualquer vínculo de recorrência.
-- Não existe chamada a `POST /v3/subscriptions`, nem token de cartão salvo, nem `cycle: 'MONTHLY'`.
-- Consequência: o cartão só é cobrado uma vez. Depois de 30 dias nada acontece — o `renew-carreira-pix` só renova quem tem `metodo_pagamento = 'pix'`.
-- A UI (`CarreiraPaywall`) promete "Cobrança mensal automática" no cartão, o que hoje é falso.
+## 1. Configurar o webhook no painel Asaas
 
-## Plano de correção
+No painel Asaas → **Configurações → Integrações → Webhooks → Adicionar**:
 
-### 1. `create-carreira-checkout` — trocar Payment por Subscription
+- **URL**: `https://fppsotlycinwqsjpoybg.supabase.co/functions/v1/asaas-webhook`
+- **Email para notificação de falhas**: seu email
+- **Versão da API**: v3
+- **Token de autenticação**: cole o MESMO valor que você salvou em `ASAAS_WEBHOOK_TOKEN`
+- **Enviar tipo**: `SEQUENCIALMENTE`
+- **Eventos a marcar**:
+  - Pagamentos: `PAYMENT_CONFIRMED`, `PAYMENT_RECEIVED`, `PAYMENT_OVERDUE`, `PAYMENT_REFUNDED`, `PAYMENT_DELETED`
+  - Assinaturas: `SUBSCRIPTION_DELETED`, `SUBSCRIPTION_INACTIVATED`
+- Salvar e deixar **ativo**
 
-Quando `paymentMethod = 'cartao'` (default do novo modelo), criar uma **assinatura Asaas** em vez de um pagamento único:
+## 2. Confirmar que a Edge Function está publicada
 
-```ts
-POST /v3/subscriptions
-{
-  customer: customerId,
-  billingType: 'CREDIT_CARD',
-  cycle: 'MONTHLY',
-  value: 12.00,
-  nextDueDate: <hoje + 7 dias do trial, ou hoje+1 se não for trial>,
-  description: 'Carreira ID Premium - Assinatura mensal',
-  externalReference: `carreira_premium_${user_id}_${crianca_id}`,
-}
-```
+Vou verificar via logs se `asaas-webhook`, `create-carreira-checkout` e `check-carreira-payment` estão deployadas e sem erros de boot.
 
-Retornar o `invoiceUrl` da primeira cobrança (Asaas gera automaticamente e devolve em `subscription.id` + primeiro payment via `GET /subscriptions/{id}/payments`). Abrir esse `invoiceUrl` numa aba — o Asaas coleta e tokeniza o cartão, e a partir daí cobra sozinho todo mês.
+## 3. Testes end-to-end
 
-Salvar na `carreira_assinaturas`:
-- `gateway_subscription_id` = `subscription.id` (não mais o `payment.id`)
-- `metodo_pagamento = 'cartao_credito'`
-- `status = 'pendente'` até o primeiro pagamento confirmar
+### Teste A — Assinatura por cartão (sandbox)
+1. Logar num usuário de teste, ir num atleta e disparar o paywall (`/cadastro` → escolher plano).
+2. Escolher **Cartão** + CPF → clicar "Assinar por R$ 12,00/mês".
+3. Verificar via logs da function `create-carreira-checkout`:
+   - Requisição a `POST /v3/subscriptions` retornou `id` (sub_xxx)
+   - Linha em `carreira_assinaturas` criada com `status='pendente'`, `metodo_pagamento='cartao_credito'`, `gateway_subscription_id=sub_xxx`
+4. Aba do Asaas abre → preencher cartão sandbox (`5162 3062 5477 9138`, val futura, CVV 123).
+5. Após pagar, Asaas dispara `PAYMENT_CONFIRMED` → logs de `asaas-webhook` mostram evento recebido → linha vira `status='ativa'` e `expira_em = hoje+30`.
+6. UI faz polling e mostra tela "Pagamento confirmado 🎉".
 
-### 2. `check-carreira-payment` — suportar subscription
+### Teste B — Assinatura por PIX
+1. Mesmo fluxo, escolher **PIX**.
+2. `generate-carreira-pix` cria pagamento + retorna QR.
+3. Pagar no sandbox → webhook recebe `PAYMENT_RECEIVED` → `status='ativa'`.
 
-Hoje ele consulta `/v3/payments/{id}`. Precisa aceitar também o caso de subscription:
-- Se o registro tem `metodo_pagamento = 'cartao_credito'`, consultar `GET /v3/subscriptions/{id}/payments?limit=1&order=desc` e checar o status do payment mais recente.
-- Ao confirmar o primeiro pagamento, marcar `status = 'ativa'` e `expira_em = hoje + 30`.
+### Teste C — Segurança do webhook
+Vou fazer um POST manual (sem o header `asaas-access-token`) e confirmar retorno **401**. Com o token correto → **200**.
 
-### 3. Webhook recorrente (novo endpoint)
+## 4. O que checo agora (parte técnica)
 
-Criar `supabase/functions/asaas-webhook/index.ts` (com `verify_jwt = false` no `config.toml`) para receber eventos do Asaas:
-- `PAYMENT_CONFIRMED` / `PAYMENT_RECEIVED` → localizar assinatura por `gateway_subscription_id` = `payment.subscription`, empurrar `expira_em` +30 dias e garantir `status = 'ativa'`.
-- `PAYMENT_OVERDUE` → marcar `status = 'inadimplente'`.
-- `SUBSCRIPTION_DELETED` → marcar `status = 'cancelada'`.
+- Listar as últimas invocações de `asaas-webhook`, `create-carreira-checkout` e `check-carreira-payment` (logs de erro/boot).
+- Query em `carreira_assinaturas` para ver as últimas linhas criadas com `gateway_subscription_id` preenchido — confirma que já está gravando o ID da assinatura Asaas, não só de payment.
+- Testar o endpoint do webhook diretamente (com e sem token) para validar a proteção.
 
-Instruir o usuário a cadastrar a URL do webhook no painel Asaas (Configurações → Integrações → Webhooks) com os eventos acima.
+## Após aprovar
 
-### 4. UI (`CarreiraPaywall`)
-
-Nenhuma mudança de layout — só ajustar os textos que já prometem recorrência para refletir o novo fluxo real (mensagem de sucesso do cartão continua correta).
-
-### 5. Trial de 7 dias × cartão
-
-Como decidimos "só pedir cartão no fim dos 7 dias", o botão de cartão só aparece quando o trial expira (já é o caso do paywall atual, que só abre após o gate). Nenhuma mudança extra necessária — a assinatura Asaas simplesmente começa no dia da conversão.
-
-## Detalhes técnicos / arquivos afetados
-
-- `supabase/functions/create-carreira-checkout/index.ts` — trocar chamada `/payments` por `/subscriptions`.
-- `supabase/functions/check-carreira-payment/index.ts` — buscar último payment da subscription.
-- `supabase/functions/asaas-webhook/index.ts` **(novo)** — recorrência de verdade.
-- `supabase/config.toml` — adicionar `[functions.asaas-webhook] verify_jwt = false`.
-- `src/components/carreira/CarreiraPaywall.tsx` — pequenos ajustes de copy se necessário.
-
-Nenhuma nova migração SQL é necessária: a coluna `metodo_pagamento` e `gateway_subscription_id` já existem em `carreira_assinaturas`.
-
-## Perguntas antes de implementar
-
-1. Confirma que quer que eu **crie o webhook novo** (`asaas-webhook`) e te passe a URL para cadastrar no painel Asaas? Sem ele, a recorrência funciona no Asaas, mas seu banco não vai saber que o mês foi pago e o acesso expira em 30 dias.
-2. Posso alterar o `create-carreira-checkout` para trocar `POST /payments` por `POST /subscriptions` (isso muda o comportamento atual para todo mundo que pagar por cartão daqui pra frente)?
+Executo os checks técnicos, te digo o resultado e, se algo estiver quebrado (ex.: subscription não sendo criada, webhook rejeitando token válido, status não atualizando), corrijo na sequência. Se estiver tudo verde, você só precisa cadastrar o webhook no Asaas conforme o passo 1 e rodar o Teste A no sandbox.
