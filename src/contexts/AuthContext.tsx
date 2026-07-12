@@ -255,35 +255,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: 'Sessão expirada' };
       }
 
-      // Use a direct fetch to get proper status/error messages (invoke hides the body on non-2xx)
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-      const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
-
-      if (!supabaseUrl || !publishableKey) {
-        return { success: false, error: 'Configuração do app incompleta' };
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+      if (updateError) {
+        return { success: false, error: updateError.message };
       }
 
-      const res = await fetch(`${supabaseUrl}/functions/v1/change-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: publishableKey,
-          Authorization: `Bearer ${currentSession.access_token}`,
-        },
-        body: JSON.stringify({ new_password: newPassword }),
-      });
-
-      let payload: any = null;
-      try {
-        payload = await res.json();
-      } catch {
-        payload = null;
-      }
-
-      if (!res.ok) {
-        const message = payload?.error || payload?.message || `Erro (${res.status}) ao alterar senha`;
-        return { success: false, error: message };
-      }
+      // Clear password_needs_change flag on profile (best-effort)
+      await supabase
+        .from('profiles')
+        .update({ password_needs_change: false })
+        .eq('user_id', currentSession.user.id);
 
       // Refresh user data to update passwordNeedsChange
       await refreshUser();
