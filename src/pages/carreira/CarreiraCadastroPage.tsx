@@ -15,7 +15,7 @@ import { OnboardingTutorial } from '@/components/carreira/OnboardingTutorial';
 
 import { CarreiraPaywall } from '@/components/carreira/CarreiraPaywall';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { PLANOS, CarreiraPlano } from '@/config/carreiraPlanos';
+import { PLANOS, CarreiraPlano, normalizePlano } from '@/config/carreiraPlanos';
 import logoAtletaId from '@/assets/logo-atleta-id.png';
 import logoCarreiraId from '@/assets/logo-carreira-id-dark.png';
 import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
@@ -44,8 +44,9 @@ export default function CarreiraCadastroPage() {
   const refParam = searchParams.get('ref') as 'torcedor' | 'atleta' | 'rede' | null;
   const refConviteCodigo = searchParams.get('c');
   const refAtletaSlug = searchParams.get('a');
-  const planoParam = searchParams.get('plano') as CarreiraPlano | null;
-  const hasPaidPlan = planoParam === 'competidor' || planoParam === 'elite';
+  const planoParamRaw = searchParams.get('plano');
+  const planoParam: CarreiraPlano | null = planoParamRaw ? normalizePlano(planoParamRaw) : null;
+  const hasPaidPlan = planoParam === 'premium';
 
   const [step, setStep] = useState<Step>('tutorial');
   const [isLogin, setIsLogin] = useState(false);
