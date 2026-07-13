@@ -369,6 +369,16 @@ export function useJornada(criancaId: string | undefined | null) {
           posicao_jogo: input.posicao_jogo,
           observacoes: input.observacoes,
           fase_campeonato: input.fase_campeonato,
+          minutos_jogados: input.minutos_jogados ?? null,
+          gols_sofridos: input.gols_sofridos ?? null,
+          defesas_importantes: input.defesas_importantes ?? null,
+          penaltis_defendidos: input.penaltis_defendidos ?? null,
+          teve_disputa_penaltis: input.teve_disputa_penaltis ?? null,
+          placar_penaltis_time: input.placar_penaltis_time ?? null,
+          placar_penaltis_adversario: input.placar_penaltis_adversario ?? null,
+          penaltis_defendidos_disputa: input.penaltis_defendidos_disputa ?? null,
+          penaltis_gol_lado_correto: input.penaltis_gol_lado_correto ?? null,
+          penaltis_gol_lado_errado: input.penaltis_gol_lado_errado ?? null,
         })
         .eq('id', id);
       if (error) throw error;
