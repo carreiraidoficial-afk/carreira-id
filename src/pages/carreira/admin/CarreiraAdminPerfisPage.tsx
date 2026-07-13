@@ -83,24 +83,17 @@ function useToggleVisibility() {
 
 function EditPerfilDialog({ perfil, type, open, onOpenChange }: { perfil: any; type: 'atleta' | 'rede'; open: boolean; onOpenChange: (v: boolean) => void }) {
   const qc = useQueryClient();
-  const [form, setForm] = useState<any>({});
+  const [form, setForm] = useState<any>(() => ({
+    nome: perfil.nome || '',
+    slug: perfil.slug || '',
+    modalidade: perfil.modalidade || '',
+    cidade: perfil.cidade || '',
+    estado: perfil.estado || '',
+    is_public: !!perfil.is_public,
+    status_conta: perfil.status_conta || 'ativo',
+    tipo: perfil.tipo || '',
+  }));
   const [saving, setSaving] = useState(false);
-
-  // reset when perfil changes
-  useState(() => {});
-  if (open && !form._id) {
-    setForm({
-      _id: perfil.id,
-      nome: perfil.nome || '',
-      slug: perfil.slug || '',
-      modalidade: perfil.modalidade || '',
-      cidade: perfil.cidade || '',
-      estado: perfil.estado || '',
-      is_public: !!perfil.is_public,
-      status_conta: perfil.status_conta || 'ativo',
-      tipo: perfil.tipo || '',
-    });
-  }
 
   const table = type === 'atleta' ? 'perfil_atleta' : 'perfis_rede';
   const invalidateKey = type === 'atleta' ? 'carreira-admin-perfis-atleta' : 'carreira-admin-perfis-rede';
@@ -121,7 +114,6 @@ function EditPerfilDialog({ perfil, type, open, onOpenChange }: { perfil: any; t
       if (error) throw error;
       toast.success('Perfil atualizado');
       qc.invalidateQueries({ queryKey: [invalidateKey] });
-      setForm({});
       onOpenChange(false);
     } catch (e: any) {
       toast.error('Erro: ' + e.message);
@@ -129,7 +121,7 @@ function EditPerfilDialog({ perfil, type, open, onOpenChange }: { perfil: any; t
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) setForm({}); onOpenChange(v); }}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>Editar perfil</DialogTitle></DialogHeader>
         <div className="space-y-3">
