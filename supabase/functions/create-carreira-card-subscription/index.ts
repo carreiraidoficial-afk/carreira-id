@@ -209,12 +209,14 @@ Deno.serve(async (req) => {
       }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    const approved = status === 'CONFIRMED' || status === 'RECEIVED';
     return new Response(JSON.stringify({
       success: true,
       data: {
         subscriptionId: subResult.id,
         paymentId: firstPayment?.id || null,
-        status: status || 'PENDING',
+        status: approved ? 'approved' : 'processing',
+        asaasStatus: status || 'PENDING',
         valor,
         card: { last4, brand },
       },

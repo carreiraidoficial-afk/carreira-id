@@ -1,53 +1,42 @@
-## Sim, você pode criar/atualizar edge functions direto pelo painel do Supabase — sem CLI
 
-Passo a passo (só o essencial):
+## Problema
 
-### 1) Abra o painel do seu projeto Supabase
-- Acesse: https://supabase.com/dashboard/project/fppsotlycinwqsjpoybg/functions
-- Menu esquerdo: **Edge Functions**
+Ao assinar por cartão, a Asaas cria a cobrança mas o primeiro pagamento fica em `PENDING` por alguns segundos/minutos (análise de risco / autorização assíncrona). Hoje:
 
-### 2) Confirmar que a secret ASAAS_API_KEY está setada
-- Menu: **Project Settings → Edge Functions → Secrets** (ou **Manage Secrets** no topo da página de Functions)
-- Deve existir `ASAAS_API_KEY` com o valor da sua conta Asaas. Se não existir, adicione lá.
-- (`SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` já vêm automaticamente, não precisa criar.)
+- A edge function `create-carreira-card-subscription` retorna `success: true` mesmo com status `PENDING`.
+- O frontend, ao receber `success`, dá `toast.success("Assinatura ativada!")` e chama `onSubscribed?.()`, que fecha o dialog.
+- Resultado: usuário sai da tela sem saber se o pagamento foi aprovado, recusado ou ainda está sendo processado. No Asaas aparece a cobrança pendente e nada mais acontece do lado do app até o webhook chegar (e o dialog já fechou).
 
-### 3) Criar a function principal: `create-carreira-card-subscription`
-- Clique em **Deploy a new function** (ou **Create a new function**).
-- Nome exato: `create-carreira-card-subscription`
-- **Verify JWT**: DESMARQUE (deixe desabilitado — a function chama o Asaas com service role).
-- Apague o código de exemplo e cole o conteúdo do arquivo abaixo (copie inteiro do bloco "Código 1" que segue no chat).
-- Clique em **Deploy function**.
+## Solução
 
-### 4) Criar a function: `disable-asaas-notifications`
-- Repetir: **Deploy a new function**
-- Nome exato: `disable-asaas-notifications`
-- Verify JWT: DESMARQUE.
-- Colar o "Código 2".
-- Deploy.
+Tratar cartão como um fluxo de 3 estados: **aprovado imediatamente**, **em análise (pending)** ou **recusado**. Só fechar o modal em aprovado. Em pending, mostrar tela "Processando pagamento" e pollar `check-carreira-payment` (que já sabe resolver `sub_...` e ativa a assinatura quando `CONFIRMED/RECEIVED`). O webhook `asaas-webhook` continua ativando em segundo plano — os dois caminhos convergem.
 
-### 5) Criar a function: `cleanup-asaas-duplicates`
-- **Deploy a new function**
-- Nome exato: `cleanup-asaas-duplicates`
-- Verify JWT: DESMARQUE.
-- Colar o "Código 3".
-- Deploy.
+### 1. `supabase/functions/create-carreira-card-subscription/index.ts`
 
-### 6) Testar
-- Recarregar o app, ir em `/cadastro`, tentar assinar por cartão.
-- Se der erro, a caixa vermelha inline agora vai mostrar a mensagem real do Asaas (não mais "Failed to send a request").
-- Me mande o print da mensagem se ainda falhar.
+- Depois de criar a subscription e buscar o primeiro payment, classificar:
+  - `CONFIRMED` / `RECEIVED` → retornar `{ success: true, status: 'approved', subscriptionId, paymentId, ... }`.
+  - `REFUSED` ou `refusalReason` presente → manter o comportamento atual (deletar sub no Asaas + retornar 400 com `friendlyRefusal`).
+  - Qualquer outro (`PENDING`, `AWAITING_RISK_ANALYSIS`, sem payment ainda) → retornar `{ success: true, status: 'processing', subscriptionId, paymentId, valor, card }` e salvar a linha em `carreira_assinaturas` com `status: 'pendente'` (já faz).
+- Não mudar assinaturas do banco a partir desse retorno "processing" — o webhook e o polling cuidam disso.
 
----
+### 2. `src/components/carreira/CarreiraPaywall.tsx`
 
-### Onde encontrar cada código
-Depois que você aprovar este plano eu envio, em mensagens separadas do chat, os **3 blocos de código completos** para você copiar e colar:
-- **Código 1**: `create-carreira-card-subscription` (~227 linhas) — a que resolve o botão "Assinar por R$ 12,00".
-- **Código 2**: `disable-asaas-notifications` (~71 linhas) — utilitário one-shot para desligar cobranças por email/SMS no Asaas.
-- **Código 3**: `cleanup-asaas-duplicates` (~105 linhas) — utilitário one-shot para cancelar assinaturas duplicadas no Asaas.
+- Em `submitCardSubscription`, após sucesso da chamada:
+  - Se `data.data.status === 'approved'` → comportamento atual (toast + invalidar queries + `setStep('success')` + `onSubscribed`).
+  - Se `data.data.status === 'processing'` → **não** chamar `onSubscribed`, **não** mostrar toast de sucesso. Guardar `checkoutData = { paymentId: data.data.paymentId || data.data.subscriptionId, subscriptionId: '' }` e `setStep('checking')`. O `useEffect` de polling existente para `checking` já chama `check-carreira-payment` a cada 5s; ele resolve `sub_...` corretamente, então funciona para cartão também.
+- Adaptar o texto da tela `checking` para cobrir os dois casos (PIX/checkout aberto em outra aba vs. cartão em processamento):
+  - Título: "Processando pagamento" quando `paymentMethod === 'cartao'`.
+  - Descrição: "Estamos confirmando a autorização do seu cartão com o banco. Isso pode levar até 1 minuto." (mantém o texto atual quando for checkout externo).
+  - Esconder o botão "Já paguei, verificar agora" no fluxo de cartão (não faz sentido) e manter o "Cancelar" que reseta para `info`.
+- Timeout de 10 min já existente vira "A autorização está demorando mais que o normal. Você receberá uma confirmação por e-mail assim que o banco responder." + botão "Fechar".
+- Se o polling detectar recusa futura (via webhook marcando `inadimplente`/`cancelada`), adicionar um caso: `check-carreira-payment` retorna `isPaid: false` indefinidamente. Não conseguimos distinguir recusa de pending só pelo polling atual — aceitável, pois o webhook `PAYMENT_REFUSED` já registra `observacoes` e o usuário será notificado por e-mail Asaas. Fora de escopo mudar isso agora.
 
-> Observação: só a **Código 1** é crítica para destravar o cartão agora. As outras duas são utilitários administrativos que rodam manualmente quando você precisar. Se quiser, pode deployar só a primeira e as outras depois.
+### 3. Deploy manual
 
-### O que NÃO precisa fazer
-- Nada de SQL novo (o `02_card_recurrence.sql` você já rodou).
-- Nada de CLI/terminal.
-- Nada de mexer em outros arquivos do projeto.
+Como o Supabase é externo (sem CLI), o usuário precisa **substituir o código da edge function `create-carreira-card-subscription`** pela nova versão via Dashboard (mesmo processo que já usou). Nenhum SQL novo.
+
+## O que o usuário verá depois
+
+- **Cartão aprovado na hora:** tela verde "Pagamento confirmado" (igual hoje).
+- **Cartão em análise:** tela "Processando pagamento" com spinner, atualiza sozinha em segundos quando o Asaas responder; se aprovar → tela verde; se recusar → e-mail do Asaas + assinatura fica `inadimplente` no admin.
+- **Cartão recusado imediato:** caixa vermelha com motivo (já funciona hoje).
