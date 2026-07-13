@@ -161,6 +161,11 @@ export function useJornada(criancaId: string | undefined | null) {
         totalVitorias,
         totalCampeonatos: campeonatos.length,
         posicoesMais,
+        jogosComoGoleiro: jogosComMidia.filter((j) => j.posicao_jogo === 'goleiro').length,
+        totalDefesas: jogosComMidia.reduce((s, j) => s + (j.posicao_jogo === 'goleiro' ? (j.defesas_importantes || 0) : 0), 0),
+        totalGolsSofridos: jogosComMidia.reduce((s, j) => s + (j.posicao_jogo === 'goleiro' ? (j.gols_sofridos || 0) : 0), 0),
+        totalPenaltisDefendidos: jogosComMidia.reduce((s, j) => s + (j.posicao_jogo === 'goleiro' ? ((j.penaltis_defendidos || 0) + (j.penaltis_defendidos_disputa || 0)) : 0), 0),
+        minutosTotais: jogosComMidia.reduce((s, j) => s + (j.posicao_jogo === 'goleiro' ? (j.minutos_jogados || 0) : 0), 0),
       };
 
     return { campeonatos: campeonatosComJogos, amistosos, estatisticas };
