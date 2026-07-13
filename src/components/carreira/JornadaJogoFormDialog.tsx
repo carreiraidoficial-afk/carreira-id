@@ -247,16 +247,81 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
               <Input value={local} onChange={(e) => setLocal(e.target.value)} placeholder="Ex: Estádio Municipal" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Gols do atleta</Label>
-              <Input type="number" min={0} value={gols} onChange={(e) => setGols(e.target.value)} />
-            </div>
-            <div>
-              <Label>Assistências do atleta</Label>
-              <Input type="number" min={0} value={assist} onChange={(e) => setAssist(e.target.value)} />
-            </div>
+          <div>
+            <Label>Posição neste jogo</Label>
+            <Select value={posicao} onValueChange={setPosicao}>
+              <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={POSICAO_NONE}>Não informar</SelectItem>
+                {POSICOES.map((p) => (
+                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+          {posicao !== 'goleiro' && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Gols do atleta</Label>
+                <Input type="number" min={0} value={gols} onChange={(e) => setGols(e.target.value)} />
+              </div>
+              <div>
+                <Label>Assistências do atleta</Label>
+                <Input type="number" min={0} value={assist} onChange={(e) => setAssist(e.target.value)} />
+              </div>
+            </div>
+          )}
+          {posicao === 'goleiro' && (
+            <div className="rounded-lg border-2 p-3 space-y-3" style={{ borderColor: 'hsl(var(--border))' }}>
+              <p className="text-sm font-semibold">🧤 Estatísticas de Goleiro</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Minutos jogados</Label>
+                  <Input type="number" min={0} value={minutos} onChange={(e) => setMinutos(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Gols sofridos</Label>
+                  <Input type="number" min={0} value={golsSofridos} onChange={(e) => setGolsSofridos(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Defesas importantes</Label>
+                  <Input type="number" min={0} value={defesas} onChange={(e) => setDefesas(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Pênaltis defendidos (tempo normal)</Label>
+                  <Input type="number" min={0} value={penDef} onChange={(e) => setPenDef(e.target.value)} />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <Switch checked={teveDisputa} onCheckedChange={setTeveDisputa} id="teve-disputa" />
+                <Label htmlFor="teve-disputa" className="cursor-pointer">Houve disputa de pênaltis?</Label>
+              </div>
+              {teveDisputa && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Placar pên. (meu time)</Label>
+                    <Input type="number" min={0} value={placarPenA} onChange={(e) => setPlacarPenA(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Placar pên. (adversário)</Label>
+                    <Input type="number" min={0} value={placarPenB} onChange={(e) => setPlacarPenB(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Pên. defendidos na disputa</Label>
+                    <Input type="number" min={0} value={penDefDisputa} onChange={(e) => setPenDefDisputa(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Gol lado correto (leu certo)</Label>
+                    <Input type="number" min={0} value={penLadoCerto} onChange={(e) => setPenLadoCerto(e.target.value)} />
+                  </div>
+                  <div className="col-span-2">
+                    <Label>Gol lado errado (leu errado)</Label>
+                    <Input type="number" min={0} value={penLadoErrado} onChange={(e) => setPenLadoErrado(e.target.value)} />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           <div>
             <Label>Fase</Label>
             <Input value={fase} onChange={(e) => setFase(e.target.value)} placeholder="Ex: Final" />
