@@ -259,11 +259,21 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
       }
       if (data?.error) throw new Error(data.error);
 
-      toast.success('Assinatura ativada! Cobrança mensal automática configurada.');
-      queryClient.invalidateQueries({ queryKey: ['carreira-plano'] });
-      queryClient.invalidateQueries({ queryKey: ['carreira-atividade-limit'] });
-      setStep('success');
-      onSubscribed?.();
+      const result = data?.data || {};
+      if (result.status === 'approved') {
+        toast.success('Assinatura ativada! Cobrança mensal automática configurada.');
+        queryClient.invalidateQueries({ queryKey: ['carreira-plano'] });
+        queryClient.invalidateQueries({ queryKey: ['carreira-atividade-limit'] });
+        setStep('success');
+        onSubscribed?.();
+      } else {
+        // Pagamento em análise pelo banco/Asaas — pollar até confirmar
+        setCheckoutData({
+          paymentId: result.paymentId || result.subscriptionId,
+          subscriptionId: '',
+        });
+        setStep('checking');
+      }
     } catch (err: any) {
       console.error('Erro ao assinar com cartão:', err);
       setCardError(err.message || 'Erro ao processar cartão. Tente novamente ou use outro cartão.');
@@ -380,25 +390,32 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
   }
 
   if (step === 'checking') {
+    const isCard = paymentMethod === 'cartao';
     return (
       <div className="space-y-4 py-2 text-center">
         <div className="mx-auto w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
           <CreditCard className="w-8 h-8 text-amber-600" />
         </div>
-        <h3 className="text-lg font-bold text-foreground">Aguardando pagamento</h3>
+        <h3 className="text-lg font-bold text-foreground">
+          {isCard ? 'Processando pagamento' : 'Aguardando pagamento'}
+        </h3>
         <p className="text-sm text-muted-foreground">
-          Complete o pagamento na aba que foi aberta. Estamos verificando automaticamente.
+          {isCard
+            ? 'Estamos confirmando a autorização do seu cartão com o banco. Isso pode levar alguns segundos — não feche esta tela.'
+            : 'Complete o pagamento na aba que foi aberta. Estamos verificando automaticamente.'}
         </p>
         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="w-3 h-3 animate-spin" />
           Verificando pagamento...
         </div>
-        <Button variant="outline" size="sm" className="w-full" onClick={() => checkPayment()}>
-          Já paguei, verificar agora
-        </Button>
+        {!isCard && (
+          <Button variant="outline" size="sm" className="w-full" onClick={() => checkPayment()}>
+            Já paguei, verificar agora
+          </Button>
+        )}
         {onClose && (
           <Button variant="ghost" className="w-full" onClick={() => { setStep('info'); setCheckoutData(null); }}>
-            Cancelar
+            {isCard ? 'Fechar (continuaremos verificando por e-mail)' : 'Cancelar'}
           </Button>
         )}
       </div>
