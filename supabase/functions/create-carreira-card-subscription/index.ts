@@ -6,6 +6,7 @@ const corsHeaders = {
 };
 
 const ASAAS_API_URL = 'https://api.asaas.com/v3';
+// deploy-touch: v2
 
 function friendlyRefusal(msg?: string) {
   if (!msg) return 'Pagamento não autorizado pelo emissor do cartão.';
