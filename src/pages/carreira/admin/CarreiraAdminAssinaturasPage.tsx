@@ -144,15 +144,22 @@ export default function CarreiraAdminAssinaturasPage() {
   };
 
   const handleDelete = async () => {
+    console.log('[admin-assinatura-delete] start', deleting);
     if (!deleting) return;
     setDeletingLoading(true);
     try {
-      const { error } = await supabase.from('carreira_assinaturas').delete().eq('id', deleting.id);
+      const { data, error } = await supabase.from('carreira_assinaturas').delete().eq('id', deleting.id).select();
+      console.log('[admin-assinatura-delete] response', { data, error });
       if (error) throw error;
+      if (!data || data.length === 0) {
+        toast.error('Nada removido — provavelmente RLS bloqueou. Verifique se você é admin.');
+        return;
+      }
       toast.success('Assinatura removida do banco');
       queryClient.invalidateQueries({ queryKey: ['carreira-admin-assinaturas'] });
       setDeleting(null);
     } catch (e: any) {
+      console.error('[admin-assinatura-delete] erro', e);
       toast.error('Erro: ' + e.message);
     } finally { setDeletingLoading(false); }
   };
@@ -261,7 +268,7 @@ export default function CarreiraAdminAssinaturasPage() {
                             <Pencil className="w-4 h-4" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => setDeleting(ass)} title="Excluir assinatura">
+                            onClick={() => { console.log('[admin-assinatura-delete] click Trash', ass.id); setDeleting(ass); }} title="Excluir assinatura">
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
