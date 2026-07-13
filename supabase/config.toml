@@ -27,5 +27,8 @@ verify_jwt = false
 [functions.admin-delete-user]
 verify_jwt = true
 
+[functions.admin-delete-assinatura]
+verify_jwt = true
+
 # trigger redeploy
 

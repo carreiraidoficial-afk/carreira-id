@@ -148,11 +148,14 @@ export default function CarreiraAdminAssinaturasPage() {
     if (!deleting) return;
     setDeletingLoading(true);
     try {
-      const { data, error } = await supabase.from('carreira_assinaturas').delete().eq('id', deleting.id).select();
+      const { data, error } = await supabase.functions.invoke('admin-delete-assinatura', {
+        body: { assinatura_id: deleting.id },
+      });
       console.log('[admin-assinatura-delete] response', { data, error });
       if (error) throw error;
-      if (!data || data.length === 0) {
-        toast.error('Nada removido — provavelmente RLS bloqueou. Verifique se você é admin.');
+      if ((data as any)?.error) throw new Error((data as any).error);
+      if (!(data as any)?.deleted) {
+        toast.error('Nada removido. Confirme que a função admin-delete-assinatura está publicada.');
         return;
       }
       toast.success('Assinatura removida do banco');
