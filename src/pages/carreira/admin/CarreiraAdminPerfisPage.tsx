@@ -174,12 +174,15 @@ function PerfilTable({ perfis, type }: { perfis: any[]; type: 'atleta' | 'rede' 
   const [deletingLoading, setDeletingLoading] = useState(false);
 
   const handleDelete = async () => {
-    if (!deleting) return;
+    console.log('[admin-delete] handleDelete start', deleting);
+    if (!deleting) { console.warn('[admin-delete] deleting is null'); return; }
     setDeletingLoading(true);
     try {
+      console.log('[admin-delete] invoking edge function admin-delete-user with user_id=', deleting.user_id);
       const { data, error } = await supabase.functions.invoke('admin-delete-user', {
         body: { user_id: deleting.user_id },
       });
+      console.log('[admin-delete] response', { data, error });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       toast.success('Usuário e dados relacionados apagados');
@@ -187,6 +190,7 @@ function PerfilTable({ perfis, type }: { perfis: any[]; type: 'atleta' | 'rede' 
       qc.invalidateQueries({ queryKey: ['carreira-admin-perfis-rede'] });
       setDeleting(null);
     } catch (e: any) {
+      console.error('[admin-delete] erro', e);
       toast.error('Erro: ' + (e.message || 'falha ao excluir'));
     } finally { setDeletingLoading(false); }
   };
@@ -265,7 +269,7 @@ function PerfilTable({ perfis, type }: { perfis: any[]; type: 'atleta' | 'rede' 
                       <Pencil className="w-4 h-4" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => setDeleting(p)} title="Excluir usuário">
+                      onClick={() => { console.log('[admin-delete] click Trash', p.nome, p.user_id); setDeleting(p); }} title="Excluir usuário">
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
