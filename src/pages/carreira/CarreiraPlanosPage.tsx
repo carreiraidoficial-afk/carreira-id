@@ -224,7 +224,11 @@ export default function CarreiraPlanos() {
                 trackSubscribe(selectedPlano, PLANOS[selectedPlano].preco);
                 pushDataLayer('purchase', { plan: selectedPlano });
                 setSelectedPlano(null);
-                navigate(-1);
+                // navigate(-1) is unreliable here: if the user landed on /planos
+                // via a direct URL (shared link, bookmark, PWA shortcut) rather
+                // than in-app navigation, "back" can land on an unrelated or
+                // broken history entry right after a successful payment.
+                navigate('/', { replace: true });
               }}
             />
           )}

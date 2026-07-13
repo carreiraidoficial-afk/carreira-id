@@ -267,7 +267,9 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
         queryClient.invalidateQueries({ queryKey: ['carreira-plano'] });
         queryClient.invalidateQueries({ queryKey: ['carreira-atividade-limit'] });
         setStep('success');
-        onSubscribed?.();
+        // onSubscribed fires when the user acknowledges the success screen
+        // (see the "Continuar" button below) — not here, otherwise the parent
+        // navigates away before this screen ever gets a chance to render.
       } else {
         // Pagamento em análise pelo banco/Asaas — pollar até confirmar
         setCheckoutData({
@@ -305,7 +307,9 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
         // Invalidate plano and limit caches so badges and features update instantly
         queryClient.invalidateQueries({ queryKey: ['carreira-plano'] });
         queryClient.invalidateQueries({ queryKey: ['carreira-atividade-limit'] });
-        onSubscribed?.();
+        // onSubscribed fires when the user acknowledges the success screen
+        // (see the "Continuar" button below) — not here, otherwise the parent
+        // navigates away before this screen ever gets a chance to render.
         return true;
       }
       return false;
@@ -383,11 +387,15 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
             💳 Sua assinatura é <strong>recorrente</strong>. A cobrança será feita automaticamente no seu cartão a cada mês.
           </p>
         )}
-        {onClose && (
-          <Button className="w-full" onClick={onClose}>
-            Continuar
-          </Button>
-        )}
+        <Button
+          className="w-full"
+          onClick={() => {
+            onSubscribed?.();
+            onClose?.();
+          }}
+        >
+          Continuar
+        </Button>
       </div>
     );
   }
