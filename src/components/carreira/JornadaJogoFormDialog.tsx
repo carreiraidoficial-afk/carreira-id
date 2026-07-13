@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Loader2, Upload, X, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import { useJornada } from '@/hooks/useJornada';
-import type { CampeonatoComJogos, JogoComMidia } from '@/types/jornada-esportiva';
+import type { CampeonatoComJogos, JogoComMidia, PosicaoJogo } from '@/types/jornada-esportiva';
 
 interface Props {
   open: boolean;
@@ -22,6 +23,19 @@ interface Props {
 const NONE = '__none__';
 const MAX_IMG = 15 * 1024 * 1024;
 const MAX_VIDEO = 100 * 1024 * 1024;
+const POSICAO_NONE = '__none__';
+const POSICOES: { value: PosicaoJogo; label: string }[] = [
+  { value: 'goleiro', label: 'Goleiro' },
+  { value: 'zagueiro', label: 'Zagueiro' },
+  { value: 'lateral-direito', label: 'Lateral Direito' },
+  { value: 'lateral-esquerdo', label: 'Lateral Esquerdo' },
+  { value: 'volante', label: 'Volante' },
+  { value: 'meia', label: 'Meia' },
+  { value: 'meia-atacante', label: 'Meia-Atacante' },
+  { value: 'ala', label: 'Ala' },
+  { value: 'ponta', label: 'Ponta' },
+  { value: 'atacante', label: 'Atacante' },
+];
 
 export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonatos, editingJogo, onSaved }: Props) {
   const { criarJogo, editarJogo, adicionarMidiasJogo, excluirMidia } = useJornada(criancaId);
@@ -37,6 +51,18 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
   const [assist, setAssist] = useState('');
   const [fase, setFase] = useState('');
   const [obs, setObs] = useState('');
+  const [posicao, setPosicao] = useState<string>(POSICAO_NONE);
+  // Goleiro
+  const [minutos, setMinutos] = useState('');
+  const [golsSofridos, setGolsSofridos] = useState('');
+  const [defesas, setDefesas] = useState('');
+  const [penDef, setPenDef] = useState('');
+  const [teveDisputa, setTeveDisputa] = useState(false);
+  const [placarPenA, setPlacarPenA] = useState('');
+  const [placarPenB, setPlacarPenB] = useState('');
+  const [penDefDisputa, setPenDefDisputa] = useState('');
+  const [penLadoCerto, setPenLadoCerto] = useState('');
+  const [penLadoErrado, setPenLadoErrado] = useState('');
   const [novosArquivos, setNovosArquivos] = useState<File[]>([]);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
@@ -53,6 +79,17 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
       setAssist(editingJogo?.assistencias?.toString() ?? '');
       setFase(editingJogo?.fase_campeonato || '');
       setObs(editingJogo?.observacoes || '');
+      setPosicao(editingJogo?.posicao_jogo || POSICAO_NONE);
+      setMinutos(editingJogo?.minutos_jogados?.toString() ?? '');
+      setGolsSofridos(editingJogo?.gols_sofridos?.toString() ?? '');
+      setDefesas(editingJogo?.defesas_importantes?.toString() ?? '');
+      setPenDef(editingJogo?.penaltis_defendidos?.toString() ?? '');
+      setTeveDisputa(!!editingJogo?.teve_disputa_penaltis);
+      setPlacarPenA(editingJogo?.placar_penaltis_time?.toString() ?? '');
+      setPlacarPenB(editingJogo?.placar_penaltis_adversario?.toString() ?? '');
+      setPenDefDisputa(editingJogo?.penaltis_defendidos_disputa?.toString() ?? '');
+      setPenLadoCerto(editingJogo?.penaltis_gol_lado_correto?.toString() ?? '');
+      setPenLadoErrado(editingJogo?.penaltis_gol_lado_errado?.toString() ?? '');
       setNovosArquivos([]);
     }
   }, [open, editingJogo]);
@@ -112,6 +149,7 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
     if (!adversario.trim()) { toast.error('Informe o time adversário'); return; }
     setSaving(true);
     try {
+      const isGoleiro = posicao === 'goleiro';
       const payload = {
         campeonato_id: campeonatoId === NONE ? null : campeonatoId,
         data_jogo: dataJogo,
@@ -120,10 +158,22 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
         local: local.trim() || undefined,
         placar_time_atleta: num(placarA),
         placar_adversario: num(placarB),
-        gols_marcados: num(gols),
-        assistencias: num(assist),
+        gols_marcados: isGoleiro ? undefined : num(gols),
+        assistencias: isGoleiro ? undefined : num(assist),
+        posicao_jogo: posicao === POSICAO_NONE ? undefined : (posicao as PosicaoJogo),
         fase_campeonato: fase.trim() || undefined,
         observacoes: obs.trim() || undefined,
+        // Goleiro
+        minutos_jogados: isGoleiro ? (num(minutos) ?? null) : null,
+        gols_sofridos: isGoleiro ? (num(golsSofridos) ?? null) : null,
+        defesas_importantes: isGoleiro ? (num(defesas) ?? null) : null,
+        penaltis_defendidos: isGoleiro ? (num(penDef) ?? null) : null,
+        teve_disputa_penaltis: isGoleiro ? teveDisputa : null,
+        placar_penaltis_time: isGoleiro && teveDisputa ? (num(placarPenA) ?? null) : null,
+        placar_penaltis_adversario: isGoleiro && teveDisputa ? (num(placarPenB) ?? null) : null,
+        penaltis_defendidos_disputa: isGoleiro && teveDisputa ? (num(penDefDisputa) ?? null) : null,
+        penaltis_gol_lado_correto: isGoleiro && teveDisputa ? (num(penLadoCerto) ?? null) : null,
+        penaltis_gol_lado_errado: isGoleiro && teveDisputa ? (num(penLadoErrado) ?? null) : null,
       };
       let jogoId: string;
       if (editingJogo) {
