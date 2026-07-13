@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useCarreiraStats } from '@/hooks/useCarreiraJornadaData';
 import { Card } from '@/components/ui/card';
-import { Goal, Trophy, Medal, Swords, Target, Award } from 'lucide-react';
+import { Goal, Trophy, Medal, Swords, Target, Award, Shield, Timer, Hand } from 'lucide-react';
 
 interface CarreiraStatsCardsProps {
   criancaId: string | null | undefined;
@@ -15,6 +15,13 @@ const statConfig = [
   { key: 'totalVitorias', label: 'Vitórias', icon: Award },
   { key: 'totalCampeonatos', label: 'Campeonatos', icon: Trophy },
   { key: 'totalPremiacoes', label: 'Premiações', icon: Medal },
+] as const;
+
+const goleiroConfig = [
+  { key: 'totalDefesas', label: 'Defesas', icon: Shield },
+  { key: 'totalGolsSofridos', label: 'Gols sofridos', icon: Goal },
+  { key: 'totalPenaltisDefendidos', label: 'Pên. defendidos', icon: Hand },
+  { key: 'minutosGoleiro', label: 'Minutos', icon: Timer },
 ] as const;
 
 export function CarreiraStatsCards({ criancaId, accentColor = '#3b82f6' }: CarreiraStatsCardsProps) {
@@ -54,6 +61,7 @@ export function CarreiraStatsCards({ criancaId, accentColor = '#3b82f6' }: Carre
           <p className="text-xs mt-1">Registre campeonatos e jogos na aba <strong>Jornada Esportiva</strong> para ver suas estatísticas aqui.</p>
         </div>
       ) : (
+        <>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {statConfig.map(({ key, label, icon: Icon }) => {
             const value = stats[key];
@@ -70,6 +78,27 @@ export function CarreiraStatsCards({ criancaId, accentColor = '#3b82f6' }: Carre
             );
           })}
         </div>
+        {stats.jogosComoGoleiro > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground mt-2">
+              🧤 Estatísticas como goleiro ({stats.jogosComoGoleiro} jogo{stats.jogosComoGoleiro > 1 ? 's' : ''})
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {goleiroConfig.map(({ key, label, icon: Icon }) => (
+                <Card
+                  key={key}
+                  className="p-4 flex flex-col items-center justify-center text-center gap-1 border"
+                  style={{ borderColor: `${accentColor}25` }}
+                >
+                  <Icon className="w-6 h-6" style={{ color: accentColor }} />
+                  <span className="text-2xl font-bold">{stats[key]}</span>
+                  <span className="text-xs text-muted-foreground">{label}</span>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+        </>
       )}
     </div>
   );
