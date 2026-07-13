@@ -90,6 +90,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
   const cpfValid = cpfDigits.length === 11;
   const planInfo = PLANOS[selectedPlan];
   const isPremium = selectedPlan === 'premium';
+  const isSandboxTest = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('asaas_sandbox') === '1';
 
   const generatePix = async () => {
     const cleanCpf = cpfInput.replace(/\D/g, '');
@@ -224,6 +225,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
           cpf: cpfInput.replace(/\D/g, ''),
           nome: resolvedUser.name,
           email: resolvedUser.email,
+          sandbox: isSandboxTest,
           card: {
             holderName: cardForm.holderName.trim().toUpperCase(),
             number: numberDigits,
@@ -291,6 +293,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
         body: {
           payment_id: paymentId,
           subscription_id: pixData?.subscriptionId || '',
+          sandbox: isSandboxTest,
         },
       });
 
@@ -433,6 +436,11 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
           <p className="text-xs text-muted-foreground">
             Cobrança mensal automática de <strong>R$ {planInfo.preco.toFixed(2).replace('.', ',')}</strong>. Cancele quando quiser.
           </p>
+          {isSandboxTest && (
+            <Badge variant="outline" className="border-amber-500/50 text-amber-600 bg-amber-500/10 text-[10px]">
+              🧪 Modo teste (sandbox)
+            </Badge>
+          )}
         </div>
 
         <div className="space-y-2">
