@@ -146,10 +146,28 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
           {dataFmt}{j.local ? ` • ${j.local}` : ''}
         </p>
         <div className="flex flex-wrap gap-1.5 mt-1.5 text-[11px]">
-          {!!j.gols_marcados && <Tag>⚽ {j.gols_marcados} gol(s) do atleta</Tag>}
-          {!!j.assistencias && <Tag>🎯 {j.assistencias} assist. do atleta</Tag>}
+          {j.posicao_jogo === 'goleiro' ? (
+            <>
+              <Tag>🧤 Goleiro</Tag>
+              {j.defesas_importantes != null && <Tag>🛡️ {j.defesas_importantes} defesa(s)</Tag>}
+              {j.gols_sofridos != null && <Tag>🥅 {j.gols_sofridos} sofrido(s)</Tag>}
+              {!!j.penaltis_defendidos && <Tag>⛔ {j.penaltis_defendidos} pên. def.</Tag>}
+              {!!j.minutos_jogados && <Tag>⏱️ {j.minutos_jogados}'</Tag>}
+            </>
+          ) : (
+            <>
+              {!!j.gols_marcados && <Tag>⚽ {j.gols_marcados} gol(s) do atleta</Tag>}
+              {!!j.assistencias && <Tag>🎯 {j.assistencias} assist. do atleta</Tag>}
+            </>
+          )}
           {j.fase_campeonato && <Tag>{j.fase_campeonato}</Tag>}
         </div>
+        {j.posicao_jogo === 'goleiro' && j.teve_disputa_penaltis && (
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Disputa de pênaltis: <strong>{j.placar_penaltis_time ?? '?'} × {j.placar_penaltis_adversario ?? '?'}</strong>
+            {j.penaltis_defendidos_disputa != null && ` · ${j.penaltis_defendidos_disputa} def.`}
+          </p>
+        )}
         {j.observacoes && <p className="text-xs text-muted-foreground mt-1.5">{j.observacoes}</p>}
         {j.midias && j.midias.length > 0 && (
           <div className="grid grid-cols-4 gap-1 mt-2">
