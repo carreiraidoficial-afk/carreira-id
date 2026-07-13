@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, Upload, Shield, Lock } from 'lucide-react';
+import { ArrowLeft, Loader2, Upload, Shield, Lock, CheckCircle } from 'lucide-react';
 import { validateCPF, formatCPF } from '@/lib/cpf-validator';
 import { validatePhone, SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
 
@@ -47,6 +47,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const formatPhone = (value: string) => {
     const d = value.replace(/\D/g, '').slice(0, 11);
@@ -202,7 +203,10 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
       }
 
       toast.success('Perfil do atleta criado com sucesso!');
-      await onComplete();
+      // Show an explicit success screen and only advance (which triggers the
+      // PWA install popup upstream) once the user acknowledges it — otherwise
+      // the popup covers the still-visible form and it looks like nothing happened.
+      setShowSuccess(true);
     } catch (err: any) {
       console.error('Erro ao criar perfil do atleta:', err);
       toast.error(
@@ -213,6 +217,23 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
       setIsLoading(false);
     }
   };
+
+  if (showSuccess) {
+    return (
+      <div className="animate-fade-in text-center space-y-4 py-8">
+        <div className="mx-auto w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+          <CheckCircle className="w-8 h-8 text-emerald-600" />
+        </div>
+        <h2 className="text-xl font-bold text-foreground">Perfil criado com sucesso! 🎉</h2>
+        <p className="text-sm text-muted-foreground">
+          O perfil de <strong className="text-foreground">{nome.trim()}</strong> já está pronto.
+        </p>
+        <Button className="w-full" size="lg" onClick={() => onComplete()}>
+          Continuar
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in">
