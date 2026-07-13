@@ -72,6 +72,17 @@ export interface Jogo {
   observacoes?: string;
   fase_campeonato?: string;
   created_at: string;
+  // Estatísticas de goleiro (opcionais)
+  minutos_jogados?: number | null;
+  gols_sofridos?: number | null;
+  defesas_importantes?: number | null;
+  penaltis_defendidos?: number | null;
+  teve_disputa_penaltis?: boolean | null;
+  placar_penaltis_time?: number | null;
+  placar_penaltis_adversario?: number | null;
+  penaltis_defendidos_disputa?: number | null;
+  penaltis_gol_lado_correto?: number | null;
+  penaltis_gol_lado_errado?: number | null;
 }
 
 export interface JogoMidia {
@@ -103,6 +114,12 @@ export interface EstatisticasAtleta {
   totalVitorias: number;
   totalCampeonatos: number;
   posicoesMais: { posicao: PosicaoJogo; vezes: number }[];
+  // Agregados de goleiro
+  jogosComoGoleiro?: number;
+  totalDefesas?: number;
+  totalGolsSofridos?: number;
+  totalPenaltisDefendidos?: number;
+  minutosTotais?: number;
 }
 
 export interface JornadaEsportivaData {
@@ -143,6 +160,17 @@ export interface CreateJogoInput {
   time_atleta?: string | null;
   observacoes?: string;
   fase_campeonato?: string;
+  // Estatísticas de goleiro (opcionais)
+  minutos_jogados?: number | null;
+  gols_sofridos?: number | null;
+  defesas_importantes?: number | null;
+  penaltis_defendidos?: number | null;
+  teve_disputa_penaltis?: boolean | null;
+  placar_penaltis_time?: number | null;
+  placar_penaltis_adversario?: number | null;
+  penaltis_defendidos_disputa?: number | null;
+  penaltis_gol_lado_correto?: number | null;
+  penaltis_gol_lado_errado?: number | null;
 }
 
 export interface CreateJogoMidiaInput {
