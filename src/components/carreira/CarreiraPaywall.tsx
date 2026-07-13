@@ -259,11 +259,21 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
       }
       if (data?.error) throw new Error(data.error);
 
-      toast.success('Assinatura ativada! Cobrança mensal automática configurada.');
-      queryClient.invalidateQueries({ queryKey: ['carreira-plano'] });
-      queryClient.invalidateQueries({ queryKey: ['carreira-atividade-limit'] });
-      setStep('success');
-      onSubscribed?.();
+      const result = data?.data || {};
+      if (result.status === 'approved') {
+        toast.success('Assinatura ativada! Cobrança mensal automática configurada.');
+        queryClient.invalidateQueries({ queryKey: ['carreira-plano'] });
+        queryClient.invalidateQueries({ queryKey: ['carreira-atividade-limit'] });
+        setStep('success');
+        onSubscribed?.();
+      } else {
+        // Pagamento em análise pelo banco/Asaas — pollar até confirmar
+        setCheckoutData({
+          paymentId: result.paymentId || result.subscriptionId,
+          subscriptionId: '',
+        });
+        setStep('checking');
+      }
     } catch (err: any) {
       console.error('Erro ao assinar com cartão:', err);
       setCardError(err.message || 'Erro ao processar cartão. Tente novamente ou use outro cartão.');
