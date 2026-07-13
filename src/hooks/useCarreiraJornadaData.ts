@@ -142,6 +142,12 @@ export function useCarreiraConquistas(criancaId: string | null | undefined) {
 export interface CarreiraStatsExtended extends CarreiraStats {
   totalAssistencias: number;
   totalVitorias: number;
+  // Goleiro
+  jogosComoGoleiro: number;
+  totalDefesas: number;
+  totalGolsSofridos: number;
+  totalPenaltisDefendidos: number;
+  minutosGoleiro: number;
 }
 
 export interface UseCarreiraStatsResult {
@@ -212,6 +218,12 @@ export function useCarreiraStats(
   ).length;
   const jTotalPremiacoes = jCampeonatos.reduce((s, c: any) => s + (c.premiacoes?.length || 0), 0);
 
+  const jJogosGoleiro = jAllJogos.filter((j: any) => j.posicao_jogo === 'goleiro');
+  const jTotalDefesas = jJogosGoleiro.reduce((s, j: any) => s + (j.defesas_importantes || 0), 0);
+  const jTotalGolsSofridos = jJogosGoleiro.reduce((s, j: any) => s + (j.gols_sofridos || 0), 0);
+  const jTotalPenaltisDef = jJogosGoleiro.reduce((s, j: any) => s + (j.penaltis_defendidos || 0) + (j.penaltis_defendidos_disputa || 0), 0);
+  const jMinutosGoleiro = jJogosGoleiro.reduce((s, j: any) => s + (j.minutos_jogados || 0), 0);
+
   const stats: CarreiraStatsExtended = {
     totalGols: totalGolsSync + jTotalGols,
     totalJogos: amistososFinalizados.length + orphanGolEventIds.size + jAllJogos.length,
@@ -220,6 +232,11 @@ export function useCarreiraStats(
     totalConquistas: conquistasFiltered.length,
     totalAssistencias: jTotalAssist,
     totalVitorias: jTotalVitorias,
+    jogosComoGoleiro: jJogosGoleiro.length,
+    totalDefesas: jTotalDefesas,
+    totalGolsSofridos: jTotalGolsSofridos,
+    totalPenaltisDefendidos: jTotalPenaltisDef,
+    minutosGoleiro: jMinutosGoleiro,
   };
 
   return { stats, anosDisponiveis };
