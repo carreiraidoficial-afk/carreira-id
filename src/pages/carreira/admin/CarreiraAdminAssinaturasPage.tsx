@@ -6,7 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Loader2, CreditCard, QrCode, RefreshCw } from 'lucide-react';
+import { Search, Loader2, CreditCard, QrCode, RefreshCw, Pencil, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -117,6 +122,9 @@ export default function CarreiraAdminAssinaturasPage() {
   const [renewLoading, setRenewLoading] = useState(false);
   const queryClient = useQueryClient();
   const { data: assinaturas, isLoading } = useAdminAssinaturas(search);
+  const [editing, setEditing] = useState<any>(null);
+  const [deleting, setDeleting] = useState<any>(null);
+  const [deletingLoading, setDeletingLoading] = useState(false);
   const ativas = assinaturas?.filter((a: any) => a.status === 'ativa').length || 0;
   const total = assinaturas?.length || 0;
 
@@ -133,6 +141,20 @@ export default function CarreiraAdminAssinaturasPage() {
     } finally {
       setRenewLoading(false);
     }
+  };
+
+  const handleDelete = async () => {
+    if (!deleting) return;
+    setDeletingLoading(true);
+    try {
+      const { error } = await supabase.from('carreira_assinaturas').delete().eq('id', deleting.id);
+      if (error) throw error;
+      toast.success('Assinatura removida do banco');
+      queryClient.invalidateQueries({ queryKey: ['carreira-admin-assinaturas'] });
+      setDeleting(null);
+    } catch (e: any) {
+      toast.error('Erro: ' + e.message);
+    } finally { setDeletingLoading(false); }
   };
 
   return (
@@ -178,6 +200,7 @@ export default function CarreiraAdminAssinaturasPage() {
                      <TableHead>Status</TableHead>
                      <TableHead>Início</TableHead>
                      <TableHead>Vencimento / Cancel.</TableHead>
+                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -231,6 +254,18 @@ export default function CarreiraAdminAssinaturasPage() {
                             ? format(new Date(ass.expira_em), 'dd/MM/yyyy', { locale: ptBR })
                             : '—'}
                       </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8"
+                            onClick={() => setEditing(ass)} title="Editar">
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => setDeleting(ass)} title="Excluir assinatura">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -238,7 +273,106 @@ export default function CarreiraAdminAssinaturasPage() {
             </div>
           </Card>
         )}
+
+        {editing && (
+          <EditAssinaturaDialog assinatura={editing} onClose={() => setEditing(null)} onSaved={() => { queryClient.invalidateQueries({ queryKey: ['carreira-admin-assinaturas'] }); setEditing(null); }} />
+        )}
+
+        <AlertDialog open={!!deleting} onOpenChange={(v) => { if (!v) setDeleting(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir assinatura?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Isso remove o registro apenas do banco de dados. Se a assinatura estiver ativa no Asaas, cancele-a também no painel do Asaas.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deletingLoading}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} disabled={deletingLoading} className="bg-destructive hover:bg-destructive/90">
+                {deletingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Excluir'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </CarreiraAdminLayout>
+  );
+}
+
+function EditAssinaturaDialog({ assinatura, onClose, onSaved }: { assinatura: any; onClose: () => void; onSaved: () => void }) {
+  const [form, setForm] = useState<any>(() => ({
+    status: assinatura.status || 'pendente',
+    plano: assinatura.plano || '',
+    metodo_pagamento: assinatura.metodo_pagamento || '',
+    valor: assinatura.valor ?? '',
+    expira_em: assinatura.expira_em ? assinatura.expira_em.substring(0, 10) : '',
+    observacoes: assinatura.observacoes || '',
+  }));
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const payload: any = {
+        status: form.status,
+        plano: form.plano,
+        metodo_pagamento: form.metodo_pagamento || null,
+        valor: form.valor === '' ? null : Number(form.valor),
+        expira_em: form.expira_em || null,
+        observacoes: form.observacoes || null,
+      };
+      if (form.status === 'cancelada' && !assinatura.cancelada_em) {
+        payload.cancelada_em = new Date().toISOString();
+      }
+      const { error } = await supabase.from('carreira_assinaturas').update(payload).eq('id', assinatura.id);
+      if (error) throw error;
+      toast.success('Assinatura atualizada');
+      onSaved();
+    } catch (e: any) {
+      toast.error('Erro: ' + e.message);
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <Dialog open onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader><DialogTitle>Editar assinatura</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Status</Label>
+            <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ativa">Ativa</SelectItem>
+                <SelectItem value="trial">Trial</SelectItem>
+                <SelectItem value="pendente">Pendente</SelectItem>
+                <SelectItem value="cancelada">Cancelada</SelectItem>
+                <SelectItem value="expirada">Expirada</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div><Label>Plano</Label><Input value={form.plano} onChange={e => setForm({ ...form, plano: e.target.value })} /></div>
+          <div className="grid grid-cols-2 gap-2">
+            <div><Label>Valor (R$)</Label><Input type="number" step="0.01" value={form.valor} onChange={e => setForm({ ...form, valor: e.target.value })} /></div>
+            <div>
+              <Label>Método</Label>
+              <Select value={form.metodo_pagamento || ''} onValueChange={v => setForm({ ...form, metodo_pagamento: v })}>
+                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pix">PIX</SelectItem>
+                  <SelectItem value="cartao_credito">Cartão</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div><Label>Expira em</Label><Input type="date" value={form.expira_em} onChange={e => setForm({ ...form, expira_em: e.target.value })} /></div>
+          <div><Label>Observações</Label><Textarea value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} rows={2} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar'}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

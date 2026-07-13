@@ -8,7 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Loader2, User, Eye, EyeOff, ExternalLink, Mail, Phone } from 'lucide-react';
+import { Search, Loader2, User, Eye, EyeOff, ExternalLink, Mail, Phone, Pencil, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -77,8 +81,116 @@ function useToggleVisibility() {
   });
 }
 
+function EditPerfilDialog({ perfil, type, open, onOpenChange }: { perfil: any; type: 'atleta' | 'rede'; open: boolean; onOpenChange: (v: boolean) => void }) {
+  const qc = useQueryClient();
+  const [form, setForm] = useState<any>(() => ({
+    nome: perfil.nome || '',
+    slug: perfil.slug || '',
+    modalidade: perfil.modalidade || '',
+    cidade: perfil.cidade || '',
+    estado: perfil.estado || '',
+    is_public: !!perfil.is_public,
+    status_conta: perfil.status_conta || 'ativo',
+    tipo: perfil.tipo || '',
+  }));
+  const [saving, setSaving] = useState(false);
+
+  const table = type === 'atleta' ? 'perfil_atleta' : 'perfis_rede';
+  const invalidateKey = type === 'atleta' ? 'carreira-admin-perfis-atleta' : 'carreira-admin-perfis-rede';
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const payload: any = { nome: form.nome, slug: form.slug, status_conta: form.status_conta };
+      if (type === 'atleta') {
+        payload.modalidade = form.modalidade;
+        payload.cidade = form.cidade;
+        payload.estado = form.estado;
+        payload.is_public = form.is_public;
+      } else {
+        payload.tipo = form.tipo;
+      }
+      const { error } = await supabase.from(table).update(payload).eq('id', perfil.id);
+      if (error) throw error;
+      toast.success('Perfil atualizado');
+      qc.invalidateQueries({ queryKey: [invalidateKey] });
+      onOpenChange(false);
+    } catch (e: any) {
+      toast.error('Erro: ' + e.message);
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader><DialogTitle>Editar perfil</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div><Label>Nome</Label><Input value={form.nome || ''} onChange={e => setForm({ ...form, nome: e.target.value })} /></div>
+          <div><Label>Slug</Label><Input value={form.slug || ''} onChange={e => setForm({ ...form, slug: e.target.value })} /></div>
+          {type === 'atleta' && (
+            <>
+              <div><Label>Modalidade</Label><Input value={form.modalidade || ''} onChange={e => setForm({ ...form, modalidade: e.target.value })} /></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><Label>Cidade</Label><Input value={form.cidade || ''} onChange={e => setForm({ ...form, cidade: e.target.value })} /></div>
+                <div><Label>Estado</Label><Input value={form.estado || ''} onChange={e => setForm({ ...form, estado: e.target.value })} maxLength={2} /></div>
+              </div>
+              <div>
+                <Label>Visibilidade</Label>
+                <Select value={form.is_public ? 'public' : 'private'} onValueChange={v => setForm({ ...form, is_public: v === 'public' })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="public">Público</SelectItem><SelectItem value="private">Oculto</SelectItem></SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+          {type === 'rede' && (
+            <div><Label>Tipo</Label><Input value={form.tipo || ''} onChange={e => setForm({ ...form, tipo: e.target.value })} /></div>
+          )}
+          <div>
+            <Label>Status da conta</Label>
+            <Select value={form.status_conta || 'ativo'} onValueChange={v => setForm({ ...form, status_conta: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ativo">Ativo</SelectItem>
+                <SelectItem value="inativo">Inativo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar'}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function PerfilTable({ perfis, type }: { perfis: any[]; type: 'atleta' | 'rede' }) {
   const toggle = useToggleVisibility();
+  const qc = useQueryClient();
+  const [editing, setEditing] = useState<any>(null);
+  const [deleting, setDeleting] = useState<any>(null);
+  const [deletingLoading, setDeletingLoading] = useState(false);
+
+  const handleDelete = async () => {
+    if (!deleting) return;
+    setDeletingLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { user_id: deleting.user_id },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success('Usuário e dados relacionados apagados');
+      qc.invalidateQueries({ queryKey: ['carreira-admin-perfis-atleta'] });
+      qc.invalidateQueries({ queryKey: ['carreira-admin-perfis-rede'] });
+      setDeleting(null);
+    } catch (e: any) {
+      toast.error('Erro: ' + (e.message || 'falha ao excluir'));
+    } finally { setDeletingLoading(false); }
+  };
+
   return (
     <Card>
       <div className="overflow-x-auto">
@@ -93,7 +205,7 @@ function PerfilTable({ perfis, type }: { perfis: any[]; type: 'atleta' | 'rede' 
               <TableHead>Origem Auth</TableHead>
               <TableHead>Criado em</TableHead>
               <TableHead>Status</TableHead>
-              {type === 'atleta' && <TableHead className="text-right">Ações</TableHead>}
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -132,29 +244,58 @@ function PerfilTable({ perfis, type }: { perfis: any[]; type: 'atleta' | 'rede' 
                     {p.status_conta === 'inativo' ? 'Inativo' : 'Ativo'}
                   </Badge>
                 </TableCell>
-                {type === 'atleta' && (
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      {p.slug && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8"
-                          onClick={() => window.open(`/${p.slug}`, '_blank')}
-                          title="Ver perfil público">
-                          <ExternalLink className="w-4 h-4" />
-                        </Button>
-                      )}
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    {type === 'atleta' && p.slug && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8"
+                        onClick={() => window.open(`/${p.slug}`, '_blank')}
+                        title="Ver perfil público">
+                        <ExternalLink className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {type === 'atleta' && (
                       <Button variant="ghost" size="icon" className="h-8 w-8"
                         onClick={() => toggle.mutate({ id: p.id, is_public: !p.is_public })}
                         title={p.is_public ? 'Ocultar' : 'Tornar público'}>
                         {p.is_public ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </Button>
-                    </div>
-                  </TableCell>
-                )}
+                    )}
+                    <Button variant="ghost" size="icon" className="h-8 w-8"
+                      onClick={() => setEditing(p)} title="Editar">
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => setDeleting(p)} title="Excluir usuário">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      {editing && (
+        <EditPerfilDialog perfil={editing} type={type} open={!!editing} onOpenChange={(v) => { if (!v) setEditing(null); }} />
+      )}
+
+      <AlertDialog open={!!deleting} onOpenChange={(v) => { if (!v) setDeleting(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {deleting?.nome}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso apagará o usuário do Auth e <b>todos os dados relacionados</b>: perfis, posts, assinaturas, conexões, gamificação, etc. Um backup fica salvo por 30 dias. Ação irreversível.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deletingLoading} className="bg-destructive hover:bg-destructive/90">
+              {deletingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
