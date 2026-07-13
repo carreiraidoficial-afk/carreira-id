@@ -161,6 +161,11 @@ export function useJornada(criancaId: string | undefined | null) {
         totalVitorias,
         totalCampeonatos: campeonatos.length,
         posicoesMais,
+        jogosComoGoleiro: jogosComMidia.filter((j) => j.posicao_jogo === 'goleiro').length,
+        totalDefesas: jogosComMidia.reduce((s, j) => s + (j.posicao_jogo === 'goleiro' ? (j.defesas_importantes || 0) : 0), 0),
+        totalGolsSofridos: jogosComMidia.reduce((s, j) => s + (j.posicao_jogo === 'goleiro' ? (j.gols_sofridos || 0) : 0), 0),
+        totalPenaltisDefendidos: jogosComMidia.reduce((s, j) => s + (j.posicao_jogo === 'goleiro' ? ((j.penaltis_defendidos || 0) + (j.penaltis_defendidos_disputa || 0)) : 0), 0),
+        minutosTotais: jogosComMidia.reduce((s, j) => s + (j.posicao_jogo === 'goleiro' ? (j.minutos_jogados || 0) : 0), 0),
       };
 
     return { campeonatos: campeonatosComJogos, amistosos, estatisticas };
@@ -332,6 +337,19 @@ export function useJornada(criancaId: string | undefined | null) {
         .select('id')
         .single();
       if (error) throw error;
+      // Atualiza campos de goleiro se fornecidos (sem quebrar caso colunas ainda não existam)
+      await (supabase as any).from('carreira_jogos').update({
+        minutos_jogados: input.minutos_jogados ?? null,
+        gols_sofridos: input.gols_sofridos ?? null,
+        defesas_importantes: input.defesas_importantes ?? null,
+        penaltis_defendidos: input.penaltis_defendidos ?? null,
+        teve_disputa_penaltis: input.teve_disputa_penaltis ?? null,
+        placar_penaltis_time: input.placar_penaltis_time ?? null,
+        placar_penaltis_adversario: input.placar_penaltis_adversario ?? null,
+        penaltis_defendidos_disputa: input.penaltis_defendidos_disputa ?? null,
+        penaltis_gol_lado_correto: input.penaltis_gol_lado_correto ?? null,
+        penaltis_gol_lado_errado: input.penaltis_gol_lado_errado ?? null,
+      }).eq('id', inserted.id);
       await fetchData();
       return inserted.id as string;
     },
@@ -356,6 +374,16 @@ export function useJornada(criancaId: string | undefined | null) {
           posicao_jogo: input.posicao_jogo,
           observacoes: input.observacoes,
           fase_campeonato: input.fase_campeonato,
+          minutos_jogados: input.minutos_jogados ?? null,
+          gols_sofridos: input.gols_sofridos ?? null,
+          defesas_importantes: input.defesas_importantes ?? null,
+          penaltis_defendidos: input.penaltis_defendidos ?? null,
+          teve_disputa_penaltis: input.teve_disputa_penaltis ?? null,
+          placar_penaltis_time: input.placar_penaltis_time ?? null,
+          placar_penaltis_adversario: input.placar_penaltis_adversario ?? null,
+          penaltis_defendidos_disputa: input.penaltis_defendidos_disputa ?? null,
+          penaltis_gol_lado_correto: input.penaltis_gol_lado_correto ?? null,
+          penaltis_gol_lado_errado: input.penaltis_gol_lado_errado ?? null,
         })
         .eq('id', id);
       if (error) throw error;

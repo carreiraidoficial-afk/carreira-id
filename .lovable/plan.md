@@ -1,46 +1,42 @@
 
-## Objetivo
-Permitir que o admin **edite** e **exclua** perfis (atletas e rede profissional) e **assinaturas** direto das telas de admin, para limpar contas de teste.
+# Frontend: Estatísticas de Goleiro
 
-## O que será adicionado
+Migration confirmada no Supabase (10 colunas novas em `carreira_jogos`). Agora integramos no app.
 
-### 1) Página de Perfis Admin (`CarreiraAdminPerfisPage.tsx`)
-Adicionar coluna "Ações" também na aba **Rede Profissional** (hoje só existe em Atletas) e, em ambas as abas, dois botões novos por linha:
+## Regra de exibição
+Campos de goleiro aparecem **por jogo**, quando `posicao_jogo === 'goleiro'` no formulário. Assim o mesmo atleta pode registrar jogos como goleiro e como linha sem poluir a UI.
 
-- **Editar** (ícone `Pencil`) → abre um `Dialog` simples para alterar campos essenciais:
-  - Atletas: `nome`, `slug`, `modalidade`, `cidade`, `estado`, `is_public`, `status_conta`
-  - Rede: `nome`, `slug`, `tipo`, `status_conta`
-  - Salva via `supabase.from('perfil_atleta' | 'perfis_rede').update(...)`
-- **Excluir** (ícone `Trash2`, vermelho) → abre `AlertDialog` de confirmação ("Isso apagará o usuário e TODOS os dados relacionados. Ação irreversível.") e chama uma nova **edge function `admin-delete-user`**.
+## Alterações
 
-### 2) Nova edge function `admin-delete-user`
-Baseada em `delete-account/index.ts`, mas:
-- Aceita `{ user_id: string }` no body
-- Valida via `Authorization` header que o chamador é admin (email `carreiraidoficial@gmail.com` OU tem `has_role(uid, 'admin')`)
-- Executa exatamente o mesmo backup + cascata de deletes de `delete-account`, mas para o `user_id` alvo (não o do requisitante)
-- Adicionar em `supabase/config.toml` com `verify_jwt = true`
+### 1) `src/types/jornada-esportiva.ts`
+Adicionar em `Jogo` e `CreateJogoInput` os 10 campos opcionais:
+`minutos_jogados`, `gols_sofridos`, `defesas_importantes`, `penaltis_defendidos`, `teve_disputa_penaltis`, `placar_penaltis_time`, `placar_penaltis_adversario`, `penaltis_defendidos_disputa`, `penaltis_gol_lado_correto`, `penaltis_gol_lado_errado`.
 
-### 3) Página de Assinaturas Admin (`CarreiraAdminAssinaturasPage.tsx`)
-Adicionar coluna "Ações" ao final da tabela com dois botões:
+### 2) `src/components/carreira/JornadaJogoFormDialog.tsx`
+- Bloco **"Estatísticas de Goleiro"** exibido só quando `posicao_jogo === 'goleiro'`.
+- Grid com: Minutos jogados · Gols sofridos · Defesas importantes · Pênaltis defendidos.
+- Switch **"Houve disputa de pênaltis?"** → abre sub-bloco: Placar (time × adv), Defendidos na disputa, Gol lado correto, Gol lado errado.
+- Quando é goleiro, esconder os campos "Gols marcados" e "Assistências" (não fazem sentido).
 
-- **Editar** (`Pencil`) → `Dialog` com campos: `status` (`ativa | trial | pendente | cancelada | expirada`), `plano`, `expira_em` (date), `valor`, `metodo_pagamento`, `observacoes`. Salva com `update` direto na tabela `carreira_assinaturas`.
-- **Excluir** (`Trash2`) → `AlertDialog` de confirmação. Deleta a linha:
-  ```ts
-  supabase.from('carreira_assinaturas').delete().eq('id', ass.id)
-  ```
-  Nota: não cancela a assinatura no Asaas automaticamente (para cancelar de fato no gateway é necessário fluxo diferente). O aviso do modal deixará isso explícito: "Isso remove apenas do banco. Cancele também no Asaas se necessário."
+### 3) `src/hooks/useJornada.ts` (`criarJogo` e `editarJogo`)
+Encaminhar os 10 campos novos no `insert`/`update` de `carreira_jogos`.
 
-## Segurança
-- Todas as operações passam por RLS existente + verificação no edge function (`admin-delete-user`).
-- Botões só aparecem em `CarreiraAdminLayout` (que já é protegido por admin).
+### 4) `src/components/carreira/CarreiraJogoCard.tsx`
+Se o jogo tem `posicao_jogo === 'goleiro'`, trocar badges por: **Defesas · Gols sofridos · Pênaltis defendidos**. Se `teve_disputa_penaltis`, mostrar linha extra: `Pênaltis: 4 × 3 · Def: 2`.
 
-## Deploy manual (Supabase)
-Depois que os arquivos forem gerados:
-1. Copiar o código de `supabase/functions/admin-delete-user/index.ts` para o Dashboard → Edge Functions → **New function** `admin-delete-user` (verify JWT = ON) → Deploy.
-2. Nenhum SQL necessário.
+### 5) `src/types/jornada-esportiva.ts` — `EstatisticasAtleta`
+Adicionar (opcionais): `totalDefesas`, `totalGolsSofridos`, `totalPenaltisDefendidos`, `minutosTotais`, `jogosComoGoleiro`.
 
-## Arquivos a alterar/criar
-- `src/pages/carreira/admin/CarreiraAdminPerfisPage.tsx` — botões Editar/Excluir + dialogs
-- `src/pages/carreira/admin/CarreiraAdminAssinaturasPage.tsx` — botões Editar/Excluir + dialogs
-- `supabase/functions/admin-delete-user/index.ts` — nova função
-- `supabase/config.toml` — registrar a função
+### 6) `src/hooks/useJornada.ts` — agregação
+Calcular os totais acima somando os jogos com `posicao_jogo === 'goleiro'`.
+
+### 7) `src/components/carreira/CarreiraStatsCards.tsx`
+Se `estatisticas.jogosComoGoleiro > 0`, mostrar cards adicionais: **Defesas**, **Gols sofridos**, **Pênaltis def.**, **Minutos**. Cards de "Gols" e "Assistências" continuam (para jogos como linha).
+
+### 8) Regenerar `src/integrations/supabase/types.ts`
+Rodar para incluir as colunas novas (automático no próximo build/refresh do types).
+
+## Fora de escopo
+- Estatística por campeonato específica de goleiro (pode vir depois).
+- Import/export de planilha.
+- Comparação com "outro goleiro" da planilha.

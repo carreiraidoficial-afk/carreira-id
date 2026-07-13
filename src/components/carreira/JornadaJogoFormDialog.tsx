@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Loader2, Upload, X, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import { useJornada } from '@/hooks/useJornada';
-import type { CampeonatoComJogos, JogoComMidia } from '@/types/jornada-esportiva';
+import type { CampeonatoComJogos, JogoComMidia, PosicaoJogo } from '@/types/jornada-esportiva';
 
 interface Props {
   open: boolean;
@@ -22,6 +23,19 @@ interface Props {
 const NONE = '__none__';
 const MAX_IMG = 15 * 1024 * 1024;
 const MAX_VIDEO = 100 * 1024 * 1024;
+const POSICAO_NONE = '__none__';
+const POSICOES: { value: PosicaoJogo; label: string }[] = [
+  { value: 'goleiro', label: 'Goleiro' },
+  { value: 'zagueiro', label: 'Zagueiro' },
+  { value: 'lateral-direito', label: 'Lateral Direito' },
+  { value: 'lateral-esquerdo', label: 'Lateral Esquerdo' },
+  { value: 'volante', label: 'Volante' },
+  { value: 'meia', label: 'Meia' },
+  { value: 'meia-atacante', label: 'Meia-Atacante' },
+  { value: 'ala', label: 'Ala' },
+  { value: 'ponta', label: 'Ponta' },
+  { value: 'atacante', label: 'Atacante' },
+];
 
 export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonatos, editingJogo, onSaved }: Props) {
   const { criarJogo, editarJogo, adicionarMidiasJogo, excluirMidia } = useJornada(criancaId);
@@ -37,6 +51,18 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
   const [assist, setAssist] = useState('');
   const [fase, setFase] = useState('');
   const [obs, setObs] = useState('');
+  const [posicao, setPosicao] = useState<string>(POSICAO_NONE);
+  // Goleiro
+  const [minutos, setMinutos] = useState('');
+  const [golsSofridos, setGolsSofridos] = useState('');
+  const [defesas, setDefesas] = useState('');
+  const [penDef, setPenDef] = useState('');
+  const [teveDisputa, setTeveDisputa] = useState(false);
+  const [placarPenA, setPlacarPenA] = useState('');
+  const [placarPenB, setPlacarPenB] = useState('');
+  const [penDefDisputa, setPenDefDisputa] = useState('');
+  const [penLadoCerto, setPenLadoCerto] = useState('');
+  const [penLadoErrado, setPenLadoErrado] = useState('');
   const [novosArquivos, setNovosArquivos] = useState<File[]>([]);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
@@ -53,6 +79,17 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
       setAssist(editingJogo?.assistencias?.toString() ?? '');
       setFase(editingJogo?.fase_campeonato || '');
       setObs(editingJogo?.observacoes || '');
+      setPosicao(editingJogo?.posicao_jogo || POSICAO_NONE);
+      setMinutos(editingJogo?.minutos_jogados?.toString() ?? '');
+      setGolsSofridos(editingJogo?.gols_sofridos?.toString() ?? '');
+      setDefesas(editingJogo?.defesas_importantes?.toString() ?? '');
+      setPenDef(editingJogo?.penaltis_defendidos?.toString() ?? '');
+      setTeveDisputa(!!editingJogo?.teve_disputa_penaltis);
+      setPlacarPenA(editingJogo?.placar_penaltis_time?.toString() ?? '');
+      setPlacarPenB(editingJogo?.placar_penaltis_adversario?.toString() ?? '');
+      setPenDefDisputa(editingJogo?.penaltis_defendidos_disputa?.toString() ?? '');
+      setPenLadoCerto(editingJogo?.penaltis_gol_lado_correto?.toString() ?? '');
+      setPenLadoErrado(editingJogo?.penaltis_gol_lado_errado?.toString() ?? '');
       setNovosArquivos([]);
     }
   }, [open, editingJogo]);
@@ -112,6 +149,7 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
     if (!adversario.trim()) { toast.error('Informe o time adversário'); return; }
     setSaving(true);
     try {
+      const isGoleiro = posicao === 'goleiro';
       const payload = {
         campeonato_id: campeonatoId === NONE ? null : campeonatoId,
         data_jogo: dataJogo,
@@ -120,10 +158,22 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
         local: local.trim() || undefined,
         placar_time_atleta: num(placarA),
         placar_adversario: num(placarB),
-        gols_marcados: num(gols),
-        assistencias: num(assist),
+        gols_marcados: isGoleiro ? undefined : num(gols),
+        assistencias: isGoleiro ? undefined : num(assist),
+        posicao_jogo: posicao === POSICAO_NONE ? undefined : (posicao as PosicaoJogo),
         fase_campeonato: fase.trim() || undefined,
         observacoes: obs.trim() || undefined,
+        // Goleiro
+        minutos_jogados: isGoleiro ? (num(minutos) ?? null) : null,
+        gols_sofridos: isGoleiro ? (num(golsSofridos) ?? null) : null,
+        defesas_importantes: isGoleiro ? (num(defesas) ?? null) : null,
+        penaltis_defendidos: isGoleiro ? (num(penDef) ?? null) : null,
+        teve_disputa_penaltis: isGoleiro ? teveDisputa : null,
+        placar_penaltis_time: isGoleiro && teveDisputa ? (num(placarPenA) ?? null) : null,
+        placar_penaltis_adversario: isGoleiro && teveDisputa ? (num(placarPenB) ?? null) : null,
+        penaltis_defendidos_disputa: isGoleiro && teveDisputa ? (num(penDefDisputa) ?? null) : null,
+        penaltis_gol_lado_correto: isGoleiro && teveDisputa ? (num(penLadoCerto) ?? null) : null,
+        penaltis_gol_lado_errado: isGoleiro && teveDisputa ? (num(penLadoErrado) ?? null) : null,
       };
       let jogoId: string;
       if (editingJogo) {
@@ -197,16 +247,81 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
               <Input value={local} onChange={(e) => setLocal(e.target.value)} placeholder="Ex: Estádio Municipal" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Gols do atleta</Label>
-              <Input type="number" min={0} value={gols} onChange={(e) => setGols(e.target.value)} />
-            </div>
-            <div>
-              <Label>Assistências do atleta</Label>
-              <Input type="number" min={0} value={assist} onChange={(e) => setAssist(e.target.value)} />
-            </div>
+          <div>
+            <Label>Posição neste jogo</Label>
+            <Select value={posicao} onValueChange={setPosicao}>
+              <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={POSICAO_NONE}>Não informar</SelectItem>
+                {POSICOES.map((p) => (
+                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+          {posicao !== 'goleiro' && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Gols do atleta</Label>
+                <Input type="number" min={0} value={gols} onChange={(e) => setGols(e.target.value)} />
+              </div>
+              <div>
+                <Label>Assistências do atleta</Label>
+                <Input type="number" min={0} value={assist} onChange={(e) => setAssist(e.target.value)} />
+              </div>
+            </div>
+          )}
+          {posicao === 'goleiro' && (
+            <div className="rounded-lg border-2 p-3 space-y-3" style={{ borderColor: 'hsl(var(--border))' }}>
+              <p className="text-sm font-semibold">🧤 Estatísticas de Goleiro</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Minutos jogados</Label>
+                  <Input type="number" min={0} value={minutos} onChange={(e) => setMinutos(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Gols sofridos</Label>
+                  <Input type="number" min={0} value={golsSofridos} onChange={(e) => setGolsSofridos(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Defesas importantes</Label>
+                  <Input type="number" min={0} value={defesas} onChange={(e) => setDefesas(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Pênaltis defendidos (tempo normal)</Label>
+                  <Input type="number" min={0} value={penDef} onChange={(e) => setPenDef(e.target.value)} />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <Switch checked={teveDisputa} onCheckedChange={setTeveDisputa} id="teve-disputa" />
+                <Label htmlFor="teve-disputa" className="cursor-pointer">Houve disputa de pênaltis?</Label>
+              </div>
+              {teveDisputa && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Placar pên. (meu time)</Label>
+                    <Input type="number" min={0} value={placarPenA} onChange={(e) => setPlacarPenA(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Placar pên. (adversário)</Label>
+                    <Input type="number" min={0} value={placarPenB} onChange={(e) => setPlacarPenB(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Pên. defendidos na disputa</Label>
+                    <Input type="number" min={0} value={penDefDisputa} onChange={(e) => setPenDefDisputa(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Gol lado correto (leu certo)</Label>
+                    <Input type="number" min={0} value={penLadoCerto} onChange={(e) => setPenLadoCerto(e.target.value)} />
+                  </div>
+                  <div className="col-span-2">
+                    <Label>Gol lado errado (leu errado)</Label>
+                    <Input type="number" min={0} value={penLadoErrado} onChange={(e) => setPenLadoErrado(e.target.value)} />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           <div>
             <Label>Fase</Label>
             <Input value={fase} onChange={(e) => setFase(e.target.value)} placeholder="Ex: Final" />
