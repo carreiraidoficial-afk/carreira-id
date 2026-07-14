@@ -74,7 +74,7 @@ export function useCarreiraPlano(criancaId: string | null): CarreiraPlanoResult 
       // Check active subscription OR active trial
       const { data: assinatura } = await supabase
         .from('carreira_assinaturas')
-        .select('plano, status, expira_em, trial_termina_em')
+        .select('plano, status, expira_em')
         .eq('user_id', userId)
         .eq('crianca_id', criancaId)
         .in('status', ['ativa', 'trial'])
@@ -83,9 +83,9 @@ export function useCarreiraPlano(criancaId: string | null): CarreiraPlanoResult 
 
       if (assinatura && assinatura.length > 0) {
         const sub = assinatura[0] as any;
-        // Trial: valid while trial_termina_em is in the future
+        // Trial: valid while expira_em is in the future
         if (sub.status === 'trial') {
-          if (sub.trial_termina_em && new Date(sub.trial_termina_em) > new Date()) {
+          if (sub.expira_em && new Date(sub.expira_em) > new Date()) {
             return 'premium';
           }
           return 'base';

@@ -382,7 +382,8 @@ export default function CarreiraCadastroPage() {
                 plano: 'premium',
                 status: 'trial',
                 valor: PRECO_PREMIUM,
-                trial_termina_em: trialEnd.toISOString(),
+                expira_em: trialEnd.toISOString().split('T')[0],
+                metodo_pagamento: 'pix',
                 inicio_em: new Date().toISOString(),
               } as any);
             }

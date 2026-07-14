@@ -24,7 +24,7 @@ interface Assinatura {
   valor: number | null;
   inicio_em: string;
   expira_em: string | null;
-  trial_termina_em?: string | null;
+  
 }
 
 const PLANO_ICONS: Record<string, React.ReactNode> = {
@@ -47,7 +47,7 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
     queryFn: async (): Promise<Assinatura | null> => {
       const { data, error } = await supabase
         .from('carreira_assinaturas')
-        .select('id, plano, status, metodo_pagamento, valor, inicio_em, expira_em, trial_termina_em')
+        .select('id, plano, status, metodo_pagamento, valor, inicio_em, expira_em')
         .eq('user_id', userId)
         .eq('crianca_id', criancaId)
         .in('status', ['ativa', 'trial'])
@@ -140,8 +140,8 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
   });
 
   const isTrialActive = !!assinatura && assinatura.status === 'trial'
-    && !!assinatura.trial_termina_em
-    && new Date(assinatura.trial_termina_em) > new Date();
+    
+    && assinatura?.expira_em && new Date(assinatura.expira_em) > new Date();
   const currentPlano: CarreiraPlano = assinatura
     ? (isTrialActive ? 'premium' : (assinatura.status === 'ativa' ? normalizePlano(assinatura.plano) : 'base'))
     : 'base';
@@ -153,7 +153,7 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
   const availablePlans = (['base', 'premium'] as CarreiraPlano[]).filter(p => p !== currentPlano);
 
   const diasRestantesTrial = isTrialActive && assinatura?.trial_termina_em
-    ? Math.max(0, Math.ceil((new Date(assinatura.trial_termina_em).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    .max(0, Math.ceil((new Date(assinatura.expira_em).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : 0;
 
   if (isLoading) {
