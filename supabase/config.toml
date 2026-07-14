@@ -30,5 +30,8 @@ verify_jwt = true
 [functions.admin-delete-assinatura]
 verify_jwt = true
 
+[functions.carreira-trial-reminder]
+verify_jwt = true
+
 # trigger redeploy
 

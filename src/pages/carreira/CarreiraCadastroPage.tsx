@@ -15,12 +15,13 @@ import { OnboardingTutorial } from '@/components/carreira/OnboardingTutorial';
 
 import { CarreiraPaywall } from '@/components/carreira/CarreiraPaywall';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { PLANOS, CarreiraPlano, normalizePlano, PRECO_PREMIUM, TRIAL_DIAS } from '@/config/carreiraPlanos';
+import { PLANOS, PRECO_PREMIUM, TRIAL_DIAS } from '@/config/carreiraPlanos';
 import logoAtletaId from '@/assets/logo-atleta-id.png';
 import logoCarreiraId from '@/assets/logo-carreira-id-dark.png';
 import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
 import PwaInstallButton from '@/components/shared/PwaInstallButton';
 import { PwaInstallPopup } from '@/components/shared/PwaInstallPopup';
+import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { trackCompleteRegistration, trackProfileCreated, trackInitiateCheckout, trackSubscribe, pushDataLayer } from '@/lib/fbPixel';
 import { salvarPendingRef, processarConviteRef } from '@/lib/processar-convite-ref';
 
@@ -44,9 +45,6 @@ export default function CarreiraCadastroPage() {
   const refParam = searchParams.get('ref') as 'torcedor' | 'atleta' | 'rede' | null;
   const refConviteCodigo = searchParams.get('c');
   const refAtletaSlug = searchParams.get('a');
-  const planoParamRaw = searchParams.get('plano');
-  const planoParam: CarreiraPlano | null = planoParamRaw ? normalizePlano(planoParamRaw) : null;
-  const hasPaidPlan = planoParam === 'premium';
 
   const [step, setStep] = useState<Step>('tutorial');
   const [isLogin, setIsLogin] = useState(false);
@@ -64,6 +62,7 @@ export default function CarreiraCadastroPage() {
   const [profileSlug, setProfileSlug] = useState<string | null>(null);
   const [showPwaPopup, setShowPwaPopup] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { isInstalled: pwaInstalled } = usePwaInstall();
 
   // Persist ?ref params so they survive OAuth redirect / email confirmation
   useEffect(() => {
@@ -344,16 +343,21 @@ export default function CarreiraCadastroPage() {
     }
   };
 
-  // Navigate to created profile after PWA popup is shown
-  useEffect(() => {
-    if (showPwaPopup && profileSlug && !hasPaidPlan) {
-      // Delay to allow PWA popup to be displayed before navigating
-      const timer = setTimeout(() => {
-        navigate(carreiraPath(`/${profileSlug}`));
-      }, 3000);
-      return () => clearTimeout(timer);
+
+  // Navega para o destino final. Se o PWA já estiver instalado, o popup de
+  // instalação nunca renderiza (retorna null) — nesse caso não há como esperar
+  // por ele fechar, então navegamos direto em vez de ficar preso.
+  const finishOnboarding = (slugOverride?: string | null) => {
+    // Aceita um slug explícito para evitar depender do state profileSlug,
+    // que ainda não terá sido atualizado se chamado na mesma tick do setProfileSlug.
+    const slug = slugOverride !== undefined ? slugOverride : profileSlug;
+    const destino = slug ? carreiraPath(`/${slug}`) : carreiraPath('/feed');
+    if (pwaInstalled) {
+      navigate(destino);
+    } else {
+      setShowPwaPopup(true);
     }
-  }, [showPwaPopup, profileSlug, hasPaidPlan, navigate]);
+  };
 
   const handleProfileCreated = async () => {
     if (userId) {
@@ -394,7 +398,7 @@ export default function CarreiraCadastroPage() {
                 status: 'trial',
                 valor: PRECO_PREMIUM,
                 expira_em: trialEnd.toISOString().split('T')[0],
-                metodo_pagamento: 'pix',
+                metodo_pagamento: null,
                 inicio_em: new Date().toISOString(),
               } as any);
             }
@@ -403,16 +407,16 @@ export default function CarreiraCadastroPage() {
           }
         }
 
-        // If user came from a paid plan button, show subscription popup
-        if (hasPaidPlan && perfilAtleta.crianca_id) {
+        // Sempre avisa sobre o trial e oferece a opção de ativar pagamento
+        // agora — nunca navega em silêncio sem informar o usuário.
+        if (perfilAtleta.crianca_id) {
           setCreatedCriancaId(perfilAtleta.crianca_id);
           setCreatedChildName(perfilAtleta.nome);
           setShowSubscriptionPopup(true);
           return;
         }
 
-        // Show PWA popup before navigating
-        setShowPwaPopup(true);
+        finishOnboarding(perfilAtleta.slug);
         return;
       }
 
@@ -428,13 +432,13 @@ export default function CarreiraCadastroPage() {
         trackProfileCreated(perfilRede.tipo || 'rede');
         pushDataLayer('profile_created', { type: perfilRede.tipo });
         setProfileSlug(perfilRede.slug);
-        setShowPwaPopup(true);
+        finishOnboarding(perfilRede.slug);
         return;
       }
     }
     // Fallback: no slug found, go to feed
-    setShowPwaPopup(true);
     setProfileSlug(null);
+    finishOnboarding(null);
   };
 
   if (checkingAuth) {
@@ -664,77 +668,76 @@ export default function CarreiraCadastroPage() {
         )}
       </main>
 
-      {/* Subscription popup after profile creation */}
-      {hasPaidPlan && (
-        <Dialog 
-          open={showSubscriptionPopup} 
-          onOpenChange={(open) => {
-            if (!open) {
-              setShowSubscriptionPopup(false);
-              if (profileSlug) navigate(carreiraPath(`/${profileSlug}`));
-            }
-          }}
-        >
-          <DialogContent className="max-w-md border max-h-[90vh] overflow-y-auto" style={{ backgroundColor: 'hsl(220 15% 10%)', borderColor: 'hsl(220 10% 20%)', color: 'hsl(0 0% 95%)' }}>
-            <DialogTitle className="sr-only">Assinar plano</DialogTitle>
-            <DialogDescription className="sr-only">Escolha assinar o plano selecionado</DialogDescription>
-            
-            {!subscriptionConfirmed ? (
-              // Pre-checkout: Ask if they want to subscribe
-              <div className="text-center space-y-4 py-4">
-                <Rocket className="w-12 h-12 mx-auto" style={{ color: PLANOS[planoParam!].cor }} />
-                <h3 className="text-xl font-bold">Perfil criado com sucesso! 🎉</h3>
-                <p className="text-sm" style={{ color: 'hsl(0 0% 60%)' }}>
-                  Deseja ativar o plano <strong style={{ color: PLANOS[planoParam!].cor }}>{PLANOS[planoParam!].icone} {PLANOS[planoParam!].nome}</strong> agora para turbinar o perfil do atleta?
-                </p>
-                <div className="flex gap-3 pt-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    style={{ borderColor: 'hsl(220 10% 25%)', color: 'hsl(0 0% 70%)' }}
-                    onClick={() => {
-                      setShowSubscriptionPopup(false);
-                      if (profileSlug) navigate(carreiraPath(`/${profileSlug}`));
-                    }}
-                  >
-                    Agora não
-                  </Button>
-                  <Button
-                    className="flex-1 font-bold text-white"
-                    style={{ backgroundColor: PLANOS[planoParam!].cor }}
-                    onClick={() => {
-                      trackInitiateCheckout(planoParam!, PLANOS[planoParam!].preco);
-                      pushDataLayer('initiate_checkout', { plan: planoParam });
-                      setSubscriptionConfirmed(true);
-                    }}
-                  >
-                    Sim, quero assinar!
-                  </Button>
-                </div>
+      {/* Trial welcome / subscription popup after profile creation.
+          Sempre aparece — nunca navega em silêncio sem avisar sobre o trial. */}
+      <Dialog
+        open={showSubscriptionPopup}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowSubscriptionPopup(false);
+            finishOnboarding();
+          }
+        }}
+      >
+        <DialogContent className="max-w-md border max-h-[90vh] overflow-y-auto" style={{ backgroundColor: 'hsl(220 15% 10%)', borderColor: 'hsl(220 10% 20%)', color: 'hsl(0 0% 95%)' }}>
+          <DialogTitle className="sr-only">Assinar plano</DialogTitle>
+          <DialogDescription className="sr-only">Escolha assinar o plano selecionado</DialogDescription>
+
+          {!subscriptionConfirmed ? (
+            // Pre-checkout: informa sobre o trial e oferece ativar pagamento agora
+            <div className="text-center space-y-4 py-4">
+              <Rocket className="w-12 h-12 mx-auto" style={{ color: PLANOS.premium.cor }} />
+              <h3 className="text-xl font-bold">Perfil criado com sucesso! 🎉</h3>
+              <p className="text-sm" style={{ color: 'hsl(0 0% 60%)' }}>
+                Você ganhou <strong style={{ color: PLANOS.premium.cor }}>{TRIAL_DIAS} dias grátis</strong> do <strong style={{ color: PLANOS.premium.cor }}>{PLANOS.premium.icone} {PLANOS.premium.nome}</strong> para turbinar o perfil{createdChildName ? ` de ${createdChildName}` : ' do atleta'}. Depois do trial, R$ {PRECO_PREMIUM.toFixed(2).replace('.', ',')}/mês para continuar.
+              </p>
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  style={{ borderColor: 'hsl(220 10% 25%)', color: 'hsl(0 0% 70%)' }}
+                  onClick={() => {
+                    setShowSubscriptionPopup(false);
+                    finishOnboarding();
+                  }}
+                >
+                  Continuar no trial
+                </Button>
+                <Button
+                  className="flex-1 font-bold text-white"
+                  style={{ backgroundColor: PLANOS.premium.cor }}
+                  onClick={() => {
+                    trackInitiateCheckout('premium', PLANOS.premium.preco);
+                    pushDataLayer('initiate_checkout', { plan: 'premium' });
+                    setSubscriptionConfirmed(true);
+                  }}
+                >
+                  Ativar agora
+                </Button>
               </div>
-            ) : (
-              // Paywall checkout
-              <CarreiraPaywall
-                limitResult={{ status: 'limit_reached', source: 'freemium', count: 0, limit: 0 }}
-                childName={createdChildName || undefined}
-                criancaId={createdCriancaId || undefined}
-                planoSelecionado={planoParam!}
-                onClose={() => {
-                  setShowSubscriptionPopup(false);
-                  if (profileSlug) navigate(carreiraPath(`/${profileSlug}`));
-                }}
-                onSubscribed={() => {
-                  trackSubscribe(planoParam!, PLANOS[planoParam!].preco);
-                  pushDataLayer('purchase', { plan: planoParam });
-                  setShowSubscriptionPopup(false);
-                  toast.success('Assinatura ativada! 🎉');
-                  if (profileSlug) navigate(carreiraPath(`/${profileSlug}`));
-                }}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
-      )}
+            </div>
+          ) : (
+            // Paywall checkout
+            <CarreiraPaywall
+              limitResult={{ status: 'limit_reached', source: 'freemium', count: 0, limit: 0 }}
+              childName={createdChildName || undefined}
+              criancaId={createdCriancaId || undefined}
+              planoSelecionado="premium"
+              onClose={() => {
+                setShowSubscriptionPopup(false);
+                finishOnboarding();
+              }}
+              onSubscribed={() => {
+                trackSubscribe('premium', PLANOS.premium.preco);
+                pushDataLayer('purchase', { plan: 'premium' });
+                setShowSubscriptionPopup(false);
+                toast.success('Assinatura ativada! 🎉');
+                finishOnboarding();
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* PWA Install Popup after profile creation */}
       <PwaInstallPopup
