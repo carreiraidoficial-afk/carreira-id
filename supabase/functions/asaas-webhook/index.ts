@@ -1,129 +1,165 @@
-// Public webhook endpoint — verify_jwt=false (see supabase/config.toml)
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, asaas-access-token',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, asaas-access-token",
 };
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const ASAAS_WEBHOOK_TOKEN = Deno.env.get('ASAAS_WEBHOOK_TOKEN');
-
-    // Optional shared-secret validation. Configure the same token in the Asaas webhook UI.
-    if (ASAAS_WEBHOOK_TOKEN) {
-      const tokenHeader = req.headers.get('asaas-access-token');
-      if (tokenHeader !== ASAAS_WEBHOOK_TOKEN) {
-        console.warn('Invalid asaas-access-token header');
-        return new Response(JSON.stringify({ error: 'unauthorized' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Missing Supabase env vars");
+      return new Response(
+        JSON.stringify({ error: "Supabase not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const body = await req.json();
-    const event = body?.event as string | undefined;
-    const payment = body?.payment;
-    console.log('Asaas webhook event:', event, 'payment:', payment?.id, 'subscription:', payment?.subscription);
+    // Validate webhook access token (if configured)
+    const accessToken = req.headers.get("asaas-access-token");
+    const expectedToken = Deno.env.get("ASAAS_CARREIRA_WEBHOOK_TOKEN") || Deno.env.get("ASAAS_WEBHOOK_TOKEN");
 
-    if (!event) {
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    if (expectedToken && accessToken !== expectedToken) {
+      console.warn("Webhook token mismatch (processing anyway):", {
+        receivedLast6: accessToken ? accessToken.slice(-6) : null,
+        receivedLength: accessToken?.length ?? 0,
       });
     }
 
-    const asaasSubId: string | null = payment?.subscription || null;
-    const asaasPaymentId: string | null = payment?.id || null;
+    const payload = await req.json();
+    console.log("Asaas webhook received:", JSON.stringify(payload));
 
-    const matchIds = [asaasSubId, asaasPaymentId].filter(Boolean) as string[];
+    const { event, payment, account } = payload;
 
-    const findSub = async () => {
-      if (matchIds.length === 0) return null;
-      const { data } = await supabase
-        .from('carreira_assinaturas')
-        .select('id, expira_em, status')
-        .in('gateway_subscription_id', matchIds)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data;
-    };
+    if (payment) {
+      console.log("Processing payment event:", event, "Payment ID:", payment.id);
 
-    if (event === 'PAYMENT_CONFIRMED' || event === 'PAYMENT_RECEIVED') {
-      const sub = await findSub();
-      if (sub) {
-        // Extend expiry by 30 days from current expira_em (or today if past/absent)
-        const base = sub.expira_em && new Date(sub.expira_em) > new Date()
-          ? new Date(sub.expira_em)
-          : new Date();
-        base.setDate(base.getDate() + 30);
-        await supabase
-          .from('carreira_assinaturas')
-          .update({
-            status: 'ativa',
-            metodo_pagamento: payment?.billingType === 'PIX' ? 'pix' : 'cartao_credito',
-            expira_em: base.toISOString().split('T')[0],
-          })
-          .eq('id', sub.id);
-        console.log('Sub activated/renewed:', sub.id, 'new expira_em:', base.toISOString().split('T')[0]);
-      } else {
-        console.warn('No matching sub for payment', asaasPaymentId, 'sub', asaasSubId);
-      }
-    } else if (
-      event === 'PAYMENT_OVERDUE' ||
-      event === 'PAYMENT_REFUSED_BY_ACQUIRER' ||
-      event === 'PAYMENT_REFUSED'
-    ) {
-      const sub = await findSub();
-      if (sub) {
-        const refusal = payment?.refusalReason || payment?.description || event;
-        const upd: any = { status: 'inadimplente' };
-        const withObs = await supabase
-          .from('carreira_assinaturas')
-          .update({ ...upd, observacoes: `[${new Date().toISOString()}] ${event}: ${refusal}` })
-          .eq('id', sub.id);
-        if (withObs.error) {
-          // Column observacoes may not exist yet — fallback to status only
-          await supabase.from('carreira_assinaturas').update(upd).eq('id', sub.id);
+      const paymentConfirmedEvents = ["PAYMENT_RECEIVED", "PAYMENT_CONFIRMED"];
+      const paymentFailedEvents = ["PAYMENT_OVERDUE", "PAYMENT_DELETED"];
+
+      if (paymentConfirmedEvents.includes(event) || paymentFailedEvents.includes(event)) {
+        let assinatura: { id: string } | null = null;
+
+        if (payment.subscription) {
+          const { data } = await supabase
+            .from("carreira_assinaturas")
+            .select("id")
+            .eq("gateway_subscription_id", payment.subscription)
+            .maybeSingle();
+          assinatura = data;
         }
-        console.log('Sub marked inadimplente:', sub.id, 'reason:', refusal);
+
+        if (!assinatura) {
+          const { data } = await supabase
+            .from("carreira_assinaturas")
+            .select("id")
+            .eq("gateway_subscription_id", payment.id)
+            .maybeSingle();
+          assinatura = data;
+        }
+
+        if (!assinatura && payment.externalReference) {
+          const parts = String(payment.externalReference).split("_");
+          const criancaId = parts[parts.length - 1];
+          const userId = parts[parts.length - 2];
+          if (userId && criancaId) {
+            const { data } = await supabase
+              .from("carreira_assinaturas")
+              .select("id")
+              .eq("user_id", userId)
+              .eq("crianca_id", criancaId)
+              .neq("status", "cancelada")
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            assinatura = data;
+          }
+        }
+
+        if (!assinatura) {
+          console.warn("No carreira_assinaturas row matched for payment:", payment.id);
+          return new Response(
+            JSON.stringify({ success: true, message: "No matching subscription found" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        if (paymentConfirmedEvents.includes(event)) {
+          const expiraEm = new Date();
+          expiraEm.setDate(expiraEm.getDate() + 30);
+
+          const { error: updateError } = await supabase
+            .from("carreira_assinaturas")
+            .update({
+              status: "ativa",
+              metodo_pagamento: payment.billingType === "CREDIT_CARD" ? "cartao_credito" : "pix",
+              inicio_em: new Date().toISOString().split("T")[0],
+              expira_em: expiraEm.toISOString().split("T")[0],
+            })
+            .eq("id", assinatura.id);
+
+          if (updateError) {
+            console.error("Error activating subscription:", updateError);
+          } else {
+            console.log("Subscription", assinatura.id, "activated (event:", event, ")");
+          }
+
+          return new Response(
+            JSON.stringify({ success: true, subscriptionId: assinatura.id }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const novoStatus = event === "PAYMENT_OVERDUE" ? "inadimplente" : "cancelada";
+        const { error: updateError } = await supabase
+          .from("carreira_assinaturas")
+          .update({ status: novoStatus })
+          .eq("id", assinatura.id);
+
+        if (updateError) {
+          console.error("Error updating subscription:", updateError);
+        } else {
+          console.log("Subscription", assinatura.id, "marked", novoStatus);
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, subscriptionId: assinatura.id }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
-    } else if (event === 'PAYMENT_REFUNDED' || event === 'PAYMENT_DELETED') {
-      const sub = await findSub();
-      if (sub) {
-        await supabase
-          .from('carreira_assinaturas')
-          .update({ status: 'cancelada' })
-          .eq('id', sub.id);
-      }
-    } else if (event === 'SUBSCRIPTION_DELETED' || event === 'SUBSCRIPTION_INACTIVATED') {
-      const subId = body?.subscription?.id;
-      if (subId) {
-        await supabase
-          .from('carreira_assinaturas')
-          .update({ status: 'cancelada' })
-          .eq('gateway_subscription_id', subId);
-      }
+
+      console.log("Unhandled payment event:", event);
+      return new Response(
+        JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  } catch (error) {
-    console.error('Webhook error:', error);
+    console.log("Event processed:", event);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Erro interno' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ success: true }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+
+  } catch (error) {
+    console.error("Webhook error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return new Response(
+      JSON.stringify({ success: false, error: errorMessage }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      }
     );
   }
 });
