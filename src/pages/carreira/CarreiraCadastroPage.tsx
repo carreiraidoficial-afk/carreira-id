@@ -422,6 +422,7 @@ export default function CarreiraCadastroPage() {
       }
     }
     // Fallback: no slug found, go to feed
+    navigate(carreiraPath(`/${perfilAtleta?.slug || "feed"}`));
     setShowPwaPopup(true);
     setProfileSlug(null);
   };
