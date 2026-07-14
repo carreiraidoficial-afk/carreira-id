@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Loader2, User, Eye, EyeOff, ExternalLink, Mail, Phone, Pencil, Trash2 } from 'lucide-react';
+import { Search, Loader2, User, Eye, EyeOff, ExternalLink, Mail, Phone, Pencil, Trash2, MessageCircle, FlaskConical, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
@@ -17,6 +17,9 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import CarreiraAdminLayout from '@/components/layout/CarreiraAdminLayout';
+import { ESTADOS, ESTADO_LABELS } from '@/constants/esportes';
+
+const POSICOES = ['Goleiro', 'Zagueiro', 'Lateral', 'Volante', 'Meia', 'Atacante'];
 
 const TYPE_LABELS: Record<string, string> = {
   professor: 'Professor/Treinador', tecnico: 'Técnico', dono_escola: 'Dono de Escola',
@@ -25,25 +28,62 @@ const TYPE_LABELS: Record<string, string> = {
   torcedor: 'Torcedor', jogador_profissional: 'Jogador Profissional', plataforma: 'Plataforma',
 };
 
-function useAdminPerfisAtleta(search: string) {
+interface AtletaFiltros {
+  search: string;
+  isTeste: boolean;
+  estado: string;
+  posicao: string;
+}
+
+function useAdminPerfisAtleta(filtros: AtletaFiltros) {
+  const { search, isTeste, estado, posicao } = filtros;
   return useQuery({
-    queryKey: ['carreira-admin-perfis-atleta', search],
+    queryKey: ['carreira-admin-perfis-atleta', search, isTeste, estado, posicao],
     queryFn: async () => {
-      const { data, error } = await supabase.from('perfil_atleta').select('*').order('created_at', { ascending: false }).limit(200);
+      let query = supabase.from('perfil_atleta').select('*').eq('is_teste', isTeste).order('created_at', { ascending: false }).limit(200);
+      if (estado) query = query.eq('estado', estado);
+      if (posicao) query = query.eq('posicao_principal', posicao);
+      const { data, error } = await query;
       if (error) throw error;
       const userIds = [...new Set((data || []).map((p: any) => p.user_id))];
       let profilesMap: Record<string, any> = {};
       if (userIds.length > 0) {
-        const { data: profiles } = await supabase.from('profiles').select('user_id, email, provider').in('user_id', userIds);
+        const { data: profiles } = await supabase.from('profiles').select('user_id, nome, email, telefone, provider').in('user_id', userIds);
         if (profiles) profiles.forEach((p: any) => { profilesMap[p.user_id] = p; });
       }
-      let perfis = (data || []).map((p: any) => ({ ...p, email: profilesMap[p.user_id]?.email, provider: profilesMap[p.user_id]?.provider }));
+      let perfis = (data || []).map((p: any) => ({
+        ...p,
+        email: profilesMap[p.user_id]?.email,
+        provider: profilesMap[p.user_id]?.provider,
+        responsavel_nome: profilesMap[p.user_id]?.nome,
+        responsavel_telefone: profilesMap[p.user_id]?.telefone,
+      }));
       if (search) {
         const s = search.toLowerCase();
-        perfis = perfis.filter((p: any) => p.nome?.toLowerCase().includes(s) || p.slug?.toLowerCase().includes(s) || p.email?.toLowerCase().includes(s));
+        perfis = perfis.filter((p: any) =>
+          p.nome?.toLowerCase().includes(s) ||
+          p.slug?.toLowerCase().includes(s) ||
+          p.email?.toLowerCase().includes(s) ||
+          p.responsavel_nome?.toLowerCase().includes(s)
+        );
       }
       return perfis;
     },
+  });
+}
+
+function useToggleTeste() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, is_teste }: { id: string; is_teste: boolean }) => {
+      const { error } = await supabase.from('perfil_atleta').update({ is_teste }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['carreira-admin-perfis-atleta'] });
+      toast.success(vars.is_teste ? 'Marcado como perfil de teste' : 'Movido de volta para Atletas');
+    },
+    onError: (e: any) => toast.error('Erro: ' + e.message),
   });
 }
 
@@ -166,8 +206,9 @@ function EditPerfilDialog({ perfil, type, open, onOpenChange }: { perfil: any; t
   );
 }
 
-function PerfilTable({ perfis, type }: { perfis: any[]; type: 'atleta' | 'rede' }) {
+function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atleta' | 'rede'; isTesteTab?: boolean }) {
   const toggle = useToggleVisibility();
+  const toggleTeste = useToggleTeste();
   const qc = useQueryClient();
   const [editing, setEditing] = useState<any>(null);
   const [deleting, setDeleting] = useState<any>(null);
@@ -202,10 +243,13 @@ function PerfilTable({ perfis, type }: { perfis: any[]; type: 'atleta' | 'rede' 
           <TableHeader>
             <TableRow>
               <TableHead>Perfil</TableHead>
-              <TableHead className="min-w-[200px]">Contato</TableHead>
+              {type === 'atleta' && <TableHead>Responsável</TableHead>}
+              <TableHead className="min-w-[180px]">Contato</TableHead>
               {type === 'rede' && <TableHead>Tipo</TableHead>}
               {type === 'atleta' && <TableHead>Modalidade</TableHead>}
+              {type === 'atleta' && <TableHead>Posição</TableHead>}
               <TableHead>Cidade</TableHead>
+              <TableHead>UF</TableHead>
               <TableHead>Origem Auth</TableHead>
               <TableHead>Criado em</TableHead>
               <TableHead>Status</TableHead>
@@ -227,15 +271,32 @@ function PerfilTable({ perfis, type }: { perfis: any[]; type: 'atleta' | 'rede' 
                     </div>
                   </div>
                 </TableCell>
+                {type === 'atleta' && (
+                  <TableCell className="text-sm">
+                    <p className="font-medium">{p.responsavel_nome || '—'}</p>
+                  </TableCell>
+                )}
                 <TableCell>
                   <div className="space-y-0.5 text-xs">
-                    {p.email && <div className="flex items-center gap-1 text-muted-foreground"><Mail className="w-3 h-3 shrink-0" /><span className="truncate max-w-[200px]">{p.email}</span></div>}
-                    {p.telefone_whatsapp && <div className="flex items-center gap-1 text-muted-foreground"><Phone className="w-3 h-3 shrink-0" /><span>{p.telefone_whatsapp}</span></div>}
+                    {p.email && <div className="flex items-center gap-1 text-muted-foreground"><Mail className="w-3 h-3 shrink-0" /><span className="truncate max-w-[180px]">{p.email}</span></div>}
+                    {p.telefone_whatsapp && (
+                      <a
+                        href={`https://wa.me/55${p.telefone_whatsapp.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-emerald-600 hover:underline w-fit"
+                        title="Conversar no WhatsApp"
+                      >
+                        <MessageCircle className="w-3 h-3 shrink-0" /><span>{p.telefone_whatsapp}</span>
+                      </a>
+                    )}
                   </div>
                 </TableCell>
                 {type === 'rede' && <TableCell className="text-sm">{TYPE_LABELS[p.tipo] || p.tipo}</TableCell>}
                 {type === 'atleta' && <TableCell className="text-sm">{p.modalidade}</TableCell>}
-                <TableCell className="text-sm text-muted-foreground">{p.cidade ? `${p.cidade}${p.estado ? `/${p.estado}` : ''}` : '—'}</TableCell>
+                {type === 'atleta' && <TableCell className="text-sm">{p.posicao_principal || '—'}</TableCell>}
+                <TableCell className="text-sm text-muted-foreground">{p.cidade || '—'}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{p.estado || '—'}</TableCell>
                 <TableCell>
                   <Badge variant="outline" className="text-xs">
                     {p.provider === 'google' ? '🔵 Google' : '📧 Email'}
@@ -250,6 +311,13 @@ function PerfilTable({ perfis, type }: { perfis: any[]; type: 'atleta' | 'rede' 
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
+                    {type === 'atleta' && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8"
+                        onClick={() => toggleTeste.mutate({ id: p.id, is_teste: !p.is_teste })}
+                        title={isTesteTab ? 'Restaurar para Atletas' : 'Marcar como perfil de teste'}>
+                        <FlaskConical className={`w-4 h-4 ${isTesteTab ? 'text-amber-500' : ''}`} />
+                      </Button>
+                    )}
                     {type === 'atleta' && p.slug && (
                       <Button variant="ghost" size="icon" className="h-8 w-8"
                         onClick={() => window.open(`/${p.slug}`, '_blank')}
@@ -304,10 +372,52 @@ function PerfilTable({ perfis, type }: { perfis: any[]; type: 'atleta' | 'rede' 
   );
 }
 
+function AtletaFiltrosBar({ search, setSearch, estado, setEstado, posicao, setPosicao }: {
+  search: string; setSearch: (v: string) => void;
+  estado: string; setEstado: (v: string) => void;
+  posicao: string; setPosicao: (v: string) => void;
+}) {
+  const temFiltro = !!estado || !!posicao;
+  return (
+    <div className="flex flex-col sm:flex-row gap-2">
+      <div className="relative flex-1">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input placeholder="Buscar por nome, slug, email ou responsavel..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+      </div>
+      <Select value={estado || 'all'} onValueChange={v => setEstado(v === 'all' ? '' : v)}>
+        <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="UF" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todas as UFs</SelectItem>
+          {ESTADOS.map(uf => <SelectItem key={uf} value={uf}>{uf} - {ESTADO_LABELS[uf]}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Select value={posicao || 'all'} onValueChange={v => setPosicao(v === 'all' ? '' : v)}>
+        <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder="Posicao" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todas as posicoes</SelectItem>
+          {POSICOES.map(pos => <SelectItem key={pos} value={pos}>{pos}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      {temFiltro && (
+        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => { setEstado(''); setPosicao(''); }} title="Limpar filtros">
+          <X className="w-4 h-4" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export default function CarreiraAdminPerfisPage() {
   const [searchAtleta, setSearchAtleta] = useState('');
+  const [estadoAtleta, setEstadoAtleta] = useState('');
+  const [posicaoAtleta, setPosicaoAtleta] = useState('');
+  const [searchTeste, setSearchTeste] = useState('');
+  const [estadoTeste, setEstadoTeste] = useState('');
+  const [posicaoTeste, setPosicaoTeste] = useState('');
   const [searchRede, setSearchRede] = useState('');
-  const { data: perfisAtleta, isLoading: loadingAtleta } = useAdminPerfisAtleta(searchAtleta);
+
+  const { data: perfisAtleta, isLoading: loadingAtleta } = useAdminPerfisAtleta({ search: searchAtleta, isTeste: false, estado: estadoAtleta, posicao: posicaoAtleta });
+  const { data: perfisTeste, isLoading: loadingTeste } = useAdminPerfisAtleta({ search: searchTeste, isTeste: true, estado: estadoTeste, posicao: posicaoTeste });
   const { data: perfisRede, isLoading: loadingRede } = useAdminPerfisRede(searchRede);
 
   return (
@@ -322,13 +432,15 @@ export default function CarreiraAdminPerfisPage() {
           <TabsList>
             <TabsTrigger value="atleta">Atletas ({perfisAtleta?.length || 0})</TabsTrigger>
             <TabsTrigger value="rede">Rede Profissional ({perfisRede?.length || 0})</TabsTrigger>
+            <TabsTrigger value="teste" className="gap-1.5"><FlaskConical className="w-3.5 h-3.5" />Perfil de Teste ({perfisTeste?.length || 0})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="atleta" className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input placeholder="Buscar por nome, slug ou email..." value={searchAtleta} onChange={(e) => setSearchAtleta(e.target.value)} className="pl-10" />
-            </div>
+            <AtletaFiltrosBar
+              search={searchAtleta} setSearch={setSearchAtleta}
+              estado={estadoAtleta} setEstado={setEstadoAtleta}
+              posicao={posicaoAtleta} setPosicao={setPosicaoAtleta}
+            />
             {loadingAtleta ? <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
               : !perfisAtleta?.length ? <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum perfil encontrado</CardContent></Card>
               : <PerfilTable perfis={perfisAtleta} type="atleta" />}
@@ -342,6 +454,18 @@ export default function CarreiraAdminPerfisPage() {
             {loadingRede ? <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
               : !perfisRede?.length ? <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum perfil encontrado</CardContent></Card>
               : <PerfilTable perfis={perfisRede} type="rede" />}
+          </TabsContent>
+
+          <TabsContent value="teste" className="space-y-4">
+            <p className="text-xs text-muted-foreground">Perfis de teste/dev nao entram nas contagens do dashboard nem na aba Atletas.</p>
+            <AtletaFiltrosBar
+              search={searchTeste} setSearch={setSearchTeste}
+              estado={estadoTeste} setEstado={setEstadoTeste}
+              posicao={posicaoTeste} setPosicao={setPosicaoTeste}
+            />
+            {loadingTeste ? <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+              : !perfisTeste?.length ? <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum perfil de teste</CardContent></Card>
+              : <PerfilTable perfis={perfisTeste} type="atleta" isTesteTab />}
           </TabsContent>
         </Tabs>
       </div>

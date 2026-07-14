@@ -77,11 +77,12 @@ function useDateRange() {
 
 function useAdminDashboardData(range: { start: string; end: string }) {
   // Perfis — totals (no date filter, always current snapshot)
+  // Perfis marcados como teste (is_teste) ficam fora de todas as contagens abaixo.
   const perfisQuery = useQuery({
     queryKey: ['admin-dash-perfis'],
     queryFn: async () => {
       const [atletaRes, redeRes] = await Promise.all([
-        supabase.from('perfil_atleta').select('id', { count: 'exact', head: true }),
+        supabase.from('perfil_atleta').select('id', { count: 'exact', head: true }).eq('is_teste', false),
         supabase.from('perfis_rede').select('id', { count: 'exact', head: true }),
       ]);
       return {
@@ -96,36 +97,44 @@ function useAdminDashboardData(range: { start: string; end: string }) {
   const financeQuery = useQuery({
     queryKey: ['admin-dash-finance', range.start, range.end],
     queryFn: async () => {
+      // crianca_ids de perfis marcados como teste, para excluir das contagens financeiras
+      const { data: testeAtletas } = await supabase.from('perfil_atleta').select('crianca_id').eq('is_teste', true);
+      const testeCriancaIds = new Set((testeAtletas || []).map((a: any) => a.crianca_id).filter(Boolean));
+      const naoEhTeste = (s: any) => !testeCriancaIds.has(s.crianca_id);
+
       // Active subscriptions (snapshot — status=ativa now)
-      const { data: activeSubs } = await supabase
+      const { data: activeSubsRaw } = await supabase
         .from('carreira_assinaturas')
-        .select('plano, valor, status')
+        .select('plano, valor, status, crianca_id')
         .eq('status', 'ativa');
+      const activeSubs = (activeSubsRaw || []).filter(naoEhTeste);
 
       const byPlan = { base: 0, premium: 0 };
-      (activeSubs || []).forEach((s: any) => {
+      activeSubs.forEach((s: any) => {
         const p = normalizePlano(s.plano);
         byPlan[p] = (byPlan[p] || 0) + 1;
       });
 
       // Cancelamentos no período
-      const { data: cancelados } = await supabase
+      const { data: canceladosRaw } = await supabase
         .from('carreira_assinaturas')
-        .select('id, plano, valor, cancelada_em')
+        .select('id, plano, valor, cancelada_em, crianca_id')
         .not('cancelada_em', 'is', null)
         .gte('cancelada_em', range.start)
         .lte('cancelada_em', range.end);
+      const cancelados = (canceladosRaw || []).filter(naoEhTeste);
 
       // Receita por plano no período (assinaturas criadas no período com status ativa)
-      const { data: receitaSubs } = await supabase
+      const { data: receitaSubsRaw } = await supabase
         .from('carreira_assinaturas')
-        .select('plano, valor')
+        .select('plano, valor, crianca_id')
         .gte('inicio_em', range.start)
         .lte('inicio_em', range.end)
         .eq('status', 'ativa');
+      const receitaSubs = (receitaSubsRaw || []).filter(naoEhTeste);
 
       const receitaPorPlano = { premium: 0 };
-      (receitaSubs || []).forEach((s: any) => {
+      receitaSubs.forEach((s: any) => {
         const p = normalizePlano(s.plano);
         if (p === 'premium') {
           receitaPorPlano.premium += Number(s.valor) || 0;
@@ -134,8 +143,8 @@ function useAdminDashboardData(range: { start: string; end: string }) {
 
       return {
         ativas: byPlan,
-        totalAtivas: (activeSubs || []).length,
-        cancelamentos: (cancelados || []).length,
+        totalAtivas: activeSubs.length,
+        cancelamentos: cancelados.length,
         receita: receitaPorPlano,
         receitaTotal: receitaPorPlano.premium,
       };
