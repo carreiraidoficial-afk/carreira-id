@@ -48,12 +48,12 @@ serve(async (req) => {
       const paymentFailedEvents = ["PAYMENT_OVERDUE", "PAYMENT_DELETED"];
 
       if (paymentConfirmedEvents.includes(event) || paymentFailedEvents.includes(event)) {
-        let assinatura: { id: string } | null = null;
+        let assinatura: { id: string; user_id: string; status: string } | null = null;
 
         if (payment.subscription) {
           const { data } = await supabase
             .from("carreira_assinaturas")
-            .select("id")
+            .select("id, user_id, status")
             .eq("gateway_subscription_id", payment.subscription)
             .maybeSingle();
           assinatura = data;
@@ -62,7 +62,7 @@ serve(async (req) => {
         if (!assinatura) {
           const { data } = await supabase
             .from("carreira_assinaturas")
-            .select("id")
+            .select("id, user_id, status")
             .eq("gateway_subscription_id", payment.id)
             .maybeSingle();
           assinatura = data;
@@ -75,7 +75,7 @@ serve(async (req) => {
           if (userId && criancaId) {
             const { data } = await supabase
               .from("carreira_assinaturas")
-              .select("id")
+              .select("id, user_id, status")
               .eq("user_id", userId)
               .eq("crianca_id", criancaId)
               .neq("status", "cancelada")
@@ -95,6 +95,7 @@ serve(async (req) => {
         }
 
         if (paymentConfirmedEvents.includes(event)) {
+          const wasPending = assinatura.status === "pendente";
           const expiraEm = new Date();
           expiraEm.setDate(expiraEm.getDate() + 30);
 
@@ -112,6 +113,31 @@ serve(async (req) => {
             console.error("Error activating subscription:", updateError);
           } else {
             console.log("Subscription", assinatura.id, "activated (event:", event, ")");
+          }
+
+          // Se a assinatura estava "pendente" (ex: cartão em análise de risco pelo
+          // Asaas, tela de checkout já fechada pelo usuário), avisa por push que
+          // confirmou — cumpre a promessa que a UI faz ao usuário.
+          if (wasPending && !updateError) {
+            try {
+              await fetch(`${supabaseUrl}/functions/v1/send-carreira-push`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "apikey": supabaseServiceKey,
+                  "Authorization": `Bearer ${supabaseServiceKey}`,
+                },
+                body: JSON.stringify({
+                  user_ids: [assinatura.user_id],
+                  title: "✅ Pagamento confirmado!",
+                  body: "Sua assinatura Premium do Carreira ID já está ativa.",
+                  url: "/planos",
+                  tag: "pagamento-confirmado",
+                }),
+              });
+            } catch (pushErr) {
+              console.error("Erro ao enviar push de confirmação:", pushErr);
+            }
           }
 
           return new Response(

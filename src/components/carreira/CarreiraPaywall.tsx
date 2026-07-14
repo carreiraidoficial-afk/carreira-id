@@ -402,6 +402,10 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
 
   if (step === 'checking') {
     const isCard = paymentMethod === 'cartao';
+    // Depois de ~30s (6 pollings de 5s), o cartão já foi autorizado pelo banco —
+    // se ainda não confirmou, é o Asaas rodando análise de risco, que pode levar
+    // minutos. Ajusta o texto para não parecer que travou.
+    const demorando = isCard && pollCount >= 6;
     return (
       <div className="space-y-4 py-2 text-center">
         <div className="mx-auto w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
@@ -412,21 +416,21 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
         </h3>
         <p className="text-sm text-muted-foreground">
           {isCard
-            ? 'Estamos confirmando a autorização do seu cartão com o banco. Isso pode levar alguns segundos — não feche esta tela.'
+            ? (demorando
+                ? 'Seu cartão já foi autorizado pelo banco. O Asaas está concluindo a análise de segurança — isso pode levar alguns minutos. Você pode fechar esta tela: avisamos por notificação assim que confirmar.'
+                : 'Estamos confirmando a autorização do seu cartão com o banco. Isso pode levar alguns segundos — não feche esta tela.')
             : 'Complete o pagamento na aba que foi aberta. Estamos verificando automaticamente.'}
         </p>
         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="w-3 h-3 animate-spin" />
           Verificando pagamento...
         </div>
-        {!isCard && (
-          <Button variant="outline" size="sm" className="w-full" onClick={() => checkPayment()}>
-            Já paguei, verificar agora
-          </Button>
-        )}
+        <Button variant="outline" size="sm" className="w-full" onClick={() => checkPayment()}>
+          Já paguei, verificar agora
+        </Button>
         {onClose && (
           <Button variant="ghost" className="w-full" onClick={() => { setStep('info'); setCheckoutData(null); }}>
-            {isCard ? 'Fechar (continuaremos verificando por e-mail)' : 'Cancelar'}
+            {isCard ? 'Fechar (avisamos por notificação quando confirmar)' : 'Cancelar'}
           </Button>
         )}
       </div>
