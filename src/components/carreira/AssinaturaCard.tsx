@@ -152,8 +152,8 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
   // Available plan changes
   const availablePlans = (['base', 'premium'] as CarreiraPlano[]).filter(p => p !== currentPlano);
 
-  const diasRestantesTrial = isTrialActive && assinatura?.trial_termina_em
-    .max(0, Math.ceil((new Date(assinatura.expira_em).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+  const diasRestantesTrial = isTrialActive
+    ? Math.max(0, Math.ceil((new Date(assinatura.expira_em).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : 0;
 
   if (isLoading) {
