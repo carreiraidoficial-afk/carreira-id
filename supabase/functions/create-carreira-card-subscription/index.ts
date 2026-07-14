@@ -70,13 +70,14 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Cancel any prior pending Asaas subscription for the same athlete to avoid duplicates
+    // Cancel any prior pending/trial subscription for the same athlete to avoid duplicates
+    // (trial rows never have a gateway_subscription_id, so the Asaas DELETE below is a no-op for them)
     const { data: pendingSubs } = await supabase
       .from('carreira_assinaturas')
       .select('id, gateway_subscription_id')
       .eq('user_id', user_id)
       .eq('crianca_id', crianca_id)
-      .in('status', ['pendente', 'inadimplente']);
+      .in('status', ['pendente', 'inadimplente', 'trial']);
     for (const p of (pendingSubs || [])) {
       if (p.gateway_subscription_id) {
         try {

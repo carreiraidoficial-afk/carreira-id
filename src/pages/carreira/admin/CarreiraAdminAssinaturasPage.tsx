@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Loader2, CreditCard, QrCode, RefreshCw, Pencil, Trash2 } from 'lucide-react';
+import { Search, Loader2, CreditCard, QrCode, RefreshCw, Pencil, Trash2, Gift, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
@@ -110,11 +110,13 @@ function useAdminAssinaturas(search: string) {
 const METODO_ICON: Record<string, React.ReactNode> = {
   cartao_credito: <CreditCard className="w-3.5 h-3.5" />,
   pix: <QrCode className="w-3.5 h-3.5" />,
+  isento: <Gift className="w-3.5 h-3.5" />,
 };
 
 const METODO_LABEL: Record<string, string> = {
   cartao_credito: 'Cartão',
   pix: 'PIX',
+  isento: 'Isento',
 };
 
 export default function CarreiraAdminAssinaturasPage() {
@@ -125,6 +127,7 @@ export default function CarreiraAdminAssinaturasPage() {
   const [editing, setEditing] = useState<any>(null);
   const [deleting, setDeleting] = useState<any>(null);
   const [deletingLoading, setDeletingLoading] = useState(false);
+  const [showIsencao, setShowIsencao] = useState(false);
   const ativas = assinaturas?.filter((a: any) => a.status === 'ativa').length || 0;
   const total = assinaturas?.length || 0;
 
@@ -180,6 +183,10 @@ export default function CarreiraAdminAssinaturasPage() {
               <RefreshCw className={`w-3.5 h-3.5 ${renewLoading ? 'animate-spin' : ''}`} />
               Gerar PIX Renovação
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowIsencao(true)} className="gap-1.5 text-xs">
+              <Gift className="w-3.5 h-3.5" />
+              Conceder isenção
+            </Button>
             <Badge variant="outline">{total} total</Badge>
             <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">{ativas} ativas</Badge>
           </div>
@@ -233,7 +240,9 @@ export default function CarreiraAdminAssinaturasPage() {
                       </TableCell>
                       <TableCell><Badge variant="outline" className="text-xs">{ass.plano_display}</Badge></TableCell>
                       <TableCell className="text-sm font-medium">
-                        {ass.valor_display > 0 ? `R$ ${Number(ass.valor_display).toFixed(2).replace('.', ',')}` : '—'}
+                        {ass.metodo_pagamento === 'isento'
+                          ? <span className="text-amber-600">Isento</span>
+                          : (ass.valor_display > 0 ? `R$ ${Number(ass.valor_display).toFixed(2).replace('.', ',')}` : '—')}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1 text-xs">
@@ -286,6 +295,10 @@ export default function CarreiraAdminAssinaturasPage() {
 
         {editing && (
           <EditAssinaturaDialog assinatura={editing} onClose={() => setEditing(null)} onSaved={() => { queryClient.invalidateQueries({ queryKey: ['carreira-admin-assinaturas'] }); setEditing(null); }} />
+        )}
+
+        {showIsencao && (
+          <ConcederIsencaoDialog onClose={() => setShowIsencao(false)} onSaved={() => { queryClient.invalidateQueries({ queryKey: ['carreira-admin-assinaturas'] }); setShowIsencao(false); }} />
         )}
 
         <AlertDialog open={!!deleting} onOpenChange={(v) => { if (!v) setDeleting(null); }}>
@@ -381,6 +394,162 @@ function EditAssinaturaDialog({ assinatura, onClose, onSaved }: { assinatura: an
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button onClick={handleSave} disabled={saving}>{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar'}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function useBuscarAtletas(search: string) {
+  return useQuery({
+    queryKey: ['carreira-admin-buscar-atletas', search],
+    queryFn: async () => {
+      if (!search || search.trim().length < 2) return [];
+      const { data: perfis, error } = await supabase
+        .from('perfil_atleta')
+        .select('user_id, crianca_id, nome, slug')
+        .ilike('nome', `%${search.trim()}%`)
+        .limit(20);
+      if (error) throw error;
+
+      const userIds = [...new Set((perfis || []).map((p: any) => p.user_id))];
+      let profilesMap: Record<string, any> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase.from('profiles').select('user_id, email, nome').in('user_id', userIds);
+        if (profiles) profiles.forEach((p: any) => { profilesMap[p.user_id] = p; });
+      }
+
+      const criancaIds = [...new Set((perfis || []).map((p: any) => p.crianca_id).filter(Boolean))];
+      let assinaturaMap: Record<string, any> = {};
+      if (criancaIds.length > 0) {
+        const { data: assinaturas } = await supabase
+          .from('carreira_assinaturas')
+          .select('id, crianca_id, status, metodo_pagamento')
+          .in('crianca_id', criancaIds)
+          .order('created_at', { ascending: false });
+        if (assinaturas) assinaturas.forEach((a: any) => {
+          // keep only the most recent row per crianca_id (already ordered desc)
+          if (!assinaturaMap[a.crianca_id]) assinaturaMap[a.crianca_id] = a;
+        });
+      }
+
+      return (perfis || []).map((p: any) => ({
+        ...p,
+        user_email: profilesMap[p.user_id]?.email || '—',
+        user_nome: profilesMap[p.user_id]?.nome || '—',
+        assinatura_atual: assinaturaMap[p.crianca_id] || null,
+      }));
+    },
+  });
+}
+
+function ConcederIsencaoDialog({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const [search, setSearch] = useState('');
+  const [selecionado, setSelecionado] = useState<any>(null);
+  const [observacoes, setObservacoes] = useState('');
+  const [saving, setSaving] = useState(false);
+  const { data: resultados, isLoading } = useBuscarAtletas(search);
+
+  const handleConceder = async () => {
+    if (!selecionado) return;
+    setSaving(true);
+    try {
+      const payload = {
+        user_id: selecionado.user_id,
+        crianca_id: selecionado.crianca_id,
+        plano: 'premium',
+        status: 'ativa' as const,
+        valor: 0,
+        metodo_pagamento: 'isento',
+        expira_em: null,
+        inicio_em: new Date().toISOString().split('T')[0],
+        observacoes: observacoes || 'Isenção concedida pelo admin',
+      };
+
+      if (selecionado.assinatura_atual?.id) {
+        const { error } = await supabase.from('carreira_assinaturas').update(payload).eq('id', selecionado.assinatura_atual.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('carreira_assinaturas').insert(payload);
+        if (error) throw error;
+      }
+
+      toast.success(`Isenção concedida para ${selecionado.nome}`);
+      onSaved();
+    } catch (e: any) {
+      toast.error('Erro: ' + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader><DialogTitle>Conceder isenção de pagamento</DialogTitle></DialogHeader>
+
+        {!selecionado ? (
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar atleta pelo nome..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-10"
+                autoFocus
+              />
+            </div>
+            <div className="max-h-72 overflow-y-auto space-y-1">
+              {isLoading && <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin" /></div>}
+              {!isLoading && search.trim().length >= 2 && resultados?.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-6">Nenhum atleta encontrado</p>
+              )}
+              {resultados?.map((r: any) => (
+                <button
+                  key={r.crianca_id}
+                  onClick={() => setSelecionado(r)}
+                  className="w-full text-left p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                >
+                  <p className="font-medium text-sm">{r.nome}</p>
+                  <p className="text-xs text-muted-foreground">Responsável: {r.user_nome} ({r.user_email})</p>
+                  {r.assinatura_atual && (
+                    <Badge variant="outline" className="text-[10px] mt-1">
+                      Assinatura atual: {r.assinatura_atual.metodo_pagamento === 'isento' ? 'Já isento' : r.assinatura_atual.status}
+                    </Badge>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-start justify-between rounded-lg border border-border p-3 bg-muted/30">
+              <div>
+                <p className="font-medium text-sm">{selecionado.nome}</p>
+                <p className="text-xs text-muted-foreground">Responsável: {selecionado.user_nome} ({selecionado.user_email})</p>
+              </div>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelecionado(null)}>
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Isso vai conceder acesso Premium vitalício (sem cobrança), {selecionado.assinatura_atual ? 'atualizando a assinatura atual' : 'criando uma nova assinatura'} deste atleta.
+            </p>
+            <div>
+              <Label>Observações (motivo da isenção)</Label>
+              <Textarea value={observacoes} onChange={e => setObservacoes(e.target.value)} rows={2} placeholder="Ex: filho do admin, uso pessoal" />
+            </div>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          {selecionado && (
+            <Button onClick={handleConceder} disabled={saving} className="gap-1.5">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Gift className="w-4 h-4" /> Conceder isenção</>}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -55,6 +55,27 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Cancela qualquer trial/pendente/inadimplente anterior da mesma criança para
+    // evitar duas linhas paralelas em carreira_assinaturas (trial nunca tem
+    // gateway_subscription_id, então não há nada a cancelar na Asaas para ela)
+    const { data: pendingSubs } = await supabase
+      .from('carreira_assinaturas')
+      .select('id, gateway_subscription_id')
+      .eq('user_id', user_id)
+      .eq('crianca_id', crianca_id)
+      .in('status', ['pendente', 'inadimplente', 'trial']);
+    for (const p of (pendingSubs || [])) {
+      if (p.gateway_subscription_id) {
+        try {
+          await fetch(`${ASAAS_API_URL}/payments/${p.gateway_subscription_id}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', 'access_token': ASAAS_API_KEY },
+          });
+        } catch (_) { /* ignora falha ao cancelar cobrança antiga na Asaas */ }
+      }
+      await supabase.from('carreira_assinaturas').update({ status: 'cancelada' }).eq('id', p.id);
+    }
+
     // Preço fixo do Premium: R$ 12,00 (configurável em saas_config -> carreira_valor_premium)
     let valor = 12.0;
     const { data: configValor } = await supabase
