@@ -344,6 +344,17 @@ export default function CarreiraCadastroPage() {
     }
   };
 
+  // Navigate to created profile after PWA popup is shown
+  useEffect(() => {
+    if (showPwaPopup && profileSlug && !hasPaidPlan) {
+      // Delay to allow PWA popup to be displayed before navigating
+      const timer = setTimeout(() => {
+        navigate(carreiraPath(`/${profileSlug}`));
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showPwaPopup, profileSlug, hasPaidPlan, navigate]);
+
   const handleProfileCreated = async () => {
     if (userId) {
       // Processa convite/auto-follow vindos de ?ref&c&a (não bloqueia o fluxo)
@@ -422,7 +433,6 @@ export default function CarreiraCadastroPage() {
       }
     }
     // Fallback: no slug found, go to feed
-    navigate(carreiraPath(`/${perfilAtleta?.slug || "feed"}`));
     setShowPwaPopup(true);
     setProfileSlug(null);
   };
