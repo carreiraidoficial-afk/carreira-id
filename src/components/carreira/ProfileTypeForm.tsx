@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -185,6 +185,17 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
   const [brasaoFile, setBrasaoFile] = useState<File | null>(null);
   const [brasaoPreview, setBrasaoPreview] = useState<string | null>(null);
 
+  const nomeRef = useRef<HTMLInputElement>(null);
+  const documentoRef = useRef<HTMLInputElement>(null);
+  const telefoneRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const fieldRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const scrollToError = (el: HTMLElement | null) => {
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (el instanceof HTMLInputElement) el.focus();
+  };
+
   const isDono = type === 'dono_escola';
 
   const addUnidade = useCallback(() => {
@@ -243,6 +254,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
     e.preventDefault();
     if (!nome.trim()) {
       toast.error('Nome é obrigatório');
+      scrollToError(nomeRef.current);
       return;
     }
 
@@ -250,10 +262,12 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
     const cleanDoc = documento.replace(/\D/g, '');
     if (!cleanDoc) {
       toast.error(`${tipoDocumento === 'cnpj' ? 'CNPJ' : 'CPF'} é obrigatório`);
+      scrollToError(documentoRef.current);
       return;
     }
     if (!validateDocument(cleanDoc, tipoDocumento)) {
       toast.error(`${tipoDocumento === 'cnpj' ? 'CNPJ' : 'CPF'} inválido. Verifique os números digitados.`);
+      scrollToError(documentoRef.current);
       return;
     }
 
@@ -261,20 +275,24 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
     const cleanPhone = telefoneWhatsapp.replace(/\D/g, '');
     if (!cleanPhone) {
       toast.error('WhatsApp é obrigatório');
+      scrollToError(telefoneRef.current);
       return;
     }
     if (!validatePhoneNumber(cleanPhone)) {
       toast.error('Número de WhatsApp inválido. Use um número real com DDD (ex: 21 99999-9999).');
+      scrollToError(telefoneRef.current);
       return;
     }
 
     // Validate email
     if (!email.trim()) {
       toast.error('Email é obrigatório');
+      scrollToError(emailRef.current);
       return;
     }
     if (!validateEmailAddress(email.trim())) {
       toast.error('Email inválido. Verifique o endereço digitado.');
+      scrollToError(emailRef.current);
       return;
     }
 
@@ -284,6 +302,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
         const val = values[field.key];
         if (!val || (Array.isArray(val) && val.length === 0)) {
           toast.error(`${field.label} é obrigatório`);
+          scrollToError(fieldRefs.current[field.key]);
           return;
         }
       }
@@ -423,7 +442,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
         {/* Name */}
         <div className="space-y-2">
           <Label htmlFor="nome">Nome Completo *</Label>
-          <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Seu nome completo" required maxLength={100} />
+          <Input id="nome" ref={nomeRef} value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Seu nome completo" required maxLength={100} />
         </div>
 
         {/* Photo */}
@@ -471,6 +490,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
           <div className="space-y-2">
             <Label>{tipoDocumento === 'cnpj' ? 'CNPJ *' : 'CPF *'}</Label>
             <Input
+              ref={documentoRef}
               value={documento}
               onChange={(e) => {
                 const formatted = tipoDocumento === 'cnpj' ? formatCNPJ(e.target.value) : formatCPF(e.target.value);
@@ -484,6 +504,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
           <div className="space-y-2">
             <Label>WhatsApp *</Label>
             <Input
+              ref={telefoneRef}
               value={telefoneWhatsapp}
               onChange={(e) => setTelefoneWhatsapp(formatPhone(e.target.value))}
               placeholder="(11) 99999-9999"
@@ -507,6 +528,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
           <div className="space-y-2">
             <Label>Email *</Label>
             <Input
+              ref={emailRef}
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -552,7 +574,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
         {fields.map((field) => {
           if (field.isProfileField && field.key === 'bio') {
             return (
-              <div key={field.key} className="space-y-2">
+              <div key={field.key} ref={(el) => { fieldRefs.current[field.key] = el; }} className="space-y-2">
                 <Label>{field.label}</Label>
                 <Textarea
                   value={(values[field.key] as string) || ''}
@@ -567,7 +589,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
 
           if (field.isProfileField && field.key === 'instagram') {
             return (
-              <div key={field.key} className="space-y-2">
+              <div key={field.key} ref={(el) => { fieldRefs.current[field.key] = el; }} className="space-y-2">
                 <Label>{field.label}</Label>
                 <Input
                   value={(values[field.key] as string) || ''}
@@ -581,7 +603,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
 
           if (field.type === 'text') {
             return (
-              <div key={field.key} className="space-y-2">
+              <div key={field.key} ref={(el) => { fieldRefs.current[field.key] = el; }} className="space-y-2">
                 <Label>{field.label}{field.required ? ' *' : ''}</Label>
                 <Input
                   value={(values[field.key] as string) || ''}
@@ -596,7 +618,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
 
           if (field.type === 'textarea') {
             return (
-              <div key={field.key} className="space-y-2">
+              <div key={field.key} ref={(el) => { fieldRefs.current[field.key] = el; }} className="space-y-2">
                 <Label>{field.label}{field.required ? ' *' : ''}</Label>
                 <Textarea
                   value={(values[field.key] as string) || ''}
@@ -611,7 +633,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
 
           if (field.type === 'select') {
             return (
-              <div key={field.key} className="space-y-2">
+              <div key={field.key} ref={(el) => { fieldRefs.current[field.key] = el; }} className="space-y-2">
                 <Label>{field.label}{field.required ? ' *' : ''}</Label>
                 <Select
                   value={(values[field.key] as string) || ''}
@@ -633,7 +655,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
           if (field.type === 'multiselect') {
             const selected = (values[field.key] as string[]) || [];
             return (
-              <div key={field.key} className="space-y-2">
+              <div key={field.key} ref={(el) => { fieldRefs.current[field.key] = el; }} className="space-y-2">
                 <Label>{field.label}{field.required ? ' *' : ''}</Label>
                 <div className="flex flex-wrap gap-1.5">
                   {field.options?.map((opt) => (
