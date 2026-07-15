@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2, Mail, Lock, User, ArrowLeft, LogOut, Rocket, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowLeft, LogOut, Rocket, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { z } from 'zod';
 import { ProfileTypeSelector, type ProfileType } from '@/components/carreira/ProfileTypeSelector';
 import { ProfileTypeForm } from '@/components/carreira/ProfileTypeForm';
@@ -25,7 +25,7 @@ import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { trackCompleteRegistration, trackProfileCreated, trackInitiateCheckout, trackSubscribe, pushDataLayer } from '@/lib/fbPixel';
 import { salvarPendingRef, processarConviteRef } from '@/lib/processar-convite-ref';
 
-type Step = 'tutorial' | 'auth' | 'profile-type' | 'profile-form';
+type Step = 'tutorial' | 'auth' | 'recuperar-senha' | 'profile-type' | 'profile-form';
 
 const loginSchema = z.object({
   email: z.string().trim().email('Email inválido'),
@@ -62,6 +62,10 @@ export default function CarreiraCadastroPage() {
   const [profileSlug, setProfileSlug] = useState<string | null>(null);
   const [showPwaPopup, setShowPwaPopup] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [recuperarEmail, setRecuperarEmail] = useState('');
+  const [recuperarLoading, setRecuperarLoading] = useState(false);
+  const [recuperarEnviado, setRecuperarEnviado] = useState(false);
+  const [recuperarError, setRecuperarError] = useState<string | null>(null);
   const { isInstalled: pwaInstalled } = usePwaInstall();
 
   // Persist ?ref params so they survive OAuth redirect / email confirmation
@@ -474,12 +478,12 @@ export default function CarreiraCadastroPage() {
                   {i > 0 && <span style={{ color: 'hsl(220 10% 25%)' }}>›</span>}
                   <span className={
                     (i === 0 && step === 'tutorial') ||
-                    (i === 1 && step === 'auth') || 
+                    (i === 1 && (step === 'auth' || step === 'recuperar-senha')) ||
                     (i === 2 && (step === 'profile-type' || step === 'profile-form'))
                       ? 'font-semibold' : ''
                   } style={
                     (i === 0 && step === 'tutorial') ||
-                    (i === 1 && step === 'auth') || 
+                    (i === 1 && (step === 'auth' || step === 'recuperar-senha')) ||
                     (i === 2 && (step === 'profile-type' || step === 'profile-form'))
                       ? { color: 'hsl(25 95% 55%)' } : undefined
                   }>
@@ -591,23 +595,11 @@ export default function CarreiraCadastroPage() {
                   <div className="mt-2 text-center">
                     <button
                       type="button"
-                      onClick={async () => {
-                        if (!email.trim()) {
-                          toast.error('Digite seu email para recuperar a senha');
-                          return;
-                        }
-                        try {
-                          setIsLoading(true);
-                          const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                            redirectTo: `${window.location.origin}/reset-password`,
-                          });
-                          if (error) throw error;
-                          toast.success('Link de recuperação enviado para seu email!', { duration: 6000 });
-                        } catch (err: any) {
-                          toast.error(err.message || 'Erro ao enviar email de recuperação');
-                        } finally {
-                          setIsLoading(false);
-                        }
+                      onClick={() => {
+                        setRecuperarEmail(email);
+                        setRecuperarError(null);
+                        setRecuperarEnviado(false);
+                        setStep('recuperar-senha');
                       }}
                       className="text-xs hover:underline"
                       style={{ color: 'hsl(0 0% 50%)' }}
@@ -622,6 +614,107 @@ export default function CarreiraCadastroPage() {
                     {isLogin ? 'Cadastre-se' : 'Faça login'}
                   </button>
                 </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {step === 'recuperar-senha' && (
+          <div className="animate-fade-in">
+            <div className="text-center mb-3">
+              <h1 className="text-xl font-bold" style={{ color: 'hsl(0 0% 95%)' }}>Recuperar senha</h1>
+              <p className="text-sm" style={{ color: 'hsl(0 0% 55%)' }}>
+                {recuperarEnviado ? 'Verifique seu e-mail' : 'Informe seu e-mail de cadastro'}
+              </p>
+            </div>
+
+            <Card className="border" style={{ backgroundColor: 'hsl(220 12% 10%)', borderColor: 'hsl(25 95% 55% / 0.2)' }}>
+              <CardContent className="pt-4 pb-4">
+                {recuperarEnviado ? (
+                  <div className="text-center space-y-4 py-2">
+                    <CheckCircle2 className="w-14 h-14 mx-auto" style={{ color: 'hsl(142 70% 45%)' }} />
+                    <div>
+                      <p className="text-sm" style={{ color: 'hsl(0 0% 85%)' }}>
+                        Enviamos um link de recuperação para <strong style={{ color: 'hsl(0 0% 100%)' }}>{recuperarEmail}</strong>.
+                      </p>
+                      <p className="text-xs mt-2" style={{ color: 'hsl(0 0% 55%)' }}>
+                        Não encontrou? Confira também a caixa de spam/lixo eletrônico.
+                      </p>
+                    </div>
+                    <Button
+                      className="w-full"
+                      size="lg"
+                      style={{ backgroundColor: 'hsl(25 95% 55%)', color: 'hsl(0 0% 100%)' }}
+                      onClick={() => {
+                        setRecuperarEnviado(false);
+                        setRecuperarError(null);
+                        setStep('auth');
+                      }}
+                    >
+                      Voltar ao login
+                    </Button>
+                  </div>
+                ) : (
+                  <form
+                    className="space-y-3"
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (!recuperarEmail.trim()) {
+                        setRecuperarError('Digite seu e-mail para recuperar a senha');
+                        return;
+                      }
+                      setRecuperarError(null);
+                      setRecuperarLoading(true);
+                      try {
+                        const { error } = await supabase.auth.resetPasswordForEmail(recuperarEmail.trim(), {
+                          redirectTo: `${window.location.origin}/reset-password`,
+                        });
+                        if (error) throw error;
+                        setRecuperarEnviado(true);
+                      } catch (err: any) {
+                        setRecuperarError(err.message || 'Erro ao enviar e-mail de recuperação. Tente novamente.');
+                      } finally {
+                        setRecuperarLoading(false);
+                      }
+                    }}
+                  >
+                    <div className="space-y-1">
+                      <Label htmlFor="recuperar-email" style={{ color: 'hsl(0 0% 80%)' }}>E-mail</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'hsl(0 0% 40%)' }} />
+                        <Input
+                          id="recuperar-email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          value={recuperarEmail}
+                          onChange={(e) => setRecuperarEmail(e.target.value)}
+                          className="pl-10"
+                          style={{ backgroundColor: 'hsl(220 15% 8%)', borderColor: 'hsl(220 10% 20%)', color: 'hsl(0 0% 95%)' }}
+                          disabled={recuperarLoading}
+                          maxLength={255}
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+                    {recuperarError && (
+                      <p className="text-xs" style={{ color: 'hsl(0 70% 60%)' }}>{recuperarError}</p>
+                    )}
+                    <Button type="submit" className="w-full" size="lg" disabled={recuperarLoading}
+                      style={{ backgroundColor: 'hsl(25 95% 55%)', color: 'hsl(0 0% 100%)' }}
+                    >
+                      {recuperarLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                      Enviar link de recuperação
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => { setRecuperarError(null); setStep('auth'); }}
+                      className="w-full text-xs text-center hover:underline"
+                      style={{ color: 'hsl(0 0% 50%)' }}
+                    >
+                      Voltar ao login
+                    </button>
+                  </form>
+                )}
               </CardContent>
             </Card>
           </div>
