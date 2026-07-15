@@ -38,6 +38,13 @@
       "destination": "https://fppsotlycinwqsjpoybg.supabase.co/functions/v1/generate-sitemap?host=atletaid.com.br"
     },
     { "source": "/sitemap.xml", "destination": "https://fppsotlycinwqsjpoybg.supabase.co/functions/v1/generate-sitemap?host=carreiraid.com.br" },
+    {
+      "source": "/:slug",
+      "has": [
+        { "type": "header", "key": "user-agent", "value": ".*(facebookexternalhit|facebot|whatsapp|twitterbot|linkedinbot|slackbot|telegrambot|discordbot|pinterest|embedly|skypeuripreview|redditbot|tumblr|vkshare|quora|outbrain|opengraph).*" }
+      ],
+      "destination": "https://fppsotlycinwqsjpoybg.supabase.co/functions/v1/og-profile?slug=:slug"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "redirects": [
