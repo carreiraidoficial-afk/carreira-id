@@ -31,22 +31,22 @@ const handler = async (req: Request): Promise<Response> => {
       guardianName,
       guardianEmail,
       tempPassword,
-      loginUrl = "https://atletaid.com.br/auth",
+      loginUrl = "https://carreiraid.com.br/cadastro",
     }: PasswordResetEmailRequest = await req.json();
 
     console.log(`Enviando email de reset de senha para ${guardianEmail}`);
 
     const emailResponse = await resend.emails.send({
-      from: "Atleta ID <contato@atletaid.com.br>",
+      from: "Carreira ID <contato@carreiraid.com.br>",
       to: [guardianEmail],
-      subject: "Atleta ID - Nova Senha de Acesso",
+      subject: "Carreira ID - Nova Senha de Acesso",
       html: `
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Nova Senha - Atleta ID</title>
+          <title>Nova Senha - Carreira ID</title>
         </head>
         <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
           <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -57,7 +57,7 @@ const handler = async (req: Request): Promise<Response> => {
                   <!-- Header -->
                   <tr>
                     <td style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">⚽ Atleta ID</h1>
+                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">⚽ Carreira ID</h1>
                       <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Redefinição de Senha</p>
                     </td>
                   </tr>
@@ -68,7 +68,7 @@ const handler = async (req: Request): Promise<Response> => {
                       <h2 style="color: #1f2937; margin: 0 0 20px 0; font-size: 22px;">Olá, ${guardianName}!</h2>
                       
                       <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-                        Sua senha do <strong>Atleta ID</strong> foi redefinida. Utilize as novas credenciais abaixo para acessar sua conta.
+                        Sua senha do <strong>Carreira ID</strong> foi redefinida. Utilize as novas credenciais abaixo para acessar sua conta.
                       </p>
                       
                       <!-- Credentials Box -->
@@ -92,7 +92,7 @@ const handler = async (req: Request): Promise<Response> => {
                       <!-- CTA Button -->
                       <div style="text-align: center; margin: 30px 0;">
                         <a href="${loginUrl}" style="display: inline-block; background-color: #f59e0b; color: #ffffff; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-size: 16px; font-weight: bold;">
-                          Acessar Atleta ID
+                          Acessar Carreira ID
                         </a>
                       </div>
                       
@@ -116,10 +116,10 @@ const handler = async (req: Request): Promise<Response> => {
                   <tr>
                     <td style="background-color: #f9fafb; padding: 25px 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e7eb;">
                       <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                        Este é um email automático do Atleta ID. Por favor, não responda.
+                        Este é um email automático do Carreira ID. Por favor, não responda.
                       </p>
                       <p style="margin: 10px 0 0 0; color: #9ca3af; font-size: 12px;">
-                        © ${new Date().getFullYear()} Atleta ID - Todos os direitos reservados
+                        © ${new Date().getFullYear()} Carreira ID - Todos os direitos reservados
                       </p>
                     </td>
                   </tr>
