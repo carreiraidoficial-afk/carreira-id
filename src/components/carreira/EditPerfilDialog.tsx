@@ -36,6 +36,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PerfilAtleta, useUpdatePerfilAtleta } from '@/hooks/useCarreiraData';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { ProfilePhotoUpload } from './ProfilePhotoUpload';
 import { DeleteAccountDialog } from './DeleteAccountDialog';
 import { AssinaturaCard } from './AssinaturaCard';
@@ -102,7 +103,7 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
   const [selectedModalidades, setSelectedModalidades] = useState<string[]>([]);
   const [corDestaque, setCorDestaque] = useState(perfil.cor_destaque || '#3b82f6');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [notificacoesLigadas, setNotificacoesLigadas] = useState(true);
+  const { isSupported: pushSupported, isSubscribed, isLoading: pushLoading, subscribe, unsubscribe } = usePushNotifications();
   const [dadosPublicos, setDadosPublicos] = useState({
     gols: true, campeonatos: true, amistosos: true, premiacoes: true, conquistas: true,
   });
@@ -519,19 +520,36 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
 
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Notificações</p>
-              <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+              <div className={`flex items-center justify-between rounded-lg border p-3 bg-muted/30 ${!pushSupported ? 'opacity-60' : ''}`}>
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
                     <Bell className="w-4 h-4" />
                   </div>
                   <div>
                     <p className="text-sm font-medium">
-                      Notificações {notificacoesLigadas ? 'ligadas' : 'desligadas'}
+                      Notificações {isSubscribed ? 'ligadas' : 'desligadas'}
                     </p>
-                    <p className="text-xs text-muted-foreground">Dispositivo configurado para receber avisos</p>
+                    <p className="text-xs text-muted-foreground">
+                      {!pushSupported
+                        ? 'Não suportado neste navegador/dispositivo'
+                        : 'Dispositivo configurado para receber avisos'}
+                    </p>
                   </div>
                 </div>
-                <Switch checked={notificacoesLigadas} onCheckedChange={setNotificacoesLigadas} />
+                <Switch
+                  checked={isSubscribed}
+                  disabled={!pushSupported || pushLoading}
+                  onCheckedChange={async (checked) => {
+                    if (checked) {
+                      const ok = await subscribe();
+                      if (!ok) {
+                        toast.error('Não foi possível ativar. Verifique a permissão de notificações do navegador/celular.');
+                      }
+                    } else {
+                      await unsubscribe();
+                    }
+                  }}
+                />
               </div>
             </div>
 

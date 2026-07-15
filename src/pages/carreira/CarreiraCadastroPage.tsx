@@ -21,6 +21,7 @@ import logoCarreiraId from '@/assets/logo-carreira-id-dark.png';
 import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
 import PwaInstallButton from '@/components/shared/PwaInstallButton';
 import { PwaInstallPopup } from '@/components/shared/PwaInstallPopup';
+import { PushNotificationPopup } from '@/components/shared/PushNotificationPopup';
 import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { trackCompleteRegistration, trackProfileCreated, trackInitiateCheckout, trackSubscribe, pushDataLayer } from '@/lib/fbPixel';
 import { salvarPendingRef, processarConviteRef } from '@/lib/processar-convite-ref';
@@ -61,6 +62,7 @@ export default function CarreiraCadastroPage() {
   const [createdChildName, setCreatedChildName] = useState<string | null>(null);
   const [profileSlug, setProfileSlug] = useState<string | null>(null);
   const [showPwaPopup, setShowPwaPopup] = useState(false);
+  const [showPushPopup, setShowPushPopup] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [recuperarEmail, setRecuperarEmail] = useState('');
   const [recuperarLoading, setRecuperarLoading] = useState(false);
@@ -832,11 +834,21 @@ export default function CarreiraCadastroPage() {
         </DialogContent>
       </Dialog>
 
-      {/* PWA Install Popup after profile creation */}
+      {/* PWA Install Popup after profile creation -> em seguida, prompt de notificações */}
       <PwaInstallPopup
         open={showPwaPopup}
         onOpenChange={(open) => {
           setShowPwaPopup(open);
+          if (!open) {
+            setShowPushPopup(true);
+          }
+        }}
+      />
+
+      <PushNotificationPopup
+        open={showPushPopup}
+        onOpenChange={(open) => {
+          setShowPushPopup(open);
           if (!open) {
             if (profileSlug) {
               navigate(carreiraPath(`/${profileSlug}`));
