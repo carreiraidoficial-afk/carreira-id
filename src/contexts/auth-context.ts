@@ -15,6 +15,7 @@ export interface AuthContextType {
   user: AuthUser | null;
   session: Session | null;
   isLoading: boolean;
+  isPasswordRecovery: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (email: string, password: string, nome: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;

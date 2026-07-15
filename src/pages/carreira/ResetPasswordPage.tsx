@@ -1,51 +1,42 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { toast } from 'sonner';
-import { Loader2, Lock, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Lock, CheckCircle, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import logoCarreiraId from '@/assets/logo-carreira-id-dark.png';
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
+  const { isPasswordRecovery, isLoading: authLoading } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isRecovery, setIsRecovery] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  useEffect(() => {
-    // Check if we have a recovery token in the URL hash
-    const hash = window.location.hash;
-    if (hash.includes('type=recovery')) {
-      setIsRecovery(true);
-    }
-
-    // Listen for PASSWORD_RECOVERY event
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setIsRecovery(true);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  // O AuthContext (montado cedo, sem lazy loading) é quem detecta com segurança
+  // o evento PASSWORD_RECOVERY do supabase-js. Esta página só espera esse estado
+  // ficar pronto — nada de checar o hash da URL aqui, ele pode já ter sido limpo
+  // pelo próprio supabase-js antes desta página (lazy-loaded) terminar de montar.
+  const hadHashOnLoad = useRef(window.location.hash.includes('type=recovery'));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
 
     if (password.length < 6) {
-      toast.error('A senha deve ter pelo menos 6 caracteres');
+      setFormError('A senha deve ter pelo menos 6 caracteres');
       return;
     }
 
     if (password !== confirmPassword) {
-      toast.error('As senhas não coincidem');
+      setFormError('As senhas não coincidem');
       return;
     }
 
@@ -54,19 +45,34 @@ export default function ResetPasswordPage() {
       const { error } = await supabase.auth.updateUser({ password });
 
       if (error) {
-        toast.error(error.message);
+        setFormError(error.message || 'Erro ao alterar senha. Tente novamente.');
       } else {
+        // Encerra a sessão de recuperação imediatamente após trocar a senha,
+        // para não deixá-la "pendurada" enquanto a navegação acontece
+        // (evita corrida com o AuthContext processando essa sessão no meio
+        // da troca de tela) e leva o usuário a um login limpo.
+        await supabase.auth.signOut();
         setDone(true);
-        toast.success('Senha alterada com sucesso!');
-        setTimeout(() => navigate('/cadastro'), 2000);
+        setTimeout(() => navigate('/cadastro'), 2500);
       }
     } catch {
-      toast.error('Erro ao alterar senha');
+      setFormError('Erro ao alterar senha. Tente novamente.');
     }
     setIsLoading(false);
   };
 
-  if (!isRecovery) {
+  // Enquanto o AuthContext ainda está processando a sessão inicial (que é quando
+  // o evento de recuperação é capturado), mostra um loading em vez de decidir
+  // cedo demais que o link é inválido.
+  if (authLoading && !isPasswordRecovery && hadHashOnLoad.current) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!isPasswordRecovery) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
         <Card className="w-full max-w-md">
@@ -151,6 +157,13 @@ export default function ResetPasswordPage() {
                   </button>
                 </div>
               </div>
+
+              {formError && (
+                <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 rounded-md p-3">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{formError}</span>
+                </div>
+              )}
 
               <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
                 {isLoading ? (

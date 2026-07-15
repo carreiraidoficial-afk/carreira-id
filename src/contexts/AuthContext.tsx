@@ -9,6 +9,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   const queryClient = useQueryClient();
   const sessionRef = useRef<Session | null>(null);
   const fetchingRef = useRef(false);
@@ -82,6 +83,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         console.log('[AuthContext] onAuthStateChange:', event, 'userId:', nextUserId, 'isSameUser:', isSameUser);
 
+        // Captura de forma confiável o fluxo de recuperação de senha: o AuthProvider
+        // monta cedo (não é lazy), então ele nunca perde esse evento — diferente de
+        // páginas lazy-loaded (ex: ResetPasswordPage), que podem montar tarde demais
+        // e perder tanto o evento quanto o hash da URL (já limpo pelo supabase-js).
+        if (event === 'PASSWORD_RECOVERY') {
+          setIsPasswordRecovery(true);
+        }
+
         // Sempre atualiza a sessão (necessário para manter token atualizado)
         setSession(nextSession);
         sessionRef.current = nextSession;
@@ -91,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('[AuthContext] No session user, clearing state');
           setUser(null);
           setIsLoading(false);
+          setIsPasswordRecovery(false);
           fetchingRef.current = false;
           return;
         }
@@ -282,10 +292,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
+    setIsPasswordRecovery(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, login, signup, logout, changePassword, refreshUser }}>
+    <AuthContext.Provider value={{ user, session, isLoading, isPasswordRecovery, login, signup, logout, changePassword, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
