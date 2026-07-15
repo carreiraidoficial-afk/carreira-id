@@ -108,7 +108,7 @@ export function usePushNotifications() {
       
       // Save to database
       const { error } = await supabase
-        .from('push_subscriptions')
+        .from('carreira_push_subscriptions')
         .upsert({
           user_id: session.user.id,
           endpoint: json.endpoint!,
@@ -147,7 +147,7 @@ export function usePushNotifications() {
         await subscription.unsubscribe();
         
         await supabase
-          .from('push_subscriptions')
+          .from('carreira_push_subscriptions')
           .delete()
           .eq('user_id', session.user.id)
           .eq('endpoint', subscription.endpoint);
