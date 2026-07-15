@@ -352,6 +352,68 @@ export function useCarreiraDiagnostico() {
         status: (semEvidencia || 0) > 10 ? 'warning' : 'ok',
       });
 
+      // 7. Assinaturas duplicadas (trial + ativa/pendente para o mesmo atleta ao mesmo tempo)
+      const { data: assinaturasEmVigor } = await supabase
+        .from('carreira_assinaturas')
+        .select('crianca_id')
+        .in('status', ['trial', 'ativa', 'pendente']);
+      const criancaCounts = new Map<string, number>();
+      (assinaturasEmVigor || []).forEach((a: any) => {
+        if (!a.crianca_id) return;
+        criancaCounts.set(a.crianca_id, (criancaCounts.get(a.crianca_id) || 0) + 1);
+      });
+      const assinaturasDuplicadas = [...criancaCounts.values()].filter(c => c > 1).length;
+      checks.push({
+        label: 'Assinaturas duplicadas por atleta',
+        description: 'Atletas com mais de uma assinatura "em vigor" (trial/ativa/pendente) ao mesmo tempo — sinal de bug no fluxo de upgrade de trial para pago',
+        count: assinaturasDuplicadas,
+        status: assinaturasDuplicadas > 0 ? 'error' : 'ok',
+      });
+
+      // 8. Perfis legados "pai_responsavel" que nunca migraram para um perfil de atleta próprio
+      const { data: paiResponsavelRows } = await supabase
+        .from('perfis_rede')
+        .select('user_id')
+        .eq('tipo', 'pai_responsavel');
+      let semMigracao = 0;
+      if (paiResponsavelRows && paiResponsavelRows.length > 0) {
+        const userIds = paiResponsavelRows.map((r: any) => r.user_id);
+        const { data: atletasVinculados } = await supabase
+          .from('perfil_atleta')
+          .select('user_id')
+          .in('user_id', userIds);
+        const comAtleta = new Set((atletasVinculados || []).map((a: any) => a.user_id));
+        semMigracao = userIds.filter((uid: string) => !comAtleta.has(uid)).length;
+      }
+      checks.push({
+        label: 'Perfis legados sem migração',
+        description: 'Contas do tipo antigo "pai_responsavel" que ainda não têm um perfil de atleta próprio vinculado',
+        count: semMigracao,
+        status: semMigracao > 0 ? 'warning' : 'ok',
+      });
+
+      // 9. Atletas sem nenhuma assinatura (nem trial) — ficam sem acesso a nada até alguém notar
+      const { data: atletasComCrianca } = await supabase
+        .from('perfil_atleta')
+        .select('crianca_id')
+        .not('crianca_id', 'is', null);
+      let semAssinatura = 0;
+      if (atletasComCrianca && atletasComCrianca.length > 0) {
+        const criancaIds = atletasComCrianca.map((a: any) => a.crianca_id);
+        const { data: assinaturasExistentes } = await supabase
+          .from('carreira_assinaturas')
+          .select('crianca_id')
+          .in('crianca_id', criancaIds);
+        const comAssinatura = new Set((assinaturasExistentes || []).map((a: any) => a.crianca_id));
+        semAssinatura = criancaIds.filter((cid: string) => !comAssinatura.has(cid)).length;
+      }
+      checks.push({
+        label: 'Atletas sem nenhuma assinatura',
+        description: 'Perfis de atleta que nunca tiveram trial nem assinatura criada — todo cadastro novo deveria ganhar um trial automaticamente',
+        count: semAssinatura,
+        status: semAssinatura > 0 ? 'warning' : 'ok',
+      });
+
       const totalProblems = checks.filter(c => c.status !== 'ok').length;
       setErrors({
         checks,
