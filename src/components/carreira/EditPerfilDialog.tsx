@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, X, Eye, Instagram, Palette, Lock, Trash2, UserCircle, Save, CreditCard } from 'lucide-react';
+import { Loader2, X, Eye, Instagram, Palette, Lock, Trash2, UserCircle, Save, CreditCard, ShieldCheck, Fingerprint, Smartphone, Bell, KeyRound, HelpCircle, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
@@ -102,6 +102,7 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
   const [selectedModalidades, setSelectedModalidades] = useState<string[]>([]);
   const [corDestaque, setCorDestaque] = useState(perfil.cor_destaque || '#3b82f6');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [notificacoesLigadas, setNotificacoesLigadas] = useState(true);
   const [dadosPublicos, setDadosPublicos] = useState({
     gols: true, campeonatos: true, amistosos: true, premiacoes: true, conquistas: true,
   });
@@ -235,7 +236,7 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
         </DialogHeader>
 
         <Tabs defaultValue="perfil" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="perfil">Dados do Atleta</TabsTrigger>
             <TabsTrigger value="responsavel" className="flex items-center gap-1.5">
               <UserCircle className="w-3.5 h-3.5" />
@@ -244,6 +245,10 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
             <TabsTrigger value="assinatura" className="flex items-center gap-1.5">
               <CreditCard className="w-3.5 h-3.5" />
               Assinatura
+            </TabsTrigger>
+            <TabsTrigger value="conta" className="flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Conta
             </TabsTrigger>
           </TabsList>
 
@@ -479,6 +484,88 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">Assinatura disponível apenas para perfis de atleta.</p>
             )}
+          </TabsContent>
+
+          <TabsContent value="conta" className="mt-4 space-y-6">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Autenticação</p>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between rounded-lg border p-3 opacity-60">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                      <Fingerprint className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Biometria</p>
+                      <p className="text-xs text-muted-foreground">Use sua impressão digital ou Face ID para entrar mais rápido</p>
+                    </div>
+                  </div>
+                  <Switch checked={false} disabled />
+                </div>
+                <div className="flex items-center justify-between rounded-lg border p-3 opacity-60">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                      <Smartphone className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Autenticação em duas etapas</p>
+                      <p className="text-xs text-muted-foreground">Código SMS para mais segurança</p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-[10px]">Em breve</Badge>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Notificações</p>
+              <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <Bell className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">
+                      Notificações {notificacoesLigadas ? 'ligadas' : 'desligadas'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Dispositivo configurado para receber avisos</p>
+                  </div>
+                </div>
+                <Switch checked={notificacoesLigadas} onCheckedChange={setNotificacoesLigadas} />
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Senha</p>
+              <button type="button" className="w-full flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <KeyRound className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-medium">Alterar senha</p>
+                    <p className="text-xs text-muted-foreground">Defina uma nova senha de acesso</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Suporte</p>
+              <button type="button" className="w-full flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <HelpCircle className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-medium">Central de Ajuda</p>
+                    <p className="text-xs text-muted-foreground">Tire suas dúvidas com nosso suporte</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
           </TabsContent>
         </Tabs>
 
