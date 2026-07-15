@@ -31,6 +31,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, ArrowLeft, UserX, MapPin, Trophy, Share2, User, UserPlus, UserCheck, Users, Copy, Check, Search, School, X, LogOut, Pencil, Instagram, Globe, Phone, Eye, Zap } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { useSEO } from '@/hooks/useSEO';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
@@ -300,6 +301,41 @@ export default function CarreiraPerfilPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { data: perfil, isLoading, error } = useProfileBySlug(slug || '');
+
+  useSEO({
+    title: perfil
+      ? (perfil.type === 'atleta'
+          ? `${perfil.nome}${(perfil as any).modalidade ? ` - ${(perfil as any).modalidade}` : ''} | CARREIRA ID`
+          : `${perfil.nome} | CARREIRA ID`)
+      : 'Perfil de Atleta | CARREIRA ID',
+    description: perfil
+      ? (perfil.type === 'atleta'
+          ? [
+              (perfil as any).modalidade,
+              [(perfil as any).cidade, (perfil as any).estado].filter(Boolean).join('/'),
+              (perfil as any).bio,
+            ].filter(Boolean).join(' — ') || `Perfil esportivo de ${perfil.nome} no CARREIRA ID.`
+          : ((perfil as any).bio || `Perfil de ${perfil.nome} na rede CARREIRA ID.`))
+      : 'Veja a trajetória esportiva documentada no CARREIRA ID.',
+    path: perfil?.slug ? `/${perfil.slug}` : undefined,
+    image: (perfil as any)?.foto_url || undefined,
+    type: 'profile',
+    noindex: perfil ? (perfil as any).is_public === false : false,
+    jsonLd: perfil ? {
+      '@type': 'Person',
+      name: perfil.nome,
+      url: `https://carreiraid.com.br/${perfil.slug}`,
+      image: (perfil as any).foto_url || undefined,
+      description: perfil.type === 'atleta' ? (perfil as any).modalidade : undefined,
+      address: (perfil as any).cidade ? {
+        '@type': 'PostalAddress',
+        addressLocality: (perfil as any).cidade,
+        addressRegion: (perfil as any).estado,
+        addressCountry: 'BR',
+      } : undefined,
+    } : undefined,
+  });
+
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');

@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
+import { useSEO } from '@/hooks/useSEO';
 
 const TYPE_LABELS: Record<string, string> = {
   professor: 'Professor',
@@ -258,6 +259,11 @@ function useSearchPeopleExplorar(query: string) {
 }
 
 export default function CarreiraExplorarPage() {
+  useSEO({
+    title: 'Explorar Atletas de Base | CARREIRA ID',
+    description: 'Descubra perfis de atletas do futebol de base, acompanhe a jornada esportiva de jovens talentos e conecte-se com a comunidade do esporte de base.',
+    path: '/explorar',
+  });
   const { sessionUserId, loading: sessionLoading } = useCarreiraSession();
   const navigate = useNavigate();
   const { theme } = useCarreiraTheme();

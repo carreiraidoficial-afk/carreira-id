@@ -27,6 +27,17 @@
   ],
   "rewrites": [
     { "source": "/p/:id", "destination": "https://fppsotlycinwqsjpoybg.supabase.co/functions/v1/share-post?id=:id" },
+    {
+      "source": "/sitemap.xml",
+      "has": [{ "type": "host", "value": "atletaid.com.br" }],
+      "destination": "https://fppsotlycinwqsjpoybg.supabase.co/functions/v1/generate-sitemap?host=atletaid.com.br"
+    },
+    {
+      "source": "/sitemap.xml",
+      "has": [{ "type": "host", "value": "www.atletaid.com.br" }],
+      "destination": "https://fppsotlycinwqsjpoybg.supabase.co/functions/v1/generate-sitemap?host=atletaid.com.br"
+    },
+    { "source": "/sitemap.xml", "destination": "https://fppsotlycinwqsjpoybg.supabase.co/functions/v1/generate-sitemap?host=carreiraid.com.br" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "redirects": [
