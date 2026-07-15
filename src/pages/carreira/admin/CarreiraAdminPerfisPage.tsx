@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -408,7 +409,8 @@ function AtletaFiltrosBar({ search, setSearch, estado, setEstado, posicao, setPo
 }
 
 export default function CarreiraAdminPerfisPage() {
-  const [searchAtleta, setSearchAtleta] = useState('');
+  const [urlParams] = useSearchParams();
+  const [searchAtleta, setSearchAtleta] = useState(urlParams.get('q') || '');
   const [estadoAtleta, setEstadoAtleta] = useState('');
   const [posicaoAtleta, setPosicaoAtleta] = useState('');
   const [searchTeste, setSearchTeste] = useState('');

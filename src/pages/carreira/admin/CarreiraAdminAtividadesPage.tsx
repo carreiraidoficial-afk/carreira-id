@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -79,7 +80,8 @@ function useUpdateConfig() {
 }
 
 export default function CarreiraAdminAtividadesPage() {
-  const [search, setSearch] = useState('');
+  const [urlParams] = useSearchParams();
+  const [search, setSearch] = useState(urlParams.get('q') || '');
   const { data: atividades, isLoading } = useAtividadesExternasAdmin(search);
   const { data: config } = useAtividadesConfig();
   const { data: whitelist, isLoading: loadingWhitelist } = useWhitelist();

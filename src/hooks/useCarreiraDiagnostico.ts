@@ -27,6 +27,9 @@ export interface ErrorCheck {
   description: string;
   count: number;
   status: 'ok' | 'warning' | 'error';
+  /** Rota do admin pra onde o botão "Resolver" leva (já com busca pré-preenchida quando possível). */
+  resolvePath?: string;
+  resolveLabel?: string;
 }
 
 export interface BucketInfo {
@@ -277,15 +280,20 @@ export function useCarreiraDiagnostico() {
       const checks: ErrorCheck[] = [];
 
       // 1. Perfis sem crianca vinculada
-      const { count: perfisSemCrianca } = await supabase
+      const { data: perfisSemCriancaRows } = await supabase
         .from('perfil_atleta')
-        .select('id', { count: 'exact', head: true })
+        .select('id, nome')
         .is('crianca_id', null);
+      const qtdSemCrianca = perfisSemCriancaRows?.length || 0;
       checks.push({
         label: 'Perfis sem criança vinculada',
         description: 'Perfis atleta que não possuem uma criança associada',
-        count: perfisSemCrianca || 0,
-        status: (perfisSemCrianca || 0) > 0 ? 'warning' : 'ok',
+        count: qtdSemCrianca,
+        status: qtdSemCrianca > 0 ? 'warning' : 'ok',
+        resolvePath: qtdSemCrianca === 1
+          ? `/carreira/admin/perfis?q=${encodeURIComponent(perfisSemCriancaRows![0].nome)}`
+          : qtdSemCrianca > 1 ? '/carreira/admin/perfis' : undefined,
+        resolveLabel: 'Ver perfil(is)',
       });
 
       // 2. Conexões pendentes há muito tempo (>30 days)
@@ -313,6 +321,8 @@ export function useCarreiraDiagnostico() {
         description: 'Assinaturas com status ativa mas data de expiração já passou',
         count: assExpiradas || 0,
         status: (assExpiradas || 0) > 0 ? 'error' : 'ok',
+        resolvePath: (assExpiradas || 0) > 0 ? '/carreira/admin/assinaturas' : undefined,
+        resolveLabel: 'Ver assinaturas',
       });
 
       // 4. Posts sem autor
@@ -326,6 +336,8 @@ export function useCarreiraDiagnostico() {
         description: 'Posts que não possuem nem autor_id nem perfil_rede_id',
         count: postsSemAutor || 0,
         status: (postsSemAutor || 0) > 0 ? 'warning' : 'ok',
+        resolvePath: (postsSemAutor || 0) > 0 ? '/carreira/admin/posts' : undefined,
+        resolveLabel: 'Ver posts',
       });
 
       // 5. Perfis rede sem slug
@@ -338,6 +350,8 @@ export function useCarreiraDiagnostico() {
         description: 'Perfis da rede que não possuem URL pública configurada',
         count: semSlug || 0,
         status: (semSlug || 0) > 0 ? 'warning' : 'ok',
+        resolvePath: (semSlug || 0) > 0 ? '/carreira/admin/perfis' : undefined,
+        resolveLabel: 'Ver perfis',
       });
 
       // 6. Atividades sem evidência
@@ -350,6 +364,8 @@ export function useCarreiraDiagnostico() {
         description: 'Atividades externas que estão apenas com status "registrado"',
         count: semEvidencia || 0,
         status: (semEvidencia || 0) > 10 ? 'warning' : 'ok',
+        resolvePath: (semEvidencia || 0) > 10 ? '/carreira/admin/atividades' : undefined,
+        resolveLabel: 'Ver atividades',
       });
 
       // 7. Assinaturas duplicadas (trial + ativa/pendente para o mesmo atleta ao mesmo tempo)
@@ -362,15 +378,33 @@ export function useCarreiraDiagnostico() {
         if (!a.crianca_id) return;
         criancaCounts.set(a.crianca_id, (criancaCounts.get(a.crianca_id) || 0) + 1);
       });
-      const assinaturasDuplicadas = [...criancaCounts.values()].filter(c => c > 1).length;
+      const criancaIdsDuplicadas = [...criancaCounts.entries()].filter(([, c]) => c > 1).map(([id]) => id);
+      const assinaturasDuplicadas = criancaIdsDuplicadas.length;
+      let duplicadaResolvePath: string | undefined;
+      if (assinaturasDuplicadas === 1) {
+        const { data: criancaDup } = await supabase
+          .from('criancas')
+          .select('nome')
+          .eq('id', criancaIdsDuplicadas[0])
+          .maybeSingle();
+        duplicadaResolvePath = criancaDup?.nome
+          ? `/carreira/admin/assinaturas?q=${encodeURIComponent(criancaDup.nome)}`
+          : '/carreira/admin/assinaturas';
+      } else if (assinaturasDuplicadas > 1) {
+        duplicadaResolvePath = '/carreira/admin/assinaturas';
+      }
       checks.push({
         label: 'Assinaturas duplicadas por atleta',
         description: 'Atletas com mais de uma assinatura "em vigor" (trial/ativa/pendente) ao mesmo tempo — sinal de bug no fluxo de upgrade de trial para pago',
         count: assinaturasDuplicadas,
         status: assinaturasDuplicadas > 0 ? 'error' : 'ok',
+        resolvePath: duplicadaResolvePath,
+        resolveLabel: 'Ver assinaturas',
       });
 
       // 8. Perfis legados "pai_responsavel" que nunca migraram para um perfil de atleta próprio
+      // Sem resolvePath: a aba "Rede" do admin exclui esse tipo legado da listagem hoje,
+      // não existe ainda uma tela dedicada para gerenciar essas contas.
       const { data: paiResponsavelRows } = await supabase
         .from('perfis_rede')
         .select('user_id')
@@ -395,9 +429,10 @@ export function useCarreiraDiagnostico() {
       // 9. Atletas sem nenhuma assinatura (nem trial) — ficam sem acesso a nada até alguém notar
       const { data: atletasComCrianca } = await supabase
         .from('perfil_atleta')
-        .select('crianca_id')
+        .select('nome, crianca_id')
         .not('crianca_id', 'is', null);
       let semAssinatura = 0;
+      let semAssinaturaResolvePath: string | undefined;
       if (atletasComCrianca && atletasComCrianca.length > 0) {
         const criancaIds = atletasComCrianca.map((a: any) => a.crianca_id);
         const { data: assinaturasExistentes } = await supabase
@@ -405,13 +440,21 @@ export function useCarreiraDiagnostico() {
           .select('crianca_id')
           .in('crianca_id', criancaIds);
         const comAssinatura = new Set((assinaturasExistentes || []).map((a: any) => a.crianca_id));
-        semAssinatura = criancaIds.filter((cid: string) => !comAssinatura.has(cid)).length;
+        const atletasSemAssinatura = atletasComCrianca.filter((a: any) => !comAssinatura.has(a.crianca_id));
+        semAssinatura = atletasSemAssinatura.length;
+        if (semAssinatura === 1) {
+          semAssinaturaResolvePath = `/carreira/admin/perfis?q=${encodeURIComponent(atletasSemAssinatura[0].nome)}`;
+        } else if (semAssinatura > 1) {
+          semAssinaturaResolvePath = '/carreira/admin/perfis';
+        }
       }
       checks.push({
         label: 'Atletas sem nenhuma assinatura',
         description: 'Perfis de atleta que nunca tiveram trial nem assinatura criada — todo cadastro novo deveria ganhar um trial automaticamente',
         count: semAssinatura,
         status: semAssinatura > 0 ? 'warning' : 'ok',
+        resolvePath: semAssinaturaResolvePath,
+        resolveLabel: 'Ver perfil(is)',
       });
 
       const totalProblems = checks.filter(c => c.status !== 'ok').length;

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -107,7 +108,8 @@ async function uploadAdminLogo(userId: string): Promise<string | null> {
 
 export default function CarreiraAdminPostsPage() {
   const { user } = useAuth();
-  const [search, setSearch] = useState('');
+  const [urlParams] = useSearchParams();
+  const [search, setSearch] = useState(urlParams.get('q') || '');
   const [texto, setTexto] = useState('');
   const [images, setImages] = useState<{ file: File; preview: string }[]>([]);
   const [uploading, setUploading] = useState(false);

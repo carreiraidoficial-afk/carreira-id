@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import CarreiraAdminLayout from '@/components/layout/CarreiraAdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle, XCircle, AlertTriangle, RefreshCw, Database, Shield, Users, FileText } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, AlertTriangle, RefreshCw, Database, Shield, Users, FileText, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface HealthCheck {
@@ -13,6 +14,8 @@ interface HealthCheck {
   description: string;
   status: 'ok' | 'warning' | 'error' | 'loading';
   detail?: string;
+  resolvePath?: string;
+  resolveLabel?: string;
 }
 
 function useHealthChecks() {
@@ -142,14 +145,19 @@ function useHealthChecks() {
           .select('id, nome, slug')
           .is('crianca_id', null)
           .limit(5);
-        
+
+        const orphanCount = orphans?.length || 0;
         checks.push({
           name: 'Perfis sem Criança vinculada',
           description: 'Perfis de atleta sem crianca_id associado',
-          status: (orphans?.length || 0) > 0 ? 'warning' : 'ok',
-          detail: (orphans?.length || 0) > 0
-            ? `${orphans!.length} perfis sem vínculo: ${orphans!.map(o => o.nome).join(', ')}`
+          status: orphanCount > 0 ? 'warning' : 'ok',
+          detail: orphanCount > 0
+            ? `${orphanCount} perfis sem vínculo: ${orphans!.map(o => o.nome).join(', ')}`
             : 'Todos os perfis têm vínculo',
+          resolvePath: orphanCount === 1
+            ? `/carreira/admin/perfis?q=${encodeURIComponent(orphans![0].nome)}`
+            : orphanCount > 1 ? '/carreira/admin/perfis' : undefined,
+          resolveLabel: 'Ver perfil(is)',
         });
       } catch (err: any) {
         checks.push({ name: 'Perfis sem Criança vinculada', description: 'Perfis de atleta sem crianca_id associado', status: 'warning', detail: err.message });
@@ -175,6 +183,99 @@ function useHealthChecks() {
         checks.push({ name: 'Cadastros Recentes (24h)', description: 'Novos perfis criados nas últimas 24 horas', status: 'warning', detail: err.message });
       }
 
+      // 11. Assinaturas duplicadas (trial + ativa/pendente pra mesma criança ao mesmo tempo)
+      try {
+        const { data: assinaturasEmVigor } = await supabase
+          .from('carreira_assinaturas')
+          .select('crianca_id')
+          .in('status', ['trial', 'ativa', 'pendente']);
+        const criancaCounts = new Map<string, number>();
+        (assinaturasEmVigor || []).forEach((a: any) => {
+          if (!a.crianca_id) return;
+          criancaCounts.set(a.crianca_id, (criancaCounts.get(a.crianca_id) || 0) + 1);
+        });
+        const criancaIdsDuplicadas = [...criancaCounts.entries()].filter(([, c]) => c > 1).map(([id]) => id);
+        let resolvePath: string | undefined;
+        let nomesDuplicados = '';
+        if (criancaIdsDuplicadas.length > 0) {
+          const { data: criancasDup } = await supabase
+            .from('criancas')
+            .select('nome')
+            .in('id', criancaIdsDuplicadas);
+          nomesDuplicados = (criancasDup || []).map((c: any) => c.nome).join(', ');
+          resolvePath = criancaIdsDuplicadas.length === 1 && criancasDup?.[0]?.nome
+            ? `/carreira/admin/assinaturas?q=${encodeURIComponent(criancasDup[0].nome)}`
+            : '/carreira/admin/assinaturas';
+        }
+        checks.push({
+          name: 'Assinaturas duplicadas por atleta',
+          description: 'Atletas com mais de uma assinatura em vigor (trial/ativa/pendente) ao mesmo tempo',
+          status: criancaIdsDuplicadas.length > 0 ? 'error' : 'ok',
+          detail: criancaIdsDuplicadas.length > 0 ? `${criancaIdsDuplicadas.length} atleta(s): ${nomesDuplicados}` : undefined,
+          resolvePath,
+          resolveLabel: 'Ver assinaturas',
+        });
+      } catch (err: any) {
+        checks.push({ name: 'Assinaturas duplicadas por atleta', description: 'Atletas com mais de uma assinatura em vigor ao mesmo tempo', status: 'warning', detail: err.message });
+      }
+
+      // 12. Perfis legados "pai_responsavel" sem migração para perfil de atleta próprio
+      try {
+        const { data: paiResponsavelRows } = await supabase
+          .from('perfis_rede')
+          .select('user_id, nome')
+          .eq('tipo', 'pai_responsavel');
+        let semMigracaoNomes: string[] = [];
+        if (paiResponsavelRows && paiResponsavelRows.length > 0) {
+          const userIds = paiResponsavelRows.map((r: any) => r.user_id);
+          const { data: atletasVinculados } = await supabase
+            .from('perfil_atleta')
+            .select('user_id')
+            .in('user_id', userIds);
+          const comAtleta = new Set((atletasVinculados || []).map((a: any) => a.user_id));
+          semMigracaoNomes = paiResponsavelRows.filter((r: any) => !comAtleta.has(r.user_id)).map((r: any) => r.nome);
+        }
+        checks.push({
+          name: 'Perfis legados sem migração',
+          description: 'Contas do tipo antigo "pai_responsavel" sem perfil de atleta próprio vinculado',
+          status: semMigracaoNomes.length > 0 ? 'warning' : 'ok',
+          detail: semMigracaoNomes.length > 0 ? `${semMigracaoNomes.length}: ${semMigracaoNomes.join(', ')}` : undefined,
+          // Sem resolvePath: a aba Rede do admin exclui esse tipo legado da listagem hoje.
+        });
+      } catch (err: any) {
+        checks.push({ name: 'Perfis legados sem migração', description: 'Contas antigas sem perfil de atleta vinculado', status: 'warning', detail: err.message });
+      }
+
+      // 13. Atletas sem nenhuma assinatura (nem trial)
+      try {
+        const { data: atletasComCrianca } = await supabase
+          .from('perfil_atleta')
+          .select('nome, crianca_id')
+          .not('crianca_id', 'is', null);
+        let atletasSemAssinatura: any[] = [];
+        if (atletasComCrianca && atletasComCrianca.length > 0) {
+          const criancaIds = atletasComCrianca.map((a: any) => a.crianca_id);
+          const { data: assinaturasExistentes } = await supabase
+            .from('carreira_assinaturas')
+            .select('crianca_id')
+            .in('crianca_id', criancaIds);
+          const comAssinatura = new Set((assinaturasExistentes || []).map((a: any) => a.crianca_id));
+          atletasSemAssinatura = atletasComCrianca.filter((a: any) => !comAssinatura.has(a.crianca_id));
+        }
+        checks.push({
+          name: 'Atletas sem nenhuma assinatura',
+          description: 'Perfis de atleta que nunca tiveram trial nem assinatura criada',
+          status: atletasSemAssinatura.length > 0 ? 'warning' : 'ok',
+          detail: atletasSemAssinatura.length > 0 ? `${atletasSemAssinatura.length}: ${atletasSemAssinatura.map(a => a.nome).join(', ')}` : undefined,
+          resolvePath: atletasSemAssinatura.length === 1
+            ? `/carreira/admin/perfis?q=${encodeURIComponent(atletasSemAssinatura[0].nome)}`
+            : atletasSemAssinatura.length > 1 ? '/carreira/admin/perfis' : undefined,
+          resolveLabel: 'Ver perfil(is)',
+        });
+      } catch (err: any) {
+        checks.push({ name: 'Atletas sem nenhuma assinatura', description: 'Perfis sem trial nem assinatura', status: 'warning', detail: err.message });
+      }
+
       return checks;
     },
     refetchOnWindowFocus: false,
@@ -196,6 +297,7 @@ const statusBadge = (status: string) => {
 };
 
 export default function CarreiraAdminDiagnosticoPage() {
+  const navigate = useNavigate();
   const { data: checks, isLoading, refetch, isFetching } = useHealthChecks();
 
   const summary = checks?.reduce(
@@ -283,6 +385,12 @@ export default function CarreiraAdminDiagnosticoPage() {
                       </p>
                     )}
                   </div>
+                  {check.resolvePath && (
+                    <Button variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={() => navigate(check.resolvePath!)}>
+                      {check.resolveLabel || 'Resolver'}
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ))}

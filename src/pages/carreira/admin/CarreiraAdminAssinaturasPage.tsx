@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -120,7 +121,8 @@ const METODO_LABEL: Record<string, string> = {
 };
 
 export default function CarreiraAdminAssinaturasPage() {
-  const [search, setSearch] = useState('');
+  const [urlParams] = useSearchParams();
+  const [search, setSearch] = useState(urlParams.get('q') || '');
   const [renewLoading, setRenewLoading] = useState(false);
   const queryClient = useQueryClient();
   const { data: assinaturas, isLoading } = useAdminAssinaturas(search);
