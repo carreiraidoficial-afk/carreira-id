@@ -52,6 +52,19 @@ export default function PerfilPage() {
         .eq('user_id', userId!)
         .maybeSingle();
       if (redeError) throw redeError;
+
+      // Se for um perfil legado "pai_responsavel", o perfil_atleta (quando ja existe)
+      // e a fonte de verdade — evita mostrar o banner de migracao pra quem ja migrou
+      // e evita deixar criar um segundo perfil de atleta duplicado.
+      if (redeData && (redeData as any).tipo === 'pai_responsavel') {
+        const { data: atletaDoUser } = await supabase
+          .from('perfil_atleta')
+          .select('slug')
+          .eq('user_id', userId!)
+          .maybeSingle();
+        if (atletaDoUser?.slug) return { type: 'atleta_redirect' as const, slug: atletaDoUser.slug };
+      }
+
       if (redeData) return { type: 'rede' as const, data: redeData };
 
       const { data: atletaData, error: atletaError } = await supabase
