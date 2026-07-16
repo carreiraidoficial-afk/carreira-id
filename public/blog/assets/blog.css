@@ -121,7 +121,7 @@ img { max-width: 100%; display: block; }
 }
 
 .blog-card__image {
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 3 / 2;
   background: var(--border);
   object-fit: cover;
   width: 100%;
@@ -211,7 +211,7 @@ img { max-width: 100%; display: block; }
   width: 100%;
   border-radius: 16px;
   margin: 2rem 0;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 3 / 2;
   object-fit: cover;
 }
 

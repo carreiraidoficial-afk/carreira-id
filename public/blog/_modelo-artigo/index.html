@@ -9,6 +9,13 @@
   3. Remova a tag <meta name="robots" content="noindex"> abaixo.
   4. Adicione o card correspondente na listagem (public/blog/index.html).
   5. Faça o mesmo em qualquer sitemap estático, se existir um.
+
+  IMPORTANTE sobre a imagem de capa (capa.jpg): salve na proporção 3:2
+  (ex: 1200x800), SEM cortar. O layout do blog usa aspect-ratio 3/2
+  tanto no card da listagem quanto no topo do artigo — se a imagem
+  vier em outra proporção (ex: 16:9), o corte automático do navegador
+  (object-fit: cover) pode cortar título/texto que estejam perto das
+  bordas do design.
 -->
 <html lang="pt-BR">
   <head>
