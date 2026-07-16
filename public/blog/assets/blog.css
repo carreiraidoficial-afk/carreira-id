@@ -274,8 +274,13 @@ img { max-width: 100%; display: block; }
 
 .article-prose tr:last-child td { border-bottom: none; }
 
-.article-prose table-wrap {
+.table-wrap {
   overflow-x: auto;
+  margin: 0 0 1.5rem;
+}
+
+.table-wrap table {
+  margin-bottom: 0;
 }
 
 .article-prose blockquote {
