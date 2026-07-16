@@ -1,0 +1,162 @@
+<!doctype html>
+<!--
+  MODELO DE ARTIGO — não é uma página real do blog.
+
+  Como usar:
+  1. Duplique esta pasta inteira (_modelo-artigo) com o nome do slug do
+     novo artigo, ex: public/blog/como-escolher-uma-escolinha-de-futebol/
+  2. Preencha título, descrição, datas, categoria, conteúdo e imagem de capa.
+  3. Remova a tag <meta name="robots" content="noindex"> abaixo.
+  4. Adicione o card correspondente na listagem (public/blog/index.html).
+  5. Faça o mesmo em qualquer sitemap estático, se existir um.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- ATENÇÃO: remover esta linha ao publicar um artigo de verdade -->
+    <meta name="robots" content="noindex, nofollow" />
+
+    <title>Título do Artigo | Blog CARREIRA ID</title>
+    <meta name="description" content="Resumo do artigo em até 155 caracteres, direto e com a palavra-chave principal." />
+    <meta name="author" content="CARREIRA ID" />
+    <link rel="icon" href="/carreira-icon-512.png" type="image/png" />
+    <link rel="canonical" href="https://carreiraid.com.br/blog/slug-do-artigo/" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Título do Artigo" />
+    <meta property="og:description" content="Resumo do artigo para compartilhamento em redes sociais." />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://carreiraid.com.br/blog/slug-do-artigo/" />
+    <meta property="og:image" content="https://carreiraid.com.br/blog/slug-do-artigo/capa.jpg" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:site_name" content="CARREIRA ID" />
+    <meta property="article:published_time" content="2026-07-16T00:00:00-03:00" />
+    <meta property="article:author" content="CARREIRA ID" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Título do Artigo" />
+    <meta name="twitter:description" content="Resumo do artigo para compartilhamento em redes sociais." />
+    <meta name="twitter:image" content="https://carreiraid.com.br/blog/slug-do-artigo/capa.jpg" />
+
+    <link rel="stylesheet" href="/blog/assets/blog.css" />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": "Título do Artigo",
+      "description": "Resumo do artigo em até 155 caracteres.",
+      "image": "https://carreiraid.com.br/blog/slug-do-artigo/capa.jpg",
+      "datePublished": "2026-07-16T00:00:00-03:00",
+      "dateModified": "2026-07-16T00:00:00-03:00",
+      "author": {
+        "@type": "Organization",
+        "name": "CARREIRA ID",
+        "url": "https://carreiraid.com.br/"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "CARREIRA ID",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://carreiraid.com.br/carreira-icon-512.png"
+        }
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://carreiraid.com.br/blog/slug-do-artigo/"
+      }
+    }
+    </script>
+
+    <!-- Google Tag Manager / GA4 / Meta Pixel (mesmo do site principal) -->
+    <script>
+      (function(){
+        var gs = document.createElement('script');
+        gs.async = true;
+        gs.src = 'https://www.googletagmanager.com/gtag/js?id=G-DDBQMBP41X';
+        document.head.appendChild(gs);
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){window.dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-DDBQMBP41X');
+        (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-WWTK52RD');
+        !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '4301786513414278');
+        fbq('track', 'PageView');
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="blog-header">
+      <a href="/" class="blog-header__brand">
+        <img src="/carreira-icon-512.png" alt="Carreira ID" />
+        CARREIRA ID
+      </a>
+      <a href="/" class="blog-header__cta">Abrir o app</a>
+    </header>
+
+    <main class="blog-container">
+      <nav class="breadcrumb">
+        <a href="/">Início</a> &rsaquo; <a href="/blog/">Blog</a> &rsaquo; Título do Artigo
+      </nav>
+
+      <article>
+        <header class="article-header">
+          <span class="article-header__category">Categoria</span>
+          <h1>Título do Artigo</h1>
+          <div class="article-header__meta">Publicado em 16 de julho de 2026 &middot; 6 min de leitura</div>
+        </header>
+
+        <img class="article-cover" src="/blog/slug-do-artigo/capa.jpg" alt="Descrição da imagem de capa" />
+
+        <div class="article-prose">
+          <p>
+            Parágrafo de abertura do artigo — contextualiza o tema e já entrega
+            valor nas primeiras linhas.
+          </p>
+
+          <h2>Primeiro subtítulo</h2>
+          <p>Conteúdo do primeiro tópico.</p>
+
+          <h2>Segundo subtítulo</h2>
+          <p>Conteúdo do segundo tópico.</p>
+
+          <blockquote>Uma citação ou destaque relevante, se fizer sentido.</blockquote>
+
+          <h2>Conclusão</h2>
+          <p>Fechamento do artigo.</p>
+
+          <!-- Assinatura profissional (E-E-A-T) -->
+          <div class="article-author">
+            <img src="/carreira-icon-512.png" alt="Nome do autor" />
+            <div>
+              <div class="article-author__name">Nome do Autor</div>
+              <div class="article-author__role">Cargo / credencial do autor</div>
+            </div>
+          </div>
+
+          <!-- CTA final convidando pro app -->
+          <div class="article-cta">
+            <h3>Organize a carreira esportiva do seu atleta</h3>
+            <p>Crie o perfil gratuito no CARREIRA ID e comece a documentar a trajetória agora.</p>
+            <a href="/" class="btn">Criar perfil grátis</a>
+          </div>
+        </div>
+      </article>
+    </main>
+
+    <footer class="blog-footer">
+      <div class="blog-container">
+        <div class="blog-footer__links">
+          <a href="/">Início</a>
+          <a href="/blog/">Blog</a>
+        </div>
+        <div>&copy; 2026 CARREIRA ID. Todos os direitos reservados.</div>
+      </div>
+    </footer>
+  </body>
+</html>
