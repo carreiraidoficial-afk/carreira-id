@@ -201,6 +201,8 @@ export function useCancelPeneira() {
               title: '❌ Peneira Cancelada',
               body: `A peneira "${titulo}" foi cancelada pelo organizador.`,
               url: '/eventos',
+              tag: 'peneira_convite',
+              category: 'peneira_convite',
             },
           });
         } catch { /* silent */ }
@@ -231,10 +233,18 @@ export function useSendConvitesPeneira() {
       if (error) throw error;
 
       try {
-        await supabase.functions.invoke('send-peneira-push', {
-          body: { peneira_id: peneiraId, atleta_user_ids: atletaIds.map((a) => a.user_id) },
+        const { data: peneira } = await supabase.from('peneiras').select('titulo').eq('id', peneiraId).maybeSingle();
+        await supabase.functions.invoke('send-carreira-push', {
+          body: {
+            user_ids: atletaIds.map((a) => a.user_id),
+            title: '🎯 Convite para Peneira',
+            body: peneira?.titulo ? `Você foi convidado para "${peneira.titulo}"` : 'Você recebeu um convite para uma peneira',
+            url: '/eventos',
+            tag: 'peneira_convite',
+            category: 'peneira_convite',
+          },
         });
-      } catch { /* silent */ }
+      } catch { /* silent: notificacao e best-effort, nao deve travar o convite */ }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['convites-peneira'] });

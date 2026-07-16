@@ -97,6 +97,7 @@ export default function CarreiraAdminComunicadosPage() {
               tag: `comunicado-${tipo}`,
               destinatario_tipo: destinatarioTipo,
               destinatario_filtro: filtro,
+              category: 'comunicado_push',
             },
           });
           if (pushError) {

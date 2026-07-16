@@ -6,6 +6,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import { UserPlus, Check, Clock, Loader2, UserMinus, MapPin } from 'lucide-react';
 
+async function getDisplayName(userId: string): Promise<string> {
+  const { data: atleta } = await supabase.from('perfil_atleta').select('nome').eq('user_id', userId).maybeSingle();
+  if (atleta?.nome) return atleta.nome;
+  const { data: rede } = await supabase.from('perfis_rede').select('nome').eq('user_id', userId).maybeSingle();
+  return rede?.nome || 'Alguém';
+}
+
+async function notifyPush(userIds: string[], title: string, body: string, category: string, url = '/conexoes') {
+  try {
+    await supabase.functions.invoke('send-carreira-push', {
+      body: { user_ids: userIds, title, body, url, tag: category, category },
+    });
+  } catch { /* silencioso: notificação é best-effort, não deve travar o fluxo principal */ }
+}
+
 interface Unidade {
   nome: string;
   endereco?: string;
@@ -94,6 +109,9 @@ export function ConectarButton({ targetUserId, currentUserId, accentColor = '#3b
     } else {
       toast.success(unidadeNome ? `Solicitação enviada para ${unidadeNome}!` : 'Solicitação enviada!');
       invalidate();
+      getDisplayName(currentUserId).then((nome) => {
+        notifyPush([targetUserId], '🔗 Nova solicitação de conexão', `${nome} quer se conectar com você`, 'conexao_solicitada');
+      });
     }
     setLoading(false);
     setShowUnidadeDialog(false);
@@ -119,6 +137,11 @@ export function ConectarButton({ targetUserId, currentUserId, accentColor = '#3b
       .eq('id', conexao.id);
     toast.success('Conexão aceita!');
     invalidate();
+    if (currentUserId) {
+      getDisplayName(currentUserId).then((nome) => {
+        notifyPush([conexao.solicitante_id], '✅ Conexão aceita', `${nome} aceitou sua solicitação de conexão`, 'conexao_aceita');
+      });
+    }
     setLoading(false);
   };
 

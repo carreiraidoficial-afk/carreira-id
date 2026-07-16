@@ -4,6 +4,45 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
+async function getDisplayName(userId: string): Promise<string> {
+  const { data: atleta } = await supabase.from('perfil_atleta').select('nome').eq('user_id', userId).maybeSingle();
+  if (atleta?.nome) return atleta.nome;
+  const { data: rede } = await supabase.from('perfis_rede').select('nome').eq('user_id', userId).maybeSingle();
+  return rede?.nome || 'Alguém';
+}
+
+async function getPostAuthorUserId(postId: string): Promise<string | null> {
+  const { data: post } = await supabase.from('posts_atleta').select('autor_id, perfil_rede_id').eq('id', postId).maybeSingle();
+  if (!post) return null;
+  if (post.autor_id) {
+    const { data: pa } = await supabase.from('perfil_atleta').select('user_id').eq('id', post.autor_id).maybeSingle();
+    if (pa?.user_id) return pa.user_id;
+  }
+  if (post.perfil_rede_id) {
+    const { data: pr } = await supabase.from('perfis_rede').select('user_id').eq('id', post.perfil_rede_id).maybeSingle();
+    if (pr?.user_id) return pr.user_id;
+  }
+  return null;
+}
+
+async function notifyPostEvent(postId: string, actorUserId: string, category: 'post_like' | 'post_comentario', title: string, verbo: string) {
+  try {
+    const authorUserId = await getPostAuthorUserId(postId);
+    if (!authorUserId || authorUserId === actorUserId) return; // não notifica o próprio autor curtindo/comentando em si mesmo
+    const nome = await getDisplayName(actorUserId);
+    await supabase.functions.invoke('send-carreira-push', {
+      body: {
+        user_ids: [authorUserId],
+        title,
+        body: `${nome} ${verbo} sua publicação`,
+        url: '/feed',
+        tag: category,
+        category,
+      },
+    });
+  } catch { /* silencioso: notificação é best-effort, não deve travar curtida/comentário */ }
+}
+
 // Types for Carreira
 export interface PerfilAtleta {
   id: string;
@@ -502,6 +541,7 @@ export function usePostLike(postId: string) {
           .from('post_likes')
           .insert({ post_id: postId, user_id: uid });
         if (error) throw error;
+        notifyPostEvent(postId, uid, 'post_like', '❤️ Nova curtida', 'curtiu');
       }
     },
     onMutate: async () => {
@@ -609,11 +649,13 @@ export function useCreateComment() {
 
   return useMutation({
     mutationFn: async ({ postId, texto }: { postId: string; texto: string; userId: string }) => {
+      const uid = (await supabase.auth.getUser()).data.user?.id;
       const { error } = await supabase
         .from('post_comentarios')
-        .insert({ post_id: postId, user_id: (await supabase.auth.getUser()).data.user?.id, texto });
+        .insert({ post_id: postId, user_id: uid, texto });
 
       if (error) throw error;
+      if (uid) notifyPostEvent(postId, uid, 'post_comentario', '💬 Novo comentário', 'comentou em');
     },
     onMutate: async (vars) => {
       // Optimistically update comments_count in all feed queries

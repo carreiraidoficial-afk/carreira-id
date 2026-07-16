@@ -168,7 +168,27 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { user_ids, title, body, url, tag, destinatario_tipo, destinatario_filtro } = await req.json();
+    const { user_ids, title, body, url, tag, destinatario_tipo, destinatario_filtro, category } = await req.json();
+
+    // Categoria (opcional) -> respeita os toggles de /carreira/admin/push.
+    // Sem 'category', o push segue direto (usado por fluxos que não têm toggle
+    // dedicado ali, ex: confirmação de pagamento, lembrete de trial).
+    if (category) {
+      const { data: configRow } = await supabase
+        .from('saas_config')
+        .select('valor')
+        .eq('chave', 'carreira_push_config')
+        .maybeSingle();
+      let pushConfig: Record<string, boolean> = {};
+      try { pushConfig = configRow?.valor ? JSON.parse(configRow.valor) : {}; } catch { /* usa default abaixo */ }
+      const masterOn = pushConfig.push_ativo !== false;
+      const categoryOn = pushConfig[category] !== false;
+      if (!masterOn || !categoryOn) {
+        return new Response(JSON.stringify({ sent: 0, skipped: true, reason: `categoria '${category}' desativada em /carreira/admin/push` }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
 
     // Determine target user_ids
     let targetUserIds: string[] = user_ids || [];
