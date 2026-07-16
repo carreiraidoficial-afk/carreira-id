@@ -541,9 +541,9 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
                   disabled={!pushSupported || pushLoading}
                   onCheckedChange={async (checked) => {
                     if (checked) {
-                      const ok = await subscribe();
-                      if (!ok) {
-                        toast.error('Não foi possível ativar. Verifique a permissão de notificações do navegador/celular.');
+                      const result = await subscribe();
+                      if (!result.ok) {
+                        toast.error(result.reason || 'Não foi possível ativar as notificações.');
                       }
                     } else {
                       await unsubscribe();

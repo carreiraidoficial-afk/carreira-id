@@ -22,6 +22,23 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray;
 }
 
+/** Nunca deixa uma promise pendurar pra sempre (ex: SW que nunca dispara 'activated'). */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`Tempo esgotado: ${label}`)), ms);
+    promise.then(
+      (v) => { clearTimeout(timer); resolve(v); },
+      (e) => { clearTimeout(timer); reject(e); },
+    );
+  });
+}
+
+export interface PushSubscribeResult {
+  ok: boolean;
+  /** Motivo legível, pra mostrar ao usuário quando ok=false. */
+  reason?: string;
+}
+
 export function usePushNotifications() {
   const { session } = useAuth();
   const [permission, setPermission] = useState<NotificationPermission>('default');
@@ -32,7 +49,7 @@ export function usePushNotifications() {
   useEffect(() => {
     const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
     setIsSupported(supported);
-    
+
     if (supported) {
       setPermission(Notification.permission);
       checkExistingSubscription();
@@ -66,35 +83,50 @@ export function usePushNotifications() {
     }
   };
 
-  const subscribe = useCallback(async () => {
-    if (!session?.user?.id || !isSupported) return false;
-    
+  const subscribe = useCallback(async (): Promise<PushSubscribeResult> => {
+    if (!isSupported) return { ok: false, reason: 'Este navegador/dispositivo não suporta notificações push.' };
+    if (!session?.user?.id) return { ok: false, reason: 'Sessão não encontrada. Recarregue a página e tente novamente.' };
+
+    // Se já foi negado antes, o navegador nunca mais vai perguntar sozinho de novo —
+    // só reaparece se a pessoa liberar manualmente nas configurações do site/app.
+    if (Notification.permission === 'denied') {
+      return {
+        ok: false,
+        reason: 'As notificações foram bloqueadas antes. Vá nas configurações do navegador/app (ícone de cadeado ou Configurações > Notificações do site) e permita manualmente, depois tente de novo aqui.',
+      };
+    }
+
     setIsLoading(true);
     try {
       const perm = await Notification.requestPermission();
       setPermission(perm);
-      
+
       if (perm !== 'granted') {
-        setIsLoading(false);
-        return false;
+        return { ok: false, reason: 'Permissão de notificação não foi concedida.' };
       }
 
-      const registration = await getPushRegistration();
-      
-      // Wait for SW to become active
+      const registration = await withTimeout(getPushRegistration(), 8000, 'registrar o service worker');
+
+      // Wait for SW to become active (com timeout — nunca trava pra sempre)
       if (!registration.active) {
-        await new Promise<void>((resolve) => {
-          const sw = registration.installing || registration.waiting;
-          if (sw) {
-            sw.addEventListener('statechange', () => {
+        await withTimeout(
+          new Promise<void>((resolve) => {
+            const sw = registration.installing || registration.waiting;
+            if (sw) {
+              sw.addEventListener('statechange', () => {
+                if (sw.state === 'activated') resolve();
+              });
+              // já pode ter ativado entre o registro e este listener
               if (sw.state === 'activated') resolve();
-            });
-          } else {
-            resolve();
-          }
-        });
+            } else {
+              resolve();
+            }
+          }),
+          8000,
+          'ativar o service worker',
+        ).catch(() => { /* segue mesmo sem confirmar ativação — subscribe() abaixo vai falhar com erro claro se não estiver pronto */ });
       }
-      
+
       // Unsubscribe existing if any
       const existing = await registration.pushManager.getSubscription();
       if (existing) await existing.unsubscribe();
@@ -105,7 +137,7 @@ export function usePushNotifications() {
       });
 
       const json = subscription.toJSON();
-      
+
       // Save to database
       const { error } = await supabase
         .from('carreira_push_subscriptions')
@@ -119,45 +151,45 @@ export function usePushNotifications() {
         });
 
       if (error) throw error;
-      
+
       setIsSubscribed(true);
-      setIsLoading(false);
-      return true;
-    } catch (err) {
+      return { ok: true };
+    } catch (err: any) {
       console.error('Push subscription error:', err);
+      return { ok: false, reason: err?.message || 'Erro inesperado ao ativar notificações.' };
+    } finally {
       setIsLoading(false);
-      return false;
     }
   }, [session?.user?.id, isSupported]);
 
   const unsubscribe = useCallback(async () => {
     if (!session?.user?.id) return;
-    
+
     setIsLoading(true);
     try {
       const registration = await getExistingPushRegistration();
       if (!registration) {
         setIsSubscribed(false);
-        setIsLoading(false);
         return;
       }
       const subscription = await registration.pushManager.getSubscription();
-      
+
       if (subscription) {
         await subscription.unsubscribe();
-        
+
         await supabase
           .from('carreira_push_subscriptions')
           .delete()
           .eq('user_id', session.user.id)
           .eq('endpoint', subscription.endpoint);
       }
-      
+
       setIsSubscribed(false);
     } catch (err) {
       console.error('Push unsubscribe error:', err);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [session?.user?.id]);
 
   return {
