@@ -22,7 +22,6 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray;
 }
 
-/** Nunca deixa uma promise pendurar pra sempre (ex: SW que nunca dispara 'activated'). */
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`Tempo esgotado: ${label}`)), ms);
@@ -35,60 +34,119 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 
 export interface PushSubscribeResult {
   ok: boolean;
-  /** Motivo legível, pra mostrar ao usuário quando ok=false. */
   reason?: string;
 }
 
 export function usePushNotifications() {
   const { session } = useAuth();
   const [permission, setPermission] = useState<NotificationPermission>('default');
-  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [optOut, setOptOut] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
+
+  const userId = session?.user?.id;
 
   useEffect(() => {
     const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
     setIsSupported(supported);
-
-    if (supported) {
-      setPermission(Notification.permission);
-      checkExistingSubscription();
-    }
+    if (supported) setPermission(Notification.permission);
   }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+
+    (async () => {
+      const { data } = await supabase.from('profiles').select('push_optout').eq('user_id', userId).maybeSingle();
+      if (cancelled) return;
+      const wantsPush = !(data?.push_optout ?? false);
+      setOptOut(data?.push_optout ?? false);
+
+      if (wantsPush && isSupported && Notification.permission === 'granted') {
+        try {
+          const reg = await getExistingPushRegistration();
+          const existingSub = reg ? await reg.pushManager.getSubscription() : null;
+          if (!existingSub) {
+            await doSubscribe(userId);
+          }
+        } catch { /* silencioso: tentativa de reconciliacao em segundo plano */ }
+      }
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, isSupported]);
 
   const getExistingPushRegistration = async (): Promise<ServiceWorkerRegistration | null> => {
     const registrations = await navigator.serviceWorker.getRegistrations();
-    const existing = registrations.find(r => r.active?.scriptURL?.includes('push-sw.js'));
+    const existing = registrations.find(r => (r.active || r.waiting || r.installing)?.scriptURL?.includes('push-sw.js'));
     return existing ?? null;
   };
 
   const getPushRegistration = async (): Promise<ServiceWorkerRegistration> => {
-    // Register dedicated push SW with a unique scope only after explicit user action.
     const existing = await getExistingPushRegistration();
     if (existing) return existing;
     return navigator.serviceWorker.register('/push-sw.js', { scope: '/push-handler' });
   };
 
-  const checkExistingSubscription = async () => {
-    try {
-      const reg = await getExistingPushRegistration();
-      if (!reg) {
-        setIsSubscribed(false);
-        return;
-      }
-      const subscription = await reg.pushManager.getSubscription();
-      setIsSubscribed(!!subscription);
-    } catch {
-      setIsSubscribed(false);
+  const doSubscribe = async (uid: string): Promise<PushSubscribeResult> => {
+    const perm = await Notification.requestPermission();
+    setPermission(perm);
+    if (perm !== 'granted') {
+      return { ok: false, reason: 'Permissão de notificação não foi concedida.' };
     }
+
+    const registration = await withTimeout(getPushRegistration(), 8000, 'registrar o service worker');
+
+    if (!registration.active) {
+      await withTimeout(
+        new Promise<void>((resolve) => {
+          const sw = registration.installing || registration.waiting;
+          if (sw) {
+            sw.addEventListener('statechange', () => {
+              if (sw.state === 'activated') resolve();
+            });
+            if (sw.state === 'activated') resolve();
+          } else {
+            resolve();
+          }
+        }),
+        8000,
+        'ativar o service worker',
+      ).catch(() => { /* segue mesmo sem confirmar ativacao */ });
+    }
+
+    const existing = await registration.pushManager.getSubscription();
+    if (existing) await existing.unsubscribe();
+
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
+    });
+
+    const json = subscription.toJSON();
+
+    const { error } = await supabase
+      .from('carreira_push_subscriptions')
+      .upsert({
+        user_id: uid,
+        endpoint: json.endpoint!,
+        p256dh: json.keys!.p256dh,
+        auth: json.keys!.auth,
+      }, {
+        onConflict: 'user_id,endpoint',
+      });
+
+    if (error) throw error;
+
+    await supabase.from('profiles').update({ push_optout: false }).eq('user_id', uid);
+    return { ok: true };
   };
 
   const subscribe = useCallback(async (): Promise<PushSubscribeResult> => {
     if (!isSupported) return { ok: false, reason: 'Este navegador/dispositivo não suporta notificações push.' };
-    if (!session?.user?.id) return { ok: false, reason: 'Sessão não encontrada. Recarregue a página e tente novamente.' };
+    if (!userId) return { ok: false, reason: 'Sessão não encontrada. Recarregue a página e tente novamente.' };
 
-    // Se já foi negado antes, o navegador nunca mais vai perguntar sozinho de novo —
-    // só reaparece se a pessoa liberar manualmente nas configurações do site/app.
     if (Notification.permission === 'denied') {
       return {
         ok: false,
@@ -98,104 +156,48 @@ export function usePushNotifications() {
 
     setIsLoading(true);
     try {
-      const perm = await Notification.requestPermission();
-      setPermission(perm);
-
-      if (perm !== 'granted') {
-        return { ok: false, reason: 'Permissão de notificação não foi concedida.' };
-      }
-
-      const registration = await withTimeout(getPushRegistration(), 8000, 'registrar o service worker');
-
-      // Wait for SW to become active (com timeout — nunca trava pra sempre)
-      if (!registration.active) {
-        await withTimeout(
-          new Promise<void>((resolve) => {
-            const sw = registration.installing || registration.waiting;
-            if (sw) {
-              sw.addEventListener('statechange', () => {
-                if (sw.state === 'activated') resolve();
-              });
-              // já pode ter ativado entre o registro e este listener
-              if (sw.state === 'activated') resolve();
-            } else {
-              resolve();
-            }
-          }),
-          8000,
-          'ativar o service worker',
-        ).catch(() => { /* segue mesmo sem confirmar ativação — subscribe() abaixo vai falhar com erro claro se não estiver pronto */ });
-      }
-
-      // Unsubscribe existing if any
-      const existing = await registration.pushManager.getSubscription();
-      if (existing) await existing.unsubscribe();
-
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
-      });
-
-      const json = subscription.toJSON();
-
-      // Save to database
-      const { error } = await supabase
-        .from('carreira_push_subscriptions')
-        .upsert({
-          user_id: session.user.id,
-          endpoint: json.endpoint!,
-          p256dh: json.keys!.p256dh,
-          auth: json.keys!.auth,
-        }, {
-          onConflict: 'user_id,endpoint',
-        });
-
-      if (error) throw error;
-
-      setIsSubscribed(true);
-      return { ok: true };
+      const result = await doSubscribe(userId);
+      if (result.ok) setOptOut(false);
+      return result;
     } catch (err: any) {
       console.error('Push subscription error:', err);
       return { ok: false, reason: err?.message || 'Erro inesperado ao ativar notificações.' };
     } finally {
       setIsLoading(false);
     }
-  }, [session?.user?.id, isSupported]);
+  }, [userId, isSupported]);
 
   const unsubscribe = useCallback(async () => {
-    if (!session?.user?.id) return;
+    if (!userId) return;
 
     setIsLoading(true);
     try {
+      await supabase.from('profiles').update({ push_optout: true }).eq('user_id', userId);
+      setOptOut(true);
+
       const registration = await getExistingPushRegistration();
-      if (!registration) {
-        setIsSubscribed(false);
-        return;
-      }
+      if (!registration) return;
       const subscription = await registration.pushManager.getSubscription();
 
       if (subscription) {
         await subscription.unsubscribe();
-
         await supabase
           .from('carreira_push_subscriptions')
           .delete()
-          .eq('user_id', session.user.id)
+          .eq('user_id', userId)
           .eq('endpoint', subscription.endpoint);
       }
-
-      setIsSubscribed(false);
     } catch (err) {
       console.error('Push unsubscribe error:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [session?.user?.id]);
+  }, [userId]);
 
   return {
     isSupported,
     permission,
-    isSubscribed,
+    isSubscribed: optOut !== true,
     isLoading,
     subscribe,
     unsubscribe,
