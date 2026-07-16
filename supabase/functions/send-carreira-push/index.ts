@@ -259,6 +259,7 @@ Deno.serve(async (req) => {
     let sent = 0;
     let failed = 0;
     const expiredEndpoints: string[] = [];
+    const details: any[] = [];
 
     for (const sub of subscriptions) {
       try {
@@ -270,9 +271,11 @@ Deno.serve(async (req) => {
           'mailto:contato@carreiraid.com.br'
         );
         sent++;
+        details.push({ endpoint_tail: sub.endpoint.slice(-12), ok: true });
       } catch (err: any) {
         console.error(`Push failed for ${sub.endpoint}:`, err.message);
         failed++;
+        details.push({ endpoint_tail: sub.endpoint.slice(-12), ok: false, statusCode: err.statusCode, message: String(err.message).slice(0, 300) });
         if (err.statusCode === 410 || err.statusCode === 404) {
           expiredEndpoints.push(sub.endpoint);
         }
@@ -287,7 +290,7 @@ Deno.serve(async (req) => {
         .in('endpoint', expiredEndpoints);
     }
 
-    return new Response(JSON.stringify({ sent, failed, expired: expiredEndpoints.length, total_subs: subscriptions.length }), {
+    return new Response(JSON.stringify({ sent, failed, expired: expiredEndpoints.length, total_subs: subscriptions.length, details }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err: any) {

@@ -9,7 +9,7 @@ declare global {
   }
 }
 
-const VAPID_PUBLIC_KEY = 'BFqOi5upK5aAWMuern7_QcNbsQz1JioSFYDdVyuIkC0Iu5HsSKqMlHi8WJxBMgNI_tn0vVHGUPfDwI3CF0wQxh8';
+const VAPID_PUBLIC_KEY = 'BLoafPK8AxJaESg-2_XkHa8TZC-mOs3MRWMxAwzQCbanvIu9JkpPqYT-AqXjkrphPfMBPJW09Ydd9D3_LqWw0Js';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -20,6 +20,18 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
     outputArray[i] = rawData.charCodeAt(i);
   }
   return outputArray;
+}
+
+function isSameApplicationServerKey(sub: PushSubscription): boolean {
+  const current = sub.options?.applicationServerKey;
+  if (!current) return false;
+  const currentBytes = new Uint8Array(current as ArrayBuffer);
+  const expectedBytes = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+  if (currentBytes.length !== expectedBytes.length) return false;
+  for (let i = 0; i < currentBytes.length; i++) {
+    if (currentBytes[i] !== expectedBytes[i]) return false;
+  }
+  return true;
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
@@ -36,6 +48,12 @@ export interface PushSubscribeResult {
   ok: boolean;
   reason?: string;
 }
+
+// Compartilhado entre todas as instancias do hook (varios componentes podem
+// montar usePushNotifications ao mesmo tempo, ex: EditPerfilDialog e
+// PushNotificationPopup) para nao disparar doSubscribe() em paralelo em cada
+// uma delas -- isso criava assinaturas/linhas duplicadas na tabela.
+let reconcileLock: Promise<void> | null = null;
 
 export function usePushNotifications() {
   const { session } = useAuth();
@@ -56,7 +74,7 @@ export function usePushNotifications() {
     if (!userId) return;
     let cancelled = false;
 
-    (async () => {
+    const run = async () => {
       const { data } = await supabase.from('profiles').select('push_optout').eq('user_id', userId).maybeSingle();
       if (cancelled) return;
       const wantsPush = !(data?.push_optout ?? false);
@@ -66,12 +84,19 @@ export function usePushNotifications() {
         try {
           const reg = await getExistingPushRegistration();
           const existingSub = reg ? await reg.pushManager.getSubscription() : null;
-          if (!existingSub) {
+          // Resubscreve se nao existe assinatura ainda, ou se a existente foi
+          // criada com uma chave VAPID antiga (ficaria travada em 403 pra sempre).
+          if (!existingSub || !isSameApplicationServerKey(existingSub)) {
             await doSubscribe(userId);
           }
         } catch { /* silencioso: tentativa de reconciliacao em segundo plano */ }
       }
-    })();
+    };
+
+    // Encadeia (nao paralelo) com qualquer reconciliacao de outra instancia do
+    // hook que ja esteja em andamento, pra nunca ter dois doSubscribe() rodando
+    // ao mesmo tempo pro mesmo usuario.
+    reconcileLock = reconcileLock ? reconcileLock.then(run, run) : run();
 
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -116,13 +141,20 @@ export function usePushNotifications() {
       ).catch(() => { /* segue mesmo sem confirmar ativacao */ });
     }
 
-    const existing = await registration.pushManager.getSubscription();
-    if (existing) await existing.unsubscribe();
+    let subscription = await registration.pushManager.getSubscription();
+    if (subscription && !isSameApplicationServerKey(subscription)) {
+      // Assinatura antiga, criada com uma chave VAPID diferente da atual --
+      // o push service vai rejeitar qualquer envio com 403, entao recria.
+      await subscription.unsubscribe();
+      subscription = null;
+    }
 
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
-    });
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
+      });
+    }
 
     const json = subscription.toJSON();
 
