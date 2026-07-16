@@ -253,6 +253,31 @@ img { max-width: 100%; display: block; }
   text-underline-offset: 2px;
 }
 
+.article-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1.5rem;
+  font-size: 0.95rem;
+}
+
+.article-prose th, .article-prose td {
+  text-align: left;
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.article-prose th {
+  color: var(--text);
+  font-weight: 700;
+  background: var(--bg-card);
+}
+
+.article-prose tr:last-child td { border-bottom: none; }
+
+.article-prose table-wrap {
+  overflow-x: auto;
+}
+
 .article-prose blockquote {
   border-left: 3px solid var(--accent);
   margin: 1.5rem 0;
