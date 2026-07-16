@@ -188,6 +188,7 @@ export function CarreiraLandingV2() {
             <a href="#solucao" className="hover:text-white transition">Solução</a>
             <a href="#planos" className="hover:text-white transition">Planos</a>
             <a href="#faq" className="hover:text-white transition">FAQ</a>
+            <a href="/blog" className="hover:text-white transition">Blog</a>
           </nav>
           <div className="flex items-center gap-3">
             <Link
