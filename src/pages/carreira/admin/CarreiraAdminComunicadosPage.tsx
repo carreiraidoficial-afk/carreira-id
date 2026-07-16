@@ -1,6 +1,7 @@
 import CarreiraAdminLayout from '@/components/layout/CarreiraAdminLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAdminCarreiraComunicados, useCreateCarreiraComunicado, useToggleCarreiraComunicado, useDeleteCarreiraComunicado } from '@/hooks/useCarreiraComunicadosData';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Megaphone, Trash2, Send, Eye, EyeOff, Bell, Users, User as UserIcon } from 'lucide-react';
+import { Plus, Megaphone, Trash2, Send, Eye, EyeOff, Bell, Users, User as UserIcon, Search, X, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -38,6 +39,105 @@ const TIPO_LABELS: Record<string, { label: string; color: string }> = {
   importante: { label: 'Importante', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
   urgente: { label: 'Urgente', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
 };
+
+interface PessoaResultado {
+  user_id: string;
+  nome: string;
+  tipo: string; // 'atleta' | tipo de perfis_rede
+}
+
+function useAdminSearchPessoa(query: string) {
+  return useQuery({
+    queryKey: ['admin-search-pessoa', query],
+    queryFn: async (): Promise<PessoaResultado[]> => {
+      if (query.length < 2) return [];
+      const term = `%${query}%`;
+      const [{ data: atletas }, { data: rede }] = await Promise.all([
+        supabase.from('perfil_atleta').select('user_id, nome').ilike('nome', term).limit(8),
+        supabase.from('perfis_rede').select('user_id, nome, tipo').ilike('nome', term).limit(8),
+      ]);
+      const results: PessoaResultado[] = [
+        ...(atletas || []).map((a: any) => ({ user_id: a.user_id, nome: a.nome, tipo: 'atleta' })),
+        ...(rede || []).map((r: any) => ({ user_id: r.user_id, nome: r.nome, tipo: r.tipo })),
+      ];
+      // Remove duplicados (mesma pessoa pode ter perfil_atleta e perfis_rede)
+      const seen = new Set<string>();
+      return results.filter((r) => {
+        if (seen.has(r.user_id)) return false;
+        seen.add(r.user_id);
+        return true;
+      });
+    },
+    enabled: query.length >= 2,
+    staleTime: 30_000,
+  });
+}
+
+function PessoaAutocomplete({ value, onChange }: { value: string; onChange: (userId: string) => void }) {
+  const [query, setQuery] = useState('');
+  const [selected, setSelected] = useState<PessoaResultado | null>(null);
+  const [open, setOpen] = useState(false);
+  const { data: results = [], isFetching } = useAdminSearchPessoa(query);
+
+  return (
+    <div className="relative">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          value={selected ? selected.nome : query}
+          onChange={(e) => {
+            setSelected(null);
+            onChange('');
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          placeholder="Digite o nome da pessoa..."
+          className="pl-9 pr-9"
+        />
+        {selected && (
+          <button
+            type="button"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            onClick={() => { setSelected(null); setQuery(''); onChange(''); }}
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+      {open && !selected && query.length >= 2 && (
+        <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md max-h-64 overflow-y-auto">
+          {isFetching ? (
+            <div className="p-3 text-xs text-muted-foreground">Buscando...</div>
+          ) : results.length === 0 ? (
+            <div className="p-3 text-xs text-muted-foreground">Nenhuma pessoa encontrada com esse nome.</div>
+          ) : (
+            results.map((r) => (
+              <button
+                key={r.user_id}
+                type="button"
+                className="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm hover:bg-muted text-left"
+                onClick={() => {
+                  setSelected(r);
+                  setOpen(false);
+                  onChange(r.user_id);
+                }}
+              >
+                <span>{r.nome}</span>
+                <Badge variant="outline" className="text-[10px] shrink-0">{r.tipo}</Badge>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+      {value && (
+        <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+          <Check className="w-3 h-3 text-emerald-500" /> Selecionado
+        </p>
+      )}
+    </div>
+  );
+}
 
 export default function CarreiraAdminComunicadosPage() {
   const { user } = useAuth();
@@ -202,8 +302,8 @@ export default function CarreiraAdminComunicadosPage() {
 
                 {destinatarioTipo === 'individual' && (
                   <div>
-                    <Label>User ID do destinatário</Label>
-                    <Input value={individualUserId} onChange={e => setIndividualUserId(e.target.value)} placeholder="UUID do usuário" />
+                    <Label>Destinatário</Label>
+                    <PessoaAutocomplete value={individualUserId} onChange={setIndividualUserId} />
                   </div>
                 )}
 
