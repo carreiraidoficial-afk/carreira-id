@@ -8,8 +8,15 @@
     var encodedUrl = encodeURIComponent(url);
     var encodedText = encodeURIComponent(title);
 
+    // No desktop, wa.me costuma cair no WhatsApp Web/Desktop de um jeito que
+    // cola a URL crua (nao decodificada) como texto da mensagem, e o preview
+    // do link vira o do proprio api.whatsapp.com em vez do artigo. web.whatsapp.com/send
+    // e o endpoint certo pra abrir o composer do WhatsApp Web corretamente no desktop.
+    var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    var whatsappBase = isMobile ? 'https://wa.me/?text=' : 'https://web.whatsapp.com/send?text=';
+
     document.querySelectorAll('.share-btn--whatsapp').forEach(function (el) {
-      el.href = 'https://wa.me/?text=' + encodedText + '%20' + encodedUrl;
+      el.href = whatsappBase + encodedText + '%20' + encodedUrl;
     });
     document.querySelectorAll('.share-btn--facebook').forEach(function (el) {
       el.href = 'https://www.facebook.com/sharer/sharer.php?u=' + encodedUrl;
