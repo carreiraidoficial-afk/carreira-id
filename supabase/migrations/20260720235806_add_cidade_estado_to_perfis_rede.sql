@@ -1,0 +1,3 @@
+ALTER TABLE public.perfis_rede
+  ADD COLUMN IF NOT EXISTS cidade TEXT,
+  ADD COLUMN IF NOT EXISTS estado TEXT;

@@ -11,6 +11,7 @@ import type { ProfileType } from './ProfileTypeSelector';
 import { validateCPF, formatCPF, cleanCPF } from '@/lib/cpf-validator';
 import { validateCNPJ, formatCNPJ } from '@/lib/cnpj-validator';
 import { validatePhone as validatePhoneNumber, validateEmail as validateEmailAddress, validateDocument, SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
+import { UfCidadeSelect } from '@/components/shared/UfCidadeSelect';
 
 
 interface Props {
@@ -182,6 +183,8 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
   const [whatsappPublico, setWhatsappPublico] = useState(false);
   const [email, setEmail] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
+  const [cidade, setCidade] = useState('');
+  const [estado, setEstado] = useState('');
   const [brasaoFile, setBrasaoFile] = useState<File | null>(null);
   const [brasaoPreview, setBrasaoPreview] = useState<string | null>(null);
 
@@ -386,6 +389,8 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
         telefone_whatsapp: cleanPhone,
         whatsapp_publico: whatsappPublico,
         site: dadosPerfil.site || null,
+        cidade: cidade || null,
+        estado: estado || null,
       } as any);
 
       if (error) throw error;
@@ -546,6 +551,17 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
               onChange={(e) => setDataNascimento(e.target.value)}
             />
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Onde você está localizado?</Label>
+          <UfCidadeSelect
+            estado={estado}
+            cidade={cidade}
+            onEstadoChange={setEstado}
+            onCidadeChange={setCidade}
+            className="grid grid-cols-2 gap-3"
+          />
         </div>
 
         {/* Brasão upload for torcedor */}
