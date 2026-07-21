@@ -192,6 +192,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
   const documentoRef = useRef<HTMLInputElement>(null);
   const telefoneRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
+  const localizacaoRef = useRef<HTMLDivElement>(null);
   const fieldRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const scrollToError = (el: HTMLElement | null) => {
@@ -296,6 +297,13 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
     if (!validateEmailAddress(email.trim())) {
       toast.error('Email inválido. Verifique o endereço digitado.');
       scrollToError(emailRef.current);
+      return;
+    }
+
+    // Validate location
+    if (!estado || !cidade) {
+      toast.error('Estado e cidade são obrigatórios.');
+      scrollToError(localizacaoRef.current);
       return;
     }
 
@@ -553,8 +561,8 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label>Onde você está localizado?</Label>
+        <div className="space-y-2" ref={localizacaoRef}>
+          <Label>Onde você está localizado? *</Label>
           <UfCidadeSelect
             estado={estado}
             cidade={cidade}
