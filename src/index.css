@@ -21,6 +21,14 @@ section {
   contain: layout style;
 }
 
+/* Exception: Sonner's toast container is also a <section> (accessibility
+   landmark). CSS containment on it makes it a new containing block for
+   its position:fixed toast list, breaking the fixed positioning and
+   causing toasts to render off-screen. */
+section[aria-label^="Notifications"] {
+  contain: none;
+}
+
 .card, [data-radix-scroll-area-viewport] {
   contain: layout style;
 }
