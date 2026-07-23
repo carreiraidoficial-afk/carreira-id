@@ -44,9 +44,37 @@
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initShareBars);
-  } else {
+  function initCardShareButtons() {
+    document.querySelectorAll('.card-share-btn').forEach(function (btn) {
+      var url = btn.getAttribute('data-share-url');
+      var title = btn.getAttribute('data-share-title');
+      if (!url) return;
+
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (navigator.share) {
+          navigator.share({ title: title, url: url }).catch(function () { /* usuario cancelou */ });
+          return;
+        }
+
+        navigator.clipboard.writeText(url).then(function () {
+          btn.classList.add('is-copied');
+          setTimeout(function () { btn.classList.remove('is-copied'); }, 2000);
+        }).catch(function () { /* clipboard indisponivel, ignora */ });
+      });
+    });
+  }
+
+  function init() {
     initShareBars();
+    initCardShareButtons();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
 })();
