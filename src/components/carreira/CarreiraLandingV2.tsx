@@ -806,8 +806,8 @@ export function CarreiraLandingV2() {
         <div className="container max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <img src={logoCarreira} alt="Carreira ID" className="h-8" />
           <nav className="flex items-center gap-6 text-sm text-gray-500">
-            <a href={carreiraPath('/termos')} className="hover:text-white transition">Termos de Uso</a>
-            <a href={carreiraPath('/privacidade')} className="hover:text-white transition">Privacidade</a>
+            <a href="/termos-de-uso" className="hover:text-white transition">Termos de Uso</a>
+            <a href="/politica-de-privacidade" className="hover:text-white transition">Privacidade</a>
             <a href={carreiraPath('/contato')} className="hover:text-white transition">Contato</a>
           </nav>
           <p className="text-xs text-gray-600">© 2024 Carreira ID. Todos os direitos reservados.</p>

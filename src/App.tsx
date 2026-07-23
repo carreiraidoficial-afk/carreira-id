@@ -23,8 +23,6 @@ const CarreiraConexoesPage = lazy(() => import("./pages/carreira/CarreiraConexoe
 const CarreiraGamerPage = lazy(() => import("./pages/carreira/CarreiraGamerPage"));
 const CarreiraGamerPontosPage = lazy(() => import("./pages/carreira/CarreiraGamerPontosPage"));
 const CarreiraDescobrirPage = lazy(() => import("./pages/carreira/CarreiraDescobrirPage"));
-const TermosPage = lazy(() => import("./pages/carreira/TermosPage"));
-const PrivacidadePage = lazy(() => import("./pages/carreira/PrivacidadePage"));
 const ContatoPage = lazy(() => import("./pages/carreira/ContatoPage"));
 const CarreiraAdminDashboard = lazy(() => import("./pages/carreira/admin/CarreiraAdminDashboard"));
 const CarreiraAdminPerfisPage = lazy(() => import("./pages/carreira/admin/CarreiraAdminPerfisPage"));
@@ -104,8 +102,6 @@ const App = () => {
               <Route path="/gamer" element={<Navigate to="/liga" replace />} />
               <Route path="/gamer/pontos" element={<Navigate to="/liga/pontos" replace />} />
               <Route path="/descobrir" element={<CarreiraDescobrirPage />} />
-              <Route path="/termos" element={<TermosPage />} />
-              <Route path="/privacidade" element={<PrivacidadePage />} />
               <Route path="/contato" element={<ContatoPage />} />
               <Route path="/planos" element={<CarreiraPlanosPage />} />
               <Route path="/eventos" element={<CarreiraEventosPage />} />

@@ -756,9 +756,9 @@ export default function CarreiraCadastroPage() {
         {step === 'auth' && (
           <div className="mt-6 text-center text-xs" style={{ color: 'hsl(0 0% 40%)' }}>
             Ao criar uma conta, você concorda com os{' '}
-            <button onClick={() => navigate(carreiraPath('/termos'))} className="hover:underline" style={{ color: 'hsl(200 90% 60%)' }}>Termos de Uso</button>
+            <a href="/termos-de-uso" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'hsl(200 90% 60%)' }}>Termos de Uso</a>
             {' '}e a{' '}
-            <button onClick={() => navigate(carreiraPath('/privacidade'))} className="hover:underline" style={{ color: 'hsl(200 90% 60%)' }}>Política de Privacidade</button>.
+            <a href="/politica-de-privacidade" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'hsl(200 90% 60%)' }}>Política de Privacidade</a>.
           </div>
         )}
       </main>
