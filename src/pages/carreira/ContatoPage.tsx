@@ -33,8 +33,8 @@ export default function ContatoPage() {
             <Mail className="w-6 h-6 text-[hsl(25_95%_55%)] mt-0.5 shrink-0" />
             <div>
               <h2 className="font-semibold text-foreground">Email</h2>
-              <a href="mailto:contato@atletaid.com.br" className="text-[hsl(25_95%_55%)] hover:underline">
-                contato@atletaid.com.br
+              <a href="mailto:contato@carreiraid.com.br" className="text-[hsl(25_95%_55%)] hover:underline">
+                contato@carreiraid.com.br
               </a>
             </div>
           </div>
