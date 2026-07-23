@@ -616,3 +616,81 @@ img { max-width: 100%; display: block; }
 .card-share-btn.is-copied {
   border-color: var(--accent);
 }
+
+
+/* ---------- Banner da comunidade no WhatsApp ---------- */
+.whatsapp-banner {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin: 0 0 2rem;
+  padding: 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 4px solid #25D366;
+  border-radius: 16px;
+}
+
+.whatsapp-banner__icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #25D366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.whatsapp-banner__icon svg {
+  width: 26px;
+  height: 26px;
+  fill: #fff;
+}
+
+.whatsapp-banner__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.whatsapp-banner__body h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.25rem;
+}
+
+.whatsapp-banner__body p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.whatsapp-banner__btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #25D366;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 999px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.2s ease;
+}
+
+.whatsapp-banner__btn:hover {
+  background: #1ebe5a;
+}
+
+@media (max-width: 640px) {
+  .whatsapp-banner {
+    flex-direction: column;
+    text-align: center;
+  }
+  .whatsapp-banner__btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

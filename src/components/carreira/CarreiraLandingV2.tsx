@@ -774,6 +774,33 @@ export function CarreiraLandingV2() {
         </div>
       </section>
 
+      {/* ═══ Comunidade WhatsApp ═══ */}
+      <section className="bg-gradient-to-br from-emerald-800 to-emerald-900 py-16">
+        <div className="container max-w-4xl mx-auto px-4">
+          <div className="bg-[#0a0f18]/40 border border-emerald-500/20 rounded-2xl p-8 sm:p-10 flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+            <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+              <MessageCircle className="w-8 h-8 text-white" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl sm:text-2xl font-bold text-white">
+                Entre para a comunidade Carreira ID no WhatsApp
+              </h2>
+              <p className="mt-2 text-emerald-100/80">
+                Dicas, novidades e troca com outros pais e mães de atletas de base — direto no seu WhatsApp.
+              </p>
+            </div>
+            <a
+              href="https://chat.whatsapp.com/HowU46FP9KfE5da6g9PORV"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-3 rounded-full transition-colors whitespace-nowrap"
+            >
+              Entrar na comunidade
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* ═══ Footer ═══ */}
       <footer className="border-t border-white/5 py-8 bg-[#0a0f18]">
         <div className="container max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
