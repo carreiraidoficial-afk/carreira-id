@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useCarreiraStats } from '@/hooks/useCarreiraJornadaData';
+import { useCarreiraPlano } from '@/hooks/useCarreiraPlano';
+import { FeatureGate } from './FeatureGate';
 import { Card } from '@/components/ui/card';
 import { Goal, Trophy, Medal, Swords, Target, Award, Shield, Timer, Hand } from 'lucide-react';
 
@@ -27,6 +29,7 @@ const goleiroConfig = [
 export function CarreiraStatsCards({ criancaId, accentColor = '#3b82f6' }: CarreiraStatsCardsProps) {
   const [ano, setAno] = useState<number | 'todos'>('todos');
   const { stats, anosDisponiveis } = useCarreiraStats(criancaId, ano);
+  const { plano, temAcesso } = useCarreiraPlano(criancaId || null);
 
   const hasAnyStats =
     stats.totalGols > 0 || stats.totalJogos > 0 ||
@@ -83,19 +86,26 @@ export function CarreiraStatsCards({ criancaId, accentColor = '#3b82f6' }: Carre
             <p className="text-xs font-semibold text-muted-foreground mt-2">
               🧤 Estatísticas como goleiro ({stats.jogosComoGoleiro} jogo{stats.jogosComoGoleiro > 1 ? 's' : ''})
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {goleiroConfig.map(({ key, label, icon: Icon }) => (
-                <Card
-                  key={key}
-                  className="p-4 flex flex-col items-center justify-center text-center gap-1 border"
-                  style={{ borderColor: `${accentColor}25` }}
-                >
-                  <Icon className="w-6 h-6" style={{ color: accentColor }} />
-                  <span className="text-2xl font-bold">{stats[key]}</span>
-                  <span className="text-xs text-muted-foreground">{label}</span>
-                </Card>
-              ))}
-            </div>
+            <FeatureGate
+              planoAtual={plano}
+              planoRequerido="premium"
+              liberado={temAcesso('stats_avancadas')}
+              mensagem="Estatísticas avançadas de goleiro são um recurso Premium"
+            >
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {goleiroConfig.map(({ key, label, icon: Icon }) => (
+                  <Card
+                    key={key}
+                    className="p-4 flex flex-col items-center justify-center text-center gap-1 border"
+                    style={{ borderColor: `${accentColor}25` }}
+                  >
+                    <Icon className="w-6 h-6" style={{ color: accentColor }} />
+                    <span className="text-2xl font-bold">{stats[key]}</span>
+                    <span className="text-xs text-muted-foreground">{label}</span>
+                  </Card>
+                ))}
+              </div>
+            </FeatureGate>
           </div>
         )}
         </>

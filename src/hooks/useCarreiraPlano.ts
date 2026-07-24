@@ -20,7 +20,7 @@ function useDynamicPlanLimits() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('carreira_planos_config')
-        .select('plano, nome, preco, cor, icone, descricao, jornada_mes, carreira_mes, posts_dia, video_seg, video_max_mb, youtube, selo_elite, ver_views, prioridade_busca, destaque_listagem, stats_avancadas, liga_conexoes');
+        .select('plano, nome, preco, cor, icone, descricao, jornada_mes, carreira_mes, posts_dia, video_seg, video_max_mb, youtube, selo_elite, ver_views, prioridade_busca, destaque_listagem, stats_avancadas, liga_conexoes, curriculo_pdf');
       if (error) throw error;
       const map: Record<string, PlanoLimites> = {};
       (data || []).forEach((row: any) => {
@@ -37,6 +37,7 @@ function useDynamicPlanLimits() {
           destaque_listagem: row.destaque_listagem,
           stats_avancadas: row.stats_avancadas,
           liga_conexoes: row.liga_conexoes,
+          curriculo_pdf: row.curriculo_pdf,
         };
       });
       return map;

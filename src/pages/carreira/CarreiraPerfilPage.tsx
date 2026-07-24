@@ -3,6 +3,9 @@ import { useIsFollowing, useToggleFollow, useEscolinhasCarreira, usePostsRede } 
 
 import { PerfilHeader } from '@/components/carreira/PerfilHeader';
 import { CarreiraTimeline } from '@/components/carreira/CarreiraTimeline';
+import { BaixarCurriculoPdfButton } from '@/components/carreira/curriculo/BaixarCurriculoPdfButton';
+import { FeatureGate } from '@/components/carreira/FeatureGate';
+import { useCarreiraPlano } from '@/hooks/useCarreiraPlano';
 import { ConexoesCount } from '@/components/carreira/ConexoesCount';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
 import { PerfilLayout } from '@/components/carreira/perfis/PerfilLayout';
@@ -344,6 +347,8 @@ export default function CarreiraPerfilPage() {
   const { theme: carreiraTheme, isDarkTheme, setDarkTheme } = useCarreiraTheme();
   const isOwner = !!(currentUserId && perfil && currentUserId === perfil.user_id);
   const isAnonymous = !currentUserId;
+  const { plano: planoAtleta, temAcesso: temAcessoAtleta } = useCarreiraPlano(perfil?.crianca_id || null);
+  const temAcessoCurriculoPdf = temAcessoAtleta('curriculo_pdf');
   const { trackProfileView, requireAuth } = useAnonymousGate();
   const [mySlug, setMySlug] = useState<string | null>(null);
 
@@ -1111,9 +1116,16 @@ export default function CarreiraPerfilPage() {
               />
             )}
 
-            {/* Quem viu este perfil — public, below profile header */}
-            {perfil.type === 'atleta' && profileViews && profileViews.length > 0 && (
-              <ProfileViewsSection views={profileViews} accentColor={accentColor} navigate={navigate} />
+            {/* Quem viu este perfil — somente para o dono do perfil, recurso Premium */}
+            {perfil.type === 'atleta' && isOwner && profileViews && profileViews.length > 0 && (
+              <FeatureGate
+                planoAtual={planoAtleta}
+                planoRequerido="premium"
+                liberado={temAcessoAtleta('ver_views')}
+                mensagem="Ver quem visualizou seu perfil é um recurso Premium"
+              >
+                <ProfileViewsSection views={profileViews} accentColor={accentColor} navigate={navigate} />
+              </FeatureGate>
             )}
 
             {/* Fãs / Torcida — below profile views */}
@@ -1160,6 +1172,27 @@ export default function CarreiraPerfilPage() {
             )}
 
             
+            {perfil.type === 'atleta' && isOwner && (
+              <div className="mb-4">
+                <FeatureGate
+                  planoAtual={planoAtleta}
+                  planoRequerido="premium"
+                  liberado={temAcessoCurriculoPdf}
+                  mensagem="Currículo em PDF disponível no plano Premium"
+                >
+                  <BaixarCurriculoPdfButton
+                    criancaId={perfil.crianca_id}
+                    nome={perfil.nome}
+                    fotoUrl={perfil.foto_url}
+                    modalidade={perfil.modalidade || null}
+                    categoria={perfil.categoria || null}
+                    cidade={perfil.cidade || null}
+                    estado={perfil.estado || null}
+                    slug={perfil.slug}
+                  />
+                </FeatureGate>
+              </div>
+            )}
             {perfil.type === 'atleta' ? (
               <CarreiraTimeline perfil={perfil as any} isOwner={isOwner} />
             ) : (

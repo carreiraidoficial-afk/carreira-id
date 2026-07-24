@@ -23,6 +23,7 @@ export interface PlanoLimites {
   destaque_listagem: boolean;
   stats_avancadas: boolean;
   liga_conexoes: boolean;
+  curriculo_pdf: boolean;
 }
 
 export interface PlanoInfo {
@@ -60,6 +61,7 @@ export const PLANOS: Record<CarreiraPlano, PlanoInfo> = {
       destaque_listagem: false,
       stats_avancadas: false,
       liga_conexoes: true,
+      curriculo_pdf: false,
     },
     destaques: [
       'Perfil público do atleta (foto e informações básicas: posição, idade, pé dominante)',
@@ -91,6 +93,7 @@ export const PLANOS: Record<CarreiraPlano, PlanoInfo> = {
       destaque_listagem: true,
       stats_avancadas: true,
       liga_conexoes: true,
+      curriculo_pdf: true,
     },
     destaques: [
       'Tudo do Base',
@@ -102,6 +105,7 @@ export const PLANOS: Record<CarreiraPlano, PlanoInfo> = {
       'Destaque em listagens de atletas',
       'Estatísticas avançadas',
       'Ver quem visualizou o perfil',
+      'Currículo esportivo em PDF para enviar a clubes',
       'Acesso antecipado a novos recursos da plataforma',
     ],
   },

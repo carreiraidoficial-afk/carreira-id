@@ -32,6 +32,7 @@ interface PlanoConfig {
   destaque_listagem: boolean;
   stats_avancadas: boolean;
   liga_conexoes: boolean;
+  curriculo_pdf: boolean;
 }
 
 const FEATURE_LABELS: Record<string, { label: string; desc: string; type: 'boolean' | 'number' }> = {
@@ -47,6 +48,7 @@ const FEATURE_LABELS: Record<string, { label: string; desc: string; type: 'boole
   destaque_listagem: { label: 'Destaque em listagens', desc: 'Perfil destacado visualmente nas listagens', type: 'boolean' },
   stats_avancadas: { label: 'Estatísticas avançadas', desc: 'Acesso a estatísticas detalhadas', type: 'boolean' },
   liga_conexoes: { label: 'Liga de Conexões', desc: 'Participação na Liga de Conexões do Atleta', type: 'boolean' },
+  curriculo_pdf: { label: 'Currículo em PDF', desc: 'Permite baixar o currículo esportivo em PDF', type: 'boolean' },
 };
 
 function usePlanosConfig() {

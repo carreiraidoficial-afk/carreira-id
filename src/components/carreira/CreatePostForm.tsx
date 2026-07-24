@@ -13,6 +13,7 @@ import { LinkPreviewCard } from './LinkPreviewCard';
 import { ModerationBlockDialog } from './ModerationBlockDialog';
 import { compressImage } from '@/lib/image-compressor';
 import { validateVideo, isVideoFile, VIDEO_ACCEPT } from '@/lib/video-validator';
+import { isVideoUrl } from './VideoEmbedCard';
 import { useCarreiraPlano, usePostsDiaCount } from '@/hooks/useCarreiraPlano';
 import { PLANOS } from '@/config/carreiraPlanos';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
@@ -107,6 +108,10 @@ export function CreatePostForm({ perfil, perfilRedeId, perfilRedeNome, perfilRed
   
   const postsLimitReached = effectivePostsLimitReached;
   const canUploadVideo = effectiveCanUploadVideo;
+  const linkIsLockedVideo = !!linkPreview && isVideoUrl(linkPreview.url) && !effectiveLimites.youtube;
+  const displayLinkPreview = linkPreview
+    ? { ...linkPreview, video_embed_allowed: !isVideoUrl(linkPreview.url) || effectiveLimites.youtube }
+    : null;
 
   const handleTextChange = (value: string) => {
     setTexto(value);
@@ -295,7 +300,7 @@ export function CreatePostForm({ perfil, perfilRedeId, perfilRedeNome, perfilRed
         texto: texto.trim(),
         imagens_urls: imageUrls,
         video_url: videoUrl,
-        link_preview: linkPreview || null,
+        link_preview: displayLinkPreview || null,
       };
       if (perfilRedeId) {
         postData.perfil_rede_id = perfilRedeId;
@@ -373,10 +378,16 @@ export function CreatePostForm({ perfil, perfilRedeId, perfilRedeNome, perfilRed
 
             {/* Link Preview */}
             {fetchingPreview && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="w-3 h-3 animate-spin" />Carregando preview...</div>}
-            {linkPreview && (
+            {displayLinkPreview && (
               <div className="relative">
-                <LinkPreviewCard preview={linkPreview} />
+                <LinkPreviewCard preview={displayLinkPreview} />
                 <button onClick={() => setLinkPreview(null)} className="absolute top-2 right-2 bg-background/80 rounded-full p-1"><X className="w-3 h-3" /></button>
+              </div>
+            )}
+            {linkIsLockedVideo && (
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <Lock className="w-3 h-3" />
+                Vídeos incorporados (YouTube/Vimeo) são um recurso Premium — este link será publicado como um card simples.
               </div>
             )}
 

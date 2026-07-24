@@ -8,6 +8,8 @@ interface LinkPreview {
   image?: string | null;
   site_name?: string | null;
   type?: string | null;
+  /** false when the author's plan doesn't include the YouTube/video embed feature */
+  video_embed_allowed?: boolean;
 }
 
 interface LinkPreviewCardProps {
@@ -17,8 +19,8 @@ interface LinkPreviewCardProps {
 export function LinkPreviewCard({ preview }: LinkPreviewCardProps) {
   if (!preview.title && !preview.description && !preview.image) return null;
 
-  // Render embed for video URLs
-  if (isVideoUrl(preview.url)) {
+  // Render embed for video URLs, unless the author's plan disallows it
+  if (isVideoUrl(preview.url) && preview.video_embed_allowed !== false) {
     return <VideoEmbedCard url={preview.url} title={preview.title} />;
   }
 

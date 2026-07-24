@@ -810,6 +810,7 @@ export type Database = {
           carreira_mes: number
           cor: string
           created_at: string
+          curriculo_pdf: boolean
           descricao: string
           destaque_listagem: boolean
           icone: string
@@ -834,6 +835,7 @@ export type Database = {
           carreira_mes?: number
           cor?: string
           created_at?: string
+          curriculo_pdf?: boolean
           descricao?: string
           destaque_listagem?: boolean
           icone?: string
@@ -858,6 +860,7 @@ export type Database = {
           carreira_mes?: number
           cor?: string
           created_at?: string
+          curriculo_pdf?: boolean
           descricao?: string
           destaque_listagem?: boolean
           icone?: string
@@ -2223,6 +2226,10 @@ export type Database = {
         Returns: undefined
       }
       get_acao_pontos: { Args: { p_acao_tipo: string }; Returns: number }
+      get_premium_crianca_ids: {
+        Args: { p_crianca_ids: string[] }
+        Returns: { crianca_id: string }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]

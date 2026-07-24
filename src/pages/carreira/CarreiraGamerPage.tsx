@@ -16,6 +16,8 @@ import { useNiveisConfig, getLevelTitle, getLevelColor } from '@/hooks/useGamifi
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { useCarreiraRanking } from '@/hooks/useCarreiraRanking';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
+import { useCarreiraPlano } from '@/hooks/useCarreiraPlano';
+import { FeatureGate } from '@/components/carreira/FeatureGate';
 
 export default function CarreiraGamerPage() {
   const { sessionUserId: currentUserId, loading: sessionLoading } = useCarreiraSession();
@@ -26,9 +28,9 @@ export default function CarreiraGamerPage() {
     queryKey: ['liga-page-accent', currentUserId],
     queryFn: async () => {
       if (!currentUserId) return null;
-      const { data: pa } = await supabase.from('perfil_atleta').select('cor_destaque, slug').eq('user_id', currentUserId).order('created_at', { ascending: true }).limit(1).maybeSingle();
+      const { data: pa } = await supabase.from('perfil_atleta').select('cor_destaque, slug, crianca_id').eq('user_id', currentUserId).order('created_at', { ascending: true }).limit(1).maybeSingle();
       const { data: pr } = await supabase.from('perfis_rede').select('slug').eq('user_id', currentUserId).order('created_at', { ascending: true }).limit(1).maybeSingle();
-      return { accentColor: pa?.cor_destaque || '#3b82f6', slug: pa?.slug || pr?.slug || null };
+      return { accentColor: pa?.cor_destaque || '#3b82f6', slug: pa?.slug || pr?.slug || null, criancaId: pa?.crianca_id || null };
     },
     enabled: !!currentUserId,
   });
@@ -36,6 +38,7 @@ export default function CarreiraGamerPage() {
   const accentColor = perfilData?.accentColor || '#3b82f6';
   const mySlug = perfilData?.slug || null;
   const { data: ranking } = useCarreiraRanking();
+  const { plano, temAcesso } = useCarreiraPlano(perfilData?.criancaId || null);
   const { data: niveis } = useNiveisConfig();
 
   if (sessionLoading) {
@@ -79,80 +82,87 @@ export default function CarreiraGamerPage() {
         <TutorialAutoShow tipoPerfil="atleta_filho" />
         <GamificacaoHeroCard accentColor={accentColor} />
 
-        {/* Link para Tabela de Pontos */}
-        <button
-          onClick={() => navigate(carreiraPath('/liga/pontos'))}
-          className="w-full"
+        <FeatureGate
+          planoAtual={plano}
+          planoRequerido="premium"
+          liberado={temAcesso('liga_conexoes')}
+          mensagem="Participação na Liga de Conexões é um recurso Premium"
         >
-          <Card
-            className="p-4 flex items-center justify-between hover:bg-muted/30 transition-colors cursor-pointer"
-            style={{ borderColor: `${accentColor}50`, borderWidth: 2 }}
+          {/* Link para Tabela de Pontos */}
+          <button
+            onClick={() => navigate(carreiraPath('/liga/pontos'))}
+            className="w-full"
           >
-            <div className="flex items-center gap-2">
-              <TableProperties className="w-5 h-5" style={{ color: accentColor }} />
-              <span className="text-sm font-semibold text-foreground">Tabela de Pontos</span>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </Card>
-        </button>
-
-        {/* Ranking */}
-        {ranking && ranking.length > 0 && (
-          <Card className="p-3" style={{ borderColor: `${accentColor}50`, borderWidth: 2 }}>
-            <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-              <Trophy className="w-4 h-4" style={{ color: accentColor }} />
-              Ranking
-            </h3>
-            <ScrollArea className="max-h-[420px]">
-              <div className="space-y-1 pr-1">
-                {ranking.map((player) => {
-                  const isMe = player.user_id === currentUserId;
-                  const medalColor = player.position <= 3 ? MEDAL_COLORS[player.position - 1] : undefined;
-                  const levelTitle = getLevelTitle(player.nivel, niveis || []);
-                  const levelColor = getLevelColor(player.nivel, niveis || []);
-                  return (
-                    <div
-                      key={player.user_id}
-                      className={`flex items-center gap-2 py-1.5 px-2 rounded-lg transition-colors cursor-pointer ${isMe ? 'ring-1' : 'hover:bg-muted/50'}`}
-                      style={isMe ? { backgroundColor: `${accentColor}10`, outline: `1px solid ${accentColor}` } : undefined}
-                      onClick={() => player.slug && navigate(carreiraPath(`/${player.slug}`))}
-                    >
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
-                        style={medalColor
-                          ? { backgroundColor: medalColor, color: '#000' }
-                          : { backgroundColor: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }
-                        }
-                      >
-                        {player.position}
-                      </div>
-
-                      <Avatar className="w-7 h-7 shrink-0">
-                        {player.foto_url ? <AvatarImage src={player.foto_url} className="object-cover" /> : null}
-                        <AvatarFallback className="text-[9px]"><User className="w-3 h-3" /></AvatarFallback>
-                      </Avatar>
-
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-medium truncate leading-tight">
-                          {player.nome}
-                          {isMe && <span className="text-[9px] text-muted-foreground ml-1">(você)</span>}
-                        </p>
-                        <p className="text-[9px] font-medium leading-tight" style={{ color: levelColor }}>
-                          {levelTitle}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-0.5 shrink-0" style={{ color: accentColor }}>
-                        <Zap className="w-3 h-3" />
-                        <span className="text-[11px] font-bold">{player.pontos.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  );
-                })}
+            <Card
+              className="p-4 flex items-center justify-between hover:bg-muted/30 transition-colors cursor-pointer"
+              style={{ borderColor: `${accentColor}50`, borderWidth: 2 }}
+            >
+              <div className="flex items-center gap-2">
+                <TableProperties className="w-5 h-5" style={{ color: accentColor }} />
+                <span className="text-sm font-semibold text-foreground">Tabela de Pontos</span>
               </div>
-            </ScrollArea>
-          </Card>
-        )}
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </Card>
+          </button>
+
+          {/* Ranking */}
+          {ranking && ranking.length > 0 && (
+            <Card className="p-3 mt-4" style={{ borderColor: `${accentColor}50`, borderWidth: 2 }}>
+              <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                <Trophy className="w-4 h-4" style={{ color: accentColor }} />
+                Ranking
+              </h3>
+              <ScrollArea className="max-h-[420px]">
+                <div className="space-y-1 pr-1">
+                  {ranking.map((player) => {
+                    const isMe = player.user_id === currentUserId;
+                    const medalColor = player.position <= 3 ? MEDAL_COLORS[player.position - 1] : undefined;
+                    const levelTitle = getLevelTitle(player.nivel, niveis || []);
+                    const levelColor = getLevelColor(player.nivel, niveis || []);
+                    return (
+                      <div
+                        key={player.user_id}
+                        className={`flex items-center gap-2 py-1.5 px-2 rounded-lg transition-colors cursor-pointer ${isMe ? 'ring-1' : 'hover:bg-muted/50'}`}
+                        style={isMe ? { backgroundColor: `${accentColor}10`, outline: `1px solid ${accentColor}` } : undefined}
+                        onClick={() => player.slug && navigate(carreiraPath(`/${player.slug}`))}
+                      >
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+                          style={medalColor
+                            ? { backgroundColor: medalColor, color: '#000' }
+                            : { backgroundColor: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }
+                          }
+                        >
+                          {player.position}
+                        </div>
+
+                        <Avatar className="w-7 h-7 shrink-0">
+                          {player.foto_url ? <AvatarImage src={player.foto_url} className="object-cover" /> : null}
+                          <AvatarFallback className="text-[9px]"><User className="w-3 h-3" /></AvatarFallback>
+                        </Avatar>
+
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-medium truncate leading-tight">
+                            {player.nome}
+                            {isMe && <span className="text-[9px] text-muted-foreground ml-1">(você)</span>}
+                          </p>
+                          <p className="text-[9px] font-medium leading-tight" style={{ color: levelColor }}>
+                            {levelTitle}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-0.5 shrink-0" style={{ color: accentColor }}>
+                          <Zap className="w-3 h-3" />
+                          <span className="text-[11px] font-bold">{player.pontos.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </Card>
+          )}
+        </FeatureGate>
       </main>
 
       <CarreiraBottomNav currentUserId={currentUserId} profileSlug={mySlug} />

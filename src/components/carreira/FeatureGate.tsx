@@ -18,6 +18,13 @@ interface FeatureGateProps {
   inline?: boolean;
   /** If true, completely hides content instead of showing blurred */
   hideContent?: boolean;
+  /**
+   * Optional explicit access override — when provided, this decides access
+   * instead of the plan-tier comparison. Use with `temAcesso('feature')` from
+   * useCarreiraPlano() to gate by the admin-configurable feature flag rather
+   * than by plan tier alone.
+   */
+  liberado?: boolean;
 }
 
 export function FeatureGate({
@@ -27,9 +34,10 @@ export function FeatureGate({
   mensagem,
   inline = false,
   hideContent = false,
+  liberado,
 }: FeatureGateProps) {
   const navigate = useNavigate();
-  const temAcesso = temAcessoAoPlano(planoAtual, planoRequerido);
+  const temAcesso = liberado ?? temAcessoAoPlano(planoAtual, planoRequerido);
 
   if (temAcesso) return <>{children}</>;
 

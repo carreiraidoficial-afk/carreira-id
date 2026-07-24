@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Search, Filter, LayoutGrid, List, MapPin, Footprints, Trophy, User, ChevronDown, X, Loader2, ShieldCheck } from 'lucide-react';
+import { Search, Filter, LayoutGrid, List, MapPin, Footprints, Trophy, User, ChevronDown, X, Loader2, ShieldCheck, Crown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 
@@ -166,11 +166,38 @@ export function DescobrirAtletasSection() {
         });
       }
 
-      return atletas.map(a => ({
+      // Determine which plans currently have search-priority / listing-highlight enabled
+      const { data: planosConfig } = await supabase
+        .from('carreira_planos_config')
+        .select('plano, prioridade_busca, destaque_listagem');
+      const prioridadeBuscaAtiva = planosConfig?.find(p => p.plano === 'premium')?.prioridade_busca ?? false;
+      const destaqueListagemAtivo = planosConfig?.find(p => p.plano === 'premium')?.destaque_listagem ?? false;
+
+      // Determine which athletes have an active/trial premium subscription
+      // (uses a SECURITY DEFINER RPC since carreira_assinaturas is only readable by its own owner)
+      let premiumCriancaIds = new Set<string>();
+      if (allCriancaIds.length > 0) {
+        const { data: premiumRows } = await supabase
+          .rpc('get_premium_crianca_ids', { p_crianca_ids: allCriancaIds });
+        premiumCriancaIds = new Set((premiumRows || []).map(r => r.crianca_id));
+      }
+
+      let atletasComPlano = atletas.map(a => ({
         ...a,
         categoriaCalc: a.crianca_id && criancaDates.get(a.crianca_id) ? calcularCategoria(criancaDates.get(a.crianca_id)!) : a.categoria,
         statusInfo: a.crianca_id ? expMap.get(a.crianca_id) : null,
+        isPremium: !!(a.crianca_id && premiumCriancaIds.has(a.crianca_id)),
+        destaque: destaqueListagemAtivo && !!(a.crianca_id && premiumCriancaIds.has(a.crianca_id)),
       }));
+
+      if (prioridadeBuscaAtiva) {
+        atletasComPlano = [
+          ...atletasComPlano.filter(a => a.isPremium),
+          ...atletasComPlano.filter(a => !a.isPremium),
+        ];
+      }
+
+      return atletasComPlano;
     },
   });
 
@@ -347,12 +374,17 @@ export function DescobrirAtletasSection() {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {results?.map(atleta => (
             <Link key={atleta.id} to={carreiraPath(`/${atleta.slug}`)} className="block">
-              <Card className="overflow-hidden hover:ring-1 hover:ring-primary/50 transition-all group">
-                <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
+              <Card className={`overflow-hidden hover:ring-1 hover:ring-primary/50 transition-all group ${atleta.destaque ? 'ring-2 ring-amber-400' : ''}`}>
+                <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden relative">
                   {atleta.foto_url ? (
                     <img src={atleta.foto_url} alt={atleta.nome} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                   ) : (
                     <User className="w-12 h-12 text-muted-foreground/40" />
+                  )}
+                  {atleta.destaque && (
+                    <Badge className="absolute top-1 right-1 text-[9px] px-1 py-0 h-4 gap-0.5 bg-amber-400 text-amber-950 border-0">
+                      <Crown className="w-2.5 h-2.5" />Destaque
+                    </Badge>
                   )}
                 </div>
                 <div className="p-2.5 space-y-1">
@@ -398,7 +430,7 @@ export function DescobrirAtletasSection() {
         <div className="space-y-2">
           {results?.map(atleta => (
             <Link key={atleta.id} to={carreiraPath(`/${atleta.slug}`)} className="block">
-              <Card className="p-3 hover:ring-1 hover:ring-primary/50 transition-all">
+              <Card className={`p-3 hover:ring-1 hover:ring-primary/50 transition-all ${atleta.destaque ? 'ring-2 ring-amber-400' : ''}`}>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
                     {atleta.foto_url ? (
@@ -410,6 +442,11 @@ export function DescobrirAtletasSection() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-bold text-foreground truncate">{atleta.nome}</h3>
+                      {atleta.destaque && (
+                        <Badge className="text-[9px] px-1 py-0 h-4 gap-0.5 bg-amber-400 text-amber-950 border-0 shrink-0">
+                          <Crown className="w-2.5 h-2.5" />Destaque
+                        </Badge>
+                      )}
                       {atleta.categoriaCalc && (
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
                           {atleta.categoriaCalc}
