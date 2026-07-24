@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ import { PushNotificationPopup } from '@/components/shared/PushNotificationPopup
 import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { trackCompleteRegistration, trackProfileCreated, trackInitiateCheckout, trackSubscribe, pushDataLayer } from '@/lib/fbPixel';
 import { salvarPendingRef, processarConviteRef } from '@/lib/processar-convite-ref';
+import { TERMOS_VERSAO } from '@/lib/termosVersao';
 
 type Step = 'tutorial' | 'auth' | 'recuperar-senha' | 'profile-type' | 'profile-form';
 
@@ -39,6 +40,24 @@ const signupSchema = z.object({
   password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
 });
 
+/**
+ * Garante que o aceite dos Termos de Uso / Política de Privacidade fique
+ * registrado pro usuário, na versão atual. Idempotente (upsert com
+ * ignoreDuplicates) — seguro pra chamar tanto no cadastro por email quanto
+ * como rede de segurança no login via Google, sem duplicar registro nem
+ * sobrescrever um aceite já existente.
+ */
+async function ensureTermosAceite(userId: string, metodo: 'checkbox_explicito' | 'sessao_automatica') {
+  try {
+    await supabase.from('termos_aceites').upsert(
+      { user_id: userId, versao: TERMOS_VERSAO, metodo },
+      { onConflict: 'user_id,versao', ignoreDuplicates: true }
+    );
+  } catch (err) {
+    console.error('[ensureTermosAceite] erro:', err);
+  }
+}
+
 export default function CarreiraCadastroPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -52,6 +71,11 @@ export default function CarreiraCadastroPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nome, setNome] = useState('');
+  const [aceitouTermos, setAceitouTermos] = useState(false);
+  // Ref (não state) porque precisa estar disponível de forma síncrona pro
+  // listener onAuthStateChange, que pode disparar antes do await de signUp()
+  // resolver — evita corrida entre os dois pontos que registram o aceite.
+  const justAcceptedRef = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [selectedType, setSelectedType] = useState<ProfileType | null>(null);
@@ -130,6 +154,11 @@ export default function CarreiraCadastroPage() {
 
       // Normal flow
       setUserId(session.user.id);
+      // Único ponto de registro do aceite: cobre tanto o cadastro por email
+      // (justAcceptedRef.current fica true no handler do checkbox, síncrono,
+      // antes deste listener disparar) quanto o login via Google, que não
+      // passa pelo checkbox e por isso é sempre 'sessao_automatica'.
+      ensureTermosAceite(session.user.id, justAcceptedRef.current ? 'checkbox_explicito' : 'sessao_automatica').catch(() => { /* silencioso */ });
 
       // Check if user is admin — redirect to admin panel
       try {
@@ -272,6 +301,12 @@ export default function CarreiraCadastroPage() {
           setIsLoading(false);
           return;
         }
+        if (!aceitouTermos) {
+          toast.error('Você precisa aceitar os Termos de Uso e a Política de Privacidade para continuar.');
+          setIsLoading(false);
+          return;
+        }
+        justAcceptedRef.current = true;
 
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -294,6 +329,9 @@ export default function CarreiraCadastroPage() {
           trackCompleteRegistration('email');
           pushDataLayer('sign_up', { method: 'email' });
           if (data.session) {
+            // Registro do aceite é feito pelo listener onAuthStateChange
+            // (handleSession), que já sabe (via justAcceptedRef) que este
+            // aceite veio do checkbox explícito, não de sessão automática.
             setUserId(data.user.id);
             setStep('profile-type');
           } else {
@@ -586,7 +624,25 @@ export default function CarreiraCadastroPage() {
                       </button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full" size="lg" disabled={isLoading}
+                  {!isLogin && (
+                    <div className="flex items-start gap-2 pt-1">
+                      <input
+                        type="checkbox"
+                        id="aceite-termos"
+                        checked={aceitouTermos}
+                        onChange={(e) => setAceitouTermos(e.target.checked)}
+                        disabled={isLoading}
+                        className="mt-0.5 w-4 h-4 shrink-0"
+                      />
+                      <label htmlFor="aceite-termos" className="text-xs leading-snug" style={{ color: 'hsl(0 0% 55%)' }}>
+                        Li e aceito os{' '}
+                        <a href="/termos-de-uso" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'hsl(200 90% 60%)' }}>Termos de Uso</a>
+                        {' '}e a{' '}
+                        <a href="/politica-de-privacidade" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'hsl(200 90% 60%)' }}>Política de Privacidade</a>.
+                      </label>
+                    </div>
+                  )}
+                  <Button type="submit" className="w-full" size="lg" disabled={isLoading || (!isLogin && !aceitouTermos)}
                     style={{ backgroundColor: 'hsl(25 95% 55%)', color: 'hsl(0 0% 100%)' }}
                   >
                     {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
@@ -750,16 +806,6 @@ export default function CarreiraCadastroPage() {
             onBack={() => setStep('profile-type')}
             onComplete={handleProfileCreated}
           />
-        )}
-
-
-        {step === 'auth' && (
-          <div className="mt-6 text-center text-xs" style={{ color: 'hsl(0 0% 40%)' }}>
-            Ao criar uma conta, você concorda com os{' '}
-            <a href="/termos-de-uso" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'hsl(200 90% 60%)' }}>Termos de Uso</a>
-            {' '}e a{' '}
-            <a href="/politica-de-privacidade" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'hsl(200 90% 60%)' }}>Política de Privacidade</a>.
-          </div>
         )}
       </main>
 
