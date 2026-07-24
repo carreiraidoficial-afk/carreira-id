@@ -88,6 +88,13 @@
         <span class="whatsapp-banner__btn">Entrar na comunidade</span>
       </a>
 
+      <div class="blog-filter-wrap">
+        <div class="blog-filter">
+          <button class="blog-filter-btn active" onclick="filterBlog('all', this)">Todos <span class="blog-filter-count">20</span></button>
+          <button class="blog-filter-btn" onclick="filterBlog('futebol', this)">⚽ Futebol <span class="blog-filter-count">20</span></button>
+        </div>
+      </div>
+
       <section class="blog-grid" id="blog-grid">
         <!--
           MODELO DE CARD — copie este bloco para cada novo artigo publicado
@@ -105,7 +112,7 @@
           </a>
         -->
 
-        <div class="blog-card blog-card--has-podcast">
+        <div class="blog-card blog-card--has-podcast" data-cat="futebol">
           <a href="/blog/mecanismo-de-solidariedade-no-futebol-de-base/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/mecanismo-de-solidariedade-no-futebol-de-base/capa.jpg" alt="Ilustração de homem segurando sacos de dinheiro em euros em frente a prédio com escudos de clubes de futebol europeus" />
             <div class="blog-card__body">
@@ -124,7 +131,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card blog-card--has-podcast">
+        <div class="blog-card blog-card--has-podcast" data-cat="futebol">
           <a href="/blog/lideranca-o-que-faltou-argentina-final-copa-2026/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/lideranca-o-que-faltou-argentina-final-copa-2026/capa.jpg" alt="Ilustração de jogador de futebol abatido em campo após perder uma final de Copa do Mundo" />
             <div class="blog-card__body">
@@ -143,7 +150,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card blog-card--has-podcast">
+        <div class="blog-card blog-card--has-podcast" data-cat="futebol">
           <a href="/blog/saber-perder-licao-final-copa-do-mundo-2026-para-filhos/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/saber-perder-licao-final-copa-do-mundo-2026-para-filhos/capa.jpg" alt="Ilustração de jogadores de futebol de costas para o pódio durante cerimônia de premiação de uma final de Copa do Mundo" />
             <div class="blog-card__body">
@@ -162,7 +169,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card blog-card--has-podcast">
+        <div class="blog-card blog-card--has-podcast" data-cat="futebol">
           <a href="/blog/pedri-penalti-pai-conexao-pai-filho-no-esporte/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/pedri-penalti-pai-conexao-pai-filho-no-esporte/capa.jpg" alt="Pai de jogador defendendo um pênalti simbólico em campo durante a comemoração de um título" />
             <div class="blog-card__body">
@@ -181,7 +188,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card blog-card--has-podcast">
+        <div class="blog-card blog-card--has-podcast" data-cat="futebol">
           <a href="/blog/10-habitos-que-pais-de-atletas-devem-incentivar/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/10-habitos-que-pais-de-atletas-devem-incentivar/capa.jpg" alt="Ilustração de pai, mãe e filho adolescente conversando no sofá de casa, com chuteiras e bola de futebol no chão" />
             <div class="blog-card__body">
@@ -200,7 +207,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card blog-card--has-podcast">
+        <div class="blog-card blog-card--has-podcast" data-cat="futebol">
           <a href="/blog/licao-de-cubarsi-para-o-futebol-de-base/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/licao-de-cubarsi-para-o-futebol-de-base/capa.jpg" alt="Ilustração de dois jovens jogadores de futebol disputando a bola em partida, um deles com a camisa 33 do Barcelona" />
             <div class="blog-card__body">
@@ -219,7 +226,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card blog-card--has-podcast">
+        <div class="blog-card blog-card--has-podcast" data-cat="futebol">
           <a href="/blog/licao-de-lamine-yamal-para-o-futebol-de-base/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/licao-de-lamine-yamal-para-o-futebol-de-base/capa.jpg" alt="Ilustração de jovem jogador de futebol com uniforme da seleção espanhola comemorando gol em estádio" />
             <div class="blog-card__body">
@@ -238,7 +245,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card blog-card--has-podcast">
+        <div class="blog-card blog-card--has-podcast" data-cat="futebol">
           <a href="/blog/o-caderno-de-zico-curriculo-esportivo-do-atleta/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/o-caderno-de-zico-curriculo-esportivo-do-atleta/capa.jpg" alt="Ilustração de jogador de futebol camisa 10 da seleção brasileira comemorando gol" />
             <div class="blog-card__body">
@@ -257,7 +264,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card blog-card--has-podcast">
+        <div class="blog-card blog-card--has-podcast" data-cat="futebol">
           <a href="/blog/o-que-e-copa-do-brasil-sub-15-como-funciona/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/o-que-e-copa-do-brasil-sub-15-como-funciona/capa.jpg" alt="Atleta da categoria Sub-15 com bola e regulamento da Copa do Brasil Sub-15" />
             <div class="blog-card__body">
@@ -276,7 +283,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card">
+        <div class="blog-card" data-cat="futebol">
           <a href="/blog/futebol-de-base-feminino-como-funciona/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/futebol-de-base-feminino-como-funciona/capa.jpg" alt="Jogadoras de futebol de base feminino reunidas em campo antes de uma partida" />
             <div class="blog-card__body">
@@ -291,7 +298,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card">
+        <div class="blog-card" data-cat="futebol">
           <a href="/blog/beneficios-do-futebol-para-criancas/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/beneficios-do-futebol-para-criancas/capa.jpg" alt="Grupo de crianças jogadores de futebol abraçados em campo" />
             <div class="blog-card__body">
@@ -306,7 +313,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card">
+        <div class="blog-card" data-cat="futebol">
           <a href="/blog/como-escolher-uma-escolinha-de-futebol/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/como-escolher-uma-escolinha-de-futebol/capa.jpg" alt="Pai avaliando escolinha de futebol infantil observando treino do filho" />
             <div class="blog-card__body">
@@ -321,7 +328,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card">
+        <div class="blog-card" data-cat="futebol">
           <a href="/blog/como-lidar-com-pressao-psicologica-no-futebol-de-base/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/como-lidar-com-pressao-psicologica-no-futebol-de-base/capa.jpg" alt="Jovem atleta sentado no banco, cabisbaixo, refletindo a pressão emocional do esporte" />
             <div class="blog-card__body">
@@ -336,7 +343,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card">
+        <div class="blog-card" data-cat="futebol">
           <a href="/blog/como-montar-curriculo-esportivo-do-atleta/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/como-montar-curriculo-esportivo-do-atleta/capa.jpg" alt="Pai olhando o currículo esportivo do filho no aplicativo Carreira ID" />
             <div class="blog-card__body">
@@ -351,7 +358,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card">
+        <div class="blog-card" data-cat="futebol">
           <a href="/blog/quantos-atletas-de-base-chegam-ao-profissional/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/quantos-atletas-de-base-chegam-ao-profissional/capa.jpg" alt="Bola de futebol presa na rede do gol" />
             <div class="blog-card__body">
@@ -366,7 +373,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card">
+        <div class="blog-card" data-cat="futebol">
           <a href="/blog/o-que-e-peneira-de-futebol-como-se-preparar/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/o-que-e-peneira-de-futebol-como-se-preparar/capa.jpg" alt="Jovem atleta driblando durante peneira de futebol" />
             <div class="blog-card__body">
@@ -381,7 +388,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card">
+        <div class="blog-card" data-cat="futebol">
           <a href="/blog/o-que-faz-um-olheiro-de-futebol/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/o-que-faz-um-olheiro-de-futebol/capa.jpg" alt="Olheiro de futebol observando um jogo com prancheta na mão" />
             <div class="blog-card__body">
@@ -396,7 +403,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card">
+        <div class="blog-card" data-cat="futebol">
           <a href="/blog/categorias-de-base-do-futebol-sub-7-ao-sub-20/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/categorias-de-base-do-futebol-sub-7-ao-sub-20/capa.jpg" alt="Atletas de diferentes idades treinando futebol de base" />
             <div class="blog-card__body">
@@ -411,7 +418,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card">
+        <div class="blog-card" data-cat="futebol">
           <a href="/blog/escolinha-de-futebol-ou-clube-qual-a-diferenca/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/escolinha-de-futebol-ou-clube-qual-a-diferenca/capa.jpg" alt="Crianças treinando futebol em uma escolinha" />
             <div class="blog-card__body">
@@ -426,7 +433,7 @@
             <svg class="card-share-btn__check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
           </button>
         </div>
-        <div class="blog-card">
+        <div class="blog-card" data-cat="futebol">
           <a href="/blog/o-que-e-futebol-de-base/" class="blog-card__link">
             <img class="blog-card__image" src="/blog/o-que-e-futebol-de-base/capa.jpg" alt="Atletas de base em campo durante treino de futebol" />
             <div class="blog-card__body">
@@ -442,6 +449,7 @@
           </button>
         </div>
       </section>
+      <p class="blog-no-results" id="blogNoResults">Nenhum artigo encontrado nesta categoria.</p>
     </main>
 
     <footer class="blog-footer">
@@ -453,5 +461,25 @@
         <div>&copy; 2026 CARREIRA ID. Todos os direitos reservados.</div>
       </div>
     </footer>
+
+    <script>
+      function filterBlog(cat, btn) {
+        document.querySelectorAll('.blog-filter-btn').forEach(function (b) { b.classList.remove('active'); });
+        if (btn) btn.classList.add('active');
+        var visible = 0;
+        document.querySelectorAll('#blog-grid .blog-card').forEach(function (card) {
+          if (cat === 'all' || card.dataset.cat === cat) { card.removeAttribute('hidden'); visible++; }
+          else { card.setAttribute('hidden', ''); }
+        });
+        document.getElementById('blogNoResults').style.display = visible === 0 ? 'block' : 'none';
+      }
+      (function () {
+        var cat = new URLSearchParams(location.search).get('cat');
+        if (cat) {
+          var btn = document.querySelector('.blog-filter-btn[onclick*="filterBlog(\'' + cat + '\'"]');
+          if (btn) filterBlog(cat, btn);
+        }
+      })();
+    </script>
   </body>
 </html>
