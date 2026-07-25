@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
+import { selecionarCriancaAtiva } from '@/hooks/useCriancaAtiva';
 
 interface AssinaturaCardProps {
   userId: string;
@@ -267,8 +268,12 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
                 style={{ borderColor: `${targetInfo.cor}30` }}
                 onClick={() => {
                   if (targetPlano === 'base' && currentPlano === 'base') return;
-                  // For upgrades that need payment, redirect to planos page
+                  // For upgrades that need payment, redirect to planos page.
+                  // Garante que /planos resolva ESTE filho (não o "ativo"
+                  // globalmente), já que este card pode estar sendo mostrado
+                  // numa lista com vários irmãos (ver Minhas Assinaturas).
                   if (isUpgrade && targetPlano !== 'base') {
+                    selecionarCriancaAtiva(userId, criancaId);
                     navigate(carreiraPath('/planos'));
                     return;
                   }

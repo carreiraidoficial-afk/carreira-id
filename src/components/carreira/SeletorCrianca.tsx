@@ -1,4 +1,4 @@
-import { Users, Check, ChevronDown, UserPlus } from 'lucide-react';
+import { Users, Check, ChevronDown, UserPlus, CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -48,6 +48,12 @@ export function SeletorCrianca({ perfis, perfilAtivoId, onSelecionar }: SeletorC
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
+        {perfis.length > 1 && (
+          <DropdownMenuItem onClick={() => navigate(carreiraPath('/minhas-assinaturas'))} className="gap-2">
+            <CreditCard className="w-4 h-4" />
+            <span className="text-sm font-medium">Gerenciar assinaturas</span>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={() => navigate(carreiraPath('/cadastro?novo=1'))} className="gap-2 text-primary">
           <UserPlus className="w-4 h-4" />
           <span className="text-sm font-medium">Adicionar outro atleta</span>

@@ -13,6 +13,7 @@ const RootRoute = lazy(() => import("./pages/RootRoute"));
 const Auth = lazy(() => import("./pages/Auth"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const CarreiraLinkedinPage = lazy(() => import("./pages/carreira/CarreiraLinkedinPage"));
+const CarreiraMinhasAssinaturasPage = lazy(() => import("./pages/carreira/CarreiraMinhasAssinaturasPage"));
 const CarreiraPerfilPage = lazy(() => import("./pages/carreira/CarreiraPerfilPage"));
 const CarreiraExplorarPage = lazy(() => import("./pages/carreira/CarreiraExplorarPage"));
 const CarreiraPostPage = lazy(() => import("./pages/carreira/CarreiraPostPage"));
@@ -91,6 +92,7 @@ const App = () => {
               {/* Alias legado para área administrativa */}
               <Route path="/admin/*" element={<LegacyAdminRedirect />} />
               <Route path="/minha" element={<CarreiraLinkedinPage />} />
+              <Route path="/minhas-assinaturas" element={<CarreiraMinhasAssinaturasPage />} />
               <Route path="/feed" element={<CarreiraExplorarPage />} />
               <Route path="/explorar" element={<CarreiraExplorarPage />} /> {/* retrocompat */}
               <Route path="/post/:postId" element={<CarreiraPostPage />} />

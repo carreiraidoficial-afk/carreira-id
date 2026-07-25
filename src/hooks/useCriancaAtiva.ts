@@ -47,6 +47,16 @@ function getSavedCriancaId(userId: string): string | null {
   }
 }
 
+/**
+ * Versão imperativa (fora de componente) de selecionarCrianca -- usada quando
+ * uma tela precisa "trocar o filho ativo" e navegar em seguida, sem estar
+ * dentro do componente que realmente possui o hook (ex: AssinaturaCard.tsx
+ * ao mandar o responsável pra /planos a partir de uma lista com vários filhos).
+ */
+export function selecionarCriancaAtiva(userId: string, criancaId: string) {
+  saveCriancaId(userId, criancaId);
+}
+
 function saveCriancaId(userId: string, criancaId: string) {
   try {
     localStorage.setItem(`${STORAGE_PREFIX}_${userId}`, criancaId);
