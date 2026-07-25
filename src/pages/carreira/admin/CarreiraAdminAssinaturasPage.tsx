@@ -112,7 +112,7 @@ function useAdminAssinaturas(search: string) {
 // calcula pra liberar/bloquear recursos (useCarreiraPlano.ts) -- em vez de
 // só repetir o texto bruto salvo no banco, que fica "Trial"/"Premium" pra
 // sempre mesmo depois do vencimento, até um admin editar manualmente.
-function getEfetivo(ass: any): { acessoAtivo: boolean; statusLabel: string; statusClass: string; planoEfetivo: string; venceu: boolean } {
+function getEfetivo(ass: any): { acessoAtivo: boolean; statusLabel: string; statusClass: string; planoEfetivo: string; venceu: boolean; notaPlano: string | null } {
   const isIsento = ass.metodo_pagamento === 'isento';
   const venceu = !!ass.expira_em && new Date(ass.expira_em) < new Date();
 
@@ -124,6 +124,9 @@ function getEfetivo(ass: any): { acessoAtivo: boolean; statusLabel: string; stat
       statusClass: acessoAtivo ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20',
       planoEfetivo: acessoAtivo ? ass.plano_display : 'Base',
       venceu: !acessoAtivo,
+      // Só chegou a existir cobrança/contrato de verdade se o status já foi
+      // "ativa" (pagou ou foi isentado) -- nunca para quem só estava em trial.
+      notaPlano: (!acessoAtivo && ass.plano_display === 'Premium') ? 'contratou Premium' : null,
     };
   }
   if (ass.status === 'trial') {
@@ -134,6 +137,9 @@ function getEfetivo(ass: any): { acessoAtivo: boolean; statusLabel: string; stat
       statusClass: acessoAtivo ? 'bg-violet-500/10 text-violet-600 border-violet-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20',
       planoEfetivo: acessoAtivo ? ass.plano_display : 'Base',
       venceu: !acessoAtivo,
+      // Trial nunca foi uma contratação -- o usuário só testou de graça e
+      // não converteu em pagamento, então não pode dizer "contratou".
+      notaPlano: (!acessoAtivo && ass.plano_display === 'Premium') ? 'testou o Premium (não converteu)' : null,
     };
   }
   const labelMap: Record<string, string> = { cancelada: 'Cancelada', pendente: 'Pendente', expirada: 'Expirada' };
@@ -143,6 +149,7 @@ function getEfetivo(ass: any): { acessoAtivo: boolean; statusLabel: string; stat
     statusClass: '',
     planoEfetivo: 'Base',
     venceu: false,
+    notaPlano: null,
   };
 }
 
@@ -282,8 +289,8 @@ export default function CarreiraAdminAssinaturasPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-xs">{efetivo.planoEfetivo}</Badge>
-                        {efetivo.planoEfetivo === 'Base' && ass.plano_display === 'Premium' && (
-                          <p className="text-[10px] text-muted-foreground mt-0.5">contratou Premium</p>
+                        {efetivo.notaPlano && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{efetivo.notaPlano}</p>
                         )}
                       </TableCell>
                       <TableCell className="text-sm font-medium">
@@ -401,7 +408,7 @@ function EditAssinaturaDialog({ assinatura, onClose, onSaved }: { assinatura: an
         <div className="space-y-3">
           <div>
             <Label>Status</Label>
-            <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
+            <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })} disabled={form.metodo_pagamento === 'isento'}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ativa">Ativa</SelectItem>
@@ -414,19 +421,45 @@ function EditAssinaturaDialog({ assinatura, onClose, onSaved }: { assinatura: an
           </div>
           <div><Label>Plano</Label><Input value={form.plano} onChange={e => setForm({ ...form, plano: e.target.value })} /></div>
           <div className="grid grid-cols-2 gap-2">
-            <div><Label>Valor (R$)</Label><Input type="number" step="0.01" value={form.valor} onChange={e => setForm({ ...form, valor: e.target.value })} /></div>
+            <div>
+              <Label>Valor (R$)</Label>
+              <Input type="number" step="0.01" value={form.valor} onChange={e => setForm({ ...form, valor: e.target.value })} disabled={form.metodo_pagamento === 'isento'} />
+            </div>
             <div>
               <Label>Método</Label>
-              <Select value={form.metodo_pagamento || ''} onValueChange={v => setForm({ ...form, metodo_pagamento: v })}>
+              <Select
+                value={form.metodo_pagamento || ''}
+                onValueChange={v => {
+                  if (v === 'isento') {
+                    // Isento precisa vir junto com status "ativa", valor 0 e sem
+                    // data de vencimento -- é exatamente o que useCarreiraPlano.ts
+                    // checa pra liberar acesso Premium. Selecionar só o método
+                    // sem ajustar o resto deixaria a assinatura "isenta" mas
+                    // ainda travada em trial/vencida.
+                    setForm({ ...form, metodo_pagamento: v, status: 'ativa', valor: '0', expira_em: '', plano: form.plano || 'premium' });
+                  } else {
+                    setForm({ ...form, metodo_pagamento: v });
+                  }
+                }}
+              >
                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="pix">PIX</SelectItem>
                   <SelectItem value="cartao_credito">Cartão</SelectItem>
+                  <SelectItem value="isento">Isento</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-          <div><Label>Expira em</Label><Input type="date" value={form.expira_em} onChange={e => setForm({ ...form, expira_em: e.target.value })} /></div>
+          {form.metodo_pagamento === 'isento' && (
+            <p className="text-xs text-amber-600">
+              Isento concede Premium vitalício: status, valor e vencimento foram ajustados automaticamente e ficam travados enquanto o método for "Isento".
+            </p>
+          )}
+          <div>
+            <Label>Expira em</Label>
+            <Input type="date" value={form.expira_em} onChange={e => setForm({ ...form, expira_em: e.target.value })} disabled={form.metodo_pagamento === 'isento'} />
+          </div>
           <div><Label>Observações</Label><Textarea value={form.observacoes} onChange={e => setForm({ ...form, observacoes: e.target.value })} rows={2} /></div>
         </div>
         <DialogFooter>
