@@ -11,19 +11,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { CarreiraPaywall } from '@/components/carreira/CarreiraPaywall';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { trackInitiateCheckout, trackSubscribe, pushDataLayer } from '@/lib/fbPixel';
+import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
 
 export default function CarreiraPlanos() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const { data: perfil } = useQuery({
-    queryKey: ['perfil-atleta-planos', user?.id],
-    queryFn: async () => {
-      const { data } = await supabase.from('perfil_atleta').select('crianca_id, nome').eq('user_id', user!.id).limit(1);
-      return data?.[0] || null;
-    },
-    enabled: !!user?.id,
-  });
+  // Um responsável pode ter mais de um atleta cadastrado (irmãos) -- usa a
+  // mesma criança "ativa" do seletor em vez de pegar um perfil qualquer
+  // (antes não tinha nem ordenação, então o plano exibido era imprevisível).
+  const { perfilAtivo: perfil } = useCriancaAtiva(user?.id);
 
   const { data: crianca } = useQuery({
     queryKey: ['crianca-planos', perfil?.crianca_id],

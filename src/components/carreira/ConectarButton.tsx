@@ -7,9 +7,13 @@ import { toast } from 'sonner';
 import { UserPlus, Check, Clock, Loader2, UserMinus, MapPin } from 'lucide-react';
 
 async function getDisplayName(userId: string): Promise<string> {
-  const { data: atleta } = await supabase.from('perfil_atleta').select('nome').eq('user_id', userId).maybeSingle();
-  if (atleta?.nome) return atleta.nome;
-  const { data: rede } = await supabase.from('perfis_rede').select('nome').eq('user_id', userId).maybeSingle();
+  // .limit(1) em vez de .maybeSingle(): um responsável pode ter mais de um
+  // perfil_atleta (irmãos) -- .maybeSingle() erroraria com 2+ linhas.
+  const { data: atletas } = await supabase.from('perfil_atleta').select('nome').eq('user_id', userId)
+    .order('created_at', { ascending: true }).limit(1);
+  if (atletas?.[0]?.nome) return atletas[0].nome;
+  const { data: rede } = await supabase.from('perfis_rede').select('nome').eq('user_id', userId)
+    .order('created_at', { ascending: false }).limit(1).maybeSingle();
   return rede?.nome || 'Alguém';
 }
 

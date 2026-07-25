@@ -2,11 +2,15 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
 import { toast } from 'sonner';
 
 async function getDisplayName(userId: string): Promise<string> {
-  const { data: atleta } = await supabase.from('perfil_atleta').select('nome').eq('user_id', userId).maybeSingle();
-  if (atleta?.nome) return atleta.nome;
+  // .limit(1) em vez de .maybeSingle(): um responsável pode ter mais de um
+  // perfil_atleta (irmãos) -- .maybeSingle() erroraria com 2+ linhas.
+  const { data: atletas } = await supabase.from('perfil_atleta').select('nome').eq('user_id', userId)
+    .order('created_at', { ascending: true }).limit(1);
+  if (atletas?.[0]?.nome) return atletas[0].nome;
   const { data: rede } = await supabase.from('perfis_rede').select('nome').eq('user_id', userId).maybeSingle();
   return rede?.nome || 'Alguém';
 }
@@ -140,26 +144,20 @@ export function generateSlug(nome: string): string {
     + '-' + Math.random().toString(36).substring(2, 8);
 }
 
-// Hook to get current user's athlete profile
+// Hook to get current user's athlete profile.
+// Um responsável pode ter mais de um filho cadastrado (irmãos) -- isso
+// resolve pro filho "ativo" (ver useCriancaAtiva.ts) em vez de simplesmente
+// pegar qualquer perfil, o que erraria (PostgREST rejeita .maybeSingle()
+// com mais de 1 linha) assim que um segundo perfil existir pro mesmo user_id.
 export function useMyPerfilAtleta() {
   const { user } = useAuth();
+  const { perfilAtivo, isLoading, refetchPerfis } = useCriancaAtiva(user?.id);
 
-  return useQuery({
-    queryKey: ['meu-perfil-atleta', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-
-      const { data, error } = await supabase
-        .from('perfil_atleta')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data as PerfilAtleta | null;
-    },
-    enabled: !!user?.id,
-  });
+  return {
+    data: perfilAtivo,
+    isLoading,
+    refetch: refetchPerfis,
+  };
 }
 
 // Hook to get athlete profile by slug (public)

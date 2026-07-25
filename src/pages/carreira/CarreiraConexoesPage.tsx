@@ -8,20 +8,24 @@ import logoCarreira from '@/assets/logo-carreira-id-dark.png';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
+import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
 
 export default function CarreiraConexoesPage() {
   const { sessionUserId: currentUserId, loading } = useCarreiraSession();
-  const [mySlug, setMySlug] = useState<string | null>(null);
+  const [mySlugRede, setMySlugRede] = useState<string | null>(null);
   const { theme } = useCarreiraTheme();
+  // Um responsável pode ter mais de um atleta cadastrado (irmãos) -- usa a
+  // criança ativa do seletor em vez de .maybeSingle() puro, que erroraria
+  // com 2+ perfis pro mesmo user_id.
+  const { perfilAtivo } = useCriancaAtiva(currentUserId);
+  const mySlug = perfilAtivo?.slug || mySlugRede;
 
   useEffect(() => {
     if (!currentUserId) return;
-    supabase.from('perfil_atleta').select('slug').eq('user_id', currentUserId).maybeSingle().then(({ data: pa }) => {
-      if (pa?.slug) { setMySlug(pa.slug); return; }
-      supabase.from('perfis_rede').select('slug').eq('user_id', currentUserId).maybeSingle().then(({ data: pr }) => {
-        setMySlug(pr?.slug || null);
+    supabase.from('perfis_rede').select('slug').eq('user_id', currentUserId)
+      .order('created_at', { ascending: false }).limit(1).maybeSingle().then(({ data: pr }) => {
+        setMySlugRede(pr?.slug || null);
       });
-    });
   }, [currentUserId]);
 
   if (loading) {

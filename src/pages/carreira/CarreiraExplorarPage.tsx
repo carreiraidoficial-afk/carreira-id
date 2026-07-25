@@ -17,6 +17,7 @@ import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
+import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { useSEO } from '@/hooks/useSEO';
 
@@ -42,25 +43,6 @@ function useMyPerfilRede(userId?: string | null) {
       const { data, error } = await supabase
         .from('perfis_rede')
         .select('id, slug, tipo, convite_codigo, nome, foto_url')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!userId,
-  });
-}
-
-function useMyPerfilAtletaBySession(userId?: string | null) {
-  return useQuery({
-    queryKey: ['meu-perfil-atleta-session', userId],
-    queryFn: async () => {
-      if (!userId) return null;
-      const { data, error } = await supabase
-        .from('perfil_atleta')
-        .select('id, nome, foto_url, slug')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -267,7 +249,7 @@ export default function CarreiraExplorarPage() {
   const { sessionUserId, loading: sessionLoading } = useCarreiraSession();
   const navigate = useNavigate();
   const { theme } = useCarreiraTheme();
-  const { data: meuPerfil, isLoading: perfilLoading } = useMyPerfilAtletaBySession(sessionUserId);
+  const { perfilAtivo: meuPerfil, isLoading: perfilLoading } = useCriancaAtiva(sessionUserId);
   const { data: meuPerfilRede, isLoading: perfilRedeLoading } = useMyPerfilRede(sessionUserId);
   const { data: connectionIds = [] } = useMyConnections(sessionUserId);
   const { data: connectionsCount = 0 } = useConnectionsCount(sessionUserId);
@@ -393,13 +375,10 @@ export default function CarreiraExplorarPage() {
                   )}
                 </Button>
                 <Button variant="outline" size="sm" className="h-8 text-xs" onClick={async () => {
-                  const { data: pa } = await supabase
-                    .from('perfil_atleta')
-                    .select('slug')
-                    .eq('user_id', sessionUserId!)
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .maybeSingle();
+                  // Usa a criança ativa já resolvida (meuPerfil) em vez de
+                  // reconsultar "o perfil mais recente" -- respeita a mesma
+                  // seleção do seletor de irmãos.
+                  if (meuPerfil?.slug) { navigate(carreiraPath(`/${meuPerfil.slug}`)); return; }
                   const { data: pr } = await supabase
                     .from('perfis_rede')
                     .select('slug')
@@ -407,8 +386,7 @@ export default function CarreiraExplorarPage() {
                     .order('created_at', { ascending: false })
                     .limit(1)
                     .maybeSingle();
-                  const slug = pa?.slug || pr?.slug;
-                  if (slug) navigate(carreiraPath(`/${slug}`));
+                  if (pr?.slug) navigate(carreiraPath(`/${pr.slug}`));
                   else navigate(carreiraPath(`/perfil/${sessionUserId}`));
                 }}>
                   Meu Perfil

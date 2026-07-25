@@ -56,24 +56,28 @@ export default function PerfilPage() {
       // Se for um perfil legado "pai_responsavel", o perfil_atleta (quando ja existe)
       // e a fonte de verdade — evita mostrar o banner de migracao pra quem ja migrou
       // e evita deixar criar um segundo perfil de atleta duplicado.
+      // .limit(1) em vez de .maybeSingle() puro: um responsável pode ter mais
+      // de um perfil_atleta (irmãos) -- .maybeSingle() erroraria com 2+ linhas.
       if (redeData && (redeData as any).tipo === 'pai_responsavel') {
-        const { data: atletaDoUser } = await supabase
+        const { data: atletasDoUser } = await supabase
           .from('perfil_atleta')
           .select('slug')
           .eq('user_id', userId!)
-          .maybeSingle();
-        if (atletaDoUser?.slug) return { type: 'atleta_redirect' as const, slug: atletaDoUser.slug };
+          .order('created_at', { ascending: true })
+          .limit(1);
+        if (atletasDoUser?.[0]?.slug) return { type: 'atleta_redirect' as const, slug: atletasDoUser[0].slug };
       }
 
       if (redeData) return { type: 'rede' as const, data: redeData };
 
-      const { data: atletaData, error: atletaError } = await supabase
+      const { data: atletasData, error: atletaError } = await supabase
         .from('perfil_atleta')
         .select('slug')
         .eq('user_id', userId!)
-        .maybeSingle();
+        .order('created_at', { ascending: true })
+        .limit(1);
       if (atletaError) throw atletaError;
-      if (atletaData?.slug) return { type: 'atleta_redirect' as const, slug: atletaData.slug };
+      if (atletasData?.[0]?.slug) return { type: 'atleta_redirect' as const, slug: atletasData[0].slug };
 
       return null;
     },
@@ -158,10 +162,11 @@ export default function PerfilPage() {
                   .from('perfil_atleta')
                   .select('slug')
                   .eq('user_id', redeProfile.user_id)
-                  .maybeSingle()
+                  .order('created_at', { ascending: true })
+                  .limit(1)
                   .then(({ data }) => {
-                    if (data?.slug) {
-                      navigate(carreiraPath(`/${data.slug}`), { replace: true });
+                    if (data?.[0]?.slug) {
+                      navigate(carreiraPath(`/${data[0].slug}`), { replace: true });
                     } else {
                       window.location.reload();
                     }

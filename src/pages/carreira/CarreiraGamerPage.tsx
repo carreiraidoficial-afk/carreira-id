@@ -18,27 +18,30 @@ import { useCarreiraRanking } from '@/hooks/useCarreiraRanking';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
 import { useCarreiraPlano } from '@/hooks/useCarreiraPlano';
 import { FeatureGate } from '@/components/carreira/FeatureGate';
+import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
 
 export default function CarreiraGamerPage() {
   const { sessionUserId: currentUserId, loading: sessionLoading } = useCarreiraSession();
   const navigate = useNavigate();
   const { theme: carreiraTheme, isDarkTheme, setDarkTheme } = useCarreiraTheme();
 
-  const { data: perfilData } = useQuery({
-    queryKey: ['liga-page-accent', currentUserId],
+  // Um responsável pode ter mais de um atleta cadastrado (irmãos) -- usa a
+  // criança "ativa" do seletor em vez de sempre pegar a mais antiga.
+  const { perfilAtivo } = useCriancaAtiva(currentUserId);
+  const { data: perfilRede } = useQuery({
+    queryKey: ['liga-page-perfil-rede', currentUserId],
     queryFn: async () => {
       if (!currentUserId) return null;
-      const { data: pa } = await supabase.from('perfil_atleta').select('cor_destaque, slug, crianca_id').eq('user_id', currentUserId).order('created_at', { ascending: true }).limit(1).maybeSingle();
-      const { data: pr } = await supabase.from('perfis_rede').select('slug').eq('user_id', currentUserId).order('created_at', { ascending: true }).limit(1).maybeSingle();
-      return { accentColor: pa?.cor_destaque || '#3b82f6', slug: pa?.slug || pr?.slug || null, criancaId: pa?.crianca_id || null };
+      const { data } = await supabase.from('perfis_rede').select('slug').eq('user_id', currentUserId).order('created_at', { ascending: true }).limit(1).maybeSingle();
+      return data;
     },
-    enabled: !!currentUserId,
+    enabled: !!currentUserId && !perfilAtivo,
   });
 
-  const accentColor = perfilData?.accentColor || '#3b82f6';
-  const mySlug = perfilData?.slug || null;
+  const accentColor = perfilAtivo?.cor_destaque || '#3b82f6';
+  const mySlug = perfilAtivo?.slug || perfilRede?.slug || null;
   const { data: ranking } = useCarreiraRanking();
-  const { plano, temAcesso } = useCarreiraPlano(perfilData?.criancaId || null);
+  const { plano, temAcesso } = useCarreiraPlano(perfilAtivo?.crianca_id || null);
   const { data: niveis } = useNiveisConfig();
 
   if (sessionLoading) {

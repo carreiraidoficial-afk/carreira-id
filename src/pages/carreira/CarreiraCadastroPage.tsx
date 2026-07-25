@@ -26,6 +26,8 @@ import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { trackCompleteRegistration, trackProfileCreated, trackInitiateCheckout, trackSubscribe, pushDataLayer } from '@/lib/fbPixel';
 import { salvarPendingRef, processarConviteRef } from '@/lib/processar-convite-ref';
 import { TERMOS_VERSAO } from '@/lib/termosVersao';
+import { pickCriancaAtiva } from '@/hooks/useCriancaAtiva';
+import type { PerfilAtleta } from '@/hooks/useCarreiraData';
 
 type Step = 'tutorial' | 'auth' | 'recuperar-senha' | 'profile-type' | 'profile-form';
 
@@ -65,6 +67,9 @@ export default function CarreiraCadastroPage() {
   const refParam = searchParams.get('ref') as 'torcedor' | 'atleta' | 'rede' | null;
   const refConviteCodigo = searchParams.get('c');
   const refAtletaSlug = searchParams.get('a');
+  // Cadastro intencional de mais um atleta (irmãos) pra um responsável que já
+  // tem perfil -- ligado ao botão "Adicionar outro atleta" no painel.
+  const wantsNewProfile = searchParams.get('novo') === '1';
 
   const [step, setStep] = useState<Step>('tutorial');
   const [isLogin, setIsLogin] = useState(false);
@@ -177,21 +182,20 @@ export default function CarreiraCadastroPage() {
         console.error('Erro ao verificar role admin:', err);
       }
 
-      // Check if user wants to create an additional profile (query param)
-      const wantsNewProfile = new URLSearchParams(window.location.search).get('novo') === '1';
-
       try {
         if (!wantsNewProfile) {
-          const { data: perfilAtleta } = await supabase
+          // Um responsável pode ter mais de um atleta cadastrado (irmãos) --
+          // busca todos e respeita a última criança selecionada no seletor,
+          // em vez de sempre cair na criada mais recentemente.
+          const { data: perfisAtleta } = await supabase
             .from('perfil_atleta')
-            .select('id, slug')
+            .select('*')
             .eq('user_id', session.user.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+            .order('created_at', { ascending: true });
 
-          if (perfilAtleta?.slug) {
-            navigate(carreiraPath(`/${perfilAtleta.slug}`), { replace: true });
+          const perfilAtivo = pickCriancaAtiva((perfisAtleta || []) as PerfilAtleta[], session.user.id);
+          if (perfilAtivo?.slug) {
+            navigate(carreiraPath(`/${perfilAtivo.slug}`), { replace: true });
             return true;
           }
 
@@ -242,7 +246,7 @@ export default function CarreiraCadastroPage() {
       subscription.unsubscribe();
       clearTimeout(timeout);
     };
-  }, [navigate, inviteCode]);
+  }, [navigate, inviteCode, wantsNewProfile]);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -270,15 +274,14 @@ export default function CarreiraCadastroPage() {
           trackCompleteRegistration('email');
           pushDataLayer('login', { method: 'email' });
           setUserId(data.user.id);
-          const { data: perfilAtleta } = await supabase
+          const { data: perfisAtleta } = await supabase
             .from('perfil_atleta')
-            .select('id, slug')
+            .select('*')
             .eq('user_id', data.user.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          if (perfilAtleta?.slug) {
-            navigate(carreiraPath(`/${perfilAtleta.slug}`), { replace: true });
+            .order('created_at', { ascending: true });
+          const perfilAtivo = pickCriancaAtiva((perfisAtleta || []) as PerfilAtleta[], data.user.id);
+          if (perfilAtivo?.slug) {
+            navigate(carreiraPath(`/${perfilAtivo.slug}`), { replace: true });
           } else {
             const { data: perfilRede } = await supabase
               .from('perfis_rede')
@@ -794,6 +797,7 @@ export default function CarreiraCadastroPage() {
             inviteCode={inviteCode}
             onBack={() => setStep('profile-type')}
             onComplete={handleProfileCreated}
+            allowMultiple={wantsNewProfile}
           />
         )}
 

@@ -1,10 +1,9 @@
 import { Navigate, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { CarreiraLayout } from '@/components/layout/CarreiraLayout';
 import { CreatePerfilForm } from '@/components/carreira/CreatePerfilForm';
 import { PerfilHeader } from '@/components/carreira/PerfilHeader';
 import { CarreiraTimeline } from '@/components/carreira/CarreiraTimeline';
+import { SeletorCrianca } from '@/components/carreira/SeletorCrianca';
 import { useCarreiraPlano } from '@/hooks/useCarreiraPlano';
 import { PLANOS } from '@/config/carreiraPlanos';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
@@ -13,26 +12,13 @@ import { Loader2, Crown, Zap } from 'lucide-react';
 import { TutorialAutoShow } from '@/components/carreira/TutorialAutoShow';
 import { TutorialHelpButton } from '@/components/carreira/TutorialHelpButton';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
-import type { PerfilAtleta } from '@/hooks/useCarreiraData';
+import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
 
 export default function CarreiraLinkedinPage() {
   const { sessionUserId, loading: sessionLoading } = useCarreiraSession();
   const navigate = useNavigate();
 
-  const { data: perfil, isLoading: perfilLoading } = useQuery({
-    queryKey: ['meu-perfil-atleta', sessionUserId],
-    queryFn: async () => {
-      if (!sessionUserId) return null;
-      const { data, error } = await supabase
-        .from('perfil_atleta')
-        .select('*')
-        .eq('user_id', sessionUserId)
-        .maybeSingle();
-      if (error) throw error;
-      return data as PerfilAtleta | null;
-    },
-    enabled: !!sessionUserId,
-  });
+  const { perfilAtivo: perfil, isLoading: perfilLoading, perfis, selecionarCrianca } = useCriancaAtiva(sessionUserId);
 
   const criancaId = perfil?.crianca_id || null;
   const { plano, isLoading: planoLoading } = useCarreiraPlano(criancaId);
@@ -64,6 +50,9 @@ export default function CarreiraLinkedinPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {perfil && (
+              <SeletorCrianca perfis={perfis} perfilAtivoId={perfil?.crianca_id || null} onSelecionar={selecionarCrianca} />
+            )}
             <TutorialHelpButton tipoPerfil="atleta_filho" />
           {perfil && !planoLoading && (
             <button

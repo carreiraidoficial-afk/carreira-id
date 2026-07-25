@@ -110,10 +110,12 @@ export default function CarreiraAdminGamificacaoPage() {
             if (pr?.nome) nome = pr.nome;
           }
 
-          // Fallback: perfil_atleta
+          // Fallback: perfil_atleta. .limit(1) em vez de .maybeSingle() puro:
+          // um responsável pode ter mais de um perfil_atleta (irmãos).
           if (!nome || nome === 'Usuario') {
             const { data: pa } = await supabase
-              .from('perfil_atleta').select('nome').eq('user_id', user.user_id).maybeSingle();
+              .from('perfil_atleta').select('nome').eq('user_id', user.user_id)
+              .order('created_at', { ascending: true }).limit(1).maybeSingle();
             if (pa?.nome) nome = pa.nome;
           }
 
@@ -614,6 +616,8 @@ function ConvitesManager() {
                 .from('perfil_atleta')
                 .select('nome, slug')
                 .eq('user_id', c.convidado_user_id)
+                .order('created_at', { ascending: true })
+                .limit(1)
                 .maybeSingle();
               if (paInvitee) {
                 inviteeName = paInvitee.nome;

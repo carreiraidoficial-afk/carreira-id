@@ -17,6 +17,9 @@ interface Props {
   inviteCode: string | null;
   onBack: () => void;
   onComplete: () => void | Promise<void>;
+  /** Permite cadastrar um atleta mesmo que o responsável já tenha outro
+   * (irmãos). Sem isso, o form bloqueia um segundo cadastro por engano. */
+  allowMultiple?: boolean;
 }
 
 import { MODALIDADES, CATEGORIAS_BASE as CATEGORIAS } from '@/constants/esportes';
@@ -33,7 +36,7 @@ function generateSlug(name: string): string {
     + '-' + Math.random().toString(36).substring(2, 6);
 }
 
-export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onComplete }: Props) {
+export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onComplete, allowMultiple = false }: Props) {
   const [nome, setNome] = useState('');
   const [nomeResponsavel, setNomeResponsavel] = useState(defaultName || '');
   const [dataNascimento, setDataNascimento] = useState('');
@@ -105,19 +108,23 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
     setIsLoading(true);
     console.log('[AtletaFilhoForm] Validação OK, criando perfil...');
     try {
-      // Check if user already has a perfil_atleta (prevent duplicates)
-      const { data: existingPerfil } = await supabase
-        .from('perfil_atleta')
-        .select('id, slug')
-        .eq('user_id', userId)
-        .limit(1)
-        .maybeSingle();
+      // Bloqueia duplicata só quando NÃO for um cadastro intencional de mais
+      // um atleta (irmãos) -- ver allowMultiple, ligado ao botão "Adicionar
+      // outro atleta" no painel do responsável.
+      if (!allowMultiple) {
+        const { data: existingPerfil } = await supabase
+          .from('perfil_atleta')
+          .select('id, slug')
+          .eq('user_id', userId)
+          .limit(1)
+          .maybeSingle();
 
-      if (existingPerfil) {
-        toast.info('Você já possui um perfil de atleta cadastrado. Redirecionando...', { duration: 4000 });
-        setIsLoading(false);
-        await onComplete();
-        return;
+        if (existingPerfil) {
+          toast.info('Você já possui um perfil de atleta cadastrado. Redirecionando...', { duration: 4000 });
+          setIsLoading(false);
+          await onComplete();
+          return;
+        }
       }
 
       // 1. Create crianca record (generate ID client-side to avoid SELECT after INSERT,

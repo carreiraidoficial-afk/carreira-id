@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Check, Zap, Share2, Gift } from 'lucide-react';
 import { LevelIcon } from './LevelIcon';
 import { useGamificacao, getLevelProgress, getLevelTitle, getLevelIcon, getLevelColor, getNextLevelXp } from '@/hooks/useGamificacaoData';
+import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -43,22 +44,24 @@ async function copyToClipboard(text: string): Promise<boolean> {
 export function GamificacaoHeroCard({ accentColor: propAccentColor }: GamificacaoHeroCardProps) {
   const { gamificacao, niveis, isLoading, userId } = useGamificacao();
   const [copied, setCopied] = useState(false);
+  // Um responsável pode ter mais de um atleta cadastrado (irmãos) -- usa a
+  // criança ativa do seletor em vez de .maybeSingle() puro em perfil_atleta,
+  // que erroraria com 2+ perfis pro mesmo user_id.
+  const { perfilAtivo } = useCriancaAtiva(userId);
 
   const { data: perfil } = useQuery({
-    queryKey: ['gamificacao-perfil', userId],
+    queryKey: ['gamificacao-perfil', userId, perfilAtivo?.crianca_id],
     queryFn: async () => {
       if (!userId) return null;
-      const { data: pa } = await supabase
-        .from('perfil_atleta')
-        .select('cor_destaque, slug')
-        .eq('user_id', userId)
-        .maybeSingle();
+      const pa = perfilAtivo ? { cor_destaque: perfilAtivo.cor_destaque, slug: perfilAtivo.slug } : null;
       const { data: pr } = await supabase
         .from('perfis_rede')
         .select('convite_codigo, slug')
         .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
-      
+
       let conviteCodigo = pr?.convite_codigo || null;
       
       // If no convite_codigo exists, generate one and PERSIST it

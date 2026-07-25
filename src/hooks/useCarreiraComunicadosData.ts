@@ -145,20 +145,24 @@ export function useMyCarreiraComunicados() {
         .eq('user_id', userId);
       const lidos = new Set((leituras || []).map((l: any) => l.comunicado_id));
 
-      // Get user's profile type to filter
-      const { data: perfilAtleta } = await supabase
+      // Get user's profile type to filter. Um responsável pode ter mais de
+      // um perfil_atleta (irmãos) -- .limit(1) em vez de .maybeSingle() puro,
+      // que erroraria com 2+ linhas; aqui só importa SE existe algum.
+      const { data: perfisAtleta } = await supabase
         .from('perfil_atleta')
         .select('id')
         .eq('user_id', userId)
-        .maybeSingle();
+        .limit(1);
       const { data: perfilRede } = await supabase
         .from('perfis_rede')
         .select('tipo')
         .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       const myTypes: string[] = [];
-      if (perfilAtleta) myTypes.push('atleta_filho');
+      if (perfisAtleta && perfisAtleta.length > 0) myTypes.push('atleta_filho');
       if (perfilRede) myTypes.push(perfilRede.tipo);
 
       // Filter comunicados targeted at me

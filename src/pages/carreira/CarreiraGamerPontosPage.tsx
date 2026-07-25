@@ -6,27 +6,19 @@ import { Card } from '@/components/ui/card';
 import { ArrowLeft, TableProperties, Loader2 } from 'lucide-react';
 import logoCarreira from '@/assets/logo-carreira-id-dark.png';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
+import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
 
 export default function CarreiraGamerPontosPage() {
   const { sessionUserId: currentUserId, loading: sessionLoading } = useCarreiraSession();
   const navigate = useNavigate();
   const { theme: carreiraTheme, isDarkTheme, setDarkTheme } = useCarreiraTheme();
 
-  const { data: perfilData } = useQuery({
-    queryKey: ['liga-page-accent', currentUserId],
-    queryFn: async () => {
-      if (!currentUserId) return null;
-      const { data: pa } = await supabase.from('perfil_atleta').select('cor_destaque, slug').eq('user_id', currentUserId).order('created_at', { ascending: true }).limit(1).maybeSingle();
-      return { accentColor: pa?.cor_destaque || '#3b82f6', slug: pa?.slug || null };
-    },
-    enabled: !!currentUserId,
-  });
-
-  const accentColor = perfilData?.accentColor || '#3b82f6';
+  // Um responsável pode ter mais de um atleta cadastrado (irmãos) -- usa a
+  // criança "ativa" do seletor em vez de sempre pegar a mais antiga.
+  const { perfilAtivo } = useCriancaAtiva(currentUserId);
+  const accentColor = perfilAtivo?.cor_destaque || '#3b82f6';
 
   if (sessionLoading) {
     return (

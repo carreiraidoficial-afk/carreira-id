@@ -283,10 +283,15 @@ function useProfileBySlug(slug: string) {
         // perfil_atleta is the source of truth (jornada, histórico, etc.); perfis_rede pai_responsavel
         // is a legacy duplicate that breaks the timeline.
         if ((redeData as any).tipo === 'pai_responsavel' && (redeData as any).user_id) {
+          // .limit(1) em vez de .maybeSingle() puro: um responsável pode ter
+          // mais de um perfil_atleta (irmãos) -- .maybeSingle() erroraria com
+          // 2+ linhas.
           const { data: atletaDoUser } = await supabase
             .from('perfil_atleta')
             .select('*')
             .eq('user_id', (redeData as any).user_id)
+            .order('created_at', { ascending: true })
+            .limit(1)
             .maybeSingle();
           if (atletaDoUser) return { type: 'atleta' as const, ...atletaDoUser } as UnifiedProfile;
         }
@@ -362,9 +367,12 @@ export default function CarreiraPerfilPage() {
       const uid = session?.user?.id ?? null;
       setCurrentUserId(uid);
       if (uid) {
-        // Fetch my slug for bottom nav
-        const { data: pa } = await supabase.from('perfil_atleta').select('slug').eq('user_id', uid).maybeSingle();
-        const { data: pr } = await supabase.from('perfis_rede').select('slug').eq('user_id', uid).maybeSingle();
+        // Fetch my slug for bottom nav. .limit(1) em vez de .maybeSingle()
+        // puro: um responsável pode ter mais de um perfil_atleta (irmãos).
+        const { data: pa } = await supabase.from('perfil_atleta').select('slug').eq('user_id', uid)
+          .order('created_at', { ascending: true }).limit(1).maybeSingle();
+        const { data: pr } = await supabase.from('perfis_rede').select('slug').eq('user_id', uid)
+          .order('created_at', { ascending: false }).limit(1).maybeSingle();
         setMySlug(pa?.slug || pr?.slug || null);
       }
     });
@@ -380,16 +388,22 @@ export default function CarreiraPerfilPage() {
   useEffect(() => {
     if (!currentUserId || !perfil || isOwner || perfil.type !== 'atleta') return;
     const trackView = async () => {
-      // Get viewer info from both tables, prioritizing perfis_rede for identity
+      // Get viewer info from both tables, prioritizing perfis_rede for identity.
+      // .limit(1) em vez de .maybeSingle() puro: um responsável pode ter mais
+      // de um perfil_atleta (irmãos).
       const { data: viewerRede } = await supabase
         .from('perfis_rede')
         .select('tipo, nome, foto_url')
         .eq('user_id', currentUserId)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
       const { data: viewerAtleta } = await supabase
         .from('perfil_atleta')
         .select('nome, foto_url')
         .eq('user_id', currentUserId)
+        .order('created_at', { ascending: true })
+        .limit(1)
         .maybeSingle();
       
       const viewerFoto = viewerRede?.foto_url || viewerAtleta?.foto_url || null;
@@ -684,8 +698,10 @@ export default function CarreiraPerfilPage() {
                   if (mySlug) {
                     navigate(carreiraPath(`/${mySlug}`));
                   } else {
-                    const { data: pa } = await supabase.from('perfil_atleta').select('slug').eq('user_id', currentUserId!).maybeSingle();
-                    const { data: pr } = await supabase.from('perfis_rede').select('slug').eq('user_id', currentUserId!).maybeSingle();
+                    const { data: pa } = await supabase.from('perfil_atleta').select('slug').eq('user_id', currentUserId!)
+                      .order('created_at', { ascending: true }).limit(1).maybeSingle();
+                    const { data: pr } = await supabase.from('perfis_rede').select('slug').eq('user_id', currentUserId!)
+                      .order('created_at', { ascending: false }).limit(1).maybeSingle();
                     const foundSlug = pa?.slug || pr?.slug;
                     if (foundSlug) navigate(carreiraPath(`/${foundSlug}`));
                     else navigate(carreiraPath(`/perfil/${currentUserId}`));
@@ -1041,8 +1057,10 @@ export default function CarreiraPerfilPage() {
                     .from('perfil_atleta')
                     .select('slug')
                     .eq('user_id', perfil.user_id)
+                    .order('created_at', { ascending: true })
+                    .limit(1)
                     .maybeSingle();
-                  
+
                   if (data?.slug) {
                     navigate(carreiraPath(`/${data.slug}`), { replace: true });
                   } else {
