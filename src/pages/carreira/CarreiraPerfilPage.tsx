@@ -14,6 +14,7 @@ import { CreatePostForm } from '@/components/carreira/CreatePostForm';
 import { PostCard } from '@/components/carreira/PostCard';
 import { EditPerfilRedeDialog } from '@/components/carreira/EditPerfilRedeDialog';
 import { EditPerfilDialog } from '@/components/carreira/EditPerfilDialog';
+import { EditConfiguracoesDialog } from '@/components/carreira/EditConfiguracoesDialog';
 // EditContaDialog removed — unified into EditPerfilRedeDialog
 import { ConectarButton } from '@/components/carreira/ConectarButton';
 import { MigrarPerfilBanner } from '@/components/carreira/MigrarPerfilBanner';
@@ -32,7 +33,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, UserX, MapPin, Trophy, Share2, User, UserPlus, UserCheck, Users, Copy, Check, Search, School, X, LogOut, Pencil, Instagram, Globe, Phone, Eye, Zap } from 'lucide-react';
+import { Loader2, ArrowLeft, UserX, MapPin, Trophy, Share2, User, UserPlus, UserCheck, Users, Copy, Check, Search, School, X, LogOut, Pencil, Instagram, Globe, Phone, Eye, Zap, Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useSEO } from '@/hooks/useSEO';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -351,6 +352,7 @@ export default function CarreiraPerfilPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const { theme: carreiraTheme, isDarkTheme, setDarkTheme } = useCarreiraTheme();
   const isOwner = !!(currentUserId && perfil && currentUserId === perfil.user_id);
   const isAnonymous = !currentUserId;
@@ -693,7 +695,10 @@ export default function CarreiraPerfilPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* overflow-x-auto como rede de segurança: em telas muito estreitas,
+              se os botões ainda não couberem, só esse trecho rola pro lado
+              em vez de esticar a página inteira (o bug original). */}
+          <div className="flex items-center gap-2 overflow-x-auto">
             {currentUserId && (
               <>
                 <NotificacoesBell accentColor={accentColor} />
@@ -703,7 +708,7 @@ export default function CarreiraPerfilPage() {
                   compact
                   className="hidden sm:flex"
                 />
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 shrink-0">
                   {/* Mostra sempre que o usuário logado tiver algum perfil próprio ou
                       colaborado -- não só quando está vendo o SEU perfil (uma mãe
                       colaboradora vendo o perfil de um dos filhos que ela colabora
@@ -719,7 +724,7 @@ export default function CarreiraPerfilPage() {
                       }}
                     />
                   )}
-                  <Button variant="outline" size="sm" className="h-8 text-xs"
+                  <Button variant="outline" size="sm" className="h-8 text-xs px-2 sm:px-3"
                     style={{ borderColor: `${accentColor}50`, color: accentColor }}
                     onClick={async () => {
                   if (mySlug) {
@@ -734,14 +739,20 @@ export default function CarreiraPerfilPage() {
                     else navigate(carreiraPath(`/perfil/${currentUserId}`));
                   }
                   }}>
-                    Meu Perfil
+                    <User className="w-3 h-3 sm:hidden" />
+                    <span className="hidden sm:inline">Meu Perfil</span>
                   </Button>
                   {isOwner && (
-                    <Button variant="outline" size="sm" className="h-8 text-xs gap-1" style={{ borderColor: `${accentColor}50`, color: accentColor }} onClick={() => setEditDialogOpen(true)}>
-                      <Pencil className="w-3 h-3" />
-                      <span className="hidden sm:inline">Editar Perfil</span>
-                      <span className="sm:hidden">Editar</span>
-                    </Button>
+                    <>
+                      <Button variant="outline" size="sm" className="h-8 text-xs px-2 sm:px-3 gap-1" style={{ borderColor: `${accentColor}50`, color: accentColor }} onClick={() => setEditDialogOpen(true)}>
+                        <Pencil className="w-3 h-3" />
+                        <span className="hidden sm:inline">Editar Perfil</span>
+                      </Button>
+                      <Button variant="outline" size="sm" className="h-8 text-xs px-2 sm:px-3 gap-1" style={{ borderColor: `${accentColor}50`, color: accentColor }} onClick={() => setConfigDialogOpen(true)}>
+                        <Settings className="w-3 h-3" />
+                        <span className="hidden sm:inline">Configurações</span>
+                      </Button>
+                    </>
                   )}
                 </div>
                 <Button variant="ghost" size="sm" className="text-muted-foreground hidden sm:flex h-8 text-xs" onClick={async () => {
@@ -1423,6 +1434,13 @@ export default function CarreiraPerfilPage() {
         <EditPerfilDialog
           open={editDialogOpen}
           onOpenChange={setEditDialogOpen}
+          perfil={perfil as any}
+        />
+      )}
+      {isOwner && !isRedeProfile && perfil && (
+        <EditConfiguracoesDialog
+          open={configDialogOpen}
+          onOpenChange={setConfigDialogOpen}
           perfil={perfil as any}
         />
       )}

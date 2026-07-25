@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Camera, Loader2, MapPin, Share2, Trophy, User, Pencil, Instagram, UserPlus, UserCheck, ShieldCheck, Footprints, Crown } from 'lucide-react';
+import { Camera, Loader2, MapPin, Share2, Trophy, User, Pencil, Instagram, UserPlus, UserCheck, ShieldCheck, Footprints, Crown, Settings } from 'lucide-react';
 import { PerfilAtleta, useUpdatePerfilAtleta, uploadProfilePhoto, useIsFollowing, useToggleFollow } from '@/hooks/useCarreiraData';
 import { useCarreiraExperiencias } from '@/hooks/useCarreiraExperienciasData';
 import { useCarreiraPlano } from '@/hooks/useCarreiraPlano';
@@ -22,6 +22,7 @@ function calcularCategoria(dataNascimento: string): string {
 }
 import { toast } from 'sonner';
 import { EditPerfilDialog } from './EditPerfilDialog';
+import { EditConfiguracoesDialog } from './EditConfiguracoesDialog';
 import { CompartilharPerfilDialog } from './CompartilharPerfilDialog';
 
 function TorcedoresCount({ perfilId }: { perfilId: string }) {
@@ -50,6 +51,7 @@ export function PerfilHeader({ perfil, isOwner = false }: PerfilHeaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
 
   // Fallback to direct Supabase auth for Carreira-only users
@@ -272,15 +274,26 @@ export function PerfilHeader({ perfil, isOwner = false }: PerfilHeaderProps) {
             {/* Actions */}
             <div className="flex gap-1.5 mt-3 flex-wrap justify-center">
               {isOwner && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs px-2.5"
-                  onClick={() => setEditDialogOpen(true)}
-                  style={{ borderColor: `${perfil.cor_destaque || '#3b82f6'}50`, color: perfil.cor_destaque || '#3b82f6' }}
-                >
-                  <Pencil className="w-3 h-3 mr-1" />Editar perfil
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs px-2.5"
+                    onClick={() => setEditDialogOpen(true)}
+                    style={{ borderColor: `${perfil.cor_destaque || '#3b82f6'}50`, color: perfil.cor_destaque || '#3b82f6' }}
+                  >
+                    <Pencil className="w-3 h-3 mr-1" />Editar perfil
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs px-2.5"
+                    onClick={() => setConfigDialogOpen(true)}
+                    style={{ borderColor: `${perfil.cor_destaque || '#3b82f6'}50`, color: perfil.cor_destaque || '#3b82f6' }}
+                  >
+                    <Settings className="w-3 h-3 mr-1" />Configurações
+                  </Button>
+                </>
               )}
 
               {!isOwner && user && (
@@ -303,6 +316,7 @@ export function PerfilHeader({ perfil, isOwner = false }: PerfilHeaderProps) {
       </Card>
 
       {isOwner && <EditPerfilDialog open={editDialogOpen} onOpenChange={setEditDialogOpen} perfil={perfil} />}
+      {isOwner && <EditConfiguracoesDialog open={configDialogOpen} onOpenChange={setConfigDialogOpen} perfil={perfil} />}
       <CompartilharPerfilDialog
         open={shareOpen}
         onOpenChange={setShareOpen}
