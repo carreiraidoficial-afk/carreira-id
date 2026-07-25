@@ -44,6 +44,8 @@ import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { useCarreiraRanking } from '@/hooks/useCarreiraRanking';
 import { useAnonymousGate } from '@/hooks/useAnonymousGate';
+import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
+import { SeletorCrianca } from '@/components/carreira/SeletorCrianca';
 import { LockedSection } from '@/components/carreira/AnonymousFeedCTA';
 
 const TYPE_LABELS: Record<string, string> = {
@@ -356,6 +358,10 @@ export default function CarreiraPerfilPage() {
   const temAcessoCurriculoPdf = temAcessoAtleta('curriculo_pdf');
   const { trackProfileView, requireAuth } = useAnonymousGate();
   const [mySlug, setMySlug] = useState<string | null>(null);
+  // Um responsável pode ter mais de um atleta cadastrado (irmãos) -- expõe o
+  // seletor bem onde o dono realmente costuma ver o próprio perfil (aqui),
+  // não só na tela "Minha Carreira" em /minha.
+  const { perfis: meusPerfis, perfilAtivo: meuPerfilAtivo, selecionarCrianca } = useCriancaAtiva(currentUserId);
 
   // Track profile view for anonymous visitors (drives gating after N profiles)
   useEffect(() => {
@@ -692,6 +698,17 @@ export default function CarreiraPerfilPage() {
                   className="hidden sm:flex"
                 />
                 <div className="flex items-center gap-1.5">
+                  {isOwner && meuPerfilAtivo && (
+                    <SeletorCrianca
+                      perfis={meusPerfis}
+                      perfilAtivoId={meuPerfilAtivo.crianca_id || null}
+                      onSelecionar={(criancaId) => {
+                        selecionarCrianca(criancaId);
+                        const escolhido = meusPerfis.find((p) => p.crianca_id === criancaId);
+                        if (escolhido?.slug) navigate(carreiraPath(`/${escolhido.slug}`));
+                      }}
+                    />
+                  )}
                   <Button variant="outline" size="sm" className="h-8 text-xs"
                     style={{ borderColor: `${accentColor}50`, color: accentColor }}
                     onClick={async () => {
