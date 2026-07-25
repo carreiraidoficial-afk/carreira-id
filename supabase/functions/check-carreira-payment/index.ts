@@ -40,20 +40,41 @@ Deno.serve(async (req) => {
         `${ASAAS_API_URL}/subscriptions/${payment_id}/payments?limit=1`,
         { headers: { 'Content-Type': 'application/json', 'access_token': ASAAS_API_KEY } }
       );
-      const listData = await listResp.json();
+      const rawText = await listResp.text();
+      console.log('Asaas subscriptions/payments raw response:', listResp.status, rawText);
+      let listData: any;
+      try {
+        listData = JSON.parse(rawText);
+      } catch (parseErr) {
+        console.error('Failed to parse Asaas response as JSON. HTTP status:', listResp.status, 'Body:', rawText);
+        return new Response(
+          JSON.stringify({ error: 'Resposta inválida da Asaas', asaasStatus: listResp.status, asaasBody: rawText.slice(0, 500) }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       paymentData = listData.data?.[0] || {};
     } else {
       const response = await fetch(`${ASAAS_API_URL}/payments/${payment_id}`, {
         headers: { 'Content-Type': 'application/json', 'access_token': ASAAS_API_KEY },
       });
-      paymentData = await response.json();
+      const rawText = await response.text();
+      console.log('Asaas payments/:id raw response:', response.status, rawText);
+      try {
+        paymentData = JSON.parse(rawText);
+      } catch (parseErr) {
+        console.error('Failed to parse Asaas response as JSON. HTTP status:', response.status, 'Body:', rawText);
+        return new Response(
+          JSON.stringify({ error: 'Resposta inválida da Asaas', asaasStatus: response.status, asaasBody: rawText.slice(0, 500) }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       if (paymentData?.subscription) asaasSubscriptionId = paymentData.subscription;
     }
     console.log('Payment status:', JSON.stringify(paymentData));
 
     if (paymentData?.errors) {
       return new Response(
-        JSON.stringify({ error: 'Erro ao verificar pagamento' }),
+        JSON.stringify({ error: 'Erro ao verificar pagamento', asaasErrors: paymentData.errors }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -106,6 +127,45 @@ Deno.serve(async (req) => {
           console.error('Error activating subscription by gateway_id:', updateError2);
         } else {
           console.log('Subscription activated by gateway_subscription_id:', pendingSub.id);
+        }
+      }
+
+      // Assinatura família: o gateway_subscription_id fica em
+      // carreira_assinaturas_familia (não numa linha individual) -- ativa a
+      // família e cascateia pra todas as linhas satélite dos filhos cobertos.
+      const { data: pendingFamilia } = await supabase
+        .from('carreira_assinaturas_familia')
+        .select('id')
+        .in('gateway_subscription_id', matchIds)
+        .eq('status', 'pendente')
+        .maybeSingle();
+
+      if (pendingFamilia) {
+        const metodo = paymentData.billingType === 'PIX' ? 'pix' : 'cartao_credito';
+        await supabase
+          .from('carreira_assinaturas_familia')
+          .update({
+            status: 'ativa',
+            metodo_pagamento: metodo,
+            inicio_em: new Date().toISOString().split('T')[0],
+            expira_em: expiraEm.toISOString().split('T')[0],
+          })
+          .eq('id', pendingFamilia.id);
+
+        const { error: cascadeError } = await supabase
+          .from('carreira_assinaturas')
+          .update({
+            status: 'ativa',
+            metodo_pagamento: metodo,
+            inicio_em: new Date().toISOString().split('T')[0],
+            expira_em: expiraEm.toISOString().split('T')[0],
+          })
+          .eq('familia_id', pendingFamilia.id);
+
+        if (cascadeError) {
+          console.error('Error cascading familia activation to satellite rows:', cascadeError);
+        } else {
+          console.log('Familia activated and cascaded:', pendingFamilia.id);
         }
       }
     }

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2, Mail, Lock, User, ArrowLeft, LogOut, Rocket, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowLeft, LogOut, Rocket, Eye, EyeOff, CheckCircle2, Sparkles } from 'lucide-react';
 import { z } from 'zod';
 import { ProfileTypeSelector, type ProfileType } from '@/components/carreira/ProfileTypeSelector';
 import { ProfileTypeForm } from '@/components/carreira/ProfileTypeForm';
@@ -14,8 +14,9 @@ import { AtletaFilhoForm } from '@/components/carreira/AtletaFilhoForm';
 import { OnboardingTutorial } from '@/components/carreira/OnboardingTutorial';
 
 import { CarreiraPaywall } from '@/components/carreira/CarreiraPaywall';
+import { CarreiraFamiliaCheckout } from '@/components/carreira/CarreiraFamiliaCheckout';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { PLANOS, PRECO_PREMIUM, TRIAL_DIAS } from '@/config/carreiraPlanos';
+import { PLANOS, PRECO_PREMIUM, PRECO_FAMILIA, TRIAL_DIAS } from '@/config/carreiraPlanos';
 import logoAtletaId from '@/assets/logo-atleta-id.png';
 import logoCarreiraId from '@/assets/logo-carreira-id-dark.png';
 import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
@@ -89,6 +90,10 @@ export default function CarreiraCadastroPage() {
   const [subscriptionConfirmed, setSubscriptionConfirmed] = useState(false);
   const [createdCriancaId, setCreatedCriancaId] = useState<string | null>(null);
   const [createdChildName, setCreatedChildName] = useState<string | null>(null);
+  const [showFamiliaOffer, setShowFamiliaOffer] = useState(false);
+  const [familiaOfferCriancaIds, setFamiliaOfferCriancaIds] = useState<string[]>([]);
+  const [familiaOfferCriancaNomes, setFamiliaOfferCriancaNomes] = useState<string[]>([]);
+  const [familiaCheckoutAberto, setFamiliaCheckoutAberto] = useState(false);
   const [profileSlug, setProfileSlug] = useState<string | null>(null);
   const [showPwaPopup, setShowPwaPopup] = useState(false);
   const [showPushPopup, setShowPushPopup] = useState(false);
@@ -451,6 +456,70 @@ export default function CarreiraCadastroPage() {
             }
           } catch (err) {
             console.error('Erro ao criar trial:', err);
+          }
+        }
+
+        // Se o responsável já tem assinatura família ATIVA, o novo atleta
+        // entra automaticamente nela (sem cobrança extra) -- substitui o
+        // trial individual recém-criado por uma linha satélite da família.
+        if (perfilAtleta.crianca_id) {
+          const { data: familiaAtiva } = await supabase
+            .from('carreira_assinaturas_familia')
+            .select('id, metodo_pagamento, inicio_em, expira_em')
+            .eq('user_id', userId)
+            .eq('status', 'ativa')
+            .maybeSingle();
+
+          if (familiaAtiva) {
+            await supabase.from('carreira_assinaturas')
+              .update({ status: 'cancelada', cancelada_em: new Date().toISOString() })
+              .eq('user_id', userId)
+              .eq('crianca_id', perfilAtleta.crianca_id)
+              .eq('status', 'trial');
+
+            await supabase.from('carreira_assinaturas').insert({
+              user_id: userId,
+              crianca_id: perfilAtleta.crianca_id,
+              plano: 'premium',
+              status: 'ativa',
+              familia_id: familiaAtiva.id,
+              metodo_pagamento: familiaAtiva.metodo_pagamento,
+              inicio_em: familiaAtiva.inicio_em,
+              expira_em: familiaAtiva.expira_em,
+            } as any);
+
+            toast.success(`${perfilAtleta.nome} já entrou no plano Família! 🎉`);
+            finishOnboarding(perfilAtleta.slug);
+            return;
+          }
+        }
+
+        // Se esse já é o 2º+ atleta desse responsável e ele ainda não tem
+        // assinatura família, oferece a migração antes do popup de trial
+        // individual -- é o momento em que a economia fica mais óbvia.
+        if (perfilAtleta.crianca_id) {
+          const { data: todosPerfis } = await supabase
+            .from('perfil_atleta')
+            .select('crianca_id, nome')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: true });
+
+          if (todosPerfis && todosPerfis.length >= 2) {
+            const { data: familiaExistente } = await supabase
+              .from('carreira_assinaturas_familia')
+              .select('id')
+              .eq('user_id', userId)
+              .in('status', ['ativa', 'pendente'])
+              .maybeSingle();
+
+            if (!familiaExistente) {
+              setFamiliaOfferCriancaIds(todosPerfis.map((p) => p.crianca_id).filter(Boolean) as string[]);
+              setFamiliaOfferCriancaNomes(todosPerfis.map((p) => p.nome));
+              setCreatedCriancaId(perfilAtleta.crianca_id);
+              setCreatedChildName(perfilAtleta.nome);
+              setShowFamiliaOffer(true);
+              return;
+            }
           }
         }
 
@@ -877,6 +946,67 @@ export default function CarreiraCadastroPage() {
                 pushDataLayer('purchase', { plan: 'premium' });
                 setShowSubscriptionPopup(false);
                 toast.success('Assinatura ativada! 🎉');
+                finishOnboarding();
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Oferta de assinatura Família ao cadastrar o 2º+ atleta -- some antes
+          do popup de trial individual, quando a economia fica mais óbvia. */}
+      <Dialog
+        open={showFamiliaOffer}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowFamiliaOffer(false);
+            setFamiliaCheckoutAberto(false);
+            setShowSubscriptionPopup(true);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md border max-h-[90vh] overflow-y-auto" style={{ backgroundColor: 'hsl(220 15% 10%)', borderColor: 'hsl(220 10% 20%)', color: 'hsl(0 0% 95%)' }}>
+          <DialogTitle className="sr-only">Assinatura Família</DialogTitle>
+          <DialogDescription className="sr-only">Migre para a assinatura família e economize</DialogDescription>
+
+          {!familiaCheckoutAberto ? (
+            <div className="text-center space-y-4 py-4">
+              <Sparkles className="w-12 h-12 mx-auto text-primary" />
+              <h3 className="text-xl font-bold">Agora você tem {familiaOfferCriancaNomes.length} atletas! 🎉</h3>
+              <p className="text-sm" style={{ color: 'hsl(0 0% 60%)' }}>
+                Um valor fixo de <strong className="text-primary">R$ {PRECO_FAMILIA.toFixed(2).replace('.', ',')}/mês</strong> libera o Premium para todos eles — {familiaOfferCriancaNomes.join(', ')} — hoje e no futuro.
+              </p>
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  style={{ borderColor: 'hsl(220 10% 25%)', color: 'hsl(0 0% 70%)' }}
+                  onClick={() => {
+                    setShowFamiliaOffer(false);
+                    setShowSubscriptionPopup(true);
+                  }}
+                >
+                  Agora não
+                </Button>
+                <Button
+                  className="flex-1 font-bold text-white"
+                  style={{ backgroundColor: PLANOS.premium.cor }}
+                  onClick={() => setFamiliaCheckoutAberto(true)}
+                >
+                  Assinar Família
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <CarreiraFamiliaCheckout
+              criancaIds={familiaOfferCriancaIds}
+              criancaNomes={familiaOfferCriancaNomes}
+              onClose={() => {
+                setFamiliaCheckoutAberto(false);
+              }}
+              onSubscribed={() => {
+                setShowFamiliaOffer(false);
+                setFamiliaCheckoutAberto(false);
                 finishOnboarding();
               }}
             />

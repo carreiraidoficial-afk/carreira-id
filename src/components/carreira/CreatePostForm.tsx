@@ -301,6 +301,7 @@ export function CreatePostForm({ perfil, perfilRedeId, perfilRedeNome, perfilRed
         imagens_urls: imageUrls,
         video_url: videoUrl,
         link_preview: displayLinkPreview || null,
+        criado_por: effectiveUserId,
       };
       if (perfilRedeId) {
         postData.perfil_rede_id = perfilRedeId;

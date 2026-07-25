@@ -17,6 +17,7 @@ import { Link } from 'react-router-dom';
 import { LinkPreviewCard } from './LinkPreviewCard';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { useAnonymousGate } from '@/hooks/useAnonymousGate';
+import { useColaboradorInfo } from '@/hooks/useCriancaAtiva';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -78,8 +79,17 @@ export function PostCard({ post, showAuthor = true, accentColor }: PostCardProps
   
   const isOwner = (perfilAtleta?.user_id === user?.id) || (perfilRede?.user_id === user?.id);
   const isAdmin = user?.role === 'admin';
-  const canManage = isOwner || isAdmin;
+  // Colaborador ativo (ex: mãe/pai com acesso concedido) também pode
+  // gerenciar posts do atleta, não só o dono exato do perfil.
+  const { data: minhaColaboracao } = useColaboradorInfo(perfilAtleta?.crianca_id, user?.id);
+  const souColaboradorAtivo = !!minhaColaboracao;
+  const canManage = isOwner || souColaboradorAtivo || isAdmin;
   const canEdit = canManage;
+
+  // "Postado por": mostra o nome de quem realmente publicou quando não foi
+  // o dono do perfil (ex: um colaborador postando pelo atleta).
+  const postadoPorOutraPessoa = !!post.criado_por && post.criado_por !== perfilAtleta?.user_id;
+  const { data: infoAutorPost } = useColaboradorInfo(perfilAtleta?.crianca_id, postadoPorOutraPessoa ? post.criado_por : null);
   const isEdited = post.updated_at && new Date(post.updated_at).getTime() - new Date(post.created_at).getTime() > 60_000;
   const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: ptBR });
   const hasAuthor = !!(perfilAtleta || perfilRede);
@@ -179,6 +189,9 @@ export function PostCard({ post, showAuthor = true, accentColor }: PostCardProps
                   )}
                   <span className="text-[11px] text-muted-foreground">
                     {timeAgo}{isEdited && <span className="ml-1 italic">(editado)</span>}
+                    {postadoPorOutraPessoa && infoAutorPost?.nome && (
+                      <span className="ml-1">· postado por {infoAutorPost.nome}</span>
+                    )}
                   </span>
                 </div>
               </div>

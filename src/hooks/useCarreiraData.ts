@@ -91,6 +91,7 @@ export interface PostAtleta {
   id: string;
   autor_id: string;
   perfil_rede_id?: string | null;
+  criado_por?: string | null;
   titulo?: string | null;
   texto: string;
   imagens_urls: string[];
@@ -392,7 +393,7 @@ export function useCreatePostAtleta() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { autor_id?: string; perfil_rede_id?: string; titulo?: string; texto: string; imagens_urls?: string[]; video_url?: string; link_preview?: any }) => {
+    mutationFn: async (data: { autor_id?: string; perfil_rede_id?: string; titulo?: string; texto: string; imagens_urls?: string[]; video_url?: string; link_preview?: any; criado_por?: string }) => {
       const insertData: any = {
         titulo: data.titulo?.trim() || null,
         texto: data.texto,
@@ -400,6 +401,9 @@ export function useCreatePostAtleta() {
         video_url: data.video_url || null,
         visibilidade: 'publico',
         link_preview: data.link_preview || null,
+        // Quem de fato publicou -- pode ser diferente do dono do perfil
+        // quando um colaborador (ex: mãe/pai) posta pelo atleta.
+        criado_por: data.criado_por || null,
       };
       if (data.perfil_rede_id) {
         insertData.perfil_rede_id = data.perfil_rede_id;

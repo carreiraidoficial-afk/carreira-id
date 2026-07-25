@@ -44,7 +44,7 @@ import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { useCarreiraRanking } from '@/hooks/useCarreiraRanking';
 import { useAnonymousGate } from '@/hooks/useAnonymousGate';
-import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
+import { useCriancaAtiva, useColaboradorInfo } from '@/hooks/useCriancaAtiva';
 import { SeletorCrianca } from '@/components/carreira/SeletorCrianca';
 import { LockedSection } from '@/components/carreira/AnonymousFeedCTA';
 
@@ -362,6 +362,12 @@ export default function CarreiraPerfilPage() {
   // seletor bem onde o dono realmente costuma ver o próprio perfil (aqui),
   // não só na tela "Minha Carreira" em /minha.
   const { perfis: meusPerfis, perfilAtivo: meuPerfilAtivo, selecionarCrianca } = useCriancaAtiva(currentUserId);
+  // Colaborador ativo (mãe/pai/o próprio atleta com outro login) pode postar
+  // e registrar jornada, mas NÃO deve virar "isOwner" pras seções restritas
+  // (editar perfil, peneiras, assinatura etc) -- por isso um flag à parte.
+  const { data: minhaColaboracao } = useColaboradorInfo(perfil?.type === 'atleta' ? perfil.crianca_id : null, currentUserId);
+  const souColaboradorAtivo = !!minhaColaboracao;
+  const canManageTimeline = isOwner || souColaboradorAtivo;
 
   // Track profile view for anonymous visitors (drives gating after N profiles)
   useEffect(() => {
@@ -698,7 +704,11 @@ export default function CarreiraPerfilPage() {
                   className="hidden sm:flex"
                 />
                 <div className="flex items-center gap-1.5">
-                  {isOwner && meuPerfilAtivo && (
+                  {/* Mostra sempre que o usuário logado tiver algum perfil próprio ou
+                      colaborado -- não só quando está vendo o SEU perfil (uma mãe
+                      colaboradora vendo o perfil de um dos filhos que ela colabora
+                      também precisa poder trocar pro outro filho por aqui). */}
+                  {meuPerfilAtivo && (
                     <SeletorCrianca
                       perfis={meusPerfis}
                       perfilAtivoId={meuPerfilAtivo.crianca_id || null}
@@ -1229,7 +1239,7 @@ export default function CarreiraPerfilPage() {
               </div>
             )}
             {perfil.type === 'atleta' ? (
-              <CarreiraTimeline perfil={perfil as any} isOwner={isOwner} />
+              <CarreiraTimeline perfil={perfil as any} isOwner={canManageTimeline} />
             ) : (
               <RedeTimelineInline perfilId={perfil.id} isOwner={isOwner} perfilNome={perfil.nome} perfilFoto={perfil.foto_url} accentColor={accentColor} />
             )}
@@ -1416,6 +1426,7 @@ export default function CarreiraPerfilPage() {
           perfil={perfil as any}
         />
       )}
+
     </div>
   );
 }

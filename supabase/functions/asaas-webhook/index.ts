@@ -48,6 +48,78 @@ serve(async (req) => {
       const paymentFailedEvents = ["PAYMENT_OVERDUE", "PAYMENT_DELETED"];
 
       if (paymentConfirmedEvents.includes(event) || paymentFailedEvents.includes(event)) {
+        // Assinatura família: o gateway_subscription_id fica em
+        // carreira_assinaturas_familia, não numa linha individual -- checa
+        // esse caminho primeiro e, se bater, ativa/cancela em cascata pras
+        // linhas satélite dos filhos cobertos.
+        const familiaMatchIds = [payment.subscription, payment.id].filter(Boolean) as string[];
+        if (familiaMatchIds.length > 0) {
+          const { data: familia } = await supabase
+            .from("carreira_assinaturas_familia")
+            .select("id, user_id, status")
+            .in("gateway_subscription_id", familiaMatchIds)
+            .maybeSingle();
+
+          if (familia) {
+            if (paymentConfirmedEvents.includes(event)) {
+              const wasPending = familia.status === "pendente";
+              const expiraEm = new Date();
+              expiraEm.setDate(expiraEm.getDate() + 30);
+              const metodo = payment.billingType === "CREDIT_CARD" ? "cartao_credito" : "pix";
+
+              await supabase.from("carreira_assinaturas_familia").update({
+                status: "ativa",
+                metodo_pagamento: metodo,
+                inicio_em: new Date().toISOString().split("T")[0],
+                expira_em: expiraEm.toISOString().split("T")[0],
+              }).eq("id", familia.id);
+
+              await supabase.from("carreira_assinaturas").update({
+                status: "ativa",
+                metodo_pagamento: metodo,
+                inicio_em: new Date().toISOString().split("T")[0],
+                expira_em: expiraEm.toISOString().split("T")[0],
+              }).eq("familia_id", familia.id);
+
+              if (wasPending) {
+                try {
+                  await fetch(`${supabaseUrl}/functions/v1/send-carreira-push`, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "apikey": supabaseServiceKey,
+                      "Authorization": `Bearer ${supabaseServiceKey}`,
+                    },
+                    body: JSON.stringify({
+                      user_ids: [familia.user_id],
+                      title: "✅ Pagamento confirmado!",
+                      body: "Sua assinatura Família do Carreira ID já está ativa.",
+                      url: "/minhas-assinaturas",
+                      tag: "pagamento-confirmado-familia",
+                    }),
+                  });
+                } catch (pushErr) {
+                  console.error("Erro ao enviar push de confirmação (família):", pushErr);
+                }
+              }
+
+              return new Response(
+                JSON.stringify({ success: true, familiaId: familia.id }),
+                { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              );
+            }
+
+            const novoStatus = event === "PAYMENT_OVERDUE" ? "inadimplente" : "cancelada";
+            await supabase.from("carreira_assinaturas_familia").update({ status: novoStatus }).eq("id", familia.id);
+            await supabase.from("carreira_assinaturas").update({ status: novoStatus }).eq("familia_id", familia.id);
+
+            return new Response(
+              JSON.stringify({ success: true, familiaId: familia.id }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        }
+
         let assinatura: { id: string; user_id: string; status: string } | null = null;
 
         if (payment.subscription) {

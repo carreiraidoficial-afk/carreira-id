@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, X, Eye, Instagram, Palette, Lock, Trash2, UserCircle, Save, CreditCard, ShieldCheck, Fingerprint, Smartphone, Bell, KeyRound, HelpCircle, ChevronRight } from 'lucide-react';
+import { Loader2, X, Eye, Instagram, Palette, Lock, Trash2, UserCircle, Save, CreditCard, ShieldCheck, Fingerprint, Smartphone, Bell, KeyRound, HelpCircle, ChevronRight, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
@@ -40,6 +40,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { ProfilePhotoUpload } from './ProfilePhotoUpload';
 import { DeleteAccountDialog } from './DeleteAccountDialog';
 import { AssinaturaCard } from './AssinaturaCard';
+import { ColaboradoresTab } from './ColaboradoresTab';
 import { toast } from 'sonner';
 
 const POSICOES = ['Goleiro', 'Zagueiro', 'Lateral', 'Volante', 'Meia', 'Atacante'];
@@ -195,12 +196,17 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
   const onSubmit = async (data: FormData) => {
     if (!isPlatformProfile && selectedModalidades.length === 0) return;
 
-    // Update crianca birth date if changed
+    // Update crianca birth date if changed. Upsert em vez de update cego --
+    // um update num id que não existe em `criancas` roda sem erro e não
+    // salva nada (foi exatamente o que aconteceu com um perfil vindo de uma
+    // migração manual de contas).
     if (perfil.crianca_id && data.data_nascimento) {
-      await supabase
+      const { error: criancaError } = await supabase
         .from('criancas')
-        .update({ data_nascimento: data.data_nascimento })
-        .eq('id', perfil.crianca_id);
+        .upsert({ id: perfil.crianca_id, nome: perfil.nome, data_nascimento: data.data_nascimento });
+      if (criancaError) {
+        toast.error('Erro ao salvar data de nascimento: ' + criancaError.message);
+      }
     }
 
     const updateData: any = {
@@ -237,17 +243,24 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
         </DialogHeader>
 
         <Tabs defaultValue="perfil" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="perfil">Dados do Atleta</TabsTrigger>
-            <TabsTrigger value="responsavel" className="flex items-center gap-1.5">
+          {/* Rolagem horizontal em vez de grid de largura fixa -- com 5 abas,
+              um grid dividindo a largura igualmente espremia texto+ícone e
+              cortava tudo em telas de celular estreitas. */}
+          <TabsList className="flex w-full overflow-x-auto justify-start gap-1 h-auto p-1">
+            <TabsTrigger value="perfil" className="shrink-0 text-xs sm:text-sm px-2.5 sm:px-3">Dados do Atleta</TabsTrigger>
+            <TabsTrigger value="responsavel" className="shrink-0 flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3">
               <UserCircle className="w-3.5 h-3.5" />
               Responsável
             </TabsTrigger>
-            <TabsTrigger value="assinatura" className="flex items-center gap-1.5">
+            <TabsTrigger value="assinatura" className="shrink-0 flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3">
               <CreditCard className="w-3.5 h-3.5" />
               Assinatura
             </TabsTrigger>
-            <TabsTrigger value="conta" className="flex items-center gap-1.5">
+            <TabsTrigger value="usuarios" className="shrink-0 flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3">
+              <Users className="w-3.5 h-3.5" />
+              Usuários
+            </TabsTrigger>
+            <TabsTrigger value="conta" className="shrink-0 flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3">
               <ShieldCheck className="w-3.5 h-3.5" />
               Conta
             </TabsTrigger>
@@ -485,6 +498,10 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">Assinatura disponível apenas para perfis de atleta.</p>
             )}
+          </TabsContent>
+
+          <TabsContent value="usuarios" className="mt-4">
+            <ColaboradoresTab userId={perfil.user_id} />
           </TabsContent>
 
           <TabsContent value="conta" className="mt-4 space-y-6">

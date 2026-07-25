@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, QrCode, Crown, Zap, ArrowUp, ArrowDown, Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { CreditCard, QrCode, Crown, Zap, ArrowUp, ArrowDown, Loader2, CheckCircle2, XCircle, Clock, Sparkles } from 'lucide-react';
 import { PLANOS, CarreiraPlano, planoNivel, normalizePlano } from '@/config/carreiraPlanos';
 import { toast } from 'sonner';
 import { useState } from 'react';
@@ -25,7 +25,7 @@ interface Assinatura {
   valor: number | null;
   inicio_em: string;
   expira_em: string | null;
-  
+  familia_id: string | null;
 }
 
 const PLANO_ICONS: Record<string, React.ReactNode> = {
@@ -48,7 +48,7 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
     queryFn: async (): Promise<Assinatura | null> => {
       const { data, error } = await supabase
         .from('carreira_assinaturas')
-        .select('id, plano, status, metodo_pagamento, valor, inicio_em, expira_em')
+        .select('id, plano, status, metodo_pagamento, valor, inicio_em, expira_em, familia_id')
         .eq('user_id', userId)
         .eq('crianca_id', criancaId)
         .in('status', ['ativa', 'trial'])
@@ -149,6 +149,9 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
   const currentPlanoInfo = PLANOS[currentPlano];
   const metodo = assinatura?.metodo_pagamento ? METODO_LABELS[assinatura.metodo_pagamento] : null;
   const currentLevel = planoNivel(currentPlano);
+  // Assinatura satélite de uma assinatura Família -- cobrança e cancelamento
+  // são geridos em conjunto, não faz sentido upgrade/downgrade individual aqui.
+  const souFamilia = assinatura?.status !== 'trial' && !!assinatura?.familia_id;
 
   // Available plan changes
   const availablePlans = (['base', 'premium'] as CarreiraPlano[]).filter(p => p !== currentPlano);
@@ -218,6 +221,23 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
         )}
       </div>
 
+      {/* Assinatura família: cobrança/cancelamento são geridos em conjunto pra
+          todos os filhos cobertos, não faz sentido upgrade/downgrade aqui */}
+      {souFamilia ? (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
+          <p className="text-xs text-foreground font-medium flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
+            Faz parte da assinatura Família
+          </p>
+          <p className="text-[10px] text-muted-foreground">
+            A cobrança e o cancelamento são feitos em conjunto para todos os filhos cobertos.
+          </p>
+          <Button size="sm" variant="outline" className="w-full h-7 text-[10px]" onClick={() => navigate(carreiraPath('/minhas-assinaturas'))}>
+            Gerenciar assinatura família
+          </Button>
+        </div>
+      ) : (
+      <>
       {/* Confirmation dialog */}
       {confirmAction && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
@@ -309,6 +329,8 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
             </button>
           )}
         </div>
+      )}
+      </>
       )}
     </Card>
   );

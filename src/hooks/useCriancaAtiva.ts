@@ -5,23 +5,50 @@ import type { PerfilAtleta } from '@/hooks/useCarreiraData';
 
 const STORAGE_PREFIX = 'carreira_crianca_ativa_id';
 
+export interface MeuPerfilAtleta extends PerfilAtleta {
+  /** true quando o acesso vem de uma colaboração concedida (não é o dono) */
+  souColaborador?: boolean;
+}
+
 /**
- * Lista todos os perfis de atleta (filhos) de um responsável, ordenados por
- * data de criação. Um responsável pode ter mais de um filho cadastrado
- * (irmãos), cada um com seu próprio perfil_atleta/crianca_id.
+ * Lista todos os perfis de atleta que esse usuário pode acessar: os que ele
+ * é dono (filhos cadastrados por ele) MAIS os que ele colabora (acesso
+ * concedido por outro responsável -- ex: mãe/pai/o próprio atleta com login
+ * próprio). Ordenado por data de criação do vínculo.
  */
 export function useMinhasCriancas(userId: string | null | undefined) {
   return useQuery({
     queryKey: ['minhas-criancas', userId],
-    queryFn: async (): Promise<PerfilAtleta[]> => {
+    queryFn: async (): Promise<MeuPerfilAtleta[]> => {
       if (!userId) return [];
-      const { data, error } = await supabase
+
+      const { data: proprios, error } = await supabase
         .from('perfil_atleta')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: true });
       if (error) throw error;
-      return (data || []) as PerfilAtleta[];
+
+      const { data: colaboracoes } = await supabase
+        .from('perfil_atleta_colaboradores')
+        .select('crianca_id')
+        .eq('user_id', userId)
+        .eq('status', 'ativo');
+
+      const criancaIdsColaborados = (colaboracoes || []).map((c) => c.crianca_id).filter(Boolean) as string[];
+      const jaTenho = new Set((proprios || []).map((p) => p.crianca_id));
+      const idsParaBuscar = criancaIdsColaborados.filter((id) => !jaTenho.has(id));
+
+      let colaborados: MeuPerfilAtleta[] = [];
+      if (idsParaBuscar.length > 0) {
+        const { data: perfisColaborados } = await supabase
+          .from('perfil_atleta')
+          .select('*')
+          .in('crianca_id', idsParaBuscar);
+        colaborados = ((perfisColaborados || []) as PerfilAtleta[]).map((p) => ({ ...p, souColaborador: true }));
+      }
+
+      return [...((proprios || []) as PerfilAtleta[]), ...colaborados];
     },
     enabled: !!userId,
   });
@@ -45,6 +72,30 @@ function getSavedCriancaId(userId: string): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Verifica se o usuário logado é um colaborador ATIVO de uma criança
+ * específica (não o dono) -- usado pra liberar botões de editar/apagar post
+ * e pra exibir "postado por {nome}" quando quem publicou não foi o dono.
+ */
+export function useColaboradorInfo(criancaId: string | null | undefined, userId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['colaborador-info', criancaId, userId],
+    queryFn: async () => {
+      if (!criancaId || !userId) return null;
+      const { data } = await supabase
+        .from('perfil_atleta_colaboradores')
+        .select('nome, status')
+        .eq('crianca_id', criancaId)
+        .eq('user_id', userId)
+        .eq('status', 'ativo')
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!criancaId && !!userId,
+    staleTime: 60_000,
+  });
 }
 
 /**

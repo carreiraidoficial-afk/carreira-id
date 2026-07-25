@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
-import type { PerfilAtleta } from '@/hooks/useCarreiraData';
+import type { MeuPerfilAtleta } from '@/hooks/useCriancaAtiva';
 
 interface SeletorCriancaProps {
-  perfis: PerfilAtleta[];
+  perfis: MeuPerfilAtleta[];
   perfilAtivoId: string | null;
   onSelecionar: (criancaId: string) => void;
 }
@@ -42,13 +42,16 @@ export function SeletorCrianca({ perfis, perfilAtivoId, onSelecionar }: SeletorC
             </Avatar>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{p.nome}</p>
-              {p.modalidade && <p className="text-[10px] text-muted-foreground truncate">{p.modalidade}</p>}
+              <p className="text-[10px] text-muted-foreground truncate">
+                {p.modalidade}{p.souColaborador && (p.modalidade ? ' · ' : '')}
+                {p.souColaborador && <span className="text-primary">Colaborador</span>}
+              </p>
             </div>
             {p.crianca_id === perfilAtivoId && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        {perfis.length > 1 && (
+        {perfis.filter((p) => !p.souColaborador).length > 1 && (
           <DropdownMenuItem onClick={() => navigate(carreiraPath('/minhas-assinaturas'))} className="gap-2">
             <CreditCard className="w-4 h-4" />
             <span className="text-sm font-medium">Gerenciar assinaturas</span>

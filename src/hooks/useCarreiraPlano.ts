@@ -52,7 +52,7 @@ export function useCarreiraPlano(criancaId: string | null): CarreiraPlanoResult 
   const { data: dynamicLimits } = useDynamicPlanLimits();
 
   const { data: plano, isLoading } = useQuery({
-    queryKey: ['carreira-plano', user?.id, criancaId],
+    queryKey: ['carreira-plano', criancaId],
     queryFn: async (): Promise<CarreiraPlano> => {
       let userId = user?.id;
       if (!userId) {
@@ -72,11 +72,14 @@ export function useCarreiraPlano(criancaId: string | null): CarreiraPlanoResult 
 
       if (whitelist && whitelist.length > 0) return 'premium';
 
-      // Check active subscription OR active trial
+      // Check active subscription OR active trial -- filtra só por crianca_id
+      // (não pelo user_id de quem está vendo): o plano é da CRIANÇA, não da
+      // sessão atual. Sem isso, um colaborador (acesso delegado por outro
+      // responsável) nunca herdava os recursos Premium do atleta que ele
+      // colabora, porque o user_id da assinatura é sempre o do dono/pagante.
       const { data: assinatura } = await supabase
         .from('carreira_assinaturas')
         .select('plano, status, expira_em')
-        .eq('user_id', userId)
         .eq('crianca_id', criancaId)
         .in('status', ['ativa', 'trial'])
         .order('created_at', { ascending: false })
@@ -118,6 +121,36 @@ export function useCarreiraPlano(criancaId: string | null): CarreiraPlanoResult 
     },
     temPlano: (requerido: CarreiraPlano) => temAcessoAoPlano(planoAtual, requerido),
   };
+}
+
+export interface AssinaturaFamilia {
+  id: string;
+  status: string;
+  valor: number | null;
+  metodo_pagamento: string | null;
+  inicio_em: string | null;
+  expira_em: string | null;
+}
+
+/** Assinatura família ativa/pendente do responsável logado (cobre 2+ filhos com 1 valor fixo) */
+export function useAssinaturaFamilia(userId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['minha-assinatura-familia', userId],
+    queryFn: async (): Promise<AssinaturaFamilia | null> => {
+      if (!userId) return null;
+      const { data, error } = await supabase
+        .from('carreira_assinaturas_familia')
+        .select('id, status, valor, metodo_pagamento, inicio_em, expira_em')
+        .eq('user_id', userId)
+        .in('status', ['ativa', 'pendente'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userId,
+  });
 }
 
 /** Hook to check daily posts count for the current user */

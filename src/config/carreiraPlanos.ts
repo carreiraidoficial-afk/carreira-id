@@ -38,6 +38,8 @@ export interface PlanoInfo {
 
 /** Preço fixo do plano Premium (usado em toda a UI). */
 export const PRECO_PREMIUM = 12.0;
+/** Preço fixo da assinatura Família (cobre todos os filhos cadastrados, usado em toda a UI). */
+export const PRECO_FAMILIA = 19.9;
 /** Duração do trial gratuito, em dias. */
 export const TRIAL_DIAS = 7;
 
