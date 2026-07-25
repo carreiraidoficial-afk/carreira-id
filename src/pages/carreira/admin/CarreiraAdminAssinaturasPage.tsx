@@ -108,6 +108,44 @@ function useAdminAssinaturas(search: string) {
   });
 }
 
+// Calcula o status REAL de acesso de uma assinatura, do jeito que o app
+// calcula pra liberar/bloquear recursos (useCarreiraPlano.ts) -- em vez de
+// só repetir o texto bruto salvo no banco, que fica "Trial"/"Premium" pra
+// sempre mesmo depois do vencimento, até um admin editar manualmente.
+function getEfetivo(ass: any): { acessoAtivo: boolean; statusLabel: string; statusClass: string; planoEfetivo: string; venceu: boolean } {
+  const isIsento = ass.metodo_pagamento === 'isento';
+  const venceu = !!ass.expira_em && new Date(ass.expira_em) < new Date();
+
+  if (ass.status === 'ativa') {
+    const acessoAtivo = isIsento || !venceu;
+    return {
+      acessoAtivo,
+      statusLabel: acessoAtivo ? 'Ativa' : 'Vencida',
+      statusClass: acessoAtivo ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20',
+      planoEfetivo: acessoAtivo ? ass.plano_display : 'Base',
+      venceu: !acessoAtivo,
+    };
+  }
+  if (ass.status === 'trial') {
+    const acessoAtivo = !venceu;
+    return {
+      acessoAtivo,
+      statusLabel: acessoAtivo ? 'Trial' : 'Trial vencido',
+      statusClass: acessoAtivo ? 'bg-violet-500/10 text-violet-600 border-violet-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20',
+      planoEfetivo: acessoAtivo ? ass.plano_display : 'Base',
+      venceu: !acessoAtivo,
+    };
+  }
+  const labelMap: Record<string, string> = { cancelada: 'Cancelada', pendente: 'Pendente', expirada: 'Expirada' };
+  return {
+    acessoAtivo: false,
+    statusLabel: labelMap[ass.status] || ass.status,
+    statusClass: '',
+    planoEfetivo: 'Base',
+    venceu: false,
+  };
+}
+
 const METODO_ICON: Record<string, React.ReactNode> = {
   cartao_credito: <CreditCard className="w-3.5 h-3.5" />,
   pix: <QrCode className="w-3.5 h-3.5" />,
@@ -130,7 +168,7 @@ export default function CarreiraAdminAssinaturasPage() {
   const [deleting, setDeleting] = useState<any>(null);
   const [deletingLoading, setDeletingLoading] = useState(false);
   const [showIsencao, setShowIsencao] = useState(false);
-  const ativas = assinaturas?.filter((a: any) => a.status === 'ativa').length || 0;
+  const ativas = assinaturas?.filter((a: any) => getEfetivo(a).acessoAtivo).length || 0;
   const total = assinaturas?.length || 0;
 
   const handleManualRenewal = async () => {
@@ -223,7 +261,9 @@ export default function CarreiraAdminAssinaturasPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {assinaturas.map((ass: any) => (
+                  {assinaturas.map((ass: any) => {
+                    const efetivo = getEfetivo(ass);
+                    return (
                     <TableRow key={ass.id}>
                       <TableCell>
                         <div>
@@ -240,7 +280,12 @@ export default function CarreiraAdminAssinaturasPage() {
                       <TableCell>
                         <p className="text-xs text-muted-foreground">{ass.atleta_whatsapp || ass.user_telefone || '—'}</p>
                       </TableCell>
-                      <TableCell><Badge variant="outline" className="text-xs">{ass.plano_display}</Badge></TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">{efetivo.planoEfetivo}</Badge>
+                        {efetivo.planoEfetivo === 'Base' && ass.plano_display === 'Premium' && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5">contratou Premium</p>
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm font-medium">
                         {ass.metodo_pagamento === 'isento'
                           ? <span className="text-amber-600">Isento</span>
@@ -253,18 +298,8 @@ export default function CarreiraAdminAssinaturasPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={ass.status === 'ativa' ? 'default' : 'secondary'}
-                          className={
-                            ass.status === 'ativa' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-                            : ass.status === 'trial' ? 'bg-violet-500/10 text-violet-600 border-violet-500/20'
-                            : ''
-                          }>
-                          {ass.status === 'ativa' ? 'Ativa'
-                            : ass.status === 'trial' ? 'Trial'
-                            : ass.status === 'cancelada' ? 'Cancelada'
-                            : ass.status === 'pendente' ? 'Pendente'
-                            : ass.status === 'expirada' ? 'Expirada'
-                            : ass.status}
+                        <Badge variant={efetivo.acessoAtivo ? 'default' : 'secondary'} className={efetivo.statusClass}>
+                          {efetivo.statusLabel}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{format(new Date(ass.inicio_em), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
@@ -272,7 +307,7 @@ export default function CarreiraAdminAssinaturasPage() {
                         {ass.status === 'cancelada' && ass.cancelada_em
                           ? <span className="text-destructive">{format(new Date(ass.cancelada_em), 'dd/MM/yyyy', { locale: ptBR })}</span>
                           : ass.expira_em
-                            ? format(new Date(ass.expira_em), 'dd/MM/yyyy', { locale: ptBR })
+                            ? <span className={efetivo.venceu ? 'text-destructive' : ''}>{format(new Date(ass.expira_em), 'dd/MM/yyyy', { locale: ptBR })}</span>
                             : '—'}
                       </TableCell>
                       <TableCell className="text-right">
@@ -288,7 +323,8 @@ export default function CarreiraAdminAssinaturasPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
