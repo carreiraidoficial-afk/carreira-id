@@ -53,7 +53,7 @@ export default function CarreiraConexoesPage() {
       </header>
 
       <main className="container max-w-2xl px-4 py-6 pb-24 space-y-6">
-        <ConnectionsSection userId={currentUserId} currentUserId={currentUserId} />
+        <ConnectionsSection userId={currentUserId} currentUserId={currentUserId} perfilAtletaId={perfilAtivo?.id} />
       </main>
 
       <CarreiraBottomNav currentUserId={currentUserId} profileSlug={mySlug} />

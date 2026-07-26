@@ -26,11 +26,15 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
+import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
 
 export default function PerfilPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // Se quem está vendo também for responsável por atleta(s), pega o filho
+  // ativo do seletor -- pra conexões feitas daqui ficarem isoladas por filho.
+  const { perfilAtivo: meuPerfilAtivo } = useCriancaAtiva(currentUserId);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [historicoDialogOpen, setHistoricoDialogOpen] = useState(false);
   const [editingHistorico, setEditingHistorico] = useState<HistoricoProfissional | null>(null);
@@ -193,6 +197,7 @@ export default function PerfilPage() {
           currentUserId={currentUserId}
           accentColor={(redeProfile.dados_perfil as any)?.cor_destaque || '#3b82f6'}
           onEditProfile={isOwnProfile ? () => setEditDialogOpen(true) : undefined}
+          viewerPerfilAtletaId={meuPerfilAtivo?.id}
         >
         {(() => {
           const redeAccent = (redeProfile.dados_perfil as any)?.cor_destaque || '#3b82f6';

@@ -42,9 +42,13 @@ function TorcedoresCount({ perfilId }: { perfilId: string }) {
 interface PerfilHeaderProps {
   perfil: PerfilAtleta;
   isOwner?: boolean;
+  /** Perfil_atleta ativo de quem está vendo (o filho selecionado no seletor
+   * de irmãos de quem está logado), quando aplicável -- isola a conexão
+   * feita por esse visitante do outro filho dele. */
+  viewerPerfilAtletaId?: string | null;
 }
 
-export function PerfilHeader({ perfil, isOwner = false }: PerfilHeaderProps) {
+export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: PerfilHeaderProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const updatePerfil = useUpdatePerfilAtleta();
@@ -255,7 +259,7 @@ export function PerfilHeader({ perfil, isOwner = false }: PerfilHeaderProps) {
             {/* Stats */}
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <span><strong className="text-foreground">{perfil.followers_count || 0}</strong> seguidores</span>
-              <ConexoesCount userId={perfil.user_id} />
+              <ConexoesCount userId={perfil.user_id} perfilAtletaId={perfil.id} />
               <TorcedoresCount perfilId={perfil.id} />
             </div>
 
@@ -298,7 +302,12 @@ export function PerfilHeader({ perfil, isOwner = false }: PerfilHeaderProps) {
 
               {!isOwner && user && (
                 <>
-                  <ConectarButton targetUserId={perfil.user_id} currentUserId={user.id} />
+                  <ConectarButton
+                    targetUserId={perfil.user_id}
+                    currentUserId={user.id}
+                    targetPerfilAtletaId={perfil.id}
+                    sourcePerfilAtletaId={viewerPerfilAtletaId}
+                  />
                   <Button size="sm" className="h-7 text-xs px-2.5" variant={isFollowing ? 'outline' : 'default'}
                     onClick={handleFollow} disabled={toggleFollow.isPending}
                     style={!isFollowing ? { backgroundColor: perfil.cor_destaque || undefined } : undefined}>

@@ -24,24 +24,36 @@ const TYPE_LABELS: Record<string, string> = {
 interface Props {
   userId: string;
   currentUserId: string | null;
+  /** Perfil_atleta ativo (o filho selecionado no seletor de irmãos), quando
+   * aplicável -- isola conexões de cada atleta, sem vazar entre irmãos. */
+  perfilAtletaId?: string | null;
 }
 
-export function ConnectionsSection({ userId, currentUserId }: Props) {
+/** Uma linha de conexão pertence ao atleta ativo (ou é legada/sem distinção
+ * de irmão, coluna null) -- evita que o vínculo de um irmão vaze pro outro. */
+function pertenceAoAtivo(row: any, meuUserId: string, meuPerfilAtletaId: string | null | undefined): boolean {
+  const souSolicitante = row.solicitante_id === meuUserId;
+  const meuLado = souSolicitante ? row.solicitante_perfil_atleta_id : row.destinatario_perfil_atleta_id;
+  return !meuLado || meuLado === meuPerfilAtletaId;
+}
+
+export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Props) {
   const navigate = useNavigate();
   const [respondingId, setRespondingId] = useState<string | null>(null);
 
   const isOwnProfile = userId === currentUserId;
 
   const { data: connections, isLoading } = useQuery({
-    queryKey: ['user-connections', userId],
+    queryKey: ['user-connections', userId, perfilAtletaId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('rede_conexoes')
-        .select('solicitante_id, destinatario_id, unidade_nome')
+        .select('solicitante_id, destinatario_id, unidade_nome, solicitante_perfil_atleta_id, destinatario_perfil_atleta_id')
         .or(`solicitante_id.eq.${userId},destinatario_id.eq.${userId}`)
         .eq('status', 'aceita');
       if (error) throw error;
-      const connectionDetails = (data || []).map(c => ({
+      const propria = (data || []).filter((row) => pertenceAoAtivo(row, userId, perfilAtletaId));
+      const connectionDetails = propria.map(c => ({
         connectedUserId: c.solicitante_id === userId ? c.destinatario_id : c.solicitante_id,
         unidade_nome: (c as any).unidade_nome || null,
       }));
@@ -81,17 +93,18 @@ export function ConnectionsSection({ userId, currentUserId }: Props) {
   });
 
   const { data: pendingRequests } = useQuery({
-    queryKey: ['pending-connection-requests', userId],
+    queryKey: ['pending-connection-requests', userId, perfilAtletaId],
     queryFn: async () => {
       if (!isOwnProfile) return [];
       const { data, error } = await supabase
         .from('rede_conexoes')
-        .select('id, solicitante_id, unidade_nome')
+        .select('id, solicitante_id, unidade_nome, destinatario_perfil_atleta_id')
         .eq('destinatario_id', userId)
         .eq('status', 'pendente');
       if (error) throw error;
-      if (!data || data.length === 0) return [];
-      const senderIds = data.map(r => r.solicitante_id);
+      const minhas = (data || []).filter((r) => !r.destinatario_perfil_atleta_id || r.destinatario_perfil_atleta_id === perfilAtletaId);
+      if (minhas.length === 0) return [];
+      const senderIds = minhas.map(r => r.solicitante_id);
       const { data: redeProfiles2 } = await supabase
         .from('perfis_rede')
         .select('id, user_id, nome, tipo, foto_url')
@@ -117,7 +130,7 @@ export function ConnectionsSection({ userId, currentUserId }: Props) {
         }
       }
       // Return one entry per connection row (not per user) so unit info is preserved
-      return data.map(r => {
+      return minhas.map(r => {
         const profile = senderMap.get(r.solicitante_id);
         if (!profile) return null;
         return {
@@ -216,6 +229,7 @@ export function ConnectionsSection({ userId, currentUserId }: Props) {
         solicitante_id: currentUserId,
         destinatario_id: targetUserId,
         status: 'pendente',
+        solicitante_perfil_atleta_id: perfilAtletaId || null,
       } as any);
       if (error) throw error;
       toast.success('Solicitação enviada!');

@@ -164,7 +164,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
 
       // 3. Create perfil_atleta linked to crianca
       const slug = generateSlug(nome);
-      const { error: perfilError } = await supabase
+      const { data: novoPerfil, error: perfilError } = await supabase
         .from('perfil_atleta')
         .insert({
           user_id: userId,
@@ -182,7 +182,9 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
           tipo_documento: cleanDoc ? 'cpf' : null,
           telefone_whatsapp: cleanPhone || null,
           origem: 'carreira',
-        } as any);
+        } as any)
+        .select('id')
+        .single();
 
       if (perfilError) { console.error('[AtletaFilhoForm] Erro perfil:', perfilError); throw perfilError; }
       console.log('[AtletaFilhoForm] Perfil criado com slug:', slug);
@@ -205,6 +207,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
             solicitante_id: userId,
             destinatario_id: inviterProfile.user_id,
             status: 'aceita',
+            solicitante_perfil_atleta_id: novoPerfil?.id || null,
           });
         }
       }

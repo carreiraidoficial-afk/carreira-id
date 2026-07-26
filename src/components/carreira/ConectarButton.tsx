@@ -42,15 +42,31 @@ interface Props {
   isDono?: boolean;
   /** Pre-selected unit name — skips the dialog */
   unidadeNome?: string;
+  /**
+   * ID do perfil_atleta ATIVO de quem está conectando (o filho selecionado no
+   * seletor de irmãos), quando aplicável. Sem isso, a conexão fica "da conta"
+   * em vez de "do atleta" -- e um irmão herdaria conexão do outro.
+   */
+  sourcePerfilAtletaId?: string | null;
+  /** ID do perfil_atleta do alvo, quando o perfil visitado é de atleta */
+  targetPerfilAtletaId?: string | null;
 }
 
-export function ConectarButton({ targetUserId, currentUserId, accentColor = '#3b82f6', unidades, isDono, unidadeNome: preselectedUnidade }: Props) {
+/** Uma linha de conexão pertence ao atleta ativo (ou é legada/sem distinção
+ * de irmão, coluna null) -- evita que o vínculo de um irmão vaze pro outro. */
+function pertenceAoAtivo(row: any, meuUserId: string, meuPerfilAtletaId: string | null | undefined): boolean {
+  const souSolicitante = row.solicitante_id === meuUserId;
+  const meuLado = souSolicitante ? row.solicitante_perfil_atleta_id : row.destinatario_perfil_atleta_id;
+  return !meuLado || meuLado === meuPerfilAtletaId;
+}
+
+export function ConectarButton({ targetUserId, currentUserId, accentColor = '#3b82f6', unidades, isDono, unidadeNome: preselectedUnidade, sourcePerfilAtletaId, targetPerfilAtletaId }: Props) {
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [showUnidadeDialog, setShowUnidadeDialog] = useState(false);
 
   const { data: conexao, isLoading: statusLoading } = useQuery({
-    queryKey: ['conexao-status', currentUserId, targetUserId, preselectedUnidade || '__none__'],
+    queryKey: ['conexao-status', currentUserId, targetUserId, preselectedUnidade || '__none__', sourcePerfilAtletaId],
     queryFn: async () => {
       if (!currentUserId) return null;
       let query = supabase
@@ -67,15 +83,15 @@ export function ConectarButton({ targetUserId, currentUserId, accentColor = '#3b
       }
       const { data, error } = await query
         .order('updated_at', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(1);
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Erro ao buscar status da conexão:', error);
         return null;
       }
 
-      return data?.[0] ?? null;
+      const propria = (data || []).filter((row) => pertenceAoAtivo(row, currentUserId, sourcePerfilAtletaId));
+      return propria[0] ?? null;
     },
     enabled: !!currentUserId,
   });
@@ -103,6 +119,8 @@ export function ConectarButton({ targetUserId, currentUserId, accentColor = '#3b
       solicitante_id: currentUserId,
       destinatario_id: targetUserId,
       status: 'pendente',
+      solicitante_perfil_atleta_id: sourcePerfilAtletaId || null,
+      destinatario_perfil_atleta_id: targetPerfilAtletaId || null,
     };
     if (unidadeNome) {
       insertData.unidade_nome = unidadeNome;

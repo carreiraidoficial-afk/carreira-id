@@ -43,9 +43,12 @@ interface Props {
   onEditProfile?: () => void;
   accentColor?: string;
   children?: ReactNode;
+  /** Perfil_atleta ativo de quem está vendo (filho selecionado no seletor de
+   * irmãos de quem está logado), quando aplicável. */
+  viewerPerfilAtletaId?: string | null;
 }
 
-export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfile, accentColor, children }: Props) {
+export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfile, accentColor, children, viewerPerfilAtletaId }: Props) {
   const config = TYPE_CONFIG[perfil.tipo as ProfileType] || { label: perfil.tipo, icon: '👤', color: 'bg-muted text-muted-foreground' };
 
   const siteUrl = (perfil.site || perfil.dados_perfil?.site || perfil.dados_perfil?.portfolio || '').trim();
@@ -186,6 +189,7 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
                 <ConectarButton
                   targetUserId={perfil.user_id}
                   currentUserId={currentUserId}
+                  sourcePerfilAtletaId={viewerPerfilAtletaId}
                 />
               )}
             </div>
@@ -220,6 +224,7 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
                           currentUserId={currentUserId}
                           accentColor={accentColor}
                           unidadeNome={u.nome || nomeEscola}
+                          sourcePerfilAtletaId={viewerPerfilAtletaId}
                         />
                       )}
                     </div>

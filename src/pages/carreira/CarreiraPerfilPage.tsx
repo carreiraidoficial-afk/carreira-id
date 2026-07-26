@@ -446,26 +446,29 @@ export default function CarreiraPerfilPage() {
     enabled: !!perfil?.crianca_id,
   });
 
-  // Pending connection requests (only for own profile)
+  // Pending connection requests (only for own profile) -- filtra pelo
+  // perfil_atleta do perfil sendo visto agora, não pela conta inteira, pra
+  // não misturar solicitações endereçadas a um irmão com as do outro.
   const { data: pendingRequests } = useQuery({
-    queryKey: ['pending-connection-requests-sidebar', currentUserId],
+    queryKey: ['pending-connection-requests-sidebar', currentUserId, perfil?.id],
     queryFn: async () => {
       if (!currentUserId || !isOwner) return [];
       const { data, error } = await supabase
         .from('rede_conexoes')
-        .select('id, solicitante_id')
+        .select('id, solicitante_id, destinatario_perfil_atleta_id')
         .eq('destinatario_id', currentUserId)
         .eq('status', 'pendente');
       if (error) throw error;
-      if (!data || data.length === 0) return [];
-      const senderIds = data.map(r => r.solicitante_id);
+      const minhas = (data || []).filter((r) => !r.destinatario_perfil_atleta_id || r.destinatario_perfil_atleta_id === perfil?.id);
+      if (minhas.length === 0) return [];
+      const senderIds = minhas.map(r => r.solicitante_id);
       const { data: redeP } = await supabase.from('perfis_rede').select('id, user_id, nome, tipo, foto_url').in('user_id', senderIds);
       const { data: atletaP } = await supabase.from('perfil_atleta').select('id, user_id, nome, foto_url, slug').eq('is_public', true).in('user_id', senderIds);
       const seen = new Set<string>();
       const merged: any[] = [];
       for (const p of (redeP || [])) { if (!seen.has(p.user_id)) { seen.add(p.user_id); merged.push(p); } }
       for (const p of (atletaP || [])) { if (!seen.has(p.user_id)) { seen.add(p.user_id); merged.push({ ...p, tipo: 'Atleta' }); } }
-      return merged.map(p => ({ ...p, connectionId: data.find(r => r.solicitante_id === p.user_id)?.id }));
+      return merged.map(p => ({ ...p, connectionId: minhas.find(r => r.solicitante_id === p.user_id)?.id }));
     },
     enabled: !!currentUserId && isOwner,
   });
@@ -1004,7 +1007,7 @@ export default function CarreiraPerfilPage() {
                 <div className="text-xs text-muted-foreground">
                   <span className="font-semibold text-foreground">{perfil.followers_count || 0}</span> seguidores
                 </div>
-                <ConexoesCount userId={perfil.user_id} />
+                <ConexoesCount userId={perfil.user_id} perfilAtletaId={perfil.type === 'atleta' ? perfil.id : undefined} />
               </div>
 
               {/* Actions */}
@@ -1021,7 +1024,13 @@ export default function CarreiraPerfilPage() {
                 )}
 
                 {!isOwner && currentUserId && !isDonoEscolaProfile && (
-                  <ConectarButton targetUserId={perfil.user_id} currentUserId={currentUserId} accentColor={accentColor} />
+                  <ConectarButton
+                    targetUserId={perfil.user_id}
+                    currentUserId={currentUserId}
+                    accentColor={accentColor}
+                    targetPerfilAtletaId={perfil.type === 'atleta' ? perfil.id : undefined}
+                    sourcePerfilAtletaId={meuPerfilAtivo?.id}
+                  />
                 )}
 
                 {!isOwner && currentUserId && isDonoEscolaProfile && schoolUnitsForConnection.length > 0 && (
@@ -1042,6 +1051,7 @@ export default function CarreiraPerfilPage() {
                           currentUserId={currentUserId}
                           accentColor={accentColor}
                           unidadeNome={unidade.nome}
+                          sourcePerfilAtletaId={meuPerfilAtivo?.id}
                         />
                       </div>
                     ))}
@@ -1131,7 +1141,7 @@ export default function CarreiraPerfilPage() {
             {/* Mobile-only: full PerfilHeader */}
             {perfil.type === 'atleta' && (
               <div className="lg:hidden">
-                <PerfilHeader perfil={perfil as any} isOwner={isOwner} />
+                <PerfilHeader perfil={perfil as any} isOwner={isOwner} viewerPerfilAtletaId={meuPerfilAtivo?.id} />
               </div>
             )}
             {perfil.type === 'rede' && (
@@ -1154,6 +1164,7 @@ export default function CarreiraPerfilPage() {
                   currentUserId={currentUserId}
                   accentColor={accentColor}
                   onEditProfile={isOwner ? () => setEditDialogOpen(true) : undefined}
+                  viewerPerfilAtletaId={meuPerfilAtivo?.id}
                 />
               </div>
             )}
@@ -1390,7 +1401,13 @@ export default function CarreiraPerfilPage() {
                         </p>
                         <p className="text-[10px] text-muted-foreground">{TYPE_LABELS[person.tipo] || person.tipo}</p>
                       </div>
-                      <ConectarButton targetUserId={person.user_id} currentUserId={currentUserId} accentColor={accentColor} />
+                      <ConectarButton
+                        targetUserId={person.user_id}
+                        currentUserId={currentUserId}
+                        accentColor={accentColor}
+                        targetPerfilAtletaId={person.source === 'atleta' ? person.id : undefined}
+                        sourcePerfilAtletaId={meuPerfilAtivo?.id}
+                      />
                     </div>
                   ))}
                 </div>

@@ -54,52 +54,62 @@ function useMyPerfilRede(userId?: string | null) {
   });
 }
 
-function useMyConnections(userId?: string | null) {
+/** Uma linha de conexão pertence ao atleta ativo (ou é legada/sem distinção
+ * de irmão, coluna null) -- evita que o vínculo de um irmão vaze pro outro. */
+function pertenceAoAtivo(row: any, meuUserId: string, meuPerfilAtletaId: string | null | undefined): boolean {
+  const souSolicitante = row.solicitante_id === meuUserId;
+  const meuLado = souSolicitante ? row.solicitante_perfil_atleta_id : row.destinatario_perfil_atleta_id;
+  return !meuLado || meuLado === meuPerfilAtletaId;
+}
+
+function useMyConnections(userId?: string | null, perfilAtletaId?: string | null) {
   return useQuery({
-    queryKey: ['my-connections-accepted', userId],
+    queryKey: ['my-connections-accepted', userId, perfilAtletaId],
     queryFn: async () => {
       if (!userId) return [];
       const { data, error } = await supabase
         .from('rede_conexoes')
-        .select('solicitante_id, destinatario_id')
+        .select('solicitante_id, destinatario_id, solicitante_perfil_atleta_id, destinatario_perfil_atleta_id')
         .or(`solicitante_id.eq.${userId},destinatario_id.eq.${userId}`)
         .eq('status', 'aceita');
       if (error) throw error;
-      return (data || []).map(c => c.solicitante_id === userId ? c.destinatario_id : c.solicitante_id);
+      const minhas = (data || []).filter((c) => pertenceAoAtivo(c, userId, perfilAtletaId));
+      return minhas.map(c => c.solicitante_id === userId ? c.destinatario_id : c.solicitante_id);
     },
     enabled: !!userId,
   });
 }
 
-function useConnectionsCount(userId?: string | null) {
+function useConnectionsCount(userId?: string | null, perfilAtletaId?: string | null) {
   return useQuery({
-    queryKey: ['connections-count', userId],
+    queryKey: ['connections-count', userId, perfilAtletaId],
     queryFn: async () => {
       if (!userId) return 0;
-      const { count, error } = await supabase
+      const { data, error } = await supabase
         .from('rede_conexoes')
-        .select('id', { count: 'exact', head: true })
+        .select('solicitante_id, destinatario_id, solicitante_perfil_atleta_id, destinatario_perfil_atleta_id')
         .or(`solicitante_id.eq.${userId},destinatario_id.eq.${userId}`)
         .eq('status', 'aceita');
       if (error) throw error;
-      return count || 0;
+      return (data || []).filter((c) => pertenceAoAtivo(c, userId, perfilAtletaId)).length;
     },
     enabled: !!userId,
   });
 }
 
-function useConnectionsList(userId?: string | null) {
+function useConnectionsList(userId?: string | null, perfilAtletaId?: string | null) {
   return useQuery({
-    queryKey: ['profile-connections-list', userId],
+    queryKey: ['profile-connections-list', userId, perfilAtletaId],
     queryFn: async () => {
       if (!userId) return [];
       const { data, error } = await supabase
         .from('rede_conexoes')
-        .select('solicitante_id, destinatario_id')
+        .select('solicitante_id, destinatario_id, solicitante_perfil_atleta_id, destinatario_perfil_atleta_id')
         .or(`solicitante_id.eq.${userId},destinatario_id.eq.${userId}`)
         .eq('status', 'aceita');
       if (error) throw error;
-      const connectedUserIds = (data || []).map(c =>
+      const minhas = (data || []).filter((c) => pertenceAoAtivo(c, userId, perfilAtletaId));
+      const connectedUserIds = minhas.map(c =>
         c.solicitante_id === userId ? c.destinatario_id : c.solicitante_id
       );
       if (connectedUserIds.length === 0) return [];
@@ -147,15 +157,16 @@ function useFeedPosts(connectionIds: string[], userId?: string | null) {
   });
 }
 
-function useSuggestions(userId?: string | null) {
+function useSuggestions(userId?: string | null, perfilAtletaId?: string | null) {
   return useQuery({
-    queryKey: ['connection-suggestions', userId],
+    queryKey: ['connection-suggestions', userId, perfilAtletaId],
     queryFn: async () => {
       if (!userId) return [];
-      const { data: existing } = await supabase
+      const { data: existingRaw } = await supabase
         .from('rede_conexoes')
-        .select('solicitante_id, destinatario_id')
+        .select('solicitante_id, destinatario_id, solicitante_perfil_atleta_id, destinatario_perfil_atleta_id')
         .or(`solicitante_id.eq.${userId},destinatario_id.eq.${userId}`);
+      const existing = (existingRaw || []).filter((c) => pertenceAoAtivo(c, userId, perfilAtletaId));
 
       const connectedIds = new Set(
         (existing || []).flatMap(c => [c.solicitante_id, c.destinatario_id])
@@ -251,11 +262,11 @@ export default function CarreiraExplorarPage() {
   const { theme } = useCarreiraTheme();
   const { perfilAtivo: meuPerfil, isLoading: perfilLoading } = useCriancaAtiva(sessionUserId);
   const { data: meuPerfilRede, isLoading: perfilRedeLoading } = useMyPerfilRede(sessionUserId);
-  const { data: connectionIds = [] } = useMyConnections(sessionUserId);
-  const { data: connectionsCount = 0 } = useConnectionsCount(sessionUserId);
+  const { data: connectionIds = [] } = useMyConnections(sessionUserId, meuPerfil?.id);
+  const { data: connectionsCount = 0 } = useConnectionsCount(sessionUserId, meuPerfil?.id);
   const { data: posts, isLoading: postsLoading } = useFeedPosts(connectionIds, sessionUserId);
-  const { data: suggestions } = useSuggestions(sessionUserId);
-  const { data: connectionsList } = useConnectionsList(sessionUserId);
+  const { data: suggestions } = useSuggestions(sessionUserId, meuPerfil?.id);
+  const { data: connectionsList } = useConnectionsList(sessionUserId, meuPerfil?.id);
   const [copied, setCopied] = useState(false);
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -306,6 +317,7 @@ export default function CarreiraExplorarPage() {
         solicitante_id: sessionUserId,
         destinatario_id: targetUserId,
         status: 'pendente',
+        solicitante_perfil_atleta_id: meuPerfil?.id || null,
       } as any);
       if (error) throw error;
       toast.success('Solicitação enviada!');
@@ -585,7 +597,12 @@ export default function CarreiraExplorarPage() {
                         </p>
                         <p className="text-[10px] text-muted-foreground">{TYPE_LABELS[person.tipo] || person.tipo}</p>
                       </div>
-                      <ConectarButton targetUserId={person.user_id} currentUserId={sessionUserId} />
+                      <ConectarButton
+                        targetUserId={person.user_id}
+                        currentUserId={sessionUserId}
+                        targetPerfilAtletaId={person.source === 'atleta' ? person.id : undefined}
+                        sourcePerfilAtletaId={meuPerfil?.id}
+                      />
                     </div>
                   ))}
                 </div>

@@ -3,18 +3,26 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   userId: string;
+  /** Perfil_atleta ativo (o filho selecionado no seletor de irmãos), quando
+   * aplicável -- isola a contagem de cada atleta, sem somar a dos irmãos. */
+  perfilAtletaId?: string | null;
 }
 
-export function ConexoesCount({ userId }: Props) {
+export function ConexoesCount({ userId, perfilAtletaId }: Props) {
   const { data: count } = useQuery({
-    queryKey: ['conexoes-count', userId],
+    queryKey: ['conexoes-count', userId, perfilAtletaId],
     queryFn: async () => {
-      const { count } = await supabase
+      const { data } = await supabase
         .from('rede_conexoes')
-        .select('*', { count: 'exact', head: true })
+        .select('solicitante_id, destinatario_id, solicitante_perfil_atleta_id, destinatario_perfil_atleta_id')
         .eq('status', 'aceita')
         .or(`solicitante_id.eq.${userId},destinatario_id.eq.${userId}`);
-      return count || 0;
+      const minhas = (data || []).filter((row) => {
+        const souSolicitante = row.solicitante_id === userId;
+        const meuLado = souSolicitante ? row.solicitante_perfil_atleta_id : row.destinatario_perfil_atleta_id;
+        return !meuLado || meuLado === perfilAtletaId;
+      });
+      return minhas.length;
     },
   });
 

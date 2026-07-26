@@ -72,11 +72,26 @@ export async function processarConviteRef(novoUserId: string): Promise<void> {
       });
     }
 
+    // Se quem está se cadastrando agora criou um perfil_atleta (ref=atleta),
+    // pega o id dele pra a conexão ficar isolada nesse atleta específico e
+    // não vazar pro irmão dele no futuro.
+    let novoPerfilAtletaId: string | null = null;
+    if (pending.ref === 'atleta') {
+      const { data: meuPerfil } = await supabase
+        .from('perfil_atleta')
+        .select('id')
+        .eq('user_id', novoUserId)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      novoPerfilAtletaId = meuPerfil?.id || null;
+    }
+
     // 3) Auto-follow no atleta (criança) cujo perfil foi compartilhado
     if (pending.atletaSlug) {
       const { data: atletaData } = await supabase
         .from('perfil_atleta')
-        .select('user_id')
+        .select('id, user_id')
         .eq('slug', pending.atletaSlug)
         .maybeSingle();
       const atletaUserId = atletaData?.user_id;
@@ -85,6 +100,8 @@ export async function processarConviteRef(novoUserId: string): Promise<void> {
           solicitante_id: novoUserId,
           destinatario_id: atletaUserId,
           status: 'aceito',
+          solicitante_perfil_atleta_id: novoPerfilAtletaId,
+          destinatario_perfil_atleta_id: atletaData?.id || null,
         });
       }
     } else if (convidanteUserId && convidanteUserId !== novoUserId) {
@@ -93,6 +110,7 @@ export async function processarConviteRef(novoUserId: string): Promise<void> {
         solicitante_id: novoUserId,
         destinatario_id: convidanteUserId,
         status: 'aceito',
+        solicitante_perfil_atleta_id: novoPerfilAtletaId,
       });
     }
   } catch (err) {

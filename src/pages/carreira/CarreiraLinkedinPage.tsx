@@ -104,7 +104,7 @@ export default function CarreiraLinkedinPage() {
             {/* perfil só entra em `perfis` se for dono OU colaborador ativo --
                 EditPerfilDialog (dentro de PerfilHeader) deve ficar restrito
                 ao dono real; postar/jornada (CarreiraTimeline) vale pros dois. */}
-            <PerfilHeader perfil={perfil} isOwner={!perfil.souColaborador} />
+            <PerfilHeader perfil={perfil} isOwner={!perfil.souColaborador} viewerPerfilAtletaId={perfil.id} />
             <CarreiraTimeline perfil={perfil} isOwner={true} />
           </div>
         ) : (
