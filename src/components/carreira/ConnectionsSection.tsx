@@ -2,11 +2,40 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, UserPlus, Check, X, Users, MapPin } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, UserPlus, Check, X, Users, MapPin, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
+import { ConectarButton } from './ConectarButton';
+
+function useSearchParaConectar(query: string, meuUserId: string | null) {
+  return useQuery({
+    queryKey: ['search-para-conectar', query, meuUserId],
+    queryFn: async () => {
+      const termo = `%${query.trim()}%`;
+      const { data: atletas } = await supabase
+        .from('perfil_atleta')
+        .select('id, user_id, nome, foto_url, slug, modalidade')
+        .eq('is_public', true)
+        .neq('user_id', meuUserId || '')
+        .ilike('nome', termo)
+        .limit(10);
+      const { data: rede } = await supabase
+        .from('perfis_rede')
+        .select('id, user_id, nome, tipo, foto_url')
+        .neq('user_id', meuUserId || '')
+        .ilike('nome', termo)
+        .limit(10);
+      return [
+        ...(atletas || []).map((a) => ({ ...a, tipo: 'Atleta', source: 'atleta' as const })),
+        ...(rede || []).map((r) => ({ ...r, source: 'rede' as const })),
+      ];
+    },
+    enabled: query.trim().length >= 2,
+  });
+}
 
 const TYPE_LABELS: Record<string, string> = {
   professor: 'Professor',
@@ -40,8 +69,10 @@ function pertenceAoAtivo(row: any, meuUserId: string, meuPerfilAtletaId: string 
 export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Props) {
   const navigate = useNavigate();
   const [respondingId, setRespondingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const isOwnProfile = userId === currentUserId;
+  const { data: searchResults, isLoading: searchLoading } = useSearchParaConectar(searchQuery, currentUserId);
 
   const { data: connections, isLoading } = useQuery({
     queryKey: ['user-connections', userId, perfilAtletaId],
@@ -53,10 +84,17 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
         .eq('status', 'aceita');
       if (error) throw error;
       const propria = (data || []).filter((row) => pertenceAoAtivo(row, userId, perfilAtletaId));
-      const connectionDetails = propria.map(c => ({
-        connectedUserId: c.solicitante_id === userId ? c.destinatario_id : c.solicitante_id,
-        unidade_nome: (c as any).unidade_nome || null,
-      }));
+      const connectionDetails = propria.map(c => {
+        const souSolicitante = c.solicitante_id === userId;
+        return {
+          connectedUserId: souSolicitante ? c.destinatario_id : c.solicitante_id,
+          // Perfil ESPECÍFICO do outro lado, quando conhecido -- essencial
+          // quando esse user_id tem mais de um perfil_atleta (irmãos), senão
+          // a busca abaixo por user_id pode trazer o irmão errado.
+          connectedPerfilAtletaId: (souSolicitante ? c.destinatario_perfil_atleta_id : c.solicitante_perfil_atleta_id) || null,
+          unidade_nome: (c as any).unidade_nome || null,
+        };
+      });
       const connectedUserIds = [...new Set(connectionDetails.map(c => c.connectedUserId))];
       if (connectedUserIds.length === 0) return [];
       const { data: redeProfiles } = await supabase
@@ -68,24 +106,17 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
         .select('id, user_id, nome, foto_url, slug')
         .eq('is_public', true)
         .in('user_id', connectedUserIds);
-      const userMap = new Map<string, any>();
-      for (const p of (redeProfiles || [])) {
-        userMap.set(p.user_id, p);
-      }
+      const redeByUser = new Map((redeProfiles || []).map((p) => [p.user_id, p]));
+      const atletaById = new Map((atletaProfiles || []).map((p) => [p.id, { ...p, tipo: 'Atleta' }]));
+      const atletaByUserFallback = new Map<string, any>();
       for (const p of (atletaProfiles || [])) {
-        const existing = userMap.get(p.user_id);
-        if (!existing) {
-          userMap.set(p.user_id, { ...p, tipo: 'Atleta' });
-        } else {
-          userMap.set(p.user_id, {
-            ...existing,
-            foto_url: existing.foto_url || p.foto_url,
-          });
-        }
+        if (!atletaByUserFallback.has(p.user_id)) atletaByUserFallback.set(p.user_id, { ...p, tipo: 'Atleta' });
       }
       // Build final list with unidade_nome attached
       return connectionDetails.map(cd => {
-        const profile = userMap.get(cd.connectedUserId);
+        const profile = (cd.connectedPerfilAtletaId && atletaById.get(cd.connectedPerfilAtletaId))
+          || redeByUser.get(cd.connectedUserId)
+          || atletaByUserFallback.get(cd.connectedUserId);
         if (!profile) return null;
         return { ...profile, unidade_nome: cd.unidade_nome };
       }).filter(Boolean);
@@ -98,7 +129,7 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
       if (!isOwnProfile) return [];
       const { data, error } = await supabase
         .from('rede_conexoes')
-        .select('id, solicitante_id, unidade_nome, destinatario_perfil_atleta_id')
+        .select('id, solicitante_id, unidade_nome, destinatario_perfil_atleta_id, solicitante_perfil_atleta_id')
         .eq('destinatario_id', userId)
         .eq('status', 'pendente');
       if (error) throw error;
@@ -114,24 +145,17 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
         .select('id, user_id, nome, foto_url, slug')
         .eq('is_public', true)
         .in('user_id', senderIds);
-      const senderMap = new Map<string, any>();
-      for (const p of (redeProfiles2 || [])) {
-        senderMap.set(p.user_id, p);
-      }
+      const redeByUser2 = new Map((redeProfiles2 || []).map((p) => [p.user_id, p]));
+      const atletaById2 = new Map((atletaProfiles2 || []).map((p) => [p.id, { ...p, tipo: 'Atleta' }]));
+      const atletaByUserFallback2 = new Map<string, any>();
       for (const p of (atletaProfiles2 || [])) {
-        const existing = senderMap.get(p.user_id);
-        if (!existing) {
-          senderMap.set(p.user_id, { ...p, tipo: 'Atleta' });
-        } else {
-          senderMap.set(p.user_id, {
-            ...existing,
-            foto_url: existing.foto_url || p.foto_url,
-          });
-        }
+        if (!atletaByUserFallback2.has(p.user_id)) atletaByUserFallback2.set(p.user_id, { ...p, tipo: 'Atleta' });
       }
       // Return one entry per connection row (not per user) so unit info is preserved
       return minhas.map(r => {
-        const profile = senderMap.get(r.solicitante_id);
+        const profile = (r.solicitante_perfil_atleta_id && atletaById2.get(r.solicitante_perfil_atleta_id))
+          || redeByUser2.get(r.solicitante_id)
+          || atletaByUserFallback2.get(r.solicitante_id);
         if (!profile) return null;
         return {
           ...profile,
@@ -246,6 +270,52 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
 
   return (
     <div className="space-y-6">
+      {/* Buscar pessoas pra conectar */}
+      {isOwnProfile && (
+        <div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar atletas ou pessoas na rede pra conectar..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          {searchQuery.trim().length >= 2 && (
+            <div className="mt-2 space-y-2">
+              {searchLoading ? (
+                <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+              ) : searchResults && searchResults.length > 0 ? (
+                searchResults.map((person: any) => (
+                  <Card key={`${person.source}-${person.id}`} className="flex items-center gap-3 p-3">
+                    {person.foto_url ? (
+                      <img src={person.foto_url} alt="" className="w-9 h-9 rounded-full object-cover cursor-pointer" onClick={() => navigate(carreiraPath(`/${person.slug || `perfil/${person.user_id}`}`))} />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground cursor-pointer" onClick={() => navigate(carreiraPath(`/${person.slug || `perfil/${person.user_id}`}`))}>
+                        {person.nome?.[0]}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate cursor-pointer hover:underline" onClick={() => navigate(carreiraPath(`/${person.slug || `perfil/${person.user_id}`}`))}>{person.nome}</p>
+                      <p className="text-xs text-muted-foreground">{person.source === 'atleta' ? (person.modalidade || 'Atleta') : (TYPE_LABELS[person.tipo] || person.tipo)}</p>
+                    </div>
+                    <ConectarButton
+                      targetUserId={person.user_id}
+                      currentUserId={currentUserId}
+                      targetPerfilAtletaId={person.source === 'atleta' ? person.id : undefined}
+                      sourcePerfilAtletaId={perfilAtletaId}
+                    />
+                  </Card>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">Nenhum resultado encontrado</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Pending requests */}
       {isOwnProfile && pendingRequests && pendingRequests.length > 0 && (
         <div>

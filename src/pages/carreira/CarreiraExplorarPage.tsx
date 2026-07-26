@@ -109,9 +109,14 @@ function useConnectionsList(userId?: string | null, perfilAtletaId?: string | nu
         .eq('status', 'aceita');
       if (error) throw error;
       const minhas = (data || []).filter((c) => pertenceAoAtivo(c, userId, perfilAtletaId));
-      const connectedUserIds = minhas.map(c =>
-        c.solicitante_id === userId ? c.destinatario_id : c.solicitante_id
-      );
+      const detalhes = minhas.map((c) => {
+        const souSolicitante = c.solicitante_id === userId;
+        return {
+          connectedUserId: souSolicitante ? c.destinatario_id : c.solicitante_id,
+          connectedPerfilAtletaId: (souSolicitante ? c.destinatario_perfil_atleta_id : c.solicitante_perfil_atleta_id) || null,
+        };
+      });
+      const connectedUserIds = [...new Set(detalhes.map((d) => d.connectedUserId))];
       if (connectedUserIds.length === 0) return [];
       const { data: redeProfiles } = await supabase
         .from('perfis_rede')
@@ -122,13 +127,20 @@ function useConnectionsList(userId?: string | null, perfilAtletaId?: string | nu
         .select('id, user_id, nome, foto_url, slug')
         .eq('is_public', true)
         .in('user_id', connectedUserIds);
+      const redeByUser = new Map((redeProfiles || []).map((p) => [p.user_id, p]));
+      const atletaById = new Map((atletaProfiles || []).map((p) => [p.id, { ...p, tipo: 'Atleta' }]));
+      const atletaByUserFallback = new Map<string, any>();
+      for (const p of (atletaProfiles || [])) {
+        if (!atletaByUserFallback.has(p.user_id)) atletaByUserFallback.set(p.user_id, { ...p, tipo: 'Atleta' });
+      }
       const seen = new Set<string>();
       const merged: any[] = [];
-      for (const p of (redeProfiles || [])) {
-        if (!seen.has(p.user_id)) { seen.add(p.user_id); merged.push(p); }
-      }
-      for (const p of (atletaProfiles || [])) {
-        if (!seen.has(p.user_id)) { seen.add(p.user_id); merged.push({ ...p, tipo: 'Atleta' }); }
+      for (const d of detalhes) {
+        const profile = (d.connectedPerfilAtletaId && atletaById.get(d.connectedPerfilAtletaId))
+          || redeByUser.get(d.connectedUserId)
+          || atletaByUserFallback.get(d.connectedUserId);
+        const key = d.connectedPerfilAtletaId || d.connectedUserId;
+        if (profile && !seen.has(key)) { seen.add(key); merged.push(profile); }
       }
       return merged;
     },

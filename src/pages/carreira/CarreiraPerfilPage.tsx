@@ -455,7 +455,7 @@ export default function CarreiraPerfilPage() {
       if (!currentUserId || !isOwner) return [];
       const { data, error } = await supabase
         .from('rede_conexoes')
-        .select('id, solicitante_id, destinatario_perfil_atleta_id')
+        .select('id, solicitante_id, destinatario_perfil_atleta_id, solicitante_perfil_atleta_id')
         .eq('destinatario_id', currentUserId)
         .eq('status', 'pendente');
       if (error) throw error;
@@ -464,11 +464,19 @@ export default function CarreiraPerfilPage() {
       const senderIds = minhas.map(r => r.solicitante_id);
       const { data: redeP } = await supabase.from('perfis_rede').select('id, user_id, nome, tipo, foto_url').in('user_id', senderIds);
       const { data: atletaP } = await supabase.from('perfil_atleta').select('id, user_id, nome, foto_url, slug').eq('is_public', true).in('user_id', senderIds);
-      const seen = new Set<string>();
-      const merged: any[] = [];
-      for (const p of (redeP || [])) { if (!seen.has(p.user_id)) { seen.add(p.user_id); merged.push(p); } }
-      for (const p of (atletaP || [])) { if (!seen.has(p.user_id)) { seen.add(p.user_id); merged.push({ ...p, tipo: 'Atleta' }); } }
-      return merged.map(p => ({ ...p, connectionId: minhas.find(r => r.solicitante_id === p.user_id)?.id }));
+      const redeByUser = new Map((redeP || []).map((p) => [p.user_id, p]));
+      const atletaById = new Map((atletaP || []).map((p) => [p.id, { ...p, tipo: 'Atleta' }]));
+      const atletaByUserFallback = new Map<string, any>();
+      for (const p of (atletaP || [])) {
+        if (!atletaByUserFallback.has(p.user_id)) atletaByUserFallback.set(p.user_id, { ...p, tipo: 'Atleta' });
+      }
+      return minhas.map(r => {
+        const profile = (r.solicitante_perfil_atleta_id && atletaById.get(r.solicitante_perfil_atleta_id))
+          || redeByUser.get(r.solicitante_id)
+          || atletaByUserFallback.get(r.solicitante_id);
+        if (!profile) return null;
+        return { ...profile, connectionId: r.id };
+      }).filter(Boolean);
     },
     enabled: !!currentUserId && isOwner,
   });
