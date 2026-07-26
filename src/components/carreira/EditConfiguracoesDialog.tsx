@@ -12,9 +12,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, UserCircle, Save, CreditCard, ShieldCheck, Fingerprint, Smartphone, Bell, KeyRound, HelpCircle, ChevronRight, Users, Lock, Trash2 } from 'lucide-react';
+import { Loader2, UserCircle, Save, CreditCard, ShieldCheck, Fingerprint, Smartphone, Bell, KeyRound, MessageCircle, FileText, ChevronRight, Users, Lock, Trash2 } from 'lucide-react';
 import { PerfilAtleta } from '@/hooks/useCarreiraData';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
 import { AssinaturaCard } from './AssinaturaCard';
 import { ColaboradoresTab } from './ColaboradoresTab';
 import { DeleteAccountDialog } from './DeleteAccountDialog';
@@ -33,7 +34,28 @@ interface EditConfiguracoesDialogProps {
  */
 export function EditConfiguracoesDialog({ open, onOpenChange, perfil }: EditConfiguracoesDialogProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [enviandoReset, setEnviandoReset] = useState(false);
   const { isSupported: pushSupported, isSubscribed, isLoading: pushLoading, subscribe, unsubscribe } = usePushNotifications();
+
+  const handleAlterarSenha = async () => {
+    setEnviandoReset(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        toast.error('Não foi possível identificar seu e-mail.');
+        return;
+      }
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success(`Enviamos um link de redefinição para ${user.email}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao enviar link de redefinição');
+    } finally {
+      setEnviandoReset(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -80,8 +102,60 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil }: EditConf
 
           <TabsContent value="conta" className="mt-4 space-y-6">
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Autenticação</p>
+              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Conta</p>
+              <button
+                type="button"
+                className="w-full flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors disabled:opacity-60"
+                onClick={handleAlterarSenha}
+                disabled={enviandoReset}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    {enviandoReset ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-medium">Alterar senha</p>
+                    <p className="text-xs text-muted-foreground">Enviamos um link por e-mail pra você definir uma nova senha</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Notificações e Segurança</p>
               <div className="space-y-2">
+                <div className={`flex items-center justify-between rounded-lg border p-3 bg-muted/30 ${!pushSupported ? 'opacity-60' : ''}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                      <Bell className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">
+                        Notificações {isSubscribed ? 'ligadas' : 'desligadas'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {!pushSupported
+                          ? 'Não suportado neste navegador/dispositivo'
+                          : 'Dispositivo configurado para receber avisos'}
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={isSubscribed}
+                    disabled={!pushSupported || pushLoading}
+                    onCheckedChange={async (checked) => {
+                      if (checked) {
+                        const result = await subscribe();
+                        if (!result.ok) {
+                          toast.error(result.reason || 'Não foi possível ativar as notificações.');
+                        }
+                      } else {
+                        await unsubscribe();
+                      }
+                    }}
+                  />
+                </div>
                 <div className="flex items-center justify-between rounded-lg border p-3 opacity-60">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
@@ -110,70 +184,50 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil }: EditConf
             </div>
 
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Notificações</p>
-              <div className={`flex items-center justify-between rounded-lg border p-3 bg-muted/30 ${!pushSupported ? 'opacity-60' : ''}`}>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
-                    <Bell className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">
-                      Notificações {isSubscribed ? 'ligadas' : 'desligadas'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {!pushSupported
-                        ? 'Não suportado neste navegador/dispositivo'
-                        : 'Dispositivo configurado para receber avisos'}
-                    </p>
-                  </div>
-                </div>
-                <Switch
-                  checked={isSubscribed}
-                  disabled={!pushSupported || pushLoading}
-                  onCheckedChange={async (checked) => {
-                    if (checked) {
-                      const result = await subscribe();
-                      if (!result.ok) {
-                        toast.error(result.reason || 'Não foi possível ativar as notificações.');
-                      }
-                    } else {
-                      await unsubscribe();
-                    }
-                  }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Senha</p>
-              <button type="button" className="w-full flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
-                    <KeyRound className="w-4 h-4" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-medium">Alterar senha</p>
-                    <p className="text-xs text-muted-foreground">Defina uma nova senha de acesso</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </button>
-            </div>
-
-            <div>
               <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Suporte</p>
-              <button type="button" className="w-full flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors">
+              <a
+                href={SUPPORT_WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors"
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
-                    <HelpCircle className="w-4 h-4" />
+                    <MessageCircle className="w-4 h-4" />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-medium">Central de Ajuda</p>
-                    <p className="text-xs text-muted-foreground">Tire suas dúvidas com nosso suporte</p>
+                    <p className="text-sm font-medium">Falar com Suporte</p>
+                    <p className="text-xs text-muted-foreground">Tire suas dúvidas direto pelo WhatsApp</p>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </button>
+              </a>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Sobre</p>
+              <div className="space-y-2">
+                <a href="/termos-de-uso" target="_blank" rel="noopener noreferrer"
+                  className="w-full flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <p className="text-sm font-medium">Termos de Uso</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </a>
+                <a href="/politica-de-privacidade" target="_blank" rel="noopener noreferrer"
+                  className="w-full flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                    <p className="text-sm font-medium">Política de Privacidade</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </a>
+              </div>
             </div>
 
             <div className="pt-2 border-t">
