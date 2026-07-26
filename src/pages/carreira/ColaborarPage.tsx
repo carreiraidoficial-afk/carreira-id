@@ -11,6 +11,12 @@ import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import logoCarreira from '@/assets/logo-carreira-id-dark.png';
 
+function listaComE(nomes: string[]): string {
+  if (nomes.length === 0) return '';
+  if (nomes.length === 1) return nomes[0];
+  return `${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]}`;
+}
+
 function useConvitePendente(codigo: string | null) {
   return useQuery({
     queryKey: ['convite-colaborador', codigo],
@@ -18,7 +24,7 @@ function useConvitePendente(codigo: string | null) {
       if (!codigo) return null;
       const { data, error } = await supabase
         .from('perfil_atleta_colaboradores')
-        .select('id, crianca_id, nome, status')
+        .select('id, crianca_id, nome, status, convidado_por')
         .eq('codigo_convite', codigo)
         .eq('status', 'pendente');
       if (error) throw error;
@@ -30,9 +36,16 @@ function useConvitePendente(codigo: string | null) {
         .select('crianca_id, nome, foto_url')
         .in('crianca_id', criancaIds);
 
+      const { data: responsavel } = await supabase
+        .from('profiles')
+        .select('nome')
+        .eq('user_id', data[0].convidado_por)
+        .maybeSingle();
+
       return {
         ids: data.map((d) => d.id),
         nomeConvidado: data[0].nome,
+        nomeResponsavel: responsavel?.nome || null,
         atletas: (perfis || []).map((p) => ({ nome: p.nome, foto_url: p.foto_url })),
       };
     },
@@ -110,7 +123,14 @@ export default function ColaborarPage() {
             <div>
               <h1 className="text-lg font-bold">Convite de colaboração</h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Você foi convidado(a) como <strong>{convite.nomeConvidado}</strong> pra postar e registrar jornada de:
+                Oi, <strong>{convite.nomeConvidado}</strong>!{' '}
+                {convite.nomeResponsavel ? (
+                  <>
+                    <strong>{convite.nomeResponsavel}</strong>, responsável por {listaComE(convite.atletas.map((a) => a.nome))}, está te convidando pra ajudar a registrar os momentos esportivos {convite.atletas.length > 1 ? 'deles' : 'dele(a)'}.
+                  </>
+                ) : (
+                  <>Você foi convidado(a) pra ajudar a registrar os momentos esportivos de:</>
+                )}
               </p>
             </div>
             <div className="flex flex-wrap gap-2 justify-center">
@@ -121,6 +141,9 @@ export default function ColaborarPage() {
                 </span>
               ))}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Você vai poder postar fotos/vídeos e registrar jogos e campeonatos com seu próprio login, direto de onde estiver.
+            </p>
             <Button className="w-full" onClick={handleAceitar} disabled={aceitando}>
               {aceitando ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Aceitar convite'}
             </Button>
