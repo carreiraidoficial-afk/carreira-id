@@ -7,6 +7,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Trava de segurança: se qualquer elemento em qualquer lugar do app ficar
+   largo demais (um botão, um texto sem quebra, uma tabela), isso nunca mais
+   deve arrastar a PÁGINA INTEIRA pro lado no mobile -- só aquele elemento
+   fica cortado/rolável isoladamente, o resto do layout continua intacto. */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 /* Hide scrollbar utility */
 .scrollbar-hide {
   -ms-overflow-style: none;

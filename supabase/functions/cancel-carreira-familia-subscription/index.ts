@@ -6,6 +6,7 @@ const corsHeaders = {
 };
 
 const ASAAS_API_URL = 'https://api.asaas.com/v3';
+const ADMIN_EMAIL = 'carreiraidoficial@gmail.com';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
@@ -50,8 +51,17 @@ Deno.serve(async (req) => {
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     if (familia.user_id !== user.id) {
-      return new Response(JSON.stringify({ error: 'Essa assinatura família não pertence a você' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      // Não é o dono -- só segue se for admin (ex: dissolver a família de
+      // outra pessoa como consequência de uma isenção concedida no painel).
+      let isAdmin = user.email?.toLowerCase() === ADMIN_EMAIL;
+      if (!isAdmin) {
+        const { data: roles } = await adminClient.from('user_roles').select('role').eq('user_id', user.id);
+        isAdmin = !!(roles || []).find((r: any) => r.role === 'admin');
+      }
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: 'Essa assinatura família não pertence a você' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
     }
     if (familia.status === 'cancelada') {
       return new Response(JSON.stringify({ success: true, alreadyCancelled: true }),

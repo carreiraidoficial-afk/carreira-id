@@ -709,20 +709,22 @@ export default function CarreiraPerfilPage() {
                   className="hidden sm:flex"
                 />
                 <div className="flex items-center gap-1.5 shrink-0">
-                  {/* Mostra sempre que o usuário logado tiver algum perfil próprio ou
-                      colaborado -- não só quando está vendo o SEU perfil (uma mãe
-                      colaboradora vendo o perfil de um dos filhos que ela colabora
-                      também precisa poder trocar pro outro filho por aqui). */}
+                  {/* No mobile o seletor vira sua própria linha (ver Row 1.5
+                      abaixo) -- competir por espaço com os botões de ação
+                      nessa mesma linha era exatamente o que apertava tudo.
+                      No desktop tem espaço de sobra, continua inline. */}
                   {meuPerfilAtivo && (
-                    <SeletorCrianca
-                      perfis={meusPerfis}
-                      perfilAtivoId={meuPerfilAtivo.crianca_id || null}
-                      onSelecionar={(criancaId) => {
-                        selecionarCrianca(criancaId);
-                        const escolhido = meusPerfis.find((p) => p.crianca_id === criancaId);
-                        if (escolhido?.slug) navigate(carreiraPath(`/${escolhido.slug}`));
-                      }}
-                    />
+                    <div className="hidden lg:block">
+                      <SeletorCrianca
+                        perfis={meusPerfis}
+                        perfilAtivoId={meuPerfilAtivo.crianca_id || null}
+                        onSelecionar={(criancaId) => {
+                          selecionarCrianca(criancaId);
+                          const escolhido = meusPerfis.find((p) => p.crianca_id === criancaId);
+                          if (escolhido?.slug) navigate(carreiraPath(`/${escolhido.slug}`));
+                        }}
+                      />
+                    </div>
                   )}
                   <Button variant="outline" size="sm" className="h-8 text-xs px-2 sm:px-3"
                     style={{ borderColor: `${accentColor}50`, color: accentColor }}
@@ -782,6 +784,21 @@ export default function CarreiraPerfilPage() {
             )}
           </div>
         </div>
+        {/* Row 1.5: Seletor de filho — mobile only, linha própria pra não
+            competir por espaço com os botões de ação da Row 1 */}
+        {meuPerfilAtivo && (
+          <div className="lg:hidden container px-4 pb-2 max-w-6xl">
+            <SeletorCrianca
+              perfis={meusPerfis}
+              perfilAtivoId={meuPerfilAtivo.crianca_id || null}
+              onSelecionar={(criancaId) => {
+                selecionarCrianca(criancaId);
+                const escolhido = meusPerfis.find((p) => p.crianca_id === criancaId);
+                if (escolhido?.slug) navigate(carreiraPath(`/${escolhido.slug}`));
+              }}
+            />
+          </div>
+        )}
         {/* Row 2: Search bar + theme toggle — mobile only */}
         <div className="lg:hidden container px-4 pb-2 max-w-6xl flex items-center gap-2">
           <div className="relative flex-1">

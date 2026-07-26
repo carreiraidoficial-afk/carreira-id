@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,6 +35,29 @@ const PLANO_PRECO: Record<string, number> = {
   premium: 12.00,
   base: 0,
 };
+
+// Isenção sempre desvincula a linha de qualquer Assinatura Família (é um
+// override individual e permanente, não deve ficar refém do cancelamento
+// dos irmãos). Se depois de tirar essa linha sobrar menos de 2 filhos
+// cobertos, a família como conceito deixou de fazer sentido -- cancela ela
+// de verdade (Asaas + banco). Quem sobrar não é migrado automaticamente pro
+// plano individual (evita criar cobrança nova sem o responsável confirmar
+// pagamento); ele só passa a não ter assinatura ativa, e vê a tela normal
+// de assinar Premium na próxima vez que precisar.
+async function dissolverFamiliaSeNecessario(familiaId: string, assinaturaIdExcluida: string) {
+  const { count } = await supabase
+    .from('carreira_assinaturas')
+    .select('id', { count: 'exact', head: true })
+    .eq('familia_id', familiaId)
+    .neq('id', assinaturaIdExcluida)
+    .neq('status', 'cancelada');
+  if ((count || 0) < 2) {
+    const { error } = await supabase.functions.invoke('cancel-carreira-familia-subscription', {
+      body: { familia_id: familiaId },
+    });
+    if (error) console.error('Erro ao dissolver família após isenção:', error);
+  }
+}
 
 function useAdminAssinaturas(search: string) {
   return useQuery({
@@ -103,7 +126,34 @@ function useAdminAssinaturas(search: string) {
           a.crianca_nome?.toLowerCase().includes(s)
         );
       }
-      return result;
+
+      // Agrupa por responsável (user_id), preservando a ordem "mais recente
+      // primeiro" que já vem da query -- irmãos ficam sempre juntos na
+      // tabela em vez de espalhados por data de criação de cada um.
+      const porResponsavel = new Map<string, any[]>();
+      for (const row of result) {
+        if (!porResponsavel.has(row.user_id)) porResponsavel.set(row.user_id, []);
+        porResponsavel.get(row.user_id)!.push(row);
+      }
+      const rows = [...porResponsavel.values()].flat();
+
+      // Assinatura Família de cada responsável envolvido (a mais recente,
+      // priorizando uma ativa se houver) -- usado pro cabeçalho de grupo e
+      // pro selo "Família" em cada linha.
+      let familiaPorUser: Record<string, any> = {};
+      if (userIds.length > 0) {
+        const { data: familias } = await supabase
+          .from('carreira_assinaturas_familia')
+          .select('id, user_id, status, valor')
+          .in('user_id', userIds)
+          .order('created_at', { ascending: false });
+        (familias || []).forEach((f: any) => {
+          const atual = familiaPorUser[f.user_id];
+          if (!atual || (f.status === 'ativa' && atual.status !== 'ativa')) familiaPorUser[f.user_id] = f;
+        });
+      }
+
+      return { rows, familiaPorUser };
     },
   });
 }
@@ -170,7 +220,9 @@ export default function CarreiraAdminAssinaturasPage() {
   const [search, setSearch] = useState(urlParams.get('q') || '');
   const [renewLoading, setRenewLoading] = useState(false);
   const queryClient = useQueryClient();
-  const { data: assinaturas, isLoading } = useAdminAssinaturas(search);
+  const { data: assinaturasData, isLoading } = useAdminAssinaturas(search);
+  const assinaturas = assinaturasData?.rows;
+  const familiaPorUser = assinaturasData?.familiaPorUser || {};
   const [editing, setEditing] = useState<any>(null);
   const [deleting, setDeleting] = useState<any>(null);
   const [deletingLoading, setDeletingLoading] = useState(false);
@@ -268,11 +320,33 @@ export default function CarreiraAdminAssinaturasPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {assinaturas.map((ass: any) => {
-                    const efetivo = getEfetivo(ass);
-                    return (
-                    <TableRow key={ass.id}>
-                      <TableCell>
+                  {(() => {
+                    let lastUserId: string | null = null;
+                    return assinaturas.map((ass: any) => {
+                      const efetivo = getEfetivo(ass);
+                      const familia = familiaPorUser[ass.user_id];
+                      const novoGrupo = ass.user_id !== lastUserId;
+                      lastUserId = ass.user_id;
+                      return (
+                    <Fragment key={ass.id}>
+                      {novoGrupo && (
+                        <TableRow className="bg-muted/40 hover:bg-muted/40">
+                          <TableCell colSpan={11} className="py-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-semibold text-foreground">{ass.user_nome}</span>
+                              <span className="text-xs text-muted-foreground">{ass.user_email}</span>
+                              {familia && (
+                                <Badge variant="outline" className={`text-[10px] ${familia.status === 'ativa' ? 'border-primary/50 text-primary' : 'text-muted-foreground'}`}>
+                                  Assinatura Família {familia.status === 'ativa' ? 'ativa' : familia.status}
+                                  {familia.status === 'ativa' && familia.valor ? ` · R$ ${Number(familia.valor).toFixed(2).replace('.', ',')}/mês` : ''}
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      <TableRow>
+                        <TableCell>
                         <div>
                           <p className="font-medium text-sm">{ass.crianca_nome}</p>
                           {ass.atleta_posicao && <p className="text-[10px] text-muted-foreground">{ass.atleta_posicao}</p>}
@@ -289,6 +363,9 @@ export default function CarreiraAdminAssinaturasPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-xs">{efetivo.planoEfetivo}</Badge>
+                        {ass.familia_id && (
+                          <Badge variant="outline" className="text-[10px] ml-1 border-primary/40 text-primary">Família</Badge>
+                        )}
                         {efetivo.notaPlano && (
                           <p className="text-[10px] text-muted-foreground mt-0.5">{efetivo.notaPlano}</p>
                         )}
@@ -329,9 +406,11 @@ export default function CarreiraAdminAssinaturasPage() {
                           </Button>
                         </div>
                       </TableCell>
-                    </TableRow>
-                    );
-                  })}
+                      </TableRow>
+                    </Fragment>
+                      );
+                    });
+                  })()}
                 </TableBody>
               </Table>
             </div>
@@ -392,8 +471,16 @@ function EditAssinaturaDialog({ assinatura, onClose, onSaved }: { assinatura: an
       if (form.status === 'cancelada' && !assinatura.cancelada_em) {
         payload.cancelada_em = new Date().toISOString();
       }
+      // Isenção desvincula da Assinatura Família (ver dissolverFamiliaSeNecessario)
+      const familiaIdAntigo = form.metodo_pagamento === 'isento' ? assinatura.familia_id : null;
+      if (form.metodo_pagamento === 'isento') {
+        payload.familia_id = null;
+      }
       const { error } = await supabase.from('carreira_assinaturas').update(payload).eq('id', assinatura.id);
       if (error) throw error;
+      if (familiaIdAntigo) {
+        await dissolverFamiliaSeNecessario(familiaIdAntigo, assinatura.id);
+      }
       toast.success('Assinatura atualizada');
       onSaved();
     } catch (e: any) {
@@ -456,6 +543,11 @@ function EditAssinaturaDialog({ assinatura, onClose, onSaved }: { assinatura: an
               Isento concede Premium vitalício: status, valor e vencimento foram ajustados automaticamente e ficam travados enquanto o método for "Isento".
             </p>
           )}
+          {form.metodo_pagamento === 'isento' && assinatura.familia_id && (
+            <p className="text-xs text-amber-600 bg-amber-500/10 rounded-lg p-2.5">
+              Esse atleta faz parte de uma Assinatura Família. Ao salvar, ele será desvinculado dela; se sobrar menos de 2 filhos cobertos, a família é cancelada de verdade (Asaas + banco).
+            </p>
+          )}
           <div>
             <Label>Expira em</Label>
             <Input type="date" value={form.expira_em} onChange={e => setForm({ ...form, expira_em: e.target.value })} disabled={form.metodo_pagamento === 'isento'} />
@@ -495,7 +587,7 @@ function useBuscarAtletas(search: string) {
       if (criancaIds.length > 0) {
         const { data: assinaturas } = await supabase
           .from('carreira_assinaturas')
-          .select('id, crianca_id, status, metodo_pagamento')
+          .select('id, crianca_id, status, metodo_pagamento, familia_id')
           .in('crianca_id', criancaIds)
           .order('created_at', { ascending: false });
         if (assinaturas) assinaturas.forEach((a: any) => {
@@ -535,11 +627,18 @@ function ConcederIsencaoDialog({ onClose, onSaved }: { onClose: () => void; onSa
         expira_em: null,
         inicio_em: new Date().toISOString().split('T')[0],
         observacoes: observacoes || 'Isenção concedida pelo admin',
+        // Isenção é individual e permanente -- nunca fica refém do
+        // cancelamento dos irmãos numa Assinatura Família.
+        familia_id: null,
       };
+      const familiaIdAntigo = selecionado.assinatura_atual?.familia_id || null;
 
       if (selecionado.assinatura_atual?.id) {
         const { error } = await supabase.from('carreira_assinaturas').update(payload).eq('id', selecionado.assinatura_atual.id);
         if (error) throw error;
+        if (familiaIdAntigo) {
+          await dissolverFamiliaSeNecessario(familiaIdAntigo, selecionado.assinatura_atual.id);
+        }
       } else {
         const { error } = await supabase.from('carreira_assinaturas').insert(payload);
         if (error) throw error;
@@ -607,6 +706,11 @@ function ConcederIsencaoDialog({ onClose, onSaved }: { onClose: () => void; onSa
             <p className="text-sm text-muted-foreground">
               Isso vai conceder acesso Premium vitalício (sem cobrança), {selecionado.assinatura_atual ? 'atualizando a assinatura atual' : 'criando uma nova assinatura'} deste atleta.
             </p>
+            {selecionado.assinatura_atual?.familia_id && (
+              <p className="text-xs text-amber-600 bg-amber-500/10 rounded-lg p-2.5">
+                Esse atleta faz parte de uma Assinatura Família. A isenção vai desvincular ele dela; se sobrar menos de 2 filhos cobertos, a família é cancelada de verdade (Asaas + banco) e quem sobrar passa a precisar assinar individualmente.
+              </p>
+            )}
             <div>
               <Label>Observações (motivo da isenção)</Label>
               <Textarea value={observacoes} onChange={e => setObservacoes(e.target.value)} rows={2} placeholder="Ex: filho do admin, uso pessoal" />
