@@ -11,6 +11,17 @@ export interface MeuPerfilAtleta extends PerfilAtleta {
 }
 
 /**
+ * Slug do "Meu Perfil" de verdade -- NUNCA o de um filho colaborado. O
+ * perfil ATIVO do seletor pode estar apontando pro filho de outro
+ * responsável (ex: uma colaboradora que selecionou o atleta que ela ajuda
+ * a gerenciar); "Meu Perfil" tem que continuar sendo a identidade da
+ * própria pessoa, não o que está selecionado no momento pra postar/gerir.
+ */
+export function slugDoDono(perfil: MeuPerfilAtleta | null | undefined): string | null {
+  return perfil && !perfil.souColaborador ? perfil.slug : null;
+}
+
+/**
  * Lista todos os perfis de atleta que esse usuário pode acessar: os que ele
  * é dono (filhos cadastrados por ele) MAIS os que ele colabora (acesso
  * concedido por outro responsável -- ex: mãe/pai/o próprio atleta com login

@@ -17,7 +17,7 @@ import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
-import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
+import { useCriancaAtiva, slugDoDono } from '@/hooks/useCriancaAtiva';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { useSEO } from '@/hooks/useSEO';
 
@@ -401,8 +401,12 @@ export default function CarreiraExplorarPage() {
                 <Button variant="outline" size="sm" className="h-8 text-xs" onClick={async () => {
                   // Usa a criança ativa já resolvida (meuPerfil) em vez de
                   // reconsultar "o perfil mais recente" -- respeita a mesma
-                  // seleção do seletor de irmãos.
-                  if (meuPerfil?.slug) { navigate(carreiraPath(`/${meuPerfil.slug}`)); return; }
+                  // seleção do seletor de irmãos. slugDoDono nunca retorna o
+                  // slug de um filho colaborado -- "Meu Perfil" é sempre a
+                  // identidade da própria pessoa, não o que está selecionado
+                  // pra postar/gerir no momento.
+                  const meuSlugProprio = slugDoDono(meuPerfil);
+                  if (meuSlugProprio) { navigate(carreiraPath(`/${meuSlugProprio}`)); return; }
                   const { data: pr } = await supabase
                     .from('perfis_rede')
                     .select('slug')
@@ -653,7 +657,7 @@ export default function CarreiraExplorarPage() {
       </main>
 
       {/* Mobile bottom nav */}
-      <CarreiraBottomNav currentUserId={sessionUserId} profileSlug={meuPerfil?.slug || meuPerfilRede?.slug || null} />
+      <CarreiraBottomNav currentUserId={sessionUserId} profileSlug={slugDoDono(meuPerfil) || meuPerfilRede?.slug || null} />
     </div>
   );
 }

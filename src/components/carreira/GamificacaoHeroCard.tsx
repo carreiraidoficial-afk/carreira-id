@@ -53,7 +53,7 @@ export function GamificacaoHeroCard({ accentColor: propAccentColor }: Gamificaca
     queryKey: ['gamificacao-perfil', userId, perfilAtivo?.crianca_id],
     queryFn: async () => {
       if (!userId) return null;
-      const pa = perfilAtivo ? { cor_destaque: perfilAtivo.cor_destaque, slug: perfilAtivo.slug } : null;
+      const pa = perfilAtivo ? { id: perfilAtivo.id, cor_destaque: perfilAtivo.cor_destaque, slug: perfilAtivo.slug } : null;
       const { data: pr } = await supabase
         .from('perfis_rede')
         .select('convite_codigo, slug')
@@ -62,8 +62,19 @@ export function GamificacaoHeroCard({ accentColor: propAccentColor }: Gamificaca
         .limit(1)
         .maybeSingle();
 
-      let conviteCodigo = pr?.convite_codigo || null;
-      
+      // Um responsável pode ter mais de um perfil_atleta (irmãos) -- o
+      // código de convite é da CONTA, não de um filho específico, então
+      // procura em qualquer um deles antes de gerar um novo.
+      const { data: paComCodigo } = await supabase
+        .from('perfil_atleta')
+        .select('convite_codigo')
+        .eq('user_id', userId)
+        .not('convite_codigo', 'is', null)
+        .limit(1)
+        .maybeSingle();
+
+      let conviteCodigo = pr?.convite_codigo || paComCodigo?.convite_codigo || null;
+
       // If no convite_codigo exists, generate one and PERSIST it
       if (!conviteCodigo) {
         const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -74,18 +85,17 @@ export function GamificacaoHeroCard({ accentColor: propAccentColor }: Gamificaca
             .update({ convite_codigo: newCode } as any)
             .eq('user_id', userId);
         } else if (pa) {
-          // User only has perfil_atleta — create a minimal perfis_rede entry
-          // so the invite code is persisted and discoverable
-          await supabase.from('perfis_rede').insert({
-            user_id: userId,
-            tipo: 'pai_responsavel',
-            nome: pa.slug?.replace(/-[a-z0-9]+$/, '').replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || 'Responsável',
-            convite_codigo: newCode,
-          } as any);
+          // User só tem perfil_atleta -- grava o código nele mesmo, sem
+          // criar um perfil "pai_responsavel" fantasma só pra guardar uma
+          // string (isso já causou perfis fantasma reais em produção).
+          await supabase
+            .from('perfil_atleta')
+            .update({ convite_codigo: newCode } as any)
+            .eq('id', pa.id);
         }
         conviteCodigo = newCode;
       }
-      
+
       return {
         cor_destaque: pa?.cor_destaque || '#3b82f6',
         convite_codigo: conviteCodigo,

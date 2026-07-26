@@ -7,7 +7,7 @@ import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
 import logoCarreira from '@/assets/logo-carreira-id-dark.png';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
-import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
+import { useCriancaAtiva, slugDoDono } from '@/hooks/useCriancaAtiva';
 
 export default function CarreiraDescobrirPage() {
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ export default function CarreiraDescobrirPage() {
   // criança ativa do seletor em vez de .maybeSingle() puro, que erroraria
   // com 2+ perfis pro mesmo user_id.
   const { perfilAtivo } = useCriancaAtiva(currentUserId);
-  const profileSlug = perfilAtivo?.slug || profileSlugRede;
+  const profileSlug = slugDoDono(perfilAtivo) || profileSlugRede;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {

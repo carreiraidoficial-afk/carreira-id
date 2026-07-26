@@ -52,12 +52,23 @@ interface Props {
   targetPerfilAtletaId?: string | null;
 }
 
-/** Uma linha de conexão pertence ao atleta ativo (ou é legada/sem distinção
- * de irmão, coluna null) -- evita que o vínculo de um irmão vaze pro outro. */
-function pertenceAoAtivo(row: any, meuUserId: string, meuPerfilAtletaId: string | null | undefined): boolean {
+/** Uma linha de conexão corresponde a ESTE par específico (meu atleta ativo
+ * + o atleta alvo sendo exibido), não só à conta -- checa os dois lados,
+ * senão dois irmãos do mesmo alvo (ou do mesmo lado de quem pergunta)
+ * aparecem com o mesmo status "Conectado" por engano. Coluna null em
+ * qualquer lado é tratada como legada/sem distinção (passa). */
+function pertenceAoAtivo(
+  row: any,
+  meuUserId: string,
+  meuPerfilAtletaId: string | null | undefined,
+  alvoPerfilAtletaId?: string | null,
+): boolean {
   const souSolicitante = row.solicitante_id === meuUserId;
   const meuLado = souSolicitante ? row.solicitante_perfil_atleta_id : row.destinatario_perfil_atleta_id;
-  return !meuLado || meuLado === meuPerfilAtletaId;
+  const ladoAlvo = souSolicitante ? row.destinatario_perfil_atleta_id : row.solicitante_perfil_atleta_id;
+  const meuLadoOk = !meuLado || meuLado === meuPerfilAtletaId;
+  const ladoAlvoOk = !ladoAlvo || !alvoPerfilAtletaId || ladoAlvo === alvoPerfilAtletaId;
+  return meuLadoOk && ladoAlvoOk;
 }
 
 export function ConectarButton({ targetUserId, currentUserId, accentColor = '#3b82f6', unidades, isDono, unidadeNome: preselectedUnidade, sourcePerfilAtletaId, targetPerfilAtletaId }: Props) {
@@ -90,7 +101,7 @@ export function ConectarButton({ targetUserId, currentUserId, accentColor = '#3b
         return null;
       }
 
-      const propria = (data || []).filter((row) => pertenceAoAtivo(row, currentUserId, sourcePerfilAtletaId));
+      const propria = (data || []).filter((row) => pertenceAoAtivo(row, currentUserId, sourcePerfilAtletaId, targetPerfilAtletaId));
       return propria[0] ?? null;
     },
     enabled: !!currentUserId,

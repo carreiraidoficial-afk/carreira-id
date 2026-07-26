@@ -18,7 +18,7 @@ import { useCarreiraRanking } from '@/hooks/useCarreiraRanking';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
 import { useCarreiraPlano } from '@/hooks/useCarreiraPlano';
 import { FeatureGate } from '@/components/carreira/FeatureGate';
-import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
+import { useCriancaAtiva, slugDoDono } from '@/hooks/useCriancaAtiva';
 
 export default function CarreiraGamerPage() {
   const { sessionUserId: currentUserId, loading: sessionLoading } = useCarreiraSession();
@@ -28,6 +28,7 @@ export default function CarreiraGamerPage() {
   // Um responsável pode ter mais de um atleta cadastrado (irmãos) -- usa a
   // criança "ativa" do seletor em vez de sempre pegar a mais antiga.
   const { perfilAtivo } = useCriancaAtiva(currentUserId);
+  const meuSlugProprio = slugDoDono(perfilAtivo);
   const { data: perfilRede } = useQuery({
     queryKey: ['liga-page-perfil-rede', currentUserId],
     queryFn: async () => {
@@ -35,11 +36,14 @@ export default function CarreiraGamerPage() {
       const { data } = await supabase.from('perfis_rede').select('slug').eq('user_id', currentUserId).order('created_at', { ascending: true }).limit(1).maybeSingle();
       return data;
     },
-    enabled: !!currentUserId && !perfilAtivo,
+    // Busca o perfil de rede sempre que o ativo não for um perfil PRÓPRIO
+    // (inclui o caso de colaborador: perfilAtivo existe mas é de outro
+    // atleta, então "Meu Perfil" precisa cair pro perfil de rede da pessoa).
+    enabled: !!currentUserId && !meuSlugProprio,
   });
 
   const accentColor = perfilAtivo?.cor_destaque || '#3b82f6';
-  const mySlug = perfilAtivo?.slug || perfilRede?.slug || null;
+  const mySlug = meuSlugProprio || perfilRede?.slug || null;
   const { data: ranking } = useCarreiraRanking();
   const { plano, temAcesso } = useCarreiraPlano(perfilAtivo?.crianca_id || null);
   const { data: niveis } = useNiveisConfig();
