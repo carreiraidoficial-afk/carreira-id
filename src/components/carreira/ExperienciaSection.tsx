@@ -46,18 +46,18 @@ interface ExperienciaSectionProps {
 const getActivityIcon = (tipo: string) => {
   switch (tipo) {
     case 'clinica_camp':
-      return <GraduationCap className="w-5 h-5" />;
+      return <GraduationCap className="w-10 h-10" />;
     case 'treino_preparador_fisico':
     case 'treino_tecnico':
-      return <Dumbbell className="w-5 h-5" />;
+      return <Dumbbell className="w-10 h-10" />;
     case 'competicao_torneio':
-      return <Trophy className="w-5 h-5" />;
+      return <Trophy className="w-10 h-10" />;
     case 'avaliacao':
-      return <Target className="w-5 h-5" />;
+      return <Target className="w-10 h-10" />;
     case 'jogo_amistoso_externo':
-      return <Award className="w-5 h-5" />;
+      return <Award className="w-10 h-10" />;
     default:
-      return <Calendar className="w-5 h-5" />;
+      return <Calendar className="w-10 h-10" />;
   }
 };
 
@@ -189,12 +189,12 @@ export function ExperienciaSection({
         ) : (
           <div className="relative">
             {/* Timeline line */}
-            <div className="absolute left-5 top-0 bottom-0 w-px bg-border" />
+            <div className="absolute left-[62px] top-0 bottom-0 w-px bg-border" />
 
             {allExperiencias.map((exp) => (
-              <div key={exp.id} className="relative pl-12 pb-4 last:pb-0">
+              <div key={exp.id} className="relative pl-32 pb-6 last:pb-0 min-h-[100px]">
                 {/* Timeline dot */}
-                <div className="absolute left-3 w-5 h-5 rounded-full border-2 flex items-center justify-center overflow-hidden"
+                <div className="absolute left-3 w-[100px] h-[100px] rounded-full border-2 flex items-center justify-center overflow-hidden"
                   style={exp.type === 'escolinha' || exp.type === 'carreira_exp'
                     ? { backgroundColor: `${accentColor}18`, borderColor: accentColor, color: accentColor }
                     : { backgroundColor: 'hsl(var(--secondary))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }
@@ -205,7 +205,7 @@ export function ExperienciaSection({
                   ) : exp.type === 'atividade' ? (
                     getActivityIcon((exp.data as AtividadeExternaPublica).tipo)
                   ) : (
-                    <GraduationCap className="w-3 h-3" />
+                    <GraduationCap className="w-10 h-10" />
                   )}
                 </div>
 
