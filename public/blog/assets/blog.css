@@ -377,7 +377,7 @@ img { max-width: 100%; display: block; }
 /* Assinatura profissional ao final do artigo (E-E-A-T) */
 .article-author {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 1rem;
   margin-top: 2.5rem;
   padding: 1.25rem;
@@ -402,6 +402,13 @@ img { max-width: 100%; display: block; }
 .article-author__role {
   color: var(--text-muted);
   font-size: 0.85rem;
+}
+
+.article-author__bio {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin-top: 0.4rem;
 }
 
 /* CTA final convidando pro app */
