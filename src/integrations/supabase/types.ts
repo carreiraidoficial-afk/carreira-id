@@ -532,6 +532,7 @@ export type Database = {
           data_inicio: string
           id: string
           logo_url: string | null
+          modalidade: string
           nome: string
           nome_time: string | null
           organizador: string | null
@@ -550,6 +551,7 @@ export type Database = {
           data_inicio: string
           id?: string
           logo_url?: string | null
+          modalidade?: string
           nome: string
           nome_time?: string | null
           organizador?: string | null
@@ -568,6 +570,7 @@ export type Database = {
           data_inicio?: string
           id?: string
           logo_url?: string | null
+          modalidade?: string
           nome?: string
           nome_time?: string | null
           organizador?: string | null
@@ -779,12 +782,16 @@ export type Database = {
           crianca_id: string
           data_jogo: string
           defesas_importantes: number | null
+          defesas_realizadas: number | null
+          erros_cometidos: number | null
+          erros_recepcao: number | null
           fase_campeonato: string | null
           gols_marcados: number | null
           gols_sofridos: number | null
           id: string
           local: string | null
           minutos_jogados: number | null
+          modalidade: string
           observacoes: string | null
           penaltis_defendidos: number | null
           penaltis_defendidos_disputa: number | null
@@ -794,7 +801,12 @@ export type Database = {
           placar_penaltis_adversario: number | null
           placar_penaltis_time: number | null
           placar_time_atleta: number | null
+          pontos_ataque: number | null
+          pontos_bloqueio: number | null
+          pontos_saque: number | null
           posicao_jogo: string | null
+          recepcoes_realizadas: number | null
+          sets_detalhe: Json | null
           teve_disputa_penaltis: boolean | null
           time_adversario: string
           time_atleta: string | null
@@ -809,12 +821,16 @@ export type Database = {
           crianca_id: string
           data_jogo: string
           defesas_importantes?: number | null
+          defesas_realizadas?: number | null
+          erros_cometidos?: number | null
+          erros_recepcao?: number | null
           fase_campeonato?: string | null
           gols_marcados?: number | null
           gols_sofridos?: number | null
           id?: string
           local?: string | null
           minutos_jogados?: number | null
+          modalidade?: string
           observacoes?: string | null
           penaltis_defendidos?: number | null
           penaltis_defendidos_disputa?: number | null
@@ -824,7 +840,12 @@ export type Database = {
           placar_penaltis_adversario?: number | null
           placar_penaltis_time?: number | null
           placar_time_atleta?: number | null
+          pontos_ataque?: number | null
+          pontos_bloqueio?: number | null
+          pontos_saque?: number | null
           posicao_jogo?: string | null
+          recepcoes_realizadas?: number | null
+          sets_detalhe?: Json | null
           teve_disputa_penaltis?: boolean | null
           time_adversario: string
           time_atleta?: string | null
@@ -839,12 +860,16 @@ export type Database = {
           crianca_id?: string
           data_jogo?: string
           defesas_importantes?: number | null
+          defesas_realizadas?: number | null
+          erros_cometidos?: number | null
+          erros_recepcao?: number | null
           fase_campeonato?: string | null
           gols_marcados?: number | null
           gols_sofridos?: number | null
           id?: string
           local?: string | null
           minutos_jogados?: number | null
+          modalidade?: string
           observacoes?: string | null
           penaltis_defendidos?: number | null
           penaltis_defendidos_disputa?: number | null
@@ -854,7 +879,12 @@ export type Database = {
           placar_penaltis_adversario?: number | null
           placar_penaltis_time?: number | null
           placar_time_atleta?: number | null
+          pontos_ataque?: number | null
+          pontos_bloqueio?: number | null
+          pontos_saque?: number | null
           posicao_jogo?: string | null
+          recepcoes_realizadas?: number | null
+          sets_detalhe?: Json | null
           teve_disputa_penaltis?: boolean | null
           time_adversario?: string
           time_atleta?: string | null
@@ -1533,6 +1563,7 @@ export type Database = {
           categoria: string | null
           cidade: string | null
           conexoes_count: number
+          convite_codigo: string | null
           cor_destaque: string | null
           cpf_cnpj: string | null
           created_at: string
@@ -1567,6 +1598,7 @@ export type Database = {
           categoria?: string | null
           cidade?: string | null
           conexoes_count?: number
+          convite_codigo?: string | null
           cor_destaque?: string | null
           cpf_cnpj?: string | null
           created_at?: string
@@ -1601,6 +1633,7 @@ export type Database = {
           categoria?: string | null
           cidade?: string | null
           conexoes_count?: number
+          convite_codigo?: string | null
           cor_destaque?: string | null
           cpf_cnpj?: string | null
           created_at?: string
@@ -1986,8 +2019,10 @@ export type Database = {
         Row: {
           created_at: string
           destinatario_id: string
+          destinatario_perfil_atleta_id: string | null
           id: string
           solicitante_id: string
+          solicitante_perfil_atleta_id: string | null
           status: string
           unidade_nome: string | null
           updated_at: string
@@ -1995,8 +2030,10 @@ export type Database = {
         Insert: {
           created_at?: string
           destinatario_id: string
+          destinatario_perfil_atleta_id?: string | null
           id?: string
           solicitante_id: string
+          solicitante_perfil_atleta_id?: string | null
           status?: string
           unidade_nome?: string | null
           updated_at?: string
@@ -2004,13 +2041,30 @@ export type Database = {
         Update: {
           created_at?: string
           destinatario_id?: string
+          destinatario_perfil_atleta_id?: string | null
           id?: string
           solicitante_id?: string
+          solicitante_perfil_atleta_id?: string | null
           status?: string
           unidade_nome?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "rede_conexoes_destinatario_perfil_atleta_id_fkey"
+            columns: ["destinatario_perfil_atleta_id"]
+            isOneToOne: false
+            referencedRelation: "perfil_atleta"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rede_conexoes_solicitante_perfil_atleta_id_fkey"
+            columns: ["solicitante_perfil_atleta_id"]
+            isOneToOne: false
+            referencedRelation: "perfil_atleta"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rede_convites: {
         Row: {

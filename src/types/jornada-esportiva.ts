@@ -11,7 +11,12 @@ export type PosicaoJogo =
   | 'meia-atacante'
   | 'ala'
   | 'atacante'
-  | 'ponta';
+  | 'ponta'
+  | 'levantador'
+  | 'oposto'
+  | 'ponteiro'
+  | 'central'
+  | 'libero';
 
 export type PosicaoFinalCampeonato =
   | 'campeao'
@@ -28,8 +33,20 @@ export type TipoPremiacaoIndividual =
   | 'melhor_goleiro'
   | 'artilheiro'
   | 'melhor_defesa'
+  | 'melhor_atacante'
+  | 'melhor_saque'
+  | 'melhor_bloqueio'
+  | 'melhor_libero'
+  | 'melhor_levantador'
   | 'destaque'
   | 'outro';
+
+/** Placar de um set de vôlei (opcional, dentro de sets_detalhe) */
+export interface SetDetalhe {
+  set: number;
+  pontos_time: number;
+  pontos_adversario: number;
+}
 
 export interface Campeonato {
   id: string;
@@ -43,6 +60,7 @@ export interface Campeonato {
   posicao_final?: PosicaoFinalCampeonato | null;
   categoria?: string | null;
   nome_time?: string | null;
+  modalidade: string;
   created_at: string;
 }
 
@@ -71,6 +89,7 @@ export interface Jogo {
   time_atleta?: string | null;
   observacoes?: string;
   fase_campeonato?: string;
+  modalidade: string;
   created_at: string;
   // Estatísticas de goleiro (opcionais)
   minutos_jogados?: number | null;
@@ -83,6 +102,17 @@ export interface Jogo {
   penaltis_defendidos_disputa?: number | null;
   penaltis_gol_lado_correto?: number | null;
   penaltis_gol_lado_errado?: number | null;
+  // Estatísticas de vôlei -- bloco geral (opcionais)
+  pontos_ataque?: number | null;
+  pontos_bloqueio?: number | null;
+  pontos_saque?: number | null;
+  erros_cometidos?: number | null;
+  // Estatísticas de vôlei -- bloco líbero (opcionais)
+  recepcoes_realizadas?: number | null;
+  defesas_realizadas?: number | null;
+  erros_recepcao?: number | null;
+  // Placar detalhado por set (opcional)
+  sets_detalhe?: SetDetalhe[] | null;
 }
 
 export interface JogoMidia {
@@ -120,6 +150,15 @@ export interface EstatisticasAtleta {
   totalGolsSofridos?: number;
   totalPenaltisDefendidos?: number;
   minutosTotais?: number;
+  // Agregados de vôlei
+  totalPontosAtaque?: number;
+  totalPontosBloqueio?: number;
+  totalPontosSaque?: number;
+  totalErrosCometidos?: number;
+  jogosComoLibero?: number;
+  totalRecepcoes?: number;
+  totalDefesasVolei?: number;
+  totalErrosRecepcao?: number;
 }
 
 export interface JornadaEsportivaData {
@@ -138,6 +177,7 @@ export interface CreateCampeonatoInput {
   posicao_final?: PosicaoFinalCampeonato | null;
   categoria?: string | null;
   nome_time?: string | null;
+  modalidade: string;
 }
 
 export interface CreateCampeonatoPremiacaoInput {
@@ -160,6 +200,7 @@ export interface CreateJogoInput {
   time_atleta?: string | null;
   observacoes?: string;
   fase_campeonato?: string;
+  modalidade: string;
   // Estatísticas de goleiro (opcionais)
   minutos_jogados?: number | null;
   gols_sofridos?: number | null;
@@ -171,6 +212,17 @@ export interface CreateJogoInput {
   penaltis_defendidos_disputa?: number | null;
   penaltis_gol_lado_correto?: number | null;
   penaltis_gol_lado_errado?: number | null;
+  // Estatísticas de vôlei -- bloco geral (opcionais)
+  pontos_ataque?: number | null;
+  pontos_bloqueio?: number | null;
+  pontos_saque?: number | null;
+  erros_cometidos?: number | null;
+  // Estatísticas de vôlei -- bloco líbero (opcionais)
+  recepcoes_realizadas?: number | null;
+  defesas_realizadas?: number | null;
+  erros_recepcao?: number | null;
+  // Placar detalhado por set (opcional)
+  sets_detalhe?: SetDetalhe[] | null;
 }
 
 export interface CreateJogoMidiaInput {

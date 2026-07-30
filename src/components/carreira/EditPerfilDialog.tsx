@@ -38,7 +38,6 @@ import { PerfilAtleta, useUpdatePerfilAtleta } from '@/hooks/useCarreiraData';
 import { ProfilePhotoUpload } from './ProfilePhotoUpload';
 import { toast } from 'sonner';
 
-const POSICOES = ['Goleiro', 'Zagueiro', 'Lateral', 'Volante', 'Meia', 'Atacante'];
 const PES_DOMINANTES = [
   { value: 'direito', label: 'Direito' },
   { value: 'esquerdo', label: 'Esquerdo' },
@@ -60,7 +59,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-import { MODALIDADES, ESTADOS } from '@/constants/esportes';
+import { MODALIDADES, ESTADOS, POSICOES_FUTEBOL, POSICOES_VOLEI, isModalidadeVolei } from '@/constants/esportes';
 
 function EditCidadeField({ form }: { form: any }) {
   const estado = form.watch('estado');
@@ -109,6 +108,9 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
   });
 
   const isPlatformProfile = perfil.modalidade === 'Plataforma' || !perfil.crianca_id;
+  const modalidadePrincipal = selectedModalidades[0];
+  const isVolei = isModalidadeVolei(modalidadePrincipal);
+  const POSICOES = isVolei ? POSICOES_VOLEI : POSICOES_FUTEBOL;
 
   const { data: hasActiveSchoolLink } = useQuery({
     queryKey: ['has-school-link', perfil.crianca_id],
@@ -342,7 +344,7 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
 
                 <FormField control={form.control} name="pe_dominante" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Pé dominante</FormLabel>
+                    <FormLabel>{isVolei ? 'Mão de ataque' : 'Pé dominante'}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger></FormControl>
                       <SelectContent>

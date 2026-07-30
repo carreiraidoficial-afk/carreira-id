@@ -453,6 +453,7 @@ export function CarreiraTimeline({ perfil, isOwner = false }: CarreiraTimelinePr
             open={campeonatoFormOpen}
             onOpenChange={(open) => { setCampeonatoFormOpen(open); if (!open) setEditingCampeonato(null); }}
             criancaId={perfil.crianca_id}
+            modalidades={(perfil.modalidades && perfil.modalidades.length > 0) ? perfil.modalidades : [perfil.modalidade]}
             editingCampeonato={editingCampeonato}
             onSaved={jornada.fetchData}
           />
@@ -461,6 +462,7 @@ export function CarreiraTimeline({ perfil, isOwner = false }: CarreiraTimelinePr
             onOpenChange={(open) => { setJogoFormOpen(open); if (!open) setEditingJogo(null); }}
             criancaId={perfil.crianca_id}
             campeonatos={jornada.data.campeonatos}
+            modalidades={(perfil.modalidades && perfil.modalidades.length > 0) ? perfil.modalidades : [perfil.modalidade]}
             editingJogo={editingJogo}
             onSaved={jornada.fetchData}
           />

@@ -23,6 +23,17 @@ export const MODALIDADES_PROFISSIONAL = [
   'Basquete', 'Outro',
 ];
 
+/** Posições de perfil por modalidade (usadas em "Posição principal/secundária" do atleta) */
+export const POSICOES_FUTEBOL = ['Goleiro', 'Zagueiro', 'Lateral', 'Volante', 'Meia', 'Atacante'];
+export const POSICOES_VOLEI = ['Levantador', 'Oposto', 'Ponteiro', 'Central', 'Líbero'];
+
+/** Modalidades da família do vôlei -- usam posições e estatísticas próprias (ver JornadaJogoFormDialog) */
+export const MODALIDADES_VOLEI = ['Vôlei de Quadra', 'Vôlei de Areia'];
+
+export function isModalidadeVolei(modalidade?: string | null): boolean {
+  return !!modalidade && MODALIDADES_VOLEI.includes(modalidade);
+}
+
 export const CATEGORIAS = [
   'Sub-5', 'Sub-6', 'Sub-7', 'Sub-8', 'Sub-9', 'Sub-10',
   'Sub-11', 'Sub-12', 'Sub-13', 'Sub-14', 'Sub-15',

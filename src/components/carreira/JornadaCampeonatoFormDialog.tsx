@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Image as ImageIcon, X, Upload, Plus, Trash2, Medal } from 'lucide-react';
 import { toast } from 'sonner';
 import { useJornada } from '@/hooks/useJornada';
-import { CATEGORIAS } from '@/constants/esportes';
+import { CATEGORIAS, isModalidadeVolei } from '@/constants/esportes';
 import type {
   CampeonatoComJogos,
   PosicaoFinalCampeonato,
@@ -19,6 +19,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   criancaId: string;
+  modalidades: string[];
   editingCampeonato?: CampeonatoComJogos | null;
   onSaved?: () => Promise<void> | void;
 }
@@ -36,7 +37,7 @@ const POSICOES_FINAIS: { value: PosicaoFinalCampeonato; label: string }[] = [
   { value: 'eliminado', label: 'Eliminado' },
 ];
 
-const TIPOS_PREMIACAO: { value: TipoPremiacaoIndividual; label: string; emoji: string }[] = [
+const TIPOS_PREMIACAO_FUTEBOL: { value: TipoPremiacaoIndividual; label: string; emoji: string }[] = [
   { value: 'melhor_jogador', label: 'Melhor jogador', emoji: '🏆' },
   { value: 'melhor_goleiro', label: 'Melhor goleiro', emoji: '🧤' },
   { value: 'artilheiro', label: 'Artilheiro', emoji: '⚽' },
@@ -44,13 +45,24 @@ const TIPOS_PREMIACAO: { value: TipoPremiacaoIndividual; label: string; emoji: s
   { value: 'destaque', label: 'Destaque', emoji: '⭐' },
   { value: 'outro', label: 'Outro', emoji: '🏅' },
 ];
+const TIPOS_PREMIACAO_VOLEI: { value: TipoPremiacaoIndividual; label: string; emoji: string }[] = [
+  { value: 'melhor_jogador', label: 'Melhor jogador', emoji: '🏆' },
+  { value: 'melhor_levantador', label: 'Melhor levantador', emoji: '🙌' },
+  { value: 'melhor_atacante', label: 'Melhor atacante', emoji: '⚡' },
+  { value: 'melhor_saque', label: 'Melhor saque', emoji: '🎾' },
+  { value: 'melhor_bloqueio', label: 'Melhor bloqueio', emoji: '🧱' },
+  { value: 'melhor_libero', label: 'Melhor líbero', emoji: '🎯' },
+  { value: 'destaque', label: 'Destaque', emoji: '⭐' },
+  { value: 'outro', label: 'Outro', emoji: '🏅' },
+];
 
-export function JornadaCampeonatoFormDialog({ open, onOpenChange, criancaId, editingCampeonato, onSaved }: Props) {
+export function JornadaCampeonatoFormDialog({ open, onOpenChange, criancaId, modalidades, editingCampeonato, onSaved }: Props) {
   const {
     criarCampeonato, editarCampeonato, uploadArquivo,
     adicionarPremiacaoCampeonato, excluirPremiacaoCampeonato,
   } = useJornada(criancaId);
   const [saving, setSaving] = useState(false);
+  const [modalidade, setModalidade] = useState<string>(modalidades[0] || 'Futebol');
   const [nome, setNome] = useState('');
   const [organizador, setOrganizador] = useState('');
   const [abrangencia, setAbrangencia] = useState<TorneioAbrangencia>('regional');
@@ -70,6 +82,7 @@ export function JornadaCampeonatoFormDialog({ open, onOpenChange, criancaId, edi
 
   useEffect(() => {
     if (open) {
+      setModalidade(editingCampeonato?.modalidade || modalidades[0] || 'Futebol');
       setNome(editingCampeonato?.nome || '');
       setOrganizador(editingCampeonato?.organizador || '');
       setAbrangencia(editingCampeonato?.abrangencia || 'regional');
@@ -106,6 +119,7 @@ export function JornadaCampeonatoFormDialog({ open, onOpenChange, criancaId, edi
         posicao_final: posicaoFinal,
         categoria: categoria || null,
         nome_time: nomeTime.trim() || null,
+        modalidade,
       };
       if (editingCampeonato) {
         await editarCampeonato(editingCampeonato.id, payload);
@@ -163,7 +177,11 @@ export function JornadaCampeonatoFormDialog({ open, onOpenChange, criancaId, edi
     }
   };
 
-  const tipoLabel = (t: string) => TIPOS_PREMIACAO.find((x) => x.value === t);
+  const tiposPremiacaoDisponiveis = isModalidadeVolei(modalidade) ? TIPOS_PREMIACAO_VOLEI : TIPOS_PREMIACAO_FUTEBOL;
+  const tipoLabel = (t: string) =>
+    tiposPremiacaoDisponiveis.find((x) => x.value === t) ||
+    TIPOS_PREMIACAO_FUTEBOL.find((x) => x.value === t) ||
+    TIPOS_PREMIACAO_VOLEI.find((x) => x.value === t);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -172,6 +190,17 @@ export function JornadaCampeonatoFormDialog({ open, onOpenChange, criancaId, edi
           <DialogTitle>{editingCampeonato ? 'Editar Campeonato' : 'Novo Campeonato'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-3">
+          {modalidades.length > 1 && (
+            <div>
+              <Label>Modalidade</Label>
+              <Select value={modalidade} onValueChange={setModalidade}>
+                <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+                <SelectContent>
+                  {modalidades.map((m) => (<SelectItem key={m} value={m}>{m}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div>
             <Label>Logomarca (opcional)</Label>
             <div className="flex items-center gap-3 mt-1">
@@ -289,7 +318,7 @@ export function JornadaCampeonatoFormDialog({ open, onOpenChange, criancaId, edi
                 <Select value={novaPremTipo} onValueChange={(v) => setNovaPremTipo(v as TipoPremiacaoIndividual)}>
                   <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
                   <SelectContent>
-                    {TIPOS_PREMIACAO.map((t) => (
+                    {tiposPremiacaoDisponiveis.map((t) => (
                       <SelectItem key={t.value} value={t.value}>{t.emoji} {t.label}</SelectItem>
                     ))}
                   </SelectContent>

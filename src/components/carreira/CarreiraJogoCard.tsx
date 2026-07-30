@@ -5,6 +5,11 @@ import { Pencil, Trash2, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import type { JogoComMidia, JogoMidia } from '@/types/jornada-esportiva';
+import { isModalidadeVolei } from '@/constants/esportes';
+
+const POSICAO_VOLEI_LABEL: Record<string, string> = {
+  levantador: 'Levantador', oposto: 'Oposto', ponteiro: 'Ponteiro', central: 'Central', libero: 'Líbero',
+};
 
 interface Props {
   jogo: JogoComMidia;
@@ -122,6 +127,8 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
 
   const meuTime = j.time_atleta?.trim() || 'Meu time';
   const temPlacar = j.placar_time_atleta != null && j.placar_adversario != null;
+  const isVolei = isModalidadeVolei((j as any).modalidade);
+  const isLibero = isVolei && j.posicao_jogo === 'libero';
 
   const isVideoUrl = (url: string) => /\.(mp4|mov|webm|m4v|avi|mkv)(\?|$)/i.test(url);
 
@@ -146,7 +153,24 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
           {dataFmt}{j.local ? ` • ${j.local}` : ''}
         </p>
         <div className="flex flex-wrap gap-1.5 mt-1.5 text-[11px]">
-          {j.posicao_jogo === 'goleiro' ? (
+          {isVolei ? (
+            isLibero ? (
+              <>
+                <Tag>🎯 Líbero</Tag>
+                {j.recepcoes_realizadas != null && <Tag>🙌 {j.recepcoes_realizadas} recepções</Tag>}
+                {j.defesas_realizadas != null && <Tag>🛡️ {j.defesas_realizadas} defesas</Tag>}
+                {!!j.erros_recepcao && <Tag>❌ {j.erros_recepcao} erro(s) recepção</Tag>}
+              </>
+            ) : (
+              <>
+                {j.posicao_jogo && POSICAO_VOLEI_LABEL[j.posicao_jogo] && <Tag>🏐 {POSICAO_VOLEI_LABEL[j.posicao_jogo]}</Tag>}
+                {!!j.pontos_ataque && <Tag>⚡ {j.pontos_ataque} ataque</Tag>}
+                {!!j.pontos_bloqueio && <Tag>🧱 {j.pontos_bloqueio} bloqueio</Tag>}
+                {!!j.pontos_saque && <Tag>🎾 {j.pontos_saque} saque</Tag>}
+                {!!j.erros_cometidos && <Tag>❌ {j.erros_cometidos} erro(s)</Tag>}
+              </>
+            )
+          ) : j.posicao_jogo === 'goleiro' ? (
             <>
               <Tag>🧤 Goleiro</Tag>
               {j.defesas_importantes != null && <Tag>🛡️ {j.defesas_importantes} defesa(s)</Tag>}
@@ -162,10 +186,15 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
           )}
           {j.fase_campeonato && <Tag>{j.fase_campeonato}</Tag>}
         </div>
-        {j.posicao_jogo === 'goleiro' && j.teve_disputa_penaltis && (
+        {!isVolei && j.posicao_jogo === 'goleiro' && j.teve_disputa_penaltis && (
           <p className="text-[11px] text-muted-foreground mt-1">
             Disputa de pênaltis: <strong>{j.placar_penaltis_time ?? '?'} × {j.placar_penaltis_adversario ?? '?'}</strong>
             {j.penaltis_defendidos_disputa != null && ` · ${j.penaltis_defendidos_disputa} def.`}
+          </p>
+        )}
+        {isVolei && j.sets_detalhe && j.sets_detalhe.length > 0 && (
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Sets: {j.sets_detalhe.map((s) => `${s.pontos_time}-${s.pontos_adversario}`).join(' · ')}
           </p>
         )}
         {j.observacoes && <p className="text-xs text-muted-foreground mt-1.5">{j.observacoes}</p>}

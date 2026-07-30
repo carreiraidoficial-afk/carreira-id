@@ -9,13 +9,15 @@ import { Switch } from '@/components/ui/switch';
 import { Loader2, Upload, X, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import { useJornada } from '@/hooks/useJornada';
-import type { CampeonatoComJogos, JogoComMidia, PosicaoJogo } from '@/types/jornada-esportiva';
+import type { CampeonatoComJogos, JogoComMidia, PosicaoJogo, SetDetalhe } from '@/types/jornada-esportiva';
+import { isModalidadeVolei } from '@/constants/esportes';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   criancaId: string;
   campeonatos: CampeonatoComJogos[];
+  modalidades: string[];
   editingJogo?: JogoComMidia | null;
   onSaved?: () => Promise<void> | void;
 }
@@ -24,7 +26,7 @@ const NONE = '__none__';
 const MAX_IMG = 15 * 1024 * 1024;
 const MAX_VIDEO = 100 * 1024 * 1024;
 const POSICAO_NONE = '__none__';
-const POSICOES: { value: PosicaoJogo; label: string }[] = [
+const POSICOES_FUTEBOL_JOGO: { value: PosicaoJogo; label: string }[] = [
   { value: 'goleiro', label: 'Goleiro' },
   { value: 'zagueiro', label: 'Zagueiro' },
   { value: 'lateral-direito', label: 'Lateral Direito' },
@@ -36,11 +38,22 @@ const POSICOES: { value: PosicaoJogo; label: string }[] = [
   { value: 'ponta', label: 'Ponta' },
   { value: 'atacante', label: 'Atacante' },
 ];
+const POSICOES_VOLEI_JOGO: { value: PosicaoJogo; label: string }[] = [
+  { value: 'levantador', label: 'Levantador' },
+  { value: 'oposto', label: 'Oposto' },
+  { value: 'ponteiro', label: 'Ponteiro' },
+  { value: 'central', label: 'Central' },
+  { value: 'libero', label: 'Líbero' },
+];
+const MAX_SETS = 5;
+const emptySets = (): { pontos_time: string; pontos_adversario: string }[] =>
+  Array.from({ length: MAX_SETS }, () => ({ pontos_time: '', pontos_adversario: '' }));
 
-export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonatos, editingJogo, onSaved }: Props) {
+export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonatos, modalidades, editingJogo, onSaved }: Props) {
   const { criarJogo, editarJogo, adicionarMidiasJogo, excluirMidia } = useJornada(criancaId);
   const [saving, setSaving] = useState(false);
   const [campeonatoId, setCampeonatoId] = useState<string>(NONE);
+  const [modalidade, setModalidade] = useState<string>(modalidades[0] || 'Futebol');
   const [dataJogo, setDataJogo] = useState('');
   const [timeAtleta, setTimeAtleta] = useState('');
   const [adversario, setAdversario] = useState('');
@@ -63,12 +76,50 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
   const [penDefDisputa, setPenDefDisputa] = useState('');
   const [penLadoCerto, setPenLadoCerto] = useState('');
   const [penLadoErrado, setPenLadoErrado] = useState('');
+  // Vôlei -- bloco geral
+  const [pontosAtaque, setPontosAtaque] = useState('');
+  const [pontosBloqueio, setPontosBloqueio] = useState('');
+  const [pontosSaque, setPontosSaque] = useState('');
+  const [errosCometidos, setErrosCometidos] = useState('');
+  // Vôlei -- bloco líbero
+  const [recepcoes, setRecepcoes] = useState('');
+  const [defesasVolei, setDefesasVolei] = useState('');
+  const [errosRecepcao, setErrosRecepcao] = useState('');
+  // Vôlei -- placar detalhado por set
+  const [setsAtivo, setSetsAtivo] = useState(false);
+  const [sets, setSets] = useState(emptySets());
   const [novosArquivos, setNovosArquivos] = useState<File[]>([]);
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const isVolei = isModalidadeVolei(modalidade);
+  const posicoesDisponiveis = isVolei ? POSICOES_VOLEI_JOGO : POSICOES_FUTEBOL_JOGO;
+  const isLibero = isVolei && posicao === 'libero';
 
   useEffect(() => {
     if (open) {
       setCampeonatoId(editingJogo?.campeonato_id || NONE);
+      setModalidade(editingJogo?.modalidade || modalidades[0] || 'Futebol');
+      setPontosAtaque(editingJogo?.pontos_ataque?.toString() ?? '');
+      setPontosBloqueio(editingJogo?.pontos_bloqueio?.toString() ?? '');
+      setPontosSaque(editingJogo?.pontos_saque?.toString() ?? '');
+      setErrosCometidos(editingJogo?.erros_cometidos?.toString() ?? '');
+      setRecepcoes(editingJogo?.recepcoes_realizadas?.toString() ?? '');
+      setDefesasVolei(editingJogo?.defesas_realizadas?.toString() ?? '');
+      setErrosRecepcao(editingJogo?.erros_recepcao?.toString() ?? '');
+      const existingSets = editingJogo?.sets_detalhe;
+      if (existingSets && existingSets.length > 0) {
+        setSetsAtivo(true);
+        const filled = emptySets();
+        existingSets.forEach((s) => {
+          if (s.set >= 1 && s.set <= MAX_SETS) {
+            filled[s.set - 1] = { pontos_time: s.pontos_time.toString(), pontos_adversario: s.pontos_adversario.toString() };
+          }
+        });
+        setSets(filled);
+      } else {
+        setSetsAtivo(false);
+        setSets(emptySets());
+      }
       setDataJogo(editingJogo?.data_jogo?.slice(0, 10) || '');
       setTimeAtleta(editingJogo?.time_atleta || '');
       setAdversario(editingJogo?.time_adversario || '');
@@ -149,17 +200,23 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
     if (!adversario.trim()) { toast.error('Informe o time adversário'); return; }
     setSaving(true);
     try {
-      const isGoleiro = posicao === 'goleiro';
+      const isGoleiro = !isVolei && posicao === 'goleiro';
+      const setsDetalhe: SetDetalhe[] = isVolei && setsAtivo
+        ? sets
+            .map((s, idx) => ({ set: idx + 1, pontos_time: num(s.pontos_time), pontos_adversario: num(s.pontos_adversario) }))
+            .filter((s): s is SetDetalhe => s.pontos_time !== undefined && s.pontos_adversario !== undefined)
+        : [];
       const payload = {
         campeonato_id: campeonatoId === NONE ? null : campeonatoId,
+        modalidade,
         data_jogo: dataJogo,
         time_atleta: timeAtleta.trim() || null,
         time_adversario: adversario.trim(),
         local: local.trim() || undefined,
         placar_time_atleta: num(placarA),
         placar_adversario: num(placarB),
-        gols_marcados: isGoleiro ? undefined : num(gols),
-        assistencias: isGoleiro ? undefined : num(assist),
+        gols_marcados: !isVolei && !isGoleiro ? num(gols) : undefined,
+        assistencias: !isVolei && !isGoleiro ? num(assist) : undefined,
         posicao_jogo: posicao === POSICAO_NONE ? undefined : (posicao as PosicaoJogo),
         fase_campeonato: fase.trim() || undefined,
         observacoes: obs.trim() || undefined,
@@ -174,6 +231,16 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
         penaltis_defendidos_disputa: isGoleiro && teveDisputa ? (num(penDefDisputa) ?? null) : null,
         penaltis_gol_lado_correto: isGoleiro && teveDisputa ? (num(penLadoCerto) ?? null) : null,
         penaltis_gol_lado_errado: isGoleiro && teveDisputa ? (num(penLadoErrado) ?? null) : null,
+        // Vôlei -- bloco geral
+        pontos_ataque: isVolei && !isLibero ? (num(pontosAtaque) ?? null) : null,
+        pontos_bloqueio: isVolei && !isLibero ? (num(pontosBloqueio) ?? null) : null,
+        pontos_saque: isVolei && !isLibero ? (num(pontosSaque) ?? null) : null,
+        erros_cometidos: isVolei && !isLibero ? (num(errosCometidos) ?? null) : null,
+        // Vôlei -- bloco líbero
+        recepcoes_realizadas: isLibero ? (num(recepcoes) ?? null) : null,
+        defesas_realizadas: isLibero ? (num(defesasVolei) ?? null) : null,
+        erros_recepcao: isLibero ? (num(errosRecepcao) ?? null) : null,
+        sets_detalhe: setsDetalhe.length > 0 ? setsDetalhe : null,
       };
       let jogoId: string;
       if (editingJogo) {
@@ -205,6 +272,17 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
           <DialogTitle>{editingJogo ? 'Editar Jogo' : 'Novo Jogo'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-3">
+          {modalidades.length > 1 && (
+            <div>
+              <Label>Modalidade</Label>
+              <Select value={modalidade} onValueChange={(val) => { setModalidade(val); setPosicao(POSICAO_NONE); }}>
+                <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+                <SelectContent>
+                  {modalidades.map((m) => (<SelectItem key={m} value={m}>{m}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div>
             <Label>Campeonato (opcional)</Label>
             <Select value={campeonatoId} onValueChange={setCampeonatoId}>
@@ -229,14 +307,35 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Placar (meu time)</Label>
+              <Label>{isVolei ? 'Sets ganhos (meu time)' : 'Placar (meu time)'}</Label>
               <Input type="number" min={0} value={placarA} onChange={(e) => setPlacarA(e.target.value)} />
             </div>
             <div>
-              <Label>Placar (adversário)</Label>
+              <Label>{isVolei ? 'Sets ganhos (adversário)' : 'Placar (adversário)'}</Label>
               <Input type="number" min={0} value={placarB} onChange={(e) => setPlacarB(e.target.value)} />
             </div>
           </div>
+          {isVolei && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Switch checked={setsAtivo} onCheckedChange={setSetsAtivo} id="sets-ativo" />
+                <Label htmlFor="sets-ativo" className="cursor-pointer">Registrar placar detalhado por set?</Label>
+              </div>
+              {setsAtivo && (
+                <div className="space-y-2 rounded-lg border-2 p-3" style={{ borderColor: 'hsl(var(--border))' }}>
+                  {sets.map((s, idx) => (
+                    <div key={idx} className="grid grid-cols-3 gap-2 items-center">
+                      <Label className="text-sm">Set {idx + 1}</Label>
+                      <Input type="number" min={0} placeholder="Meu time" value={s.pontos_time}
+                        onChange={(e) => setSets((prev) => prev.map((p, i) => i === idx ? { ...p, pontos_time: e.target.value } : p))} />
+                      <Input type="number" min={0} placeholder="Adversário" value={s.pontos_adversario}
+                        onChange={(e) => setSets((prev) => prev.map((p, i) => i === idx ? { ...p, pontos_adversario: e.target.value } : p))} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Data *</Label>
@@ -253,13 +352,13 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
               <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={POSICAO_NONE}>Não informar</SelectItem>
-                {POSICOES.map((p) => (
+                {posicoesDisponiveis.map((p) => (
                   <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          {posicao !== 'goleiro' && (
+          {!isVolei && posicao !== 'goleiro' && (
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Gols do atleta</Label>
@@ -271,7 +370,49 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
               </div>
             </div>
           )}
-          {posicao === 'goleiro' && (
+          {isVolei && !isLibero && (
+            <div className="rounded-lg border-2 p-3 space-y-3" style={{ borderColor: 'hsl(var(--border))' }}>
+              <p className="text-sm font-semibold">🏐 Estatísticas de Vôlei</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Pontos de ataque</Label>
+                  <Input type="number" min={0} value={pontosAtaque} onChange={(e) => setPontosAtaque(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Pontos de bloqueio</Label>
+                  <Input type="number" min={0} value={pontosBloqueio} onChange={(e) => setPontosBloqueio(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Pontos de saque (aces)</Label>
+                  <Input type="number" min={0} value={pontosSaque} onChange={(e) => setPontosSaque(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Erros cometidos</Label>
+                  <Input type="number" min={0} value={errosCometidos} onChange={(e) => setErrosCometidos(e.target.value)} />
+                </div>
+              </div>
+            </div>
+          )}
+          {isLibero && (
+            <div className="rounded-lg border-2 p-3 space-y-3" style={{ borderColor: 'hsl(var(--border))' }}>
+              <p className="text-sm font-semibold">🎯 Estatísticas de Líbero</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Recepções realizadas</Label>
+                  <Input type="number" min={0} value={recepcoes} onChange={(e) => setRecepcoes(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Defesas realizadas</Label>
+                  <Input type="number" min={0} value={defesasVolei} onChange={(e) => setDefesasVolei(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Erros de recepção</Label>
+                  <Input type="number" min={0} value={errosRecepcao} onChange={(e) => setErrosRecepcao(e.target.value)} />
+                </div>
+              </div>
+            </div>
+          )}
+          {!isVolei && posicao === 'goleiro' && (
             <div className="rounded-lg border-2 p-3 space-y-3" style={{ borderColor: 'hsl(var(--border))' }}>
               <p className="text-sm font-semibold">🧤 Estatísticas de Goleiro</p>
               <div className="grid grid-cols-2 gap-3">

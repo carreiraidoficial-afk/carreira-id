@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { compressImage } from '@/lib/image-compressor';
+import { isModalidadeVolei } from '@/constants/esportes';
 import type {
   CampeonatoPremiacao,
   CreateCampeonatoInput,
@@ -154,6 +155,10 @@ export function useJornada(criancaId: string | undefined | null) {
         .map(([posicao, vezes]) => ({ posicao, vezes }))
         .sort((a, b) => b.vezes - a.vezes);
 
+      const jogosVolei = jogosComMidia.filter((j) => isModalidadeVolei((j as any).modalidade));
+      const jogosLibero = jogosVolei.filter((j) => j.posicao_jogo === 'libero');
+      const jogosVoleiNaoLibero = jogosVolei.filter((j) => j.posicao_jogo !== 'libero');
+
       const estatisticas: EstatisticasAtleta = {
         totalJogos: jogosComMidia.length,
         totalGols,
@@ -166,6 +171,14 @@ export function useJornada(criancaId: string | undefined | null) {
         totalGolsSofridos: jogosComMidia.reduce((s, j) => s + (j.posicao_jogo === 'goleiro' ? (j.gols_sofridos || 0) : 0), 0),
         totalPenaltisDefendidos: jogosComMidia.reduce((s, j) => s + (j.posicao_jogo === 'goleiro' ? ((j.penaltis_defendidos || 0) + (j.penaltis_defendidos_disputa || 0)) : 0), 0),
         minutosTotais: jogosComMidia.reduce((s, j) => s + (j.posicao_jogo === 'goleiro' ? (j.minutos_jogados || 0) : 0), 0),
+        totalPontosAtaque: jogosVoleiNaoLibero.reduce((s, j) => s + (j.pontos_ataque || 0), 0),
+        totalPontosBloqueio: jogosVoleiNaoLibero.reduce((s, j) => s + (j.pontos_bloqueio || 0), 0),
+        totalPontosSaque: jogosVoleiNaoLibero.reduce((s, j) => s + (j.pontos_saque || 0), 0),
+        totalErrosCometidos: jogosVoleiNaoLibero.reduce((s, j) => s + (j.erros_cometidos || 0), 0),
+        jogosComoLibero: jogosLibero.length,
+        totalRecepcoes: jogosLibero.reduce((s, j) => s + (j.recepcoes_realizadas || 0), 0),
+        totalDefesasVolei: jogosLibero.reduce((s, j) => s + (j.defesas_realizadas || 0), 0),
+        totalErrosRecepcao: jogosLibero.reduce((s, j) => s + (j.erros_recepcao || 0), 0),
       };
 
     return { campeonatos: campeonatosComJogos, amistosos, estatisticas };
@@ -250,6 +263,7 @@ export function useJornada(criancaId: string | undefined | null) {
         posicao_final: input.posicao_final ?? null,
         categoria: input.categoria ?? null,
         nome_time: input.nome_time ?? null,
+        modalidade: input.modalidade,
       }).select('id').single();
       if (error) throw error;
       await fetchData();
@@ -272,6 +286,7 @@ export function useJornada(criancaId: string | undefined | null) {
           posicao_final: input.posicao_final ?? null,
           categoria: input.categoria ?? null,
           nome_time: input.nome_time ?? null,
+          modalidade: input.modalidade,
         })
         .eq('id', id);
       if (error) throw error;
@@ -322,6 +337,7 @@ export function useJornada(criancaId: string | undefined | null) {
           criado_por: uid,
           campeonato_id: input.campeonato_id || null,
           tipo_jogo: input.campeonato_id ? 'campeonato' : 'amistoso',
+          modalidade: input.modalidade,
           data_jogo: input.data_jogo,
           time_adversario: input.time_adversario,
           time_atleta: input.time_atleta ?? null,
@@ -337,7 +353,7 @@ export function useJornada(criancaId: string | undefined | null) {
         .select('id')
         .single();
       if (error) throw error;
-      // Atualiza campos de goleiro se fornecidos (sem quebrar caso colunas ainda não existam)
+      // Atualiza campos de goleiro/vôlei se fornecidos (sem quebrar caso colunas ainda não existam)
       await (supabase as any).from('carreira_jogos').update({
         minutos_jogados: input.minutos_jogados ?? null,
         gols_sofridos: input.gols_sofridos ?? null,
@@ -349,6 +365,14 @@ export function useJornada(criancaId: string | undefined | null) {
         penaltis_defendidos_disputa: input.penaltis_defendidos_disputa ?? null,
         penaltis_gol_lado_correto: input.penaltis_gol_lado_correto ?? null,
         penaltis_gol_lado_errado: input.penaltis_gol_lado_errado ?? null,
+        pontos_ataque: input.pontos_ataque ?? null,
+        pontos_bloqueio: input.pontos_bloqueio ?? null,
+        pontos_saque: input.pontos_saque ?? null,
+        erros_cometidos: input.erros_cometidos ?? null,
+        recepcoes_realizadas: input.recepcoes_realizadas ?? null,
+        defesas_realizadas: input.defesas_realizadas ?? null,
+        erros_recepcao: input.erros_recepcao ?? null,
+        sets_detalhe: input.sets_detalhe ?? null,
       }).eq('id', inserted.id);
       await fetchData();
       return inserted.id as string;
@@ -363,6 +387,7 @@ export function useJornada(criancaId: string | undefined | null) {
         .update({
           campeonato_id: input.campeonato_id || null,
           tipo_jogo: input.campeonato_id ? 'campeonato' : 'amistoso',
+          modalidade: input.modalidade,
           data_jogo: input.data_jogo,
           time_adversario: input.time_adversario,
           time_atleta: input.time_atleta ?? null,
@@ -384,6 +409,14 @@ export function useJornada(criancaId: string | undefined | null) {
           penaltis_defendidos_disputa: input.penaltis_defendidos_disputa ?? null,
           penaltis_gol_lado_correto: input.penaltis_gol_lado_correto ?? null,
           penaltis_gol_lado_errado: input.penaltis_gol_lado_errado ?? null,
+          pontos_ataque: input.pontos_ataque ?? null,
+          pontos_bloqueio: input.pontos_bloqueio ?? null,
+          pontos_saque: input.pontos_saque ?? null,
+          erros_cometidos: input.erros_cometidos ?? null,
+          recepcoes_realizadas: input.recepcoes_realizadas ?? null,
+          defesas_realizadas: input.defesas_realizadas ?? null,
+          erros_recepcao: input.erros_recepcao ?? null,
+          sets_detalhe: input.sets_detalhe ?? null,
         })
         .eq('id', id);
       if (error) throw error;
