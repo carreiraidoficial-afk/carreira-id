@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useCidadesPorEstado } from '@/hooks/useCidadesPorEstado';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,7 +17,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Calendar, Loader2, School } from 'lucide-react';
+import { Calendar, Loader2, School, Camera, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCreateCarreiraExperiencia, useUpdateCarreiraExperiencia, useEscolinhasAutocomplete, CarreiraExperiencia } from '@/hooks/useCarreiraExperienciasData';
 
@@ -81,6 +81,9 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
   const [selectedEscolinhaId, setSelectedEscolinhaId] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState('');
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const { data: suggestions } = useEscolinhasAutocomplete(searchTerm);
 
   const isEditing = !!editingExperiencia;
@@ -121,6 +124,9 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
       });
       setSearchTerm(editingExperiencia.nome_escola);
       setSelectedEscolinhaId(editingExperiencia.escolinha_id);
+      setLogoUrl(editingExperiencia.logo_url || '');
+    } else if (open) {
+      setLogoUrl('');
     }
   }, [editingExperiencia, open, form]);
 
@@ -130,13 +136,39 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
     if (isAtual) form.setValue('data_fim', '');
   }, [isAtual, form]);
 
-  const handleSelectEscolinha = (esc: { id: string; nome: string; cidade: string | null; estado: string | null }) => {
+  const handleSelectEscolinha = (esc: { id: string; nome: string; cidade: string | null; estado: string | null; logo_url?: string | null }) => {
     form.setValue('nome_escola', esc.nome);
     setSelectedEscolinhaId(esc.id);
     setSearchTerm(esc.nome);
     if (esc.cidade) form.setValue('cidade', esc.cidade);
     if (esc.estado) form.setValue('estado', esc.estado);
+    if (esc.logo_url) setLogoUrl(esc.logo_url);
     setShowSuggestions(false);
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, selecione uma imagem');
+      return;
+    }
+    setUploadingLogo(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const fileName = `${userId}/experiencia-logo-${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('atleta-fotos')
+        .upload(fileName, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('atleta-fotos').getPublicUrl(fileName);
+      setLogoUrl(`${publicUrl}?t=${Date.now()}`);
+      toast.success('Logomarca atualizada!');
+    } catch (error: any) {
+      toast.error('Erro ao enviar logomarca: ' + error.message);
+    } finally {
+      setUploadingLogo(false);
+    }
   };
 
   const onSubmit = async (data: FormData) => {
@@ -160,6 +192,7 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
         tipo_instituicao: data.tipo_instituicao || null,
         categoria_instituicao: data.categoria_instituicao || null,
         posicao_jogada: data.posicao_jogada || null,
+        logo_url: logoUrl || null,
       };
 
       if (isEditing && editingExperiencia) {
@@ -181,6 +214,7 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
     setSearchTerm('');
     setSelectedEscolinhaId(null);
     setShowSuggestions(false);
+    setLogoUrl('');
     onOpenChange(false);
   };
 
@@ -196,6 +230,32 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Logomarca da escola/clube */}
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full border-2 border-border overflow-hidden bg-muted flex items-center justify-center">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Logomarca" className="w-full h-full object-cover" />
+                  ) : (
+                    <Building2 className="w-6 h-6 text-muted-foreground" />
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => logoInputRef.current?.click()}
+                  disabled={uploadingLogo}
+                  className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-1.5 shadow-lg hover:bg-primary/90 transition-colors"
+                >
+                  {uploadingLogo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <p>Logomarca da escola/clube</p>
+                <p className="text-xs">Ajuda a identificar essa experiência na sua jornada</p>
+              </div>
+              <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+            </div>
+
             {/* Nome da escola - com autocomplete */}
             <FormField control={form.control} name="nome_escola" render={({ field }) => (
               <FormItem className="relative">

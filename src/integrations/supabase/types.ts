@@ -699,6 +699,7 @@ export type Database = {
           escolinha_id: string | null
           estado: string | null
           id: string
+          logo_url: string | null
           nome_escola: string
           observacoes: string | null
           posicao_jogada: string | null
@@ -718,6 +719,7 @@ export type Database = {
           escolinha_id?: string | null
           estado?: string | null
           id?: string
+          logo_url?: string | null
           nome_escola: string
           observacoes?: string | null
           posicao_jogada?: string | null
@@ -737,6 +739,7 @@ export type Database = {
           escolinha_id?: string | null
           estado?: string | null
           id?: string
+          logo_url?: string | null
           nome_escola?: string
           observacoes?: string | null
           posicao_jogada?: string | null

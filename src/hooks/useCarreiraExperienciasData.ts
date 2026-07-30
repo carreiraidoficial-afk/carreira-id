@@ -17,6 +17,7 @@ export interface CarreiraExperiencia {
   tipo_instituicao: string | null;
   categoria_instituicao: string | null;
   posicao_jogada: string | null;
+  logo_url: string | null;
   created_at: string;
   updated_at: string;
 }

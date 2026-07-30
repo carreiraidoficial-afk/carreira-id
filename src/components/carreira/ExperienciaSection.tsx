@@ -2,12 +2,18 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  Building2, 
-  GraduationCap, 
-  Trophy, 
-  Calendar, 
-  ChevronDown, 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Building2,
+  GraduationCap,
+  Trophy,
+  Calendar,
+  ChevronDown,
   ChevronUp,
   Plus,
   Dumbbell,
@@ -16,6 +22,7 @@ import {
   Pencil,
   Trash2,
   RefreshCw,
+  MoreVertical,
 } from 'lucide-react';
 import { useState } from 'react';
 import { format } from 'date-fns';
@@ -101,7 +108,7 @@ export function ExperienciaSection({
         id: `cexp-${exp.id}`,
         title: exp.nome_escola,
         subtitle: [exp.tipo_instituicao, exp.categoria_instituicao, exp.posicao_jogada].filter(Boolean).join(' · ') || null,
-        logo: null as string | null,
+        logo: exp.logo_url as string | null,
         startDate: exp.data_inicio,
         endDate: exp.data_fim,
         isActive: exp.atual,
@@ -187,16 +194,19 @@ export function ExperienciaSection({
             {allExperiencias.map((exp) => (
               <div key={exp.id} className="relative pl-12 pb-4 last:pb-0">
                 {/* Timeline dot */}
-                <div className="absolute left-3 w-5 h-5 rounded-full border-2 flex items-center justify-center"
+                <div className="absolute left-3 w-5 h-5 rounded-full border-2 flex items-center justify-center overflow-hidden"
                   style={exp.type === 'escolinha' || exp.type === 'carreira_exp'
                     ? { backgroundColor: `${accentColor}18`, borderColor: accentColor, color: accentColor }
                     : { backgroundColor: 'hsl(var(--secondary))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }
                   }
                 >
-                  {exp.type === 'atividade'
-                    ? getActivityIcon((exp.data as AtividadeExternaPublica).tipo)
-                    : <GraduationCap className="w-3 h-3" />
-                  }
+                  {exp.logo ? (
+                    <img src={exp.logo} alt="" className="w-full h-full object-cover" />
+                  ) : exp.type === 'atividade' ? (
+                    getActivityIcon((exp.data as AtividadeExternaPublica).tipo)
+                  ) : (
+                    <GraduationCap className="w-3 h-3" />
+                  )}
                 </div>
 
                 {/* Content */}
@@ -252,28 +262,33 @@ export function ExperienciaSection({
                       <div className="flex items-center gap-0.5 shrink-0">
                         {/* Edit/Delete for manual carreira_experiencias (not synced) */}
                         {isOwner && exp.type === 'carreira_exp' && !exp.isSynced && exp.carreiraExp && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={(e) => { e.stopPropagation(); onEditExperiencia?.(exp.carreiraExp!); }}
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={(e) => { e.stopPropagation(); onDeleteExperiencia?.(exp.carreiraExp!.id); }}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreVertical className="w-3.5 h-3.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuItem onClick={() => onEditExperiencia?.(exp.carreiraExp!)}>
+                                <Pencil className="w-3.5 h-3.5 mr-2" /> Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => onDeleteExperiencia?.(exp.carreiraExp!.id)}
+                              >
+                                <Trash2 className="w-3.5 h-3.5 mr-2" /> Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         )}
                         <button className="text-muted-foreground hover:text-foreground p-1">
-                          {expandedItems.has(exp.id) 
-                            ? <ChevronUp className="w-4 h-4" /> 
+                          {expandedItems.has(exp.id)
+                            ? <ChevronUp className="w-4 h-4" />
                             : <ChevronDown className="w-4 h-4" />
                           }
                         </button>
