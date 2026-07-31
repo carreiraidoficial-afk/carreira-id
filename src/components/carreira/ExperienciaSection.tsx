@@ -46,18 +46,18 @@ interface ExperienciaSectionProps {
 const getActivityIcon = (tipo: string) => {
   switch (tipo) {
     case 'clinica_camp':
-      return <GraduationCap className="w-10 h-10" />;
+      return <GraduationCap className="w-7 h-7" />;
     case 'treino_preparador_fisico':
     case 'treino_tecnico':
-      return <Dumbbell className="w-10 h-10" />;
+      return <Dumbbell className="w-7 h-7" />;
     case 'competicao_torneio':
-      return <Trophy className="w-10 h-10" />;
+      return <Trophy className="w-7 h-7" />;
     case 'avaliacao':
-      return <Target className="w-10 h-10" />;
+      return <Target className="w-7 h-7" />;
     case 'jogo_amistoso_externo':
-      return <Award className="w-10 h-10" />;
+      return <Award className="w-7 h-7" />;
     default:
-      return <Calendar className="w-10 h-10" />;
+      return <Calendar className="w-7 h-7" />;
   }
 };
 
@@ -178,7 +178,7 @@ export function ExperienciaSection({
       <CardContent className="space-y-4">
         {allExperiencias.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
-            <Building2 className="w-10 h-10 mx-auto mb-2 opacity-40" />
+            <Building2 className="w-7 h-7 mx-auto mb-2 opacity-40" />
             <p className="text-sm">Nenhuma experiência registrada</p>
             {isOwner && (
               <p className="text-xs mt-1">
@@ -189,12 +189,12 @@ export function ExperienciaSection({
         ) : (
           <div className="relative">
             {/* Timeline line */}
-            <div className="absolute left-[62px] top-0 bottom-0 w-px bg-border" />
+            <div className="absolute left-[47px] top-0 bottom-0 w-px bg-border" />
 
             {allExperiencias.map((exp) => (
-              <div key={exp.id} className="relative pl-32 pb-6 last:pb-0 min-h-[100px]">
+              <div key={exp.id} className="relative pl-[100px] pb-6 last:pb-0 min-h-[70px]">
                 {/* Timeline dot */}
-                <div className="absolute left-3 w-[100px] h-[100px] rounded-full border-2 flex items-center justify-center overflow-hidden"
+                <div className="absolute left-3 w-[70px] h-[70px] rounded-full border-2 flex items-center justify-center overflow-hidden"
                   style={exp.type === 'escolinha' || exp.type === 'carreira_exp'
                     ? { backgroundColor: `${accentColor}18`, borderColor: accentColor, color: accentColor }
                     : { backgroundColor: 'hsl(var(--secondary))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }
@@ -205,7 +205,7 @@ export function ExperienciaSection({
                   ) : exp.type === 'atividade' ? (
                     getActivityIcon((exp.data as AtividadeExternaPublica).tipo)
                   ) : (
-                    <GraduationCap className="w-10 h-10" />
+                    <GraduationCap className="w-7 h-7" />
                   )}
                 </div>
 
