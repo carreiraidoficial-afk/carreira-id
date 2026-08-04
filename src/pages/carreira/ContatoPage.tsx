@@ -4,6 +4,7 @@ import { isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
 import logoCarreiraId from '@/assets/logo-carreira-id-dark.png';
 import logoAtletaId from '@/assets/logo-atleta-id.png';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
+import { useSEO } from '@/hooks/useSEO';
 
 export default function ContatoPage() {
   const navigate = useNavigate();
@@ -11,6 +12,12 @@ export default function ContatoPage() {
   const logo = isCarreira ? logoCarreiraId : logoAtletaId;
   const brand = isCarreira ? 'Carreira ID' : 'Atleta ID';
   const { theme } = useCarreiraTheme();
+
+  useSEO({
+    title: `Contato do ${brand}: Email, WhatsApp e Suporte Rápido`,
+    description: 'Fale com o Carreira ID por email ou WhatsApp. Tire dúvidas, peça suporte ou fale com nossa equipe sobre a plataforma de carreira esportiva de base.',
+    path: '/contato',
+  });
 
   return (
     <div className="min-h-screen bg-background" data-theme={theme}>
