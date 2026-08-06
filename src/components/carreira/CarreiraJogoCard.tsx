@@ -181,15 +181,18 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
           ) : (
             <>
               {!!j.gols_marcados && <Tag>⚽ {j.gols_marcados} gol(s) do atleta</Tag>}
+              {!!j.gols_penalti && <Tag>🎯 {j.gols_penalti} de pênalti</Tag>}
               {!!j.assistencias && <Tag>🎯 {j.assistencias} assist. do atleta</Tag>}
             </>
           )}
+          {!isVolei && j.teve_prorrogacao && <Tag>⏱️ Prorrogação</Tag>}
           {j.fase_campeonato && <Tag>{j.fase_campeonato}</Tag>}
         </div>
-        {!isVolei && j.posicao_jogo === 'goleiro' && j.teve_disputa_penaltis && (
+        {!isVolei && j.teve_disputa_penaltis && (
           <p className="text-[11px] text-muted-foreground mt-1">
             Disputa de pênaltis: <strong>{j.placar_penaltis_time ?? '?'} × {j.placar_penaltis_adversario ?? '?'}</strong>
-            {j.penaltis_defendidos_disputa != null && ` · ${j.penaltis_defendidos_disputa} def.`}
+            {j.posicao_jogo === 'goleiro' && j.penaltis_defendidos_disputa != null && ` · ${j.penaltis_defendidos_disputa} def.`}
+            {j.posicao_jogo !== 'goleiro' && !!j.penaltis_convertidos_disputa && ` · converteu ${j.penaltis_convertidos_disputa}`}
           </p>
         )}
         {isVolei && j.sets_detalhe && j.sets_detalhe.length > 0 && (

@@ -91,14 +91,19 @@ export interface Jogo {
   fase_campeonato?: string;
   modalidade: string;
   created_at: string;
+  // Prorrogação e disputa de pênaltis -- fatos do jogo, não dependem da posição
+  teve_prorrogacao?: boolean | null;
+  teve_disputa_penaltis?: boolean | null;
+  placar_penaltis_time?: number | null;
+  placar_penaltis_adversario?: number | null;
+  // Pênalti marcado em jogo por jogador de linha (opcionais)
+  gols_penalti?: number | null;
+  penaltis_convertidos_disputa?: number | null;
   // Estatísticas de goleiro (opcionais)
   minutos_jogados?: number | null;
   gols_sofridos?: number | null;
   defesas_importantes?: number | null;
   penaltis_defendidos?: number | null;
-  teve_disputa_penaltis?: boolean | null;
-  placar_penaltis_time?: number | null;
-  placar_penaltis_adversario?: number | null;
   penaltis_defendidos_disputa?: number | null;
   penaltis_gol_lado_correto?: number | null;
   penaltis_gol_lado_errado?: number | null;
@@ -150,6 +155,10 @@ export interface EstatisticasAtleta {
   totalGolsSofridos?: number;
   totalPenaltisDefendidos?: number;
   minutosTotais?: number;
+  // Prorrogação e pênaltis (jogador de linha)
+  jogosComProrrogacao?: number;
+  totalGolsPenalti?: number;
+  totalPenaltisConvertidosDisputa?: number;
   // Agregados de vôlei
   totalPontosAtaque?: number;
   totalPontosBloqueio?: number;
@@ -201,14 +210,19 @@ export interface CreateJogoInput {
   observacoes?: string;
   fase_campeonato?: string;
   modalidade: string;
+  // Prorrogação e disputa de pênaltis -- fatos do jogo, não dependem da posição
+  teve_prorrogacao?: boolean | null;
+  teve_disputa_penaltis?: boolean | null;
+  placar_penaltis_time?: number | null;
+  placar_penaltis_adversario?: number | null;
+  // Pênalti marcado em jogo por jogador de linha (opcionais)
+  gols_penalti?: number | null;
+  penaltis_convertidos_disputa?: number | null;
   // Estatísticas de goleiro (opcionais)
   minutos_jogados?: number | null;
   gols_sofridos?: number | null;
   defesas_importantes?: number | null;
   penaltis_defendidos?: number | null;
-  teve_disputa_penaltis?: boolean | null;
-  placar_penaltis_time?: number | null;
-  placar_penaltis_adversario?: number | null;
   penaltis_defendidos_disputa?: number | null;
   penaltis_gol_lado_correto?: number | null;
   penaltis_gol_lado_errado?: number | null;

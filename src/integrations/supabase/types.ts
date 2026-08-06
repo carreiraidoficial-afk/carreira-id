@@ -790,12 +790,14 @@ export type Database = {
           erros_recepcao: number | null
           fase_campeonato: string | null
           gols_marcados: number | null
+          gols_penalti: number | null
           gols_sofridos: number | null
           id: string
           local: string | null
           minutos_jogados: number | null
           modalidade: string
           observacoes: string | null
+          penaltis_convertidos_disputa: number | null
           penaltis_defendidos: number | null
           penaltis_defendidos_disputa: number | null
           penaltis_gol_lado_correto: number | null
@@ -811,6 +813,7 @@ export type Database = {
           recepcoes_realizadas: number | null
           sets_detalhe: Json | null
           teve_disputa_penaltis: boolean | null
+          teve_prorrogacao: boolean | null
           time_adversario: string
           time_atleta: string | null
           tipo_jogo: Database["public"]["Enums"]["tipo_jogo_enum"]
@@ -829,12 +832,14 @@ export type Database = {
           erros_recepcao?: number | null
           fase_campeonato?: string | null
           gols_marcados?: number | null
+          gols_penalti?: number | null
           gols_sofridos?: number | null
           id?: string
           local?: string | null
           minutos_jogados?: number | null
           modalidade?: string
           observacoes?: string | null
+          penaltis_convertidos_disputa?: number | null
           penaltis_defendidos?: number | null
           penaltis_defendidos_disputa?: number | null
           penaltis_gol_lado_correto?: number | null
@@ -850,6 +855,7 @@ export type Database = {
           recepcoes_realizadas?: number | null
           sets_detalhe?: Json | null
           teve_disputa_penaltis?: boolean | null
+          teve_prorrogacao?: boolean | null
           time_adversario: string
           time_atleta?: string | null
           tipo_jogo?: Database["public"]["Enums"]["tipo_jogo_enum"]
@@ -868,12 +874,14 @@ export type Database = {
           erros_recepcao?: number | null
           fase_campeonato?: string | null
           gols_marcados?: number | null
+          gols_penalti?: number | null
           gols_sofridos?: number | null
           id?: string
           local?: string | null
           minutos_jogados?: number | null
           modalidade?: string
           observacoes?: string | null
+          penaltis_convertidos_disputa?: number | null
           penaltis_defendidos?: number | null
           penaltis_defendidos_disputa?: number | null
           penaltis_gol_lado_correto?: number | null
@@ -889,6 +897,7 @@ export type Database = {
           recepcoes_realizadas?: number | null
           sets_detalhe?: Json | null
           teve_disputa_penaltis?: boolean | null
+          teve_prorrogacao?: boolean | null
           time_adversario?: string
           time_atleta?: string | null
           tipo_jogo?: Database["public"]["Enums"]["tipo_jogo_enum"]

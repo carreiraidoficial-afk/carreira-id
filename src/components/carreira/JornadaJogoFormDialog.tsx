@@ -62,17 +62,21 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
   const [placarB, setPlacarB] = useState('');
   const [gols, setGols] = useState('');
   const [assist, setAssist] = useState('');
+  const [golsPenalti, setGolsPenalti] = useState('');
   const [fase, setFase] = useState('');
   const [obs, setObs] = useState('');
   const [posicao, setPosicao] = useState<string>(POSICAO_NONE);
+  // Prorrogação e disputa de pênaltis -- fatos do jogo, não dependem da posição
+  const [teveProrrogacao, setTeveProrrogacao] = useState(false);
+  const [teveDisputa, setTeveDisputa] = useState(false);
+  const [placarPenA, setPlacarPenA] = useState('');
+  const [placarPenB, setPlacarPenB] = useState('');
+  const [penConvertidosDisputa, setPenConvertidosDisputa] = useState('');
   // Goleiro
   const [minutos, setMinutos] = useState('');
   const [golsSofridos, setGolsSofridos] = useState('');
   const [defesas, setDefesas] = useState('');
   const [penDef, setPenDef] = useState('');
-  const [teveDisputa, setTeveDisputa] = useState(false);
-  const [placarPenA, setPlacarPenA] = useState('');
-  const [placarPenB, setPlacarPenB] = useState('');
   const [penDefDisputa, setPenDefDisputa] = useState('');
   const [penLadoCerto, setPenLadoCerto] = useState('');
   const [penLadoErrado, setPenLadoErrado] = useState('');
@@ -94,6 +98,7 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
   const isVolei = isModalidadeVolei(modalidade);
   const posicoesDisponiveis = isVolei ? POSICOES_VOLEI_JOGO : POSICOES_FUTEBOL_JOGO;
   const isLibero = isVolei && posicao === 'libero';
+  const isGoleiro = !isVolei && posicao === 'goleiro';
 
   useEffect(() => {
     if (open) {
@@ -128,16 +133,19 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
       setPlacarB(editingJogo?.placar_adversario?.toString() ?? '');
       setGols(editingJogo?.gols_marcados?.toString() ?? '');
       setAssist(editingJogo?.assistencias?.toString() ?? '');
+      setGolsPenalti(editingJogo?.gols_penalti?.toString() ?? '');
       setFase(editingJogo?.fase_campeonato || '');
       setObs(editingJogo?.observacoes || '');
       setPosicao(editingJogo?.posicao_jogo || POSICAO_NONE);
+      setTeveProrrogacao(!!editingJogo?.teve_prorrogacao);
+      setTeveDisputa(!!editingJogo?.teve_disputa_penaltis);
+      setPlacarPenA(editingJogo?.placar_penaltis_time?.toString() ?? '');
+      setPlacarPenB(editingJogo?.placar_penaltis_adversario?.toString() ?? '');
+      setPenConvertidosDisputa(editingJogo?.penaltis_convertidos_disputa?.toString() ?? '');
       setMinutos(editingJogo?.minutos_jogados?.toString() ?? '');
       setGolsSofridos(editingJogo?.gols_sofridos?.toString() ?? '');
       setDefesas(editingJogo?.defesas_importantes?.toString() ?? '');
       setPenDef(editingJogo?.penaltis_defendidos?.toString() ?? '');
-      setTeveDisputa(!!editingJogo?.teve_disputa_penaltis);
-      setPlacarPenA(editingJogo?.placar_penaltis_time?.toString() ?? '');
-      setPlacarPenB(editingJogo?.placar_penaltis_adversario?.toString() ?? '');
       setPenDefDisputa(editingJogo?.penaltis_defendidos_disputa?.toString() ?? '');
       setPenLadoCerto(editingJogo?.penaltis_gol_lado_correto?.toString() ?? '');
       setPenLadoErrado(editingJogo?.penaltis_gol_lado_errado?.toString() ?? '');
@@ -200,7 +208,6 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
     if (!adversario.trim()) { toast.error('Informe o time adversário'); return; }
     setSaving(true);
     try {
-      const isGoleiro = !isVolei && posicao === 'goleiro';
       const setsDetalhe: SetDetalhe[] = isVolei && setsAtivo
         ? sets
             .map((s, idx) => ({ set: idx + 1, pontos_time: num(s.pontos_time), pontos_adversario: num(s.pontos_adversario) }))
@@ -220,14 +227,19 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
         posicao_jogo: posicao === POSICAO_NONE ? undefined : (posicao as PosicaoJogo),
         fase_campeonato: fase.trim() || undefined,
         observacoes: obs.trim() || undefined,
+        // Prorrogação e disputa de pênaltis -- fatos do jogo, visíveis pra qualquer posição
+        teve_prorrogacao: !isVolei ? teveProrrogacao : null,
+        teve_disputa_penaltis: !isVolei ? teveDisputa : null,
+        placar_penaltis_time: !isVolei && teveDisputa ? (num(placarPenA) ?? null) : null,
+        placar_penaltis_adversario: !isVolei && teveDisputa ? (num(placarPenB) ?? null) : null,
+        // Pênalti marcado por jogador de linha
+        gols_penalti: !isVolei && !isGoleiro ? (num(golsPenalti) ?? null) : null,
+        penaltis_convertidos_disputa: !isVolei && !isGoleiro && teveDisputa ? (num(penConvertidosDisputa) ?? null) : null,
         // Goleiro
         minutos_jogados: isGoleiro ? (num(minutos) ?? null) : null,
         gols_sofridos: isGoleiro ? (num(golsSofridos) ?? null) : null,
         defesas_importantes: isGoleiro ? (num(defesas) ?? null) : null,
         penaltis_defendidos: isGoleiro ? (num(penDef) ?? null) : null,
-        teve_disputa_penaltis: isGoleiro ? teveDisputa : null,
-        placar_penaltis_time: isGoleiro && teveDisputa ? (num(placarPenA) ?? null) : null,
-        placar_penaltis_adversario: isGoleiro && teveDisputa ? (num(placarPenB) ?? null) : null,
         penaltis_defendidos_disputa: isGoleiro && teveDisputa ? (num(penDefDisputa) ?? null) : null,
         penaltis_gol_lado_correto: isGoleiro && teveDisputa ? (num(penLadoCerto) ?? null) : null,
         penaltis_gol_lado_errado: isGoleiro && teveDisputa ? (num(penLadoErrado) ?? null) : null,
@@ -315,6 +327,12 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
               <Input type="number" min={0} value={placarB} onChange={(e) => setPlacarB(e.target.value)} />
             </div>
           </div>
+          {!isVolei && (
+            <div className="flex items-center gap-2">
+              <Switch checked={teveProrrogacao} onCheckedChange={setTeveProrrogacao} id="teve-prorrogacao" />
+              <Label htmlFor="teve-prorrogacao" className="cursor-pointer">Teve prorrogação?</Label>
+            </div>
+          )}
           {isVolei && (
             <div className="space-y-2">
               <div className="flex items-center gap-2">
@@ -368,6 +386,10 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
                 <Label>Assistências do atleta</Label>
                 <Input type="number" min={0} value={assist} onChange={(e) => setAssist(e.target.value)} />
               </div>
+              <div>
+                <Label>Dos quais, gols de pênalti</Label>
+                <Input type="number" min={0} value={golsPenalti} onChange={(e) => setGolsPenalti(e.target.value)} />
+              </div>
             </div>
           )}
           {isVolei && !isLibero && (
@@ -412,7 +434,50 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
               </div>
             </div>
           )}
-          {!isVolei && posicao === 'goleiro' && (
+          {!isVolei && (
+            <div className="rounded-lg border-2 p-3 space-y-3" style={{ borderColor: 'hsl(var(--border))' }}>
+              <p className="text-sm font-semibold">⚽ Disputa de Pênaltis</p>
+              <div className="flex items-center gap-2">
+                <Switch checked={teveDisputa} onCheckedChange={setTeveDisputa} id="teve-disputa" />
+                <Label htmlFor="teve-disputa" className="cursor-pointer">Houve disputa de pênaltis?</Label>
+              </div>
+              {teveDisputa && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Placar pên. (meu time)</Label>
+                    <Input type="number" min={0} value={placarPenA} onChange={(e) => setPlacarPenA(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Placar pên. (adversário)</Label>
+                    <Input type="number" min={0} value={placarPenB} onChange={(e) => setPlacarPenB(e.target.value)} />
+                  </div>
+                  {isGoleiro && (
+                    <>
+                      <div>
+                        <Label>Pên. defendidos na disputa</Label>
+                        <Input type="number" min={0} value={penDefDisputa} onChange={(e) => setPenDefDisputa(e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Gol lado correto (leu certo)</Label>
+                        <Input type="number" min={0} value={penLadoCerto} onChange={(e) => setPenLadoCerto(e.target.value)} />
+                      </div>
+                      <div className="col-span-2">
+                        <Label>Gol lado errado (leu errado)</Label>
+                        <Input type="number" min={0} value={penLadoErrado} onChange={(e) => setPenLadoErrado(e.target.value)} />
+                      </div>
+                    </>
+                  )}
+                  {!isGoleiro && (
+                    <div>
+                      <Label>Pênaltis convertidos na disputa</Label>
+                      <Input type="number" min={0} value={penConvertidosDisputa} onChange={(e) => setPenConvertidosDisputa(e.target.value)} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          {isGoleiro && (
             <div className="rounded-lg border-2 p-3 space-y-3" style={{ borderColor: 'hsl(var(--border))' }}>
               <p className="text-sm font-semibold">🧤 Estatísticas de Goleiro</p>
               <div className="grid grid-cols-2 gap-3">
@@ -433,34 +498,6 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
                   <Input type="number" min={0} value={penDef} onChange={(e) => setPenDef(e.target.value)} />
                 </div>
               </div>
-              <div className="flex items-center gap-2 pt-1">
-                <Switch checked={teveDisputa} onCheckedChange={setTeveDisputa} id="teve-disputa" />
-                <Label htmlFor="teve-disputa" className="cursor-pointer">Houve disputa de pênaltis?</Label>
-              </div>
-              {teveDisputa && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>Placar pên. (meu time)</Label>
-                    <Input type="number" min={0} value={placarPenA} onChange={(e) => setPlacarPenA(e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Placar pên. (adversário)</Label>
-                    <Input type="number" min={0} value={placarPenB} onChange={(e) => setPlacarPenB(e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Pên. defendidos na disputa</Label>
-                    <Input type="number" min={0} value={penDefDisputa} onChange={(e) => setPenDefDisputa(e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Gol lado correto (leu certo)</Label>
-                    <Input type="number" min={0} value={penLadoCerto} onChange={(e) => setPenLadoCerto(e.target.value)} />
-                  </div>
-                  <div className="col-span-2">
-                    <Label>Gol lado errado (leu errado)</Label>
-                    <Input type="number" min={0} value={penLadoErrado} onChange={(e) => setPenLadoErrado(e.target.value)} />
-                  </div>
-                </div>
-              )}
             </div>
           )}
           <div>
