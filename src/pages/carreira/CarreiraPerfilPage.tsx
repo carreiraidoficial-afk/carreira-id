@@ -13,6 +13,8 @@ import { DadosEspecificos } from '@/components/carreira/perfis/DadosEspecificos'
 import { CreatePostForm } from '@/components/carreira/CreatePostForm';
 import { PostCard } from '@/components/carreira/PostCard';
 import { EditPerfilRedeDialog } from '@/components/carreira/EditPerfilRedeDialog';
+import { HistoricoProfissionalSection, type HistoricoProfissional } from '@/components/carreira/HistoricoProfissionalSection';
+import { HistoricoProfissionalFormDialog } from '@/components/carreira/HistoricoProfissionalFormDialog';
 import { EditPerfilDialog } from '@/components/carreira/EditPerfilDialog';
 import { EditConfiguracoesDialog } from '@/components/carreira/EditConfiguracoesDialog';
 // EditContaDialog removed — unified into EditPerfilRedeDialog
@@ -341,6 +343,8 @@ export default function CarreiraPerfilPage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [historicoDialogOpen, setHistoricoDialogOpen] = useState(false);
+  const [editingHistorico, setEditingHistorico] = useState<HistoricoProfissional | null>(null);
   const { theme: carreiraTheme, isDarkTheme, setDarkTheme } = useCarreiraTheme();
   const isOwner = !!(currentUserId && perfil && currentUserId === perfil.user_id);
   const isAnonymous = !currentUserId;
@@ -603,6 +607,46 @@ export default function CarreiraPerfilPage() {
     : [];
   const isRedeProfile = perfil.type === 'rede';
   const isDonoEscolaProfile = isRedeProfile && perfil.tipo === 'dono_escola';
+  const NON_HISTORICO_TYPES = ['atleta_filho', 'pai_responsavel', 'influenciador', 'torcedor'];
+  const showHistorico = isRedeProfile && !NON_HISTORICO_TYPES.includes(perfil.tipo || '');
+  const historicoProfissional: HistoricoProfissional[] = isRedeProfile
+    ? ((perfil.dados_perfil as any)?.historico_profissional || [])
+    : [];
+
+  const handleSaveHistorico = async (item: HistoricoProfissional) => {
+    if (!isRedeProfile) return;
+    const dados = (perfil.dados_perfil || {}) as Record<string, any>;
+    const list: HistoricoProfissional[] = dados.historico_profissional || [];
+    const idx = list.findIndex((h) => h.id === item.id);
+    const updated = idx >= 0 ? list.map((h, i) => (i === idx ? item : h)) : [...list, item];
+    updated.sort((a, b) => b.data_inicio.localeCompare(a.data_inicio));
+
+    const { error } = await supabase.from('perfis_rede').update({
+      dados_perfil: { ...dados, historico_profissional: updated },
+    } as any).eq('id', perfil.id);
+    if (error) {
+      toast.error('Erro ao salvar experiência');
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['carreira-profile-by-slug'] });
+    toast.success(idx >= 0 ? 'Experiência atualizada!' : 'Experiência adicionada!');
+    setEditingHistorico(null);
+  };
+
+  const handleDeleteHistorico = async (id: string) => {
+    if (!isRedeProfile) return;
+    const dados = (perfil.dados_perfil || {}) as Record<string, any>;
+    const list: HistoricoProfissional[] = dados.historico_profissional || [];
+    const { error } = await supabase.from('perfis_rede').update({
+      dados_perfil: { ...dados, historico_profissional: list.filter((h) => h.id !== id) },
+    } as any).eq('id', perfil.id);
+    if (error) {
+      toast.error('Erro ao remover experiência');
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['carreira-profile-by-slug'] });
+    toast.success('Experiência removida');
+  };
   const displayProfileName = isDonoEscolaProfile
     ? (String(perfil.dados_perfil?.nome_escola || perfil.nome || '').trim() || perfil.nome)
     : perfil.nome;
@@ -1172,6 +1216,18 @@ export default function CarreiraPerfilPage() {
               />
             )}
 
+            {/* Histórico Profissional — perfis de rede (técnico, professor, scout etc) */}
+            {showHistorico && (
+              <HistoricoProfissionalSection
+                historico={historicoProfissional}
+                isOwner={isOwner}
+                accentColor={accentColor}
+                onAdd={() => { setEditingHistorico(null); setHistoricoDialogOpen(true); }}
+                onEdit={(item) => { setEditingHistorico(item); setHistoricoDialogOpen(true); }}
+                onDelete={handleDeleteHistorico}
+              />
+            )}
+
             {/* Descobrir Atletas — scouting profiles on desktop */}
             {isOwner && perfil.type === 'rede' && (() => {
               const SCOUTING_TYPES = ['tecnico', 'scout', 'agente_clube', 'escola_esportes', 'empresario', 'torcedor'];
@@ -1472,6 +1528,14 @@ export default function CarreiraPerfilPage() {
           open={configDialogOpen}
           onOpenChange={setConfigDialogOpen}
           perfil={perfil as any}
+        />
+      )}
+      {isOwner && showHistorico && (
+        <HistoricoProfissionalFormDialog
+          open={historicoDialogOpen}
+          onOpenChange={setHistoricoDialogOpen}
+          editing={editingHistorico}
+          onSave={handleSaveHistorico}
         />
       )}
 
