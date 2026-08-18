@@ -73,7 +73,7 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
           <div className="shrink-0">
             {perfil.foto_url ? (
               <img src={perfil.foto_url} alt={perfil.nome}
-                className="w-36 sm:w-44 aspect-[3/4] rounded-2xl object-cover ring-2 ring-offset-2 ring-offset-background shadow-lg"
+                className="w-36 sm:w-44 aspect-[3/4] rounded-2xl object-cover object-top ring-2 ring-offset-2 ring-offset-background shadow-lg"
                 style={accentColor ? { '--tw-ring-color': accentColor } as any : undefined}
               />
             ) : (

@@ -13,7 +13,6 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, UserCircle, Save, CreditCard, ShieldCheck, Fingerprint, Smartphone, Bell, KeyRound, MessageCircle, FileText, ChevronRight, Users, Lock, Globe, Trash2 } from 'lucide-react';
-import { PerfilAtleta } from '@/hooks/useCarreiraData';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
 import { AssinaturaCard } from './AssinaturaCard';
@@ -21,10 +20,24 @@ import { ColaboradoresTab } from './ColaboradoresTab';
 import { DeleteAccountDialog } from './DeleteAccountDialog';
 import { toast } from 'sonner';
 
+/** Subconjunto de campos usados aqui -- aceita tanto PerfilAtleta quanto
+ * um perfil de rede (técnico, professor, scout etc), já que ambos abrem
+ * este mesmo dialog de Configurações a partir do botão de engrenagem. */
+interface ConfigPerfil {
+  id: string;
+  user_id: string;
+  crianca_id?: string | null;
+  is_public?: boolean;
+}
+
 interface EditConfiguracoesDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  perfil: PerfilAtleta;
+  perfil: ConfigPerfil;
+  /** 'rede' esconde abas que só fazem sentido pra perfil de atleta
+   * (Usuários/Colaboradores e Privacidade) e aponta a exclusão de conta
+   * pra tabela certa. Default 'atleta' mantém o comportamento anterior. */
+  perfilTipo?: 'atleta' | 'rede';
 }
 
 /**
@@ -32,7 +45,8 @@ interface EditConfiguracoesDialogProps {
  * só com dados do atleta: foto, cor, modalidades etc) porque misturar as
  * duas coisas num só dialog com 5 abas estourava a tela no celular.
  */
-export function EditConfiguracoesDialog({ open, onOpenChange, perfil }: EditConfiguracoesDialogProps) {
+export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo = 'atleta' }: EditConfiguracoesDialogProps) {
+  const isAtleta = perfilTipo === 'atleta';
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [enviandoReset, setEnviandoReset] = useState(false);
@@ -97,10 +111,12 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil }: EditConf
               <CreditCard className="w-3.5 h-3.5" />
               Assinatura
             </TabsTrigger>
-            <TabsTrigger value="usuarios" className="shrink-0 flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3">
-              <Users className="w-3.5 h-3.5" />
-              Usuários
-            </TabsTrigger>
+            {isAtleta && (
+              <TabsTrigger value="usuarios" className="shrink-0 flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3">
+                <Users className="w-3.5 h-3.5" />
+                Usuários
+              </TabsTrigger>
+            )}
             <TabsTrigger value="conta" className="shrink-0 flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3">
               <ShieldCheck className="w-3.5 h-3.5" />
               Conta
@@ -119,9 +135,11 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil }: EditConf
             )}
           </TabsContent>
 
-          <TabsContent value="usuarios" className="mt-4">
-            <ColaboradoresTab userId={perfil.user_id} />
-          </TabsContent>
+          {isAtleta && (
+            <TabsContent value="usuarios" className="mt-4">
+              <ColaboradoresTab userId={perfil.user_id} />
+            </TabsContent>
+          )}
 
           <TabsContent value="conta" className="mt-4 space-y-6">
             <div>
@@ -145,6 +163,7 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil }: EditConf
               </button>
             </div>
 
+            {isAtleta && (
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Privacidade</p>
               <div className="rounded-lg border p-3 space-y-2.5">
@@ -173,6 +192,7 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil }: EditConf
                 </p>
               </div>
             </div>
+            )}
 
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Notificações e Segurança</p>
@@ -294,7 +314,7 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil }: EditConf
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
           perfilId={perfil.id}
-          perfilTable="perfil_atleta"
+          perfilTable={isAtleta ? 'perfil_atleta' : 'perfis_rede'}
         />
       </DialogContent>
     </Dialog>

@@ -346,7 +346,7 @@ export function CreatePostForm({ perfil, perfilRedeId, perfilRedeNome, perfilRed
         <div className="flex gap-3">
           <Avatar className="w-10 h-10 flex-shrink-0">
             {(perfil?.foto_url || perfilRedeFoto) ? (
-              <AvatarImage src={(perfil?.foto_url || perfilRedeFoto)!} alt={perfil?.nome || perfilRedeNome || ''} />
+              <AvatarImage src={(perfil?.foto_url || perfilRedeFoto)!} alt={perfil?.nome || perfilRedeNome || ''} className="object-top" />
             ) : null}
             <AvatarFallback>
               <User className="w-5 h-5" />

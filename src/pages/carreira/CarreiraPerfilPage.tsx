@@ -930,14 +930,14 @@ export default function CarreiraPerfilPage() {
               {isRedeProfile ? (
                 perfil.foto_url ? (
                   <img src={perfil.foto_url} alt={displayProfileName}
-                    className="w-24 aspect-[3/4] rounded-xl object-cover ring-2 ring-offset-2 ring-offset-background mx-auto mb-3"
+                    className="w-40 aspect-[3/4] rounded-xl object-cover object-top ring-2 ring-offset-2 ring-offset-background mx-auto mb-3"
                     style={{ '--tw-ring-color': accentColor } as any}
                   />
                 ) : (
-                  <div className="w-24 aspect-[3/4] rounded-xl bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground ring-2 ring-offset-2 ring-offset-background mx-auto mb-3"
+                  <div className="w-40 aspect-[3/4] rounded-xl bg-muted flex items-center justify-center text-3xl font-bold text-muted-foreground ring-2 ring-offset-2 ring-offset-background mx-auto mb-3"
                     style={{ '--tw-ring-color': accentColor } as any}
                   >
-                    <User className="w-10 h-10" />
+                    <User className="w-12 h-12" />
                   </div>
                 )
               ) : (
@@ -1542,11 +1542,12 @@ export default function CarreiraPerfilPage() {
           perfil={perfil as any}
         />
       )}
-      {isOwner && !isRedeProfile && perfil && (
+      {isOwner && perfil && (
         <EditConfiguracoesDialog
           open={configDialogOpen}
           onOpenChange={setConfigDialogOpen}
           perfil={perfil as any}
+          perfilTipo={isRedeProfile ? 'rede' : 'atleta'}
         />
       )}
       {isOwner && showHistorico && (
