@@ -926,16 +926,28 @@ export default function CarreiraPerfilPage() {
                 </div>
               )}
               <div className={`p-4 ${perfil.banner_url ? '-mt-8' : ''}`}>
-              {/* Avatar — perfis profissionais (rede) ganham foto maior, estilo "headshot" */}
-              <Avatar
-                className={`mx-auto mb-3 ring-2 ring-offset-2 ring-offset-background ${isRedeProfile ? 'w-28 h-28' : 'w-20 h-20'}`}
-                style={{ '--tw-ring-color': accentColor } as any}
-              >
-                {perfil.foto_url ? (
-                  <AvatarImage src={perfil.foto_url} alt={displayProfileName} className="object-cover" />
-                ) : null}
-                <AvatarFallback className={isRedeProfile ? 'text-2xl' : 'text-xl'}><User className={isRedeProfile ? 'w-10 h-10' : 'w-8 h-8'} /></AvatarFallback>
-              </Avatar>
+              {/* Avatar — perfis profissionais (rede) ganham foto retangular, estilo figurinha */}
+              {isRedeProfile ? (
+                perfil.foto_url ? (
+                  <img src={perfil.foto_url} alt={displayProfileName}
+                    className="w-24 aspect-[3/4] rounded-xl object-cover ring-2 ring-offset-2 ring-offset-background mx-auto mb-3"
+                    style={{ '--tw-ring-color': accentColor } as any}
+                  />
+                ) : (
+                  <div className="w-24 aspect-[3/4] rounded-xl bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground ring-2 ring-offset-2 ring-offset-background mx-auto mb-3"
+                    style={{ '--tw-ring-color': accentColor } as any}
+                  >
+                    <User className="w-10 h-10" />
+                  </div>
+                )
+              ) : (
+                <Avatar className="w-20 h-20 mx-auto mb-3 ring-2 ring-offset-2 ring-offset-background" style={{ '--tw-ring-color': accentColor } as any}>
+                  {perfil.foto_url ? (
+                    <AvatarImage src={perfil.foto_url} alt={displayProfileName} className="object-cover" />
+                  ) : null}
+                  <AvatarFallback className="text-xl"><User className="w-8 h-8" /></AvatarFallback>
+                </Avatar>
+              )}
 
               <h2 className="font-bold text-foreground text-sm" style={perfil.banner_url ? { textShadow: '0 1px 4px rgba(0,0,0,0.7), 0 0px 2px rgba(0,0,0,0.5)' } : undefined}>{displayProfileName}</h2>
               

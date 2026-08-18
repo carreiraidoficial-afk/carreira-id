@@ -69,15 +69,15 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
   return (
     <div className="space-y-4 animate-fade-in">
       <Card className="p-5 border-border/50">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-shrink-0 flex justify-center sm:justify-start">
+        <div className="flex flex-col items-center gap-4">
+          <div className="shrink-0">
             {perfil.foto_url ? (
               <img src={perfil.foto_url} alt={perfil.nome}
-                className="w-32 h-32 sm:w-36 sm:h-36 rounded-full object-cover ring-2 ring-offset-2 ring-offset-background shadow-lg"
+                className="w-36 sm:w-44 aspect-[3/4] rounded-2xl object-cover ring-2 ring-offset-2 ring-offset-background shadow-lg"
                 style={accentColor ? { '--tw-ring-color': accentColor } as any : undefined}
               />
             ) : (
-              <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full bg-muted flex items-center justify-center text-4xl font-bold text-muted-foreground ring-2 ring-offset-2 ring-offset-background shadow-lg"
+              <div className="w-36 sm:w-44 aspect-[3/4] rounded-2xl bg-muted flex items-center justify-center text-4xl font-bold text-muted-foreground ring-2 ring-offset-2 ring-offset-background shadow-lg"
                 style={accentColor ? { '--tw-ring-color': accentColor } as any : undefined}
               >
                 {perfil.nome?.[0]?.toUpperCase()}
@@ -85,13 +85,13 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
             )}
           </div>
 
-          <div className="flex-1 min-w-0 text-center sm:text-left">
+          <div className="flex-1 min-w-0 w-full text-center">
             <h1 className="text-xl font-bold text-foreground">
               {perfil.tipo === 'dono_escola' && perfil.dados_perfil?.nome_escola
                 ? perfil.dados_perfil.nome_escola
                 : perfil.nome}
             </h1>
-            <div className="flex flex-wrap items-center gap-1.5 mt-1 justify-center sm:justify-start">
+            <div className="flex flex-wrap items-center gap-1.5 mt-1 justify-center">
               <Badge variant="outline" className={config.color}>
                 {config.icon} {config.label}
               </Badge>
@@ -104,7 +104,7 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
 
             {/* Modalidades tags for dono_escola */}
             {perfil.tipo === 'dono_escola' && Array.isArray(perfil.dados_perfil?.modalidades) && perfil.dados_perfil.modalidades.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-1.5 justify-center sm:justify-start">
+              <div className="flex flex-wrap gap-1 mt-1.5 justify-center">
                 {perfil.dados_perfil.modalidades.map((m: string) => (
                   <Badge key={m} variant="secondary" className="text-[10px] px-1.5 py-0">
                     {m}
@@ -115,7 +115,7 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
 
             {/* Torcedor badge with brasão */}
             {perfil.tipo === 'torcedor' && perfil.dados_perfil?.time_torcida && (
-              <div className="mt-2 flex items-center gap-2 justify-center sm:justify-start">
+              <div className="mt-2 flex items-center gap-2 justify-center">
                 <span className="text-sm text-muted-foreground">Torcedor do</span>
                 {perfil.dados_perfil?.brasao_url && (
                   <img src={perfil.dados_perfil.brasao_url} alt="Brasão" className="w-8 h-8 object-contain" />
@@ -126,7 +126,7 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
 
             {/* Jogador Profissional summary */}
             {perfil.tipo === 'jogador_profissional' && perfil.dados_perfil?.clube_atual && (
-              <div className="mt-2 flex items-center gap-2 justify-center sm:justify-start flex-wrap">
+              <div className="mt-2 flex items-center gap-2 justify-center flex-wrap">
                 <span className="text-sm text-muted-foreground">
                   {perfil.dados_perfil?.status_carreira === 'Aposentado' ? 'Último clube:' : 'Clube:'}
                 </span>
@@ -189,7 +189,7 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
               </div>
             )}
 
-            <div className="mt-3 flex items-center gap-3 justify-center sm:justify-start flex-wrap">
+            <div className="mt-3 flex items-center gap-3 justify-center flex-wrap">
               <ConexoesCount userId={perfil.user_id} />
               {/* For non-escola profiles, show connect button here */}
               {!isOwnProfile && currentUserId && perfil.tipo !== 'dono_escola' && (
@@ -242,7 +242,7 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
 
             {/* Owner action button - single unified edit */}
             {isOwnProfile && onEditProfile && (
-              <div className="mt-3 flex justify-center sm:justify-start">
+              <div className="mt-3 flex justify-center">
                 <Button variant="outline" size="sm" className="h-7 text-xs px-2.5" onClick={onEditProfile}>
                   <Settings className="w-3 h-3 mr-1" />Editar Perfil e Conta
                 </Button>
