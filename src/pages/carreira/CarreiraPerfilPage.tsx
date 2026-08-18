@@ -252,27 +252,15 @@ function useProfileBySlug(slug: string) {
       const { data: { session } } = await supabase.auth.getSession();
       const currentUid = session?.user?.id ?? null;
 
-      // 1. Try perfil_atleta — public profiles first
-      const { data: atletaData, error: atletaError } = await supabase
-        .from('perfil_atleta')
-        .select('*')
-        .eq('slug', slug)
-        .eq('is_public', true)
-        .maybeSingle();
+      // 1. Try perfil_atleta. Anônimos só enxergam perfis públicos (filtro
+      // explícito + RLS); usuários logados enxergam qualquer perfil de
+      // atleta (perfis ocultos ficam visíveis só pra quem tem conta no
+      // Carreira ID, via policy "Usuarios logados podem ver perfis de
+      // atletas nao publicos").
+      const atletaQuery = supabase.from('perfil_atleta').select('*').eq('slug', slug);
+      const { data: atletaData, error: atletaError } = await (currentUid ? atletaQuery : atletaQuery.eq('is_public', true)).maybeSingle();
       if (atletaError && atletaError.code !== 'PGRST116') throw atletaError;
       if (atletaData) return { type: 'atleta' as const, ...atletaData } as UnifiedProfile;
-
-      // 1b. If not found as public, try without is_public filter for the owner
-      if (currentUid) {
-        const { data: ownAtleta, error: ownError } = await supabase
-          .from('perfil_atleta')
-          .select('*')
-          .eq('slug', slug)
-          .eq('user_id', currentUid)
-          .maybeSingle();
-        if (ownError && ownError.code !== 'PGRST116') throw ownError;
-        if (ownAtleta) return { type: 'atleta' as const, ...ownAtleta } as UnifiedProfile;
-      }
 
       // 2. Try perfis_rede
       const { data: redeData, error: redeError } = await supabase

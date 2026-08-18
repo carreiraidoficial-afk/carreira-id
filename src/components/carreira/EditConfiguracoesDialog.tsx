@@ -156,7 +156,7 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil }: EditConf
                     <div>
                       <p className="text-sm font-medium">Perfil {isPublic ? 'público' : 'oculto'}</p>
                       <p className="text-xs text-muted-foreground">
-                        {isPublic ? 'Visível pra qualquer pessoa com o link' : 'Visível só para você'}
+                        {isPublic ? 'Visível pra qualquer pessoa com o link' : 'Visível só pra quem tem conta no Carreira ID'}
                       </p>
                     </div>
                   </div>
@@ -169,7 +169,7 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil }: EditConf
                 <p className="text-[11px] text-muted-foreground leading-relaxed pt-2 border-t">
                   {isPublic
                     ? 'Com o perfil público, qualquer pessoa que tiver o link consegue ver a página — mesmo sem estar logada ou ter conta no Carreira ID, inclusive fora do app (ex: no Google ou compartilhado no WhatsApp).'
-                    : 'Com o perfil oculto, ninguém mais consegue acessar essa página pelo link — nem visitantes de fora, nem outros usuários cadastrados no Carreira ID. Só você continua vendo e editando normalmente.'}
+                    : 'Com o perfil oculto, a página só abre pra quem estiver logado com uma conta no Carreira ID. Visitantes sem conta (inclusive buscas do Google) não conseguem mais acessar, mesmo com o link em mãos.'}
                 </p>
               </div>
             </div>
