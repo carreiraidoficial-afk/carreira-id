@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, UserCircle, Save, CreditCard, ShieldCheck, Fingerprint, Smartphone, Bell, KeyRound, MessageCircle, FileText, ChevronRight, Users, Lock, Trash2 } from 'lucide-react';
+import { Loader2, UserCircle, Save, CreditCard, ShieldCheck, Fingerprint, Smartphone, Bell, KeyRound, MessageCircle, FileText, ChevronRight, Users, Lock, Globe, Trash2 } from 'lucide-react';
 import { PerfilAtleta } from '@/hooks/useCarreiraData';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
@@ -33,9 +33,32 @@ interface EditConfiguracoesDialogProps {
  * duas coisas num só dialog com 5 abas estourava a tela no celular.
  */
 export function EditConfiguracoesDialog({ open, onOpenChange, perfil }: EditConfiguracoesDialogProps) {
+  const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [enviandoReset, setEnviandoReset] = useState(false);
+  const [isPublic, setIsPublic] = useState(perfil.is_public);
   const { isSupported: pushSupported, isSubscribed, isLoading: pushLoading, subscribe, unsubscribe } = usePushNotifications();
+
+  useEffect(() => {
+    setIsPublic(perfil.is_public);
+  }, [perfil.is_public]);
+
+  const togglePublic = useMutation({
+    mutationFn: async (novoValor: boolean) => {
+      const { error } = await supabase
+        .from('perfil_atleta')
+        .update({ is_public: novoValor })
+        .eq('id', perfil.id);
+      if (error) throw error;
+      return novoValor;
+    },
+    onSuccess: (novoValor) => {
+      setIsPublic(novoValor);
+      queryClient.invalidateQueries({ queryKey: ['carreira-profile-by-slug'] });
+      toast.success(novoValor ? 'Perfil agora está público.' : 'Perfil agora está oculto.');
+    },
+    onError: () => toast.error('Não foi possível alterar a privacidade do perfil.'),
+  });
 
   const handleAlterarSenha = async () => {
     setEnviandoReset(true);
@@ -120,6 +143,35 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil }: EditConf
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </button>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Privacidade</p>
+              <div className="rounded-lg border p-3 space-y-2.5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                      {isPublic ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Perfil {isPublic ? 'público' : 'oculto'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {isPublic ? 'Visível pra qualquer pessoa com o link' : 'Visível só para você'}
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={isPublic}
+                    disabled={togglePublic.isPending}
+                    onCheckedChange={(checked) => togglePublic.mutate(checked)}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed pt-2 border-t">
+                  {isPublic
+                    ? 'Com o perfil público, qualquer pessoa que tiver o link consegue ver a página — mesmo sem estar logada ou ter conta no Carreira ID, inclusive fora do app (ex: no Google ou compartilhado no WhatsApp).'
+                    : 'Com o perfil oculto, ninguém mais consegue acessar essa página pelo link — nem visitantes de fora, nem outros usuários cadastrados no Carreira ID. Só você continua vendo e editando normalmente.'}
+                </p>
+              </div>
             </div>
 
             <div>
