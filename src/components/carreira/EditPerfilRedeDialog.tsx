@@ -166,6 +166,7 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
   const [photoUrl, setPhotoUrl] = useState(perfil?.foto_url || '');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [corDestaque, setCorDestaque] = useState((perfil?.dados_perfil as any)?.cor_destaque || '#3b82f6');
+  const [disponivelTrabalho, setDisponivelTrabalho] = useState<boolean>(!!(perfil?.dados_perfil as any)?.disponivel_trabalho);
 
   // Account fields (from profiles table)
   const [contaEmail, setContaEmail] = useState('');
@@ -245,6 +246,7 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
       });
       setPhotoUrl(perfil.foto_url || '');
       setCorDestaque(d.cor_destaque || '#3b82f6');
+      setDisponivelTrabalho(!!d.disponivel_trabalho);
       setBrasaoUrl(d.brasao_url || '');
       setUnidades(Array.isArray(d.unidades) ? d.unidades : []);
       loadDadosValues(d);
@@ -346,6 +348,7 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
       const newDados: Record<string, any> = {
         ...dados,
         cor_destaque: corDestaque,
+        disponivel_trabalho: disponivelTrabalho,
       };
 
       // Merge all dynamic field values into dados_perfil
@@ -615,6 +618,27 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
                     </FormLabel>
                   </FormItem>
                 )} />
+              </div>
+            )}
+
+            {/* Disponível para oportunidades — estilo "Open to Work" do LinkedIn */}
+            {!['pai_responsavel', 'torcedor', 'influenciador', 'atleta_filho'].includes(tipo) && (
+              <div className="rounded-lg border border-border p-4 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="disponivel-trabalho"
+                    checked={disponivelTrabalho}
+                    onChange={(e) => setDisponivelTrabalho(e.target.checked)}
+                    className="rounded border-border"
+                  />
+                  <Label htmlFor="disponivel-trabalho" className="font-normal cursor-pointer text-sm">
+                    Disponível para oportunidades de trabalho
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Mostra um selo no seu perfil sinalizando que você está aberto a propostas — igual ao "Open to Work" do LinkedIn.
+                </p>
               </div>
             )}
 

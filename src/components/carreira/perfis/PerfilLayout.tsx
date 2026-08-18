@@ -73,11 +73,11 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
           <div className="flex-shrink-0 flex justify-center sm:justify-start">
             {perfil.foto_url ? (
               <img src={perfil.foto_url} alt={perfil.nome}
-                className="w-24 h-24 rounded-full object-cover ring-2 ring-offset-2 ring-offset-background shadow-lg"
+                className="w-32 h-32 sm:w-36 sm:h-36 rounded-full object-cover ring-2 ring-offset-2 ring-offset-background shadow-lg"
                 style={accentColor ? { '--tw-ring-color': accentColor } as any : undefined}
               />
             ) : (
-              <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center text-3xl font-bold text-muted-foreground ring-2 ring-offset-2 ring-offset-background shadow-lg"
+              <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full bg-muted flex items-center justify-center text-4xl font-bold text-muted-foreground ring-2 ring-offset-2 ring-offset-background shadow-lg"
                 style={accentColor ? { '--tw-ring-color': accentColor } as any : undefined}
               >
                 {perfil.nome?.[0]?.toUpperCase()}
@@ -91,9 +91,16 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
                 ? perfil.dados_perfil.nome_escola
                 : perfil.nome}
             </h1>
-            <Badge variant="outline" className={`mt-1 ${config.color}`}>
-              {config.icon} {config.label}
-            </Badge>
+            <div className="flex flex-wrap items-center gap-1.5 mt-1 justify-center sm:justify-start">
+              <Badge variant="outline" className={config.color}>
+                {config.icon} {config.label}
+              </Badge>
+              {perfil.dados_perfil?.disponivel_trabalho && (
+                <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 gap-1">
+                  🟢 Disponível para oportunidades
+                </Badge>
+              )}
+            </div>
 
             {/* Modalidades tags for dono_escola */}
             {perfil.tipo === 'dono_escola' && Array.isArray(perfil.dados_perfil?.modalidades) && perfil.dados_perfil.modalidades.length > 0 && (

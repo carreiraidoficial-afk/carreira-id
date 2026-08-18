@@ -926,15 +926,15 @@ export default function CarreiraPerfilPage() {
                 </div>
               )}
               <div className={`p-4 ${perfil.banner_url ? '-mt-8' : ''}`}>
-              {/* Avatar */}
-              <Avatar 
-                className="w-20 h-20 mx-auto mb-3 ring-2 ring-offset-2 ring-offset-background"
+              {/* Avatar — perfis profissionais (rede) ganham foto maior, estilo "headshot" */}
+              <Avatar
+                className={`mx-auto mb-3 ring-2 ring-offset-2 ring-offset-background ${isRedeProfile ? 'w-28 h-28' : 'w-20 h-20'}`}
                 style={{ '--tw-ring-color': accentColor } as any}
               >
                 {perfil.foto_url ? (
                   <AvatarImage src={perfil.foto_url} alt={displayProfileName} className="object-cover" />
                 ) : null}
-                <AvatarFallback className="text-xl"><User className="w-8 h-8" /></AvatarFallback>
+                <AvatarFallback className={isRedeProfile ? 'text-2xl' : 'text-xl'}><User className={isRedeProfile ? 'w-10 h-10' : 'w-8 h-8'} /></AvatarFallback>
               </Avatar>
 
               <h2 className="font-bold text-foreground text-sm" style={perfil.banner_url ? { textShadow: '0 1px 4px rgba(0,0,0,0.7), 0 0px 2px rgba(0,0,0,0.5)' } : undefined}>{displayProfileName}</h2>
@@ -966,6 +966,13 @@ export default function CarreiraPerfilPage() {
               {/* Type label (rede only) */}
               {isRedeProfile && perfil.tipo && (
                 <p className="text-xs text-muted-foreground mt-1">{TYPE_LABELS[perfil.tipo] || perfil.tipo}</p>
+              )}
+
+              {/* Disponível para oportunidades — estilo "Open to Work" do LinkedIn */}
+              {isRedeProfile && (perfil.dados_perfil as any)?.disponivel_trabalho && (
+                <Badge className="mt-1.5 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 gap-1 text-[10px]">
+                  🟢 Disponível para oportunidades
+                </Badge>
               )}
 
               {/* Modalidades tags for escola profile */}
