@@ -168,7 +168,17 @@ export default function CarreiraAdminPostsPage() {
     setLinkPreview(null);
     try {
       const { data, error } = await supabase.functions.invoke('search-esporte-noticias', { body: { tema } });
-      if (error) throw error;
+      if (error) {
+        // supabase-js não expõe o corpo JSON do erro em error.message -- precisa ler
+        // do Response bruto em error.context pra pegar a mensagem real que a função mandou.
+        let motivo = error.message;
+        try {
+          const body = await error.context?.json();
+          if (body?.error) motivo = body.error;
+        } catch { /* corpo não era JSON, mantém a mensagem genérica */ }
+        toast.error(motivo || 'Erro ao buscar notícia');
+        return;
+      }
       if (data?.error) { toast.error(data.error); return; }
       setTexto(`${data.resumo}\n\nFonte: ${data.fonte_nome}`.trim());
       lastFetchedUrl.current = data.fonte_url;
