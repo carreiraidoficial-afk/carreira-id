@@ -11,7 +11,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Search, Loader2, Trash2, User, FileText, Send, Image, X, ExternalLink, Link as LinkIcon } from 'lucide-react';
+import { Search, Loader2, Trash2, User, FileText, Send, Image, X, ExternalLink, Link as LinkIcon, Newspaper } from 'lucide-react';
 import { LinkPreviewCard } from '@/components/carreira/LinkPreviewCard';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -115,6 +115,7 @@ export default function CarreiraAdminPostsPage() {
   const [uploading, setUploading] = useState(false);
   const [linkPreview, setLinkPreview] = useState<any>(null);
   const [fetchingPreview, setFetchingPreview] = useState(false);
+  const [buscandoNoticia, setBuscandoNoticia] = useState(false);
   const lastFetchedUrl = useRef<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -159,6 +160,30 @@ export default function CarreiraAdminPostsPage() {
     } else {
       setLinkPreview(null);
       lastFetchedUrl.current = null;
+    }
+  };
+
+  const handleBuscarNoticia = async (tema: 'regional' | 'nacional' | 'escolinha') => {
+    setBuscandoNoticia(true);
+    setLinkPreview(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('search-esporte-noticias', { body: { tema } });
+      if (error) throw error;
+      if (data?.error) { toast.error(data.error); return; }
+      setTexto(`${data.resumo}\n\nFonte: ${data.fonte_nome}`.trim());
+      lastFetchedUrl.current = data.fonte_url;
+      if (data.fonte_url) {
+        setFetchingPreview(true);
+        supabase.functions.invoke('fetch-link-preview', { body: { url: data.fonte_url } })
+          .then(({ data: preview, error: previewError }) => { if (!previewError && preview?.title) setLinkPreview(preview); })
+          .catch(() => {})
+          .finally(() => setFetchingPreview(false));
+      }
+      toast.success('Notícia encontrada! Revise o texto antes de publicar.');
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao buscar notícia');
+    } finally {
+      setBuscandoNoticia(false);
     }
   };
 
@@ -207,6 +232,15 @@ export default function CarreiraAdminPostsPage() {
               </div>
             ) : (
               <div className="space-y-3">
+                <div className="rounded-lg border border-dashed p-3 space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5"><Newspaper className="w-3.5 h-3.5" />Buscar notícia pra sugerir um rascunho (revise antes de publicar)</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs" disabled={buscandoNoticia} onClick={() => handleBuscarNoticia('regional')}>Campeonato regional</Button>
+                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs" disabled={buscandoNoticia} onClick={() => handleBuscarNoticia('nacional')}>Campeonato nacional</Button>
+                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs" disabled={buscandoNoticia} onClick={() => handleBuscarNoticia('escolinha')}>Escolinha</Button>
+                    {buscandoNoticia && <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="w-3.5 h-3.5 animate-spin" />Buscando...</span>}
+                  </div>
+                </div>
                 <Textarea placeholder="O que compartilhar na rede? Cole um link para gerar preview automaticamente" value={texto} onChange={e => handleTextChange(e.target.value)} rows={3} disabled={!meuPerfil || isSubmitting} className="resize-none" />
                 {fetchingPreview && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="w-3 h-3 animate-spin" />Carregando preview...</div>}
                 {linkPreview && (

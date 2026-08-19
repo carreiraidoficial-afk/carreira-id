@@ -1,5 +1,8 @@
 project_id = "fppsotlycinwqsjpoybg"
 
+[functions.search-esporte-noticias]
+verify_jwt = true
+
 [functions.moderate-content]
 verify_jwt = false
 
