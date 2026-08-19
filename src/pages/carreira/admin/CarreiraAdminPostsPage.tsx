@@ -116,6 +116,7 @@ export default function CarreiraAdminPostsPage() {
   const [linkPreview, setLinkPreview] = useState<any>(null);
   const [fetchingPreview, setFetchingPreview] = useState(false);
   const [buscandoNoticia, setBuscandoNoticia] = useState(false);
+  const [filtroNoticia, setFiltroNoticia] = useState('');
   const lastFetchedUrl = useRef<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -167,7 +168,7 @@ export default function CarreiraAdminPostsPage() {
     setBuscandoNoticia(true);
     setLinkPreview(null);
     try {
-      const { data, error } = await supabase.functions.invoke('search-esporte-noticias', { body: { tema } });
+      const { data, error } = await supabase.functions.invoke('search-esporte-noticias', { body: { tema, filtro: filtroNoticia.trim() } });
       if (error) {
         // supabase-js não expõe o corpo JSON do erro em error.message -- precisa ler
         // do Response bruto em error.context pra pegar a mensagem real que a função mandou.
@@ -250,6 +251,13 @@ export default function CarreiraAdminPostsPage() {
                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs" disabled={buscandoNoticia} onClick={() => handleBuscarNoticia('escolinha')}>Escolinha</Button>
                     {buscandoNoticia && <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="w-3.5 h-3.5 animate-spin" />Buscando...</span>}
                   </div>
+                  <Input
+                    placeholder="Filtro extra (opcional): ex. sub-15, campeonato paulista, carioca..."
+                    value={filtroNoticia}
+                    onChange={e => setFiltroNoticia(e.target.value)}
+                    disabled={buscandoNoticia}
+                    className="h-8 text-xs"
+                  />
                 </div>
                 <Textarea placeholder="O que compartilhar na rede? Cole um link para gerar preview automaticamente" value={texto} onChange={e => handleTextChange(e.target.value)} rows={3} disabled={!meuPerfil || isSubmitting} className="resize-none" />
                 {fetchingPreview && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="w-3 h-3 animate-spin" />Carregando preview...</div>}
