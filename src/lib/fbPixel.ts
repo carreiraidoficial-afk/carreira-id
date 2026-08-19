@@ -9,7 +9,7 @@ declare global {
   }
 }
 
-function isProduction(): boolean {
+export function isProduction(): boolean {
   const h = window.location.hostname;
   return h === 'carreiraid.com.br' || h === 'www.carreiraid.com.br';
 }

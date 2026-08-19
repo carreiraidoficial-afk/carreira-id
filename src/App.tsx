@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PWAUpdatePrompt } from "@/components/shared/PWAUpdatePrompt";
 import { AnonymousGateProvider } from "@/hooks/useAnonymousGate";
+import { useGaPageview } from "@/hooks/useGaPageview";
 const RootRoute = lazy(() => import("./pages/RootRoute"));
 
 // Lazy load pages not needed on initial render
@@ -61,6 +62,12 @@ const LegacyAdminRedirect = () => {
   return <Navigate to={`${redirectPath}${location.search}${location.hash}`} replace />;
 };
 
+/** Precisa ficar dentro do BrowserRouter pra ter acesso a useLocation(). */
+const GaPageviewTracker = () => {
+  useGaPageview();
+  return null;
+};
+
 const App = () => {
   // Limpa o numero no icone do app (Badging API) sempre que o app abre --
   // igual outros apps, o usuario nao deve ver contagem de notificacao
@@ -79,6 +86,7 @@ const App = () => {
         <Sonner />
         <PWAUpdatePrompt />
         <BrowserRouter>
+          <GaPageviewTracker />
           <AnonymousGateProvider enabled={true}>
             <Suspense fallback={
               <div className="min-h-screen flex items-center justify-center bg-background" data-theme="dark-orange">
