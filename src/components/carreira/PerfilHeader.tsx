@@ -144,6 +144,10 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
 
   const modalidades = perfil.modalidades?.length > 0 ? perfil.modalidades : [perfil.modalidade];
 
+  // Teste pontual: foto retangular estilo figurinha, só no perfil do João
+  // Guilherme, pra avaliar antes de decidir se generaliza pra todo atleta.
+  const isFotoRetangularTeste = perfil.slug === 'joao-guilherme-ribeiro-nogueira-cqauhf';
+
   return (
     <>
       <Card className="overflow-hidden" style={{ borderColor: `${perfil.cor_destaque || '#3b82f6'}50`, borderWidth: 2 }}>
@@ -158,12 +162,27 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
           <div className="flex items-start gap-4 sm:gap-5">
             {/* Avatar */}
             <div className="relative shrink-0">
-              <Avatar 
-                className="w-24 h-24 sm:w-28 sm:h-28 border-3 shadow-lg ring-2"
-                style={{ borderColor: `${perfil.cor_destaque || '#3b82f6'}33`, boxShadow: `0 0 0 2px ${perfil.cor_destaque || '#3b82f6'}22` }}>
-                {perfil.foto_url ? <AvatarImage src={perfil.foto_url} alt={perfil.nome} className="object-cover" /> : null}
-                <AvatarFallback className="text-2xl"><User className="w-10 h-10" /></AvatarFallback>
-              </Avatar>
+              {isFotoRetangularTeste ? (
+                perfil.foto_url ? (
+                  <img src={perfil.foto_url} alt={perfil.nome}
+                    className="w-24 sm:w-28 aspect-[3/4] rounded-xl object-cover object-top shadow-lg ring-2"
+                    style={{ borderColor: `${perfil.cor_destaque || '#3b82f6'}33`, boxShadow: `0 0 0 2px ${perfil.cor_destaque || '#3b82f6'}22` }}
+                  />
+                ) : (
+                  <div className="w-24 sm:w-28 aspect-[3/4] rounded-xl bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground shadow-lg ring-2"
+                    style={{ borderColor: `${perfil.cor_destaque || '#3b82f6'}33`, boxShadow: `0 0 0 2px ${perfil.cor_destaque || '#3b82f6'}22` }}
+                  >
+                    <User className="w-10 h-10" />
+                  </div>
+                )
+              ) : (
+                <Avatar
+                  className="w-24 h-24 sm:w-28 sm:h-28 border-3 shadow-lg ring-2"
+                  style={{ borderColor: `${perfil.cor_destaque || '#3b82f6'}33`, boxShadow: `0 0 0 2px ${perfil.cor_destaque || '#3b82f6'}22` }}>
+                  {perfil.foto_url ? <AvatarImage src={perfil.foto_url} alt={perfil.nome} className="object-cover" /> : null}
+                  <AvatarFallback className="text-2xl"><User className="w-10 h-10" /></AvatarFallback>
+                </Avatar>
+              )}
               {isOwner && (
                 <>
                   <button onClick={() => fileInputRef.current?.click()} disabled={uploading}

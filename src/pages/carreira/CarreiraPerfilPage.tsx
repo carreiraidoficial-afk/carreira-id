@@ -607,6 +607,9 @@ export default function CarreiraPerfilPage() {
     : [];
   const isRedeProfile = perfil.type === 'rede';
   const isDonoEscolaProfile = isRedeProfile && perfil.tipo === 'dono_escola';
+  // Teste pontual: foto retangular estilo figurinha, só no perfil do João
+  // Guilherme, pra avaliar antes de decidir se generaliza pra todo atleta.
+  const isFotoRetangularTeste = isRedeProfile || perfil.slug === 'joao-guilherme-ribeiro-nogueira-cqauhf';
   const NON_HISTORICO_TYPES = ['atleta_filho', 'pai_responsavel', 'influenciador', 'torcedor'];
   const showHistorico = isRedeProfile && !NON_HISTORICO_TYPES.includes(perfil.tipo || '');
   const historicoProfissional: HistoricoProfissional[] = isRedeProfile
@@ -926,8 +929,8 @@ export default function CarreiraPerfilPage() {
                 </div>
               )}
               <div className={`p-4 ${perfil.banner_url ? '-mt-8' : ''}`}>
-              {/* Avatar — perfis profissionais (rede) ganham foto retangular, estilo figurinha */}
-              {isRedeProfile ? (
+              {/* Avatar — perfis profissionais (rede) e o teste do João Guilherme ganham foto retangular, estilo figurinha */}
+              {isFotoRetangularTeste ? (
                 perfil.foto_url ? (
                   <img src={perfil.foto_url} alt={displayProfileName}
                     className="w-40 aspect-[3/4] rounded-xl object-cover object-top ring-2 ring-offset-2 ring-offset-background mx-auto mb-3"
