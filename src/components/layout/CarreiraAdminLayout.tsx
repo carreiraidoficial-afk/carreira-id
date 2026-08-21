@@ -11,7 +11,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { NavLink } from '@/components/NavLink';
-import logoCarreira from '@/assets/logo-carreira-id.png';
+import logoCarreira from '@/assets/logo-carreira-id.webp';
 
 import { Settings2, Megaphone, GraduationCap, Stethoscope, Bell } from 'lucide-react';
 
