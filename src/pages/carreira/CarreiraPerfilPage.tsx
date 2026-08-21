@@ -610,9 +610,6 @@ export default function CarreiraPerfilPage() {
     : [];
   const isRedeProfile = perfil.type === 'rede';
   const isDonoEscolaProfile = isRedeProfile && perfil.tipo === 'dono_escola';
-  // Teste pontual: foto retangular estilo figurinha, só no perfil do João
-  // Guilherme, pra avaliar antes de decidir se generaliza pra todo atleta.
-  const isFotoRetangularTeste = isRedeProfile || perfil.slug === 'joao-guilherme-ribeiro-nogueira-cqauhf';
   const NON_HISTORICO_TYPES = ['atleta_filho', 'pai_responsavel', 'influenciador', 'torcedor'];
   const showHistorico = isRedeProfile && !NON_HISTORICO_TYPES.includes(perfil.tipo || '');
   const historicoProfissional: HistoricoProfissional[] = isRedeProfile
@@ -932,27 +929,18 @@ export default function CarreiraPerfilPage() {
                 </div>
               )}
               <div className={`p-4 ${perfil.banner_url ? '-mt-8' : ''}`}>
-              {/* Avatar — perfis profissionais (rede) e o teste do João Guilherme ganham foto retangular, estilo figurinha */}
-              {isFotoRetangularTeste ? (
-                perfil.foto_url ? (
-                  <img src={perfil.foto_url} alt={displayProfileName}
-                    className="w-40 aspect-[3/4] rounded-xl object-cover object-top ring-2 ring-offset-2 ring-offset-background mx-auto mb-3"
-                    style={{ '--tw-ring-color': accentColor } as any}
-                  />
-                ) : (
-                  <div className="w-40 aspect-[3/4] rounded-xl bg-muted flex items-center justify-center text-3xl font-bold text-muted-foreground ring-2 ring-offset-2 ring-offset-background mx-auto mb-3"
-                    style={{ '--tw-ring-color': accentColor } as any}
-                  >
-                    <User className="w-12 h-12" />
-                  </div>
-                )
+              {/* Avatar — foto retangular estilo figurinha, para atleta e rede */}
+              {perfil.foto_url ? (
+                <img src={perfil.foto_url} alt={displayProfileName}
+                  className="w-40 aspect-[3/4] rounded-xl object-cover object-top ring-2 ring-offset-2 ring-offset-background mx-auto mb-3"
+                  style={{ '--tw-ring-color': accentColor } as any}
+                />
               ) : (
-                <Avatar className="w-20 h-20 mx-auto mb-3 ring-2 ring-offset-2 ring-offset-background" style={{ '--tw-ring-color': accentColor } as any}>
-                  {perfil.foto_url ? (
-                    <AvatarImage src={perfil.foto_url} alt={displayProfileName} className="object-cover" />
-                  ) : null}
-                  <AvatarFallback className="text-xl"><User className="w-8 h-8" /></AvatarFallback>
-                </Avatar>
+                <div className="w-40 aspect-[3/4] rounded-xl bg-muted flex items-center justify-center text-3xl font-bold text-muted-foreground ring-2 ring-offset-2 ring-offset-background mx-auto mb-3"
+                  style={{ '--tw-ring-color': accentColor } as any}
+                >
+                  <User className="w-12 h-12" />
+                </div>
               )}
 
               <h2 className="font-bold text-foreground text-sm" style={perfil.banner_url ? { textShadow: '0 1px 4px rgba(0,0,0,0.7), 0 0px 2px rgba(0,0,0,0.5)' } : undefined}>{displayProfileName}</h2>
