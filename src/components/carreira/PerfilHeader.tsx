@@ -158,21 +158,21 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
           </div>
         )}
         <CardContent className={`p-4 sm:p-5 ${perfil.banner_url ? '-mt-10' : ''}`}>
-          {/* === TOP: Avatar + core info side by side === */}
-          <div className="flex items-start gap-4 sm:gap-5">
+          {/* === TOP: Avatar + core info (empilhado e centralizado no teste da foto retangular; lado a lado no padrão normal) === */}
+          <div className={isFotoRetangularTeste ? 'flex flex-col items-center text-center gap-4' : 'flex items-start gap-4 sm:gap-5'}>
             {/* Avatar */}
             <div className="relative shrink-0">
               {isFotoRetangularTeste ? (
                 perfil.foto_url ? (
                   <img src={perfil.foto_url} alt={perfil.nome}
-                    className="w-24 sm:w-28 aspect-[3/4] rounded-xl object-cover object-top shadow-lg ring-2"
+                    className="w-40 sm:w-48 aspect-[3/4] rounded-xl object-cover object-top shadow-lg ring-2"
                     style={{ borderColor: `${perfil.cor_destaque || '#3b82f6'}33`, boxShadow: `0 0 0 2px ${perfil.cor_destaque || '#3b82f6'}22` }}
                   />
                 ) : (
-                  <div className="w-24 sm:w-28 aspect-[3/4] rounded-xl bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground shadow-lg ring-2"
+                  <div className="w-40 sm:w-48 aspect-[3/4] rounded-xl bg-muted flex items-center justify-center text-4xl font-bold text-muted-foreground shadow-lg ring-2"
                     style={{ borderColor: `${perfil.cor_destaque || '#3b82f6'}33`, boxShadow: `0 0 0 2px ${perfil.cor_destaque || '#3b82f6'}22` }}
                   >
-                    <User className="w-10 h-10" />
+                    <User className="w-14 h-14" />
                   </div>
                 )
               ) : (
@@ -195,10 +195,10 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
               )}
             </div>
 
-            {/* Core info next to avatar */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 
+            {/* Core info next to avatar (ou abaixo, centralizado, no teste) */}
+            <div className={isFotoRetangularTeste ? 'w-full min-w-0' : 'flex-1 min-w-0'}>
+              <div className={`flex items-center gap-2 ${isFotoRetangularTeste ? 'justify-center' : ''}`}>
+                <h1
                   className="text-base sm:text-lg font-bold text-foreground leading-tight"
                   style={perfil.banner_url ? { textShadow: '0 1px 4px rgba(0,0,0,0.7), 0 0px 2px rgba(0,0,0,0.5)' } : undefined}
                 >
@@ -206,29 +206,29 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
                 </h1>
               </div>
               {temAcesso('selo_elite') ? (
-                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400 w-fit">
+                <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400 w-fit ${isFotoRetangularTeste ? 'mx-auto' : ''}`}>
                   <Crown className="w-3 h-3" /> Elite
                 </span>
               ) : plano !== 'base' && (
-                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 w-fit">
+                <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 w-fit ${isFotoRetangularTeste ? 'mx-auto' : ''}`}>
                   <Trophy className="w-3 h-3" /> Competidor
                 </span>
               )}
-              
+
               {categoriaDisplay && (
                 <p className="text-xs font-medium mt-0.5" style={{ color: perfil.cor_destaque || '#3b82f6' }}>
                   Atleta {categoriaDisplay}
                 </p>
               )}
               {perfil.crianca_id && (
-                <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
+                <div className={`flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5 ${isFotoRetangularTeste ? 'justify-center' : ''}`}>
                   <ShieldCheck className="w-3 h-3" />
                   <span>Perfil administrado pelo responsável</span>
                 </div>
               )}
 
               {/* Status + badges */}
-              <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+              <div className={`flex flex-wrap items-center gap-1.5 mt-1.5 ${isFotoRetangularTeste ? 'justify-center' : ''}`}>
                 {atletaStatusInfo && (
                   <Badge variant="outline" className="gap-1 text-xs font-semibold"
                     style={{ borderColor: perfil.cor_destaque || '#3b82f6', color: perfil.cor_destaque || '#3b82f6' }}>
@@ -247,7 +247,7 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
 
               {/* Position + foot */}
               {(perfil.posicao_principal || perfil.pe_dominante) && (
-                <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
+                <div className={`flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground ${isFotoRetangularTeste ? 'justify-center' : ''}`}>
                   {perfil.posicao_principal && (
                     <span className="flex items-center gap-1">
                       <Footprints className="w-3 h-3" />
@@ -262,7 +262,7 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
               )}
 
               {(perfil.cidade || perfil.estado) && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1.5">
+                <div className={`flex items-center gap-1 text-xs text-muted-foreground mt-1.5 ${isFotoRetangularTeste ? 'justify-center' : ''}`}>
                   <MapPin className="w-3 h-3" />
                   <span>{[perfil.cidade, perfil.estado].filter(Boolean).join(', ')}</span>
                 </div>
