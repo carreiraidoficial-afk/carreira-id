@@ -14,13 +14,16 @@ import { PeneirasSection } from '@/components/carreira/PeneirasSection';
 
 import { MigrarPerfilBanner } from '@/components/carreira/MigrarPerfilBanner';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
-import { CreatePostForm } from '@/components/carreira/CreatePostForm';
+// Carregado sob demanda: só o dono do perfil vê esse formulário, mas ele
+// carrega heic2any (~1,3MB) -- import estático fazia todo visitante baixar
+// essa biblioteca à toa.
+const CreatePostForm = lazy(() => import('@/components/carreira/CreatePostForm').then(m => ({ default: m.CreatePostForm })));
 import { PostCard } from '@/components/carreira/PostCard';
 import { DescobrirAtletasSection } from '@/components/carreira/DescobrirAtletasSection';
 import { usePostsRede } from '@/hooks/useCarreiraData';
 import logoCarreira from '@/assets/logo-carreira-id-dark.png';
 import { TutorialAutoShow } from '@/components/carreira/TutorialAutoShow';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -349,7 +352,9 @@ function RedePostsFeed({ perfilId, isOwnProfile, perfilNome, perfilFoto }: { per
   return (
     <div className="space-y-4 mt-4">
       {isOwnProfile && (
-        <CreatePostForm perfilRedeId={perfilId} perfilRedeNome={perfilNome} perfilRedeFoto={perfilFoto} />
+        <Suspense fallback={null}>
+          <CreatePostForm perfilRedeId={perfilId} perfilRedeNome={perfilNome} perfilRedeFoto={perfilFoto} />
+        </Suspense>
       )}
       {isLoading && <div className="text-center py-4"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>}
       {posts?.map((post) => (

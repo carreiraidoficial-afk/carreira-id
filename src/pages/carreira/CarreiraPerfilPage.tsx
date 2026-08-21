@@ -10,7 +10,10 @@ import { ConexoesCount } from '@/components/carreira/ConexoesCount';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
 import { PerfilLayout } from '@/components/carreira/perfis/PerfilLayout';
 import { DadosEspecificos } from '@/components/carreira/perfis/DadosEspecificos';
-import { CreatePostForm } from '@/components/carreira/CreatePostForm';
+// Carregado sob demanda: só o dono do perfil vê esse formulário, mas ele
+// carrega heic2any (~1,3MB) -- import estático fazia todo visitante baixar
+// essa biblioteca à toa.
+const CreatePostForm = lazy(() => import('@/components/carreira/CreatePostForm').then(m => ({ default: m.CreatePostForm })));
 import { PostCard } from '@/components/carreira/PostCard';
 import { EditPerfilRedeDialog } from '@/components/carreira/EditPerfilRedeDialog';
 import { HistoricoProfissionalSection, type HistoricoProfissional } from '@/components/carreira/HistoricoProfissionalSection';
@@ -40,7 +43,7 @@ import { Input } from '@/components/ui/input';
 import { useSEO } from '@/hooks/useSEO';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { toast } from 'sonner';
 import logoCarreira from '@/assets/logo-carreira-id-dark.png';
 import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
@@ -1613,7 +1616,9 @@ function RedeTimelineInline({ perfilId, isOwner, perfilNome, perfilFoto, accentC
   return (
     <div className="space-y-4">
       {isOwner && (
-        <CreatePostForm perfilRedeId={perfilId} perfilRedeNome={perfilNome} perfilRedeFoto={perfilFoto} accentColor={accentColor} />
+        <Suspense fallback={null}>
+          <CreatePostForm perfilRedeId={perfilId} perfilRedeNome={perfilNome} perfilRedeFoto={perfilFoto} accentColor={accentColor} />
+        </Suspense>
       )}
       {isLoading && <div className="text-center py-4"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>}
       {posts?.map((post) => (

@@ -18,7 +18,6 @@ import { useCarreiraPlano, usePostsDiaCount } from '@/hooks/useCarreiraPlano';
 import { PLANOS } from '@/config/carreiraPlanos';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { useNavigate } from 'react-router-dom';
-import heic2any from 'heic2any';
 
 // Helper to convert HEIC/HEIF to JPEG
 async function convertHeicToJpeg(file: File): Promise<File> {
@@ -28,6 +27,7 @@ async function convertHeicToJpeg(file: File): Promise<File> {
   if (!isHeic) return file;
 
   try {
+    const heic2any = (await import('heic2any')).default;
     const blobResult = await heic2any({
       blob: file,
       toType: 'image/jpeg',

@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { PerfilAtleta, usePostsAtleta, useAtividadesPublicas, useEscolinhasCarreira } from '@/hooks/useCarreiraData';
 import { useCarreiraExperiencias, useDeleteCarreiraExperiencia, CarreiraExperiencia } from '@/hooks/useCarreiraExperienciasData';
 import { AtividadeExterna } from '@/hooks/useAtividadesExternasData';
-import { CreatePostForm } from './CreatePostForm';
+// Carregado sob demanda: só o dono do perfil vê esse formulário, mas ele
+// carrega heic2any (~1,3MB) -- import estático fazia todo visitante baixar
+// essa biblioteca à toa.
+const CreatePostForm = lazy(() => import('./CreatePostForm').then(m => ({ default: m.CreatePostForm })));
 import { PostCard } from './PostCard';
 import { AtividadePublicaCard } from './AtividadePublicaCard';
 import { ExperienciaSection } from './ExperienciaSection';
@@ -412,7 +415,11 @@ export function CarreiraTimeline({ perfil, isOwner = false }: CarreiraTimelinePr
       )}
 
       {/* Posts feed */}
-      {isOwner && <CreatePostForm perfil={perfil} accentColor={accentColor} />}
+      {isOwner && (
+        <Suspense fallback={null}>
+          <CreatePostForm perfil={perfil} accentColor={accentColor} />
+        </Suspense>
+      )}
 
       {postsLoading ? (
         <div className="flex items-center justify-center py-12">
