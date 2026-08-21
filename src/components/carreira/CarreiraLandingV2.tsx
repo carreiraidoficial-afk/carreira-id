@@ -1,14 +1,14 @@
 import { Link } from 'react-router-dom';
 import mockupRanking from '@/assets/mockup-ranking-celular.png';
-import mockupPerfilCelular from '@/assets/mockup-perfil-celular.png';
-import mockupScoutPerfil from '@/assets/mockup-scout-perfil.png';
-import mockupScoutBusca from '@/assets/mockup-scout-busca.png';
+import mockupPerfilCelular from '@/assets/mockup-perfil-celular.webp';
+import mockupScoutPerfil from '@/assets/mockup-scout-perfil.webp';
+import mockupScoutBusca from '@/assets/mockup-scout-busca.webp';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import logoCarreira from '@/assets/logo-carreira-id.png';
 import logoAtletaIdDark from '@/assets/logo-atleta-id-dark.png';
 import heroLandingV2Bg from '@/assets/hero-landing-v2-bg.jpg';
-import heroSolucaoBg from '@/assets/hero-solucao-bg.jpg';
-import mockupCelular from '@/assets/mockup-carreira-celular.png';
+import heroSolucaoBg from '@/assets/hero-solucao-bg.webp';
+import mockupCelular from '@/assets/mockup-carreira-celular.webp';
 import torcidaPaisBg from '@/assets/torcida-pais-bg.jpg';
 import {
   Accordion,
