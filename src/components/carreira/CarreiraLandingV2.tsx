@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import mockupRanking from '@/assets/mockup-ranking-celular.png';
 import mockupPerfilCelular from '@/assets/mockup-perfil-celular.webp';
 import mockupScoutPerfil from '@/assets/mockup-scout-perfil.webp';
@@ -151,6 +153,78 @@ function SolutionProfileCard() {
         </div>
       </div>
     </div>
+  );
+}
+
+/* ─── Titulares da Base — apoiadores fundadores (técnicos/influenciadores) ───
+   Dados reais, geridos em /carreira/admin/titulares. */
+interface Titular {
+  id: string;
+  nome: string;
+  papel: string;
+  foto_url: string;
+}
+
+function TitularCard({ titular }: { titular: Titular }) {
+  return (
+    <div className="w-56 shrink-0 rounded-2xl bg-[#1a2332] border border-[#2a3a4e] overflow-hidden">
+      <img src={titular.foto_url} alt={titular.nome} className="w-full h-56 object-cover" loading="lazy" />
+      <div className="p-4">
+        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-orange-400 bg-orange-500/10 border border-orange-500/30 rounded-full px-2 py-0.5 mb-2">
+          🏆 Titular da Base
+        </span>
+        <h4 className="text-white font-bold text-sm truncate">{titular.nome}</h4>
+        <p className="text-gray-400 text-xs truncate">{titular.papel}</p>
+      </div>
+    </div>
+  );
+}
+
+export function TitularesDaBaseSection() {
+  const { data: titulares = [] } = useQuery({
+    queryKey: ['titulares-base-landing'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('carreira_titulares_base' as any)
+        .select('id, nome, papel, foto_url')
+        .eq('ativo', true)
+        .order('ordem');
+      if (error) throw error;
+      return (data || []) as unknown as Titular[];
+    },
+  });
+
+  if (titulares.length === 0) return null;
+
+  const vagasPreenchidas = titulares.length;
+  const linha = [...titulares, ...titulares];
+
+  return (
+    <section className="bg-[#0d1420] py-20 overflow-hidden">
+      <div className="container max-w-3xl mx-auto px-4 text-center mb-12">
+        <SectionBadge>Titulares da Base</SectionBadge>
+        <h2 className="mt-4 text-3xl sm:text-4xl font-bold text-white">
+          Os primeiros a acreditar na base.
+        </h2>
+        <p className="mt-3 text-gray-400">
+          Técnicos, professores, scouts e criadores de conteúdo que apoiaram o Carreira ID desde o início.
+          Vagas limitadas a 100 — depois disso, essa lista fecha pra sempre.
+        </p>
+        <p className="mt-3 text-orange-400 font-semibold text-sm">
+          {vagasPreenchidas}/100 vagas preenchidas
+        </p>
+      </div>
+
+      <div className="relative">
+        <div className="flex gap-5 w-max animate-marquee hover:[animation-play-state:paused]">
+          {linha.map((titular, i) => (
+            <TitularCard key={`${titular.id}-${i}`} titular={titular} />
+          ))}
+        </div>
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#0d1420] to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#0d1420] to-transparent" />
+      </div>
+    </section>
   );
 }
 
@@ -773,6 +847,10 @@ export function CarreiraLandingV2() {
           </Accordion>
         </div>
       </section>
+
+      {/* ═══ Titulares da Base — TESTE: fotos e nomes abaixo são só placeholder,
+          precisam ser trocados por apoiadores reais antes de publicar de vez ═══ */}
+      <TitularesDaBaseSection />
 
       {/* ═══ Comunidade WhatsApp ═══ */}
       <section className="bg-gradient-to-br from-emerald-800 to-emerald-900 py-16">
