@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trophy, Trash2, Pencil, ChevronUp, ChevronDown, Loader2, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/image-compressor';
@@ -18,6 +19,7 @@ interface Titular {
   nome: string;
   papel: string;
   foto_url: string;
+  foto_posicao: string;
   ordem: number;
   ativo: boolean;
   created_at: string;
@@ -48,6 +50,7 @@ export default function CarreiraAdminTitularesPage() {
   const [nome, setNome] = useState('');
   const [papel, setPapel] = useState('');
   const [fotoUrl, setFotoUrl] = useState('');
+  const [fotoPosicao, setFotoPosicao] = useState('center');
 
   const { data: titulares = [], isLoading } = useQuery({
     queryKey: ['admin-titulares-base'],
@@ -80,14 +83,14 @@ export default function CarreiraAdminTitularesPage() {
       if (editing) {
         const { error } = await supabase
           .from('carreira_titulares_base' as any)
-          .update({ nome, papel, foto_url: fotoUrl })
+          .update({ nome, papel, foto_url: fotoUrl, foto_posicao: fotoPosicao })
           .eq('id', editing.id);
         if (error) throw error;
       } else {
         const maxOrdem = titulares.length ? Math.max(...titulares.map(t => t.ordem)) + 1 : 0;
         const { error } = await supabase
           .from('carreira_titulares_base' as any)
-          .insert({ nome, papel, foto_url: fotoUrl, ordem: maxOrdem, criado_por: user!.id });
+          .insert({ nome, papel, foto_url: fotoUrl, foto_posicao: fotoPosicao, ordem: maxOrdem, criado_por: user!.id });
         if (error) throw error;
       }
     },
@@ -141,6 +144,7 @@ export default function CarreiraAdminTitularesPage() {
     setNome('');
     setPapel('');
     setFotoUrl('');
+    setFotoPosicao('center');
     setDialogOpen(true);
   }
 
@@ -149,6 +153,7 @@ export default function CarreiraAdminTitularesPage() {
     setNome(t.nome);
     setPapel(t.papel);
     setFotoUrl(t.foto_url);
+    setFotoPosicao(t.foto_posicao || 'center');
     setDialogOpen(true);
   }
 
@@ -197,7 +202,12 @@ export default function CarreiraAdminTitularesPage() {
                       <ChevronDown className="w-3.5 h-3.5" />
                     </Button>
                   </div>
-                  <img src={t.foto_url} alt={t.nome} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                  <img
+                    src={t.foto_url}
+                    alt={t.nome}
+                    className="w-12 h-12 rounded-lg object-cover shrink-0"
+                    style={{ objectPosition: `center ${t.foto_posicao || 'center'}` }}
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{t.nome}</p>
                     <p className="text-xs text-muted-foreground truncate">{t.papel}</p>
@@ -228,9 +238,14 @@ export default function CarreiraAdminTitularesPage() {
               <Label>Foto</Label>
               <div className="flex items-center gap-3 mt-1">
                 {fotoUrl ? (
-                  <img src={fotoUrl} alt="" className="w-16 h-16 rounded-lg object-cover" />
+                  <img
+                    src={fotoUrl}
+                    alt=""
+                    className="w-20 h-20 rounded-lg object-cover"
+                    style={{ objectPosition: `center ${fotoPosicao}` }}
+                  />
                 ) : (
-                  <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center">
+                  <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center">
                     <ImagePlus className="w-6 h-6 text-muted-foreground" />
                   </div>
                 )}
@@ -241,6 +256,24 @@ export default function CarreiraAdminTitularesPage() {
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
               </div>
             </div>
+            {fotoUrl && (
+              <div>
+                <Label>Enquadramento da foto</Label>
+                <Select value={fotoPosicao} onValueChange={setFotoPosicao}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="top">Topo (mostra a cabeça)</SelectItem>
+                    <SelectItem value="center">Centro</SelectItem>
+                    <SelectItem value="bottom">Base</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ajusta qual parte da foto aparece no card, que é cortado em formato retangular.
+                </p>
+              </div>
+            )}
             <div>
               <Label>Nome</Label>
               <Input value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Carlos Andrade" />

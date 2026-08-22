@@ -163,12 +163,19 @@ interface Titular {
   nome: string;
   papel: string;
   foto_url: string;
+  foto_posicao: string;
 }
 
 function TitularCard({ titular }: { titular: Titular }) {
   return (
-    <div className="w-56 shrink-0 rounded-2xl bg-[#1a2332] border border-[#2a3a4e] overflow-hidden">
-      <img src={titular.foto_url} alt={titular.nome} className="w-full h-56 object-cover" loading="lazy" />
+    <div className="w-64 shrink-0 rounded-2xl bg-[#1a2332] border border-[#2a3a4e] overflow-hidden">
+      <img
+        src={titular.foto_url}
+        alt={titular.nome}
+        className="w-full h-72 object-cover"
+        style={{ objectPosition: `center ${titular.foto_posicao || 'center'}` }}
+        loading="lazy"
+      />
       <div className="p-4">
         <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-orange-400 bg-orange-500/10 border border-orange-500/30 rounded-full px-2 py-0.5 mb-2">
           🏆 Titular da Base
@@ -186,7 +193,7 @@ export function TitularesDaBaseSection() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('carreira_titulares_base' as any)
-        .select('id, nome, papel, foto_url')
+        .select('id, nome, papel, foto_url, foto_posicao')
         .eq('ativo', true)
         .order('ordem');
       if (error) throw error;
@@ -197,7 +204,10 @@ export function TitularesDaBaseSection() {
   if (titulares.length === 0) return null;
 
   const vagasPreenchidas = titulares.length;
-  const linha = [...titulares, ...titulares];
+  // Só duplica e anima quando há titulares suficientes pra parecer um loop
+  // infinito de verdade — com poucos, duplicar só faz parecer repetido.
+  const usaMarquee = titulares.length >= 5;
+  const linha = usaMarquee ? [...titulares, ...titulares] : titulares;
 
   return (
     <section className="bg-[#0d1420] py-20 overflow-hidden">
@@ -216,13 +226,23 @@ export function TitularesDaBaseSection() {
       </div>
 
       <div className="relative">
-        <div className="flex gap-5 w-max animate-marquee hover:[animation-play-state:paused]">
+        <div
+          className={
+            usaMarquee
+              ? 'flex gap-5 w-max animate-marquee hover:[animation-play-state:paused]'
+              : 'flex flex-wrap gap-5 justify-center container mx-auto px-4'
+          }
+        >
           {linha.map((titular, i) => (
             <TitularCard key={`${titular.id}-${i}`} titular={titular} />
           ))}
         </div>
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#0d1420] to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#0d1420] to-transparent" />
+        {usaMarquee && (
+          <>
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#0d1420] to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#0d1420] to-transparent" />
+          </>
+        )}
       </div>
     </section>
   );
