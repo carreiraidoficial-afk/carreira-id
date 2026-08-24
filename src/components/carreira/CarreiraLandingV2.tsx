@@ -74,7 +74,7 @@ function HeroProfileCard() {
           </div>
           <div>
             <h4 className="text-white font-bold text-lg">João Pedro Silva</h4>
-            <p className="text-emerald-400 text-sm">Meio-campista • 15 anos</p>
+            <p className="text-emerald-400 text-sm">Atleta de Base • 15 anos</p>
             <div className="flex gap-2 mt-1.5">
               <span className="text-xs bg-[#2a3a4e] text-gray-300 px-2 py-0.5 rounded">Sub-15</span>
               <span className="text-xs bg-[#2a3a4e] text-gray-300 px-2 py-0.5 rounded">São Paulo, SP</span>
@@ -98,7 +98,7 @@ function HeroProfileCard() {
             <Star className="w-5 h-5 text-amber-400" />
           </div>
           <div>
-            <p className="text-white text-sm font-medium">Artilheiro do Campeonato</p>
+            <p className="text-white text-sm font-medium">Destaque do Campeonato</p>
             <p className="text-gray-400 text-xs">Copa Regional Sub-15 • 2024</p>
           </div>
         </div>
@@ -132,7 +132,7 @@ function SolutionProfileCard() {
           MS
         </div>
         <h4 className="text-white font-bold text-lg">Maria Santos</h4>
-        <p className="text-emerald-400 text-sm">Atacante • 14 anos</p>
+        <p className="text-emerald-400 text-sm">Atleta de Base • 14 anos</p>
         {/* Skeleton bars */}
         <div className="w-full mt-4 space-y-2">
           <div className="h-2.5 bg-gray-600 rounded-full w-full" />
@@ -142,7 +142,7 @@ function SolutionProfileCard() {
         <div className="grid grid-cols-3 gap-3 w-full mt-5">
           {[
             { n: '24', l: 'Jogos' },
-            { n: '8', l: 'Gols' },
+            { n: '8', l: 'Pontos' },
             { n: '3', l: 'Títulos' },
           ].map((s) => (
             <div key={s.l} className="bg-emerald-700/30 border border-emerald-500/30 rounded-xl py-3 text-center">
@@ -218,10 +218,10 @@ export function TitularesDaBaseSection() {
         </h2>
         <p className="mt-3 text-gray-400">
           Técnicos, professores, scouts e criadores de conteúdo que apoiaram o Carreira ID desde o início.
-          Vagas limitadas a 100 — depois disso, essa lista fecha pra sempre.
+          Vagas limitadas a 22 — depois disso, essa lista fecha pra sempre.
         </p>
         <p className="mt-3 text-orange-400 font-semibold text-sm">
-          {vagasPreenchidas}/100 vagas preenchidas
+          {vagasPreenchidas}/22 vagas preenchidas
         </p>
       </div>
 
@@ -312,7 +312,7 @@ export function CarreiraLandingV2() {
               Plataforma Nacional
             </span>
             <h1 className="mt-6 text-4xl sm:text-5xl md:text-[3.5rem] font-extrabold leading-[1.1] tracking-tight">
-              O futebol de base brasileiro precisa de{' '}
+              O esporte de base brasileiro precisa de{' '}
               <span className="text-orange-400">registro, organização e valorização</span>.
             </h1>
             <p className="mt-6 text-gray-400 text-lg leading-relaxed max-w-lg">
@@ -435,7 +435,7 @@ export function CarreiraLandingV2() {
               Encontre o <span className="text-orange-400">próximo grande talento</span>.
             </h2>
             <p className="mt-4 max-w-2xl mx-auto text-gray-400 leading-relaxed">
-              Técnicos, scouts, olheiros e treinadores usam o Carreira ID para descobrir atletas com filtros avançados — por idade, posição, pé dominante, cidade e muito mais.
+              Técnicos, scouts, olheiros e treinadores usam o Carreira ID para descobrir atletas com filtros avançados — por idade, posição, modalidade, cidade e muito mais.
             </p>
           </div>
 
@@ -464,7 +464,7 @@ export function CarreiraLandingV2() {
               </p>
               <div className="space-y-4">
                 {[
-                  { icon: Search, label: 'Filtros por categoria, posição, pé dominante, modalidade e cidade' },
+                  { icon: Search, label: 'Filtros por categoria, posição, modalidade e cidade' },
                   { icon: Users, label: 'Perfis verificados de técnicos, scouts e agentes de clubes' },
                   { icon: Eye, label: 'Acesse o histórico completo e a evolução de cada atleta' },
                   { icon: Target, label: 'Receba destaques de novos talentos na sua região' },
@@ -534,7 +534,7 @@ export function CarreiraLandingV2() {
         <div className="container max-w-6xl mx-auto px-4 text-center">
           <SectionBadge>Para Quem</SectionBadge>
           <h2 className="mt-6 text-3xl sm:text-4xl md:text-5xl font-extrabold">
-            Para quem leva o futebol <span className="text-orange-400">a sério</span>.
+            Para quem leva o esporte <span className="text-orange-400">a sério</span>.
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-14">
             {[
@@ -626,7 +626,7 @@ export function CarreiraLandingV2() {
                 No Carreira ID, cada ação conta. Complete seu perfil, registre atividades e convide amigos e familiares para fazerem parte da sua <strong className="text-white">torcida</strong>.
               </p>
               <p className="mt-4 text-gray-400 text-base leading-relaxed">
-                Aumente sua autoridade e reputação trazendo novos membros para a plataforma — técnicos, professores, treinadores e jogadores profissionais. Quanto mais engajado, mais alto você chega no ranking.
+                Aumente sua autoridade e reputação trazendo novos membros para a plataforma — técnicos, professores, treinadores e atletas profissionais. Quanto mais engajado, mais alto você chega no ranking.
               </p>
               <div className="space-y-3 mt-8">
                 {[

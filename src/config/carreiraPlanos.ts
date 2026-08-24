@@ -66,7 +66,7 @@ export const PLANOS: Record<CarreiraPlano, PlanoInfo> = {
       curriculo_pdf: false,
     },
     destaques: [
-      'Perfil público do atleta (foto e informações básicas: posição, idade, pé dominante)',
+      'Perfil público do atleta (foto e informações básicas: posição, idade, modalidade)',
       'Histórico de carreira (Escolinhas e Clubes) — 1 registro por mês',
       'Registro da Jornada — Participação em jogos e conquistas (1 por mês)',
       'Publicações no feed (texto e fotos) — 1 por dia',

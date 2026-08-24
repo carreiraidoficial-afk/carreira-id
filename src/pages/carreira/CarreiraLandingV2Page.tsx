@@ -11,15 +11,15 @@ export default function CarreiraLandingV2Page() {
   const { session, isLoading } = useAuth();
 
   useSEO({
-    title: 'CARREIRA ID - Rede Social do Futebol de Base | Perfil do Atleta',
-    description: 'A rede social da carreira esportiva no futebol de base. Crie o perfil do atleta, registre clubes, campeonatos e conquistas, e construa um histórico verificável desde a categoria de base até o profissional.',
+    title: 'CARREIRA ID - Rede Social do Esporte de Base | Perfil do Atleta',
+    description: 'A rede social da carreira esportiva no esporte de base. Crie o perfil do atleta, registre clubes, campeonatos e conquistas, e construa um histórico verificável desde a categoria de base até o profissional.',
     path: '/',
     jsonLd: {
       '@type': 'Organization',
       name: 'CARREIRA ID',
       url: 'https://carreiraid.com.br',
       logo: 'https://carreiraid.com.br/carreira-icon-512.png',
-      description: 'Rede social e plataforma de identidade esportiva digital para atletas do futebol de base.',
+      description: 'Rede social e plataforma de identidade esportiva digital para atletas do esporte de base.',
     },
   });
 

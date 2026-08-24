@@ -171,10 +171,10 @@ export default function CarreiraAdminTitularesPage() {
           <div>
             <h1 className="text-2xl font-bold">Titulares da Base</h1>
             <p className="text-sm text-muted-foreground">
-              Apoiadores fundadores exibidos na landing page — {ativos}/100 vagas preenchidas
+              Apoiadores fundadores exibidos na landing page — {ativos}/22 vagas preenchidas
             </p>
           </div>
-          <Button onClick={openCreate} className="gap-2" disabled={ativos >= 100}>
+          <Button onClick={openCreate} className="gap-2" disabled={ativos >= 22}>
             <Plus className="w-4 h-4" /> Novo Titular
           </Button>
         </div>
