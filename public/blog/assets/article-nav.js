@@ -3,6 +3,7 @@
   // ordem dos cards em /blog/index.html. Ao publicar um artigo novo,
   // adicione ele aqui tambem (no topo), alem do card na listagem.
   var ARTICLES = [
+    { slug: 'tecnicos-que-gritam-e-xingam-nao-e-motivacao-e-medo', title: 'Técnicos Que Gritam e Xingam: Isso Não É Motivação, É Medo' },
     { slug: 'efeito-da-idade-relativa-no-futebol-de-base', title: 'Efeito da Idade Relativa: Por Que o Mês de Nascimento Pode Afetar Seu Filho no Futebol' },
     { slug: 'como-fazer-analise-swot-antes-da-peneira', title: 'Como Fazer uma Análise SWOT Antes da Peneira do Seu Filho' },
     { slug: 'atleta-x-tecnico-voces-enxergam-o-mesmo-jogador', title: 'Atleta x Técnico: Vocês Enxergam o Mesmo Jogador?' },
