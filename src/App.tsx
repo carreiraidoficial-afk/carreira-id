@@ -41,6 +41,7 @@ const CarreiraAdminTutoriaisPage = lazy(() => import("./pages/carreira/admin/Car
 const CarreiraAdminDiagnosticoPage = lazy(() => import("./pages/carreira/admin/CarreiraAdminDiagnosticoPage"));
 const CarreiraAdminPushPage = lazy(() => import("./pages/carreira/admin/CarreiraAdminPushPage"));
 const CarreiraAdminTitularesPage = lazy(() => import("./pages/carreira/admin/CarreiraAdminTitularesPage"));
+const CarreiraAdminCuponsPage = lazy(() => import("./pages/carreira/admin/CarreiraAdminCuponsPage"));
 const ResetPasswordPage = lazy(() => import("./pages/carreira/ResetPasswordPage"));
 const CarreiraPlanosPage = lazy(() => import("./pages/carreira/CarreiraPlanosPage"));
 const CarreiraEventosPage = lazy(() => import("./pages/carreira/CarreiraEventosPage"));
@@ -133,6 +134,7 @@ const App = () => {
               <Route path="/carreira/admin/diagnostico" element={<CarreiraAdminDiagnosticoPage />} />
               <Route path="/carreira/admin/push" element={<CarreiraAdminPushPage />} />
               <Route path="/carreira/admin/titulares" element={<CarreiraAdminTitularesPage />} />
+              <Route path="/carreira/admin/cupons" element={<CarreiraAdminCuponsPage />} />
               <Route path="/perfil/:userId" element={<PerfilPage />} />
               <Route path="/escola/:slug" element={<EscolaPerfilPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />

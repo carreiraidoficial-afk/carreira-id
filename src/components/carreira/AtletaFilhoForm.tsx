@@ -16,7 +16,10 @@ interface Props {
   defaultName: string;
   inviteCode: string | null;
   onBack: () => void;
-  onComplete: () => void | Promise<void>;
+  /** Quando um cupom válido foi digitado, informa quantos dias de trial ele
+   * concede (substitui o TRIAL_DIAS padrão) e o id do cupom, pra registrar
+   * na assinatura e contar quantos atletas cada cupom trouxe. */
+  onComplete: (cupomAplicado?: { diasTrial: number; cupomId: string }) => void | Promise<void>;
   /** Permite cadastrar um atleta mesmo que o responsável já tenha outro
    * (irmãos). Sem isso, o form bloqueia um segundo cadastro por engano. */
   allowMultiple?: boolean;
@@ -49,8 +52,10 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
   const [telefoneWhatsapp, setTelefoneWhatsapp] = useState('');
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const [cupomCodigo, setCupomCodigo] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [cupomAplicado, setCupomAplicado] = useState<{ diasTrial: number; cupomId: string } | undefined>();
 
   const formatPhone = (value: string) => {
     const d = value.replace(/\D/g, '').slice(0, 11);
@@ -189,7 +194,23 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
       if (perfilError) { console.error('[AtletaFilhoForm] Erro perfil:', perfilError); throw perfilError; }
       console.log('[AtletaFilhoForm] Perfil criado com slug:', slug);
 
-      // 4. Handle invite code if present
+      // 4. Handle cupom personalizado if present (código digitado pela família)
+      if (cupomCodigo.trim()) {
+        const { data: cupom } = await supabase
+          .from('carreira_cupons' as any)
+          .select('id, dias_trial, validade')
+          .ilike('codigo', cupomCodigo.trim())
+          .eq('ativo', true)
+          .maybeSingle();
+
+        if (cupom && (!(cupom as any).validade || new Date((cupom as any).validade) > new Date())) {
+          setCupomAplicado({ diasTrial: (cupom as any).dias_trial, cupomId: (cupom as any).id });
+        } else {
+          toast.info('Código de cupom inválido ou expirado — seguindo com o trial padrão.');
+        }
+      }
+
+      // 5. Handle invite code if present
       if (inviteCode) {
         const { data: inviterProfile } = await supabase
           .from('perfis_rede')
@@ -238,7 +259,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
         <p className="text-sm text-muted-foreground">
           O perfil de <strong className="text-foreground">{nome.trim()}</strong> já está pronto.
         </p>
-        <Button className="w-full" size="lg" onClick={() => onComplete()}>
+        <Button className="w-full" size="lg" onClick={() => onComplete(cupomAplicado)}>
           Continuar
         </Button>
       </div>
@@ -380,9 +401,18 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
           className="grid grid-cols-2 gap-3"
         />
 
-
-
-
+        {/* Cupom de convite */}
+        <div className="space-y-2">
+          <Label>Cupom de convite (opcional)</Label>
+          <Input
+            value={cupomCodigo}
+            onChange={(e) => setCupomCodigo(e.target.value)}
+            placeholder="Ex: IGOR30"
+            className="font-mono uppercase"
+            maxLength={30}
+          />
+          <p className="text-xs text-muted-foreground">Ganhou um código de algum profissional? Digite aqui pra estender seu trial grátis.</p>
+        </div>
         <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
           {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
           Criar Perfil do Atleta

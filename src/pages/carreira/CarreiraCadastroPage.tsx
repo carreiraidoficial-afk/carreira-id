@@ -90,6 +90,7 @@ export default function CarreiraCadastroPage() {
   const [subscriptionConfirmed, setSubscriptionConfirmed] = useState(false);
   const [createdCriancaId, setCreatedCriancaId] = useState<string | null>(null);
   const [createdChildName, setCreatedChildName] = useState<string | null>(null);
+  const [diasTrialConcedidos, setDiasTrialConcedidos] = useState(TRIAL_DIAS);
   const [showFamiliaOffer, setShowFamiliaOffer] = useState(false);
   const [familiaOfferCriancaIds, setFamiliaOfferCriancaIds] = useState<string[]>([]);
   const [familiaOfferCriancaNomes, setFamiliaOfferCriancaNomes] = useState<string[]>([]);
@@ -411,7 +412,7 @@ export default function CarreiraCadastroPage() {
     }
   };
 
-  const handleProfileCreated = async () => {
+  const handleProfileCreated = async (cupomAplicado?: { diasTrial: number; cupomId: string }) => {
     if (userId) {
       // Processa convite/auto-follow vindos de ?ref&c&a (não bloqueia o fluxo)
       processarConviteRef(userId).catch(() => { /* silencioso */ });
@@ -442,7 +443,7 @@ export default function CarreiraCadastroPage() {
               .limit(1);
             if (!existing || existing.length === 0) {
               const trialEnd = new Date();
-              trialEnd.setDate(trialEnd.getDate() + TRIAL_DIAS);
+              trialEnd.setDate(trialEnd.getDate() + (cupomAplicado?.diasTrial || TRIAL_DIAS));
               await supabase.from('carreira_assinaturas').insert({
                 user_id: userId,
                 crianca_id: perfilAtleta.crianca_id,
@@ -452,7 +453,12 @@ export default function CarreiraCadastroPage() {
                 expira_em: trialEnd.toISOString().split('T')[0],
                 metodo_pagamento: null,
                 inicio_em: new Date().toISOString(),
+                cupom_id: cupomAplicado?.cupomId || null,
               } as any);
+              if (cupomAplicado) {
+                setDiasTrialConcedidos(cupomAplicado.diasTrial);
+                toast.success(`Cupom aplicado! Você ganhou ${cupomAplicado.diasTrial} dias grátis 🎉`);
+              }
             }
           } catch (err) {
             console.error('Erro ao criar trial:', err);
@@ -903,7 +909,7 @@ export default function CarreiraCadastroPage() {
               <Rocket className="w-12 h-12 mx-auto" style={{ color: PLANOS.premium.cor }} />
               <h3 className="text-xl font-bold">Perfil criado com sucesso! 🎉</h3>
               <p className="text-sm" style={{ color: 'hsl(0 0% 60%)' }}>
-                Você ganhou <strong style={{ color: PLANOS.premium.cor }}>{TRIAL_DIAS} dias grátis</strong> do <strong style={{ color: PLANOS.premium.cor }}>{PLANOS.premium.icone} {PLANOS.premium.nome}</strong> para turbinar o perfil{createdChildName ? ` de ${createdChildName}` : ' do atleta'}. Depois do trial, R$ {PRECO_PREMIUM.toFixed(2).replace('.', ',')}/mês para continuar.
+                Você ganhou <strong style={{ color: PLANOS.premium.cor }}>{diasTrialConcedidos} dias grátis</strong> do <strong style={{ color: PLANOS.premium.cor }}>{PLANOS.premium.icone} {PLANOS.premium.nome}</strong> para turbinar o perfil{createdChildName ? ` de ${createdChildName}` : ' do atleta'}. Depois do trial, R$ {PRECO_PREMIUM.toFixed(2).replace('.', ',')}/mês para continuar.
               </p>
               <div className="flex gap-3 pt-2">
                 <Button
