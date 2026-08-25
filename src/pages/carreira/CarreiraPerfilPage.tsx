@@ -27,7 +27,6 @@ import { ConectarButton } from '@/components/carreira/ConectarButton';
 import { MigrarPerfilBanner } from '@/components/carreira/MigrarPerfilBanner';
 import { GamificacaoHeroCard } from '@/components/carreira/GamificacaoHeroCard';
 import { FansSection } from '@/components/carreira/FansSection';
-import { ComunidadeEscolaSection } from '@/components/carreira/ComunidadeEscolaSection';
 import { AssinaturaExpiryReminder } from '@/components/carreira/AssinaturaExpiryReminder';
 import { NotificacoesBell } from '@/components/carreira/NotificacoesBell';
 import { CarreiraPushAutoSubscribe } from '@/components/carreira/CarreiraPushAutoSubscribe';
@@ -1252,11 +1251,6 @@ export default function CarreiraPerfilPage() {
                 onEdit={(item) => { setEditingHistorico(item); setHistoricoDialogOpen(true); }}
                 onDelete={handleDeleteHistorico}
               />
-            )}
-
-            {/* Comunidade da Escola — atletas conectados, visível a qualquer visitante */}
-            {isDonoEscolaProfile && (
-              <ComunidadeEscolaSection escolaUserId={perfil.user_id} accentColor={accentColor} />
             )}
 
             {/* Descobrir Atletas — scouting profiles on desktop */}
