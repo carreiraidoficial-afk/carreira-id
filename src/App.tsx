@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { PWAUpdatePrompt } from "@/components/shared/PWAUpdatePrompt";
 import { AnonymousGateProvider } from "@/hooks/useAnonymousGate";
 import { useGaPageview } from "@/hooks/useGaPageview";
+import { CarreiraErrorBoundary, reportClientError } from "@/components/shared/CarreiraErrorBoundary";
 const RootRoute = lazy(() => import("./pages/RootRoute"));
 
 // Lazy load pages not needed on initial render
@@ -80,6 +81,30 @@ const App = () => {
     }
   }, []);
 
+  // Erros fora da arvore React (scripts, promises rejeitadas) nao sao
+  // pegos pelo error boundary -- captura tambem aqui pra aparecer no
+  // Diagnostico do admin. Ignora "Script error." sem stack (tipicamente
+  // ruido de extensao/CORS, sem informacao util).
+  useEffect(() => {
+    const onError = (event: ErrorEvent) => {
+      if (event.message === 'Script error.' && !event.filename) return;
+      reportClientError(event.message, event.error?.stack);
+    };
+    const onRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason;
+      reportClientError(
+        reason?.message || String(reason),
+        reason?.stack
+      );
+    };
+    window.addEventListener('error', onError);
+    window.addEventListener('unhandledrejection', onRejection);
+    return () => {
+      window.removeEventListener('error', onError);
+      window.removeEventListener('unhandledrejection', onRejection);
+    };
+  }, []);
+
   return (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -89,6 +114,7 @@ const App = () => {
         <PWAUpdatePrompt />
         <BrowserRouter>
           <GaPageviewTracker />
+          <CarreiraErrorBoundary>
           <AnonymousGateProvider enabled={true}>
             <Suspense fallback={
               <div className="min-h-screen flex items-center justify-center bg-background" data-theme="dark-orange">
@@ -146,6 +172,7 @@ const App = () => {
             </Routes>
           </Suspense>
           </AnonymousGateProvider>
+          </CarreiraErrorBoundary>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

@@ -276,6 +276,31 @@ function useHealthChecks() {
         checks.push({ name: 'Atletas sem nenhuma assinatura', description: 'Perfis sem trial nem assinatura', status: 'warning', detail: err.message });
       }
 
+      // 14. Erros de renderização no navegador do usuário (crashes client-side,
+      // ex: tela preta/branca) -- capturados pelo CarreiraErrorBoundary +
+      // listeners globais em App.tsx, nao aparecem em nenhum check de banco.
+      try {
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { data: errosRecentes, count } = await supabase
+          .from('carreira_client_errors' as any)
+          .select('message, url, created_at', { count: 'exact' })
+          .gte('created_at', oneDayAgo)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        const total = count || 0;
+        checks.push({
+          name: 'Erros de tela no navegador (24h)',
+          description: 'Crashes de renderização reportados pelos navegadores dos usuários',
+          status: total > 0 ? 'error' : 'ok',
+          detail: total > 0
+            ? (errosRecentes as any[]).map((e) => `"${e.message}" em ${e.url}`).join(' | ')
+            : 'Nenhum erro reportado',
+        });
+      } catch (err: any) {
+        checks.push({ name: 'Erros de tela no navegador (24h)', description: 'Crashes de renderização reportados pelos navegadores dos usuários', status: 'warning', detail: err.message });
+      }
+
       return checks;
     },
     refetchOnWindowFocus: false,
