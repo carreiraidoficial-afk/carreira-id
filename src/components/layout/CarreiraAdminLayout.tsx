@@ -84,6 +84,18 @@ export default function CarreiraAdminLayout({ children }: { children: ReactNode 
   const { user, isLoading, logout } = useAuth();
   const navigate = useNavigate();
 
+  // useCarreiraTheme grava data-theme direto no <html> (pra portais/diálogos
+  // herdarem), então o tema escuro/laranja escolhido num perfil de atleta
+  // fica "grudado" ao entrar no admin, deixando os cards ilegíveis. O admin
+  // sempre usa o tema padrão claro, então reseta ao entrar e restaura ao sair.
+  useEffect(() => {
+    const previousTheme = document.documentElement.getAttribute('data-theme');
+    document.documentElement.removeAttribute('data-theme');
+    return () => {
+      if (previousTheme) document.documentElement.setAttribute('data-theme', previousTheme);
+    };
+  }, []);
+
   useEffect(() => {
     if (!isLoading) {
       if (!user) {
