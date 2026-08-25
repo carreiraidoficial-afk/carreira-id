@@ -257,14 +257,16 @@ interface EscolaParceira {
   foto_url: string | null;
   slug: string | null;
   cidade: string | null;
+  dados_perfil: { nome_escola?: string } | null;
 }
 
 function EscolaParceiraCard({ escola }: { escola: EscolaParceira }) {
+  const nomeEscola = escola.dados_perfil?.nome_escola || escola.nome;
   const conteudo = (
     <div className="w-52 shrink-0 rounded-2xl bg-[#1a2332] border border-[#2a3a4e] overflow-hidden hover:border-emerald-500/40 transition-colors">
       <div className="w-full h-32 bg-[#0d1420] flex items-center justify-center overflow-hidden">
         {escola.foto_url ? (
-          <img src={escola.foto_url} alt={escola.nome} className="w-full h-full object-cover" loading="lazy" />
+          <img src={escola.foto_url} alt={nomeEscola} className="w-full h-full object-cover" loading="lazy" />
         ) : (
           <School className="w-10 h-10 text-gray-600" />
         )}
@@ -273,7 +275,7 @@ function EscolaParceiraCard({ escola }: { escola: EscolaParceira }) {
         <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-full px-2 py-0.5 mb-2">
           🤝 Escola Parceira
         </span>
-        <h4 className="text-white font-bold text-sm truncate">{escola.nome}</h4>
+        <h4 className="text-white font-bold text-sm truncate">{nomeEscola}</h4>
         {escola.cidade && <p className="text-gray-400 text-xs truncate">{escola.cidade}</p>}
       </div>
     </div>
@@ -292,7 +294,7 @@ export function EscolasParceirasSection() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('carreira_cupons' as any)
-        .select('perfil_rede_id, created_at, perfis_rede:perfil_rede_id(id, nome, foto_url, slug, cidade)')
+        .select('perfil_rede_id, created_at, perfis_rede:perfil_rede_id(id, nome, foto_url, slug, cidade, dados_perfil)')
         .eq('ativo', true)
         .not('perfil_rede_id', 'is', null)
         .order('created_at');
