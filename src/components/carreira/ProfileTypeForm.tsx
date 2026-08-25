@@ -165,9 +165,14 @@ interface Unidade {
   endereco: string;
   bairro: string;
   referencia: string;
+  logo_url?: string | null;
+  // Campos so-de-formulario, nunca persistidos direto -- viram logo_url
+  // apos upload no submit.
+  logoFile?: File | null;
+  logoPreview?: string | null;
 }
 
-const EMPTY_UNIDADE: Unidade = { nome: '', endereco: '', bairro: '', referencia: '' };
+const EMPTY_UNIDADE: Unidade = { nome: '', endereco: '', bairro: '', referencia: '', logo_url: null, logoFile: null, logoPreview: null };
 
 export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack, onComplete }: Props) {
   const fields = getFields(type);
@@ -213,6 +218,16 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
   const updateUnidade = useCallback((idx: number, field: keyof Unidade, value: string) => {
     setUnidades(prev => prev.map((u, i) => i === idx ? { ...u, [field]: value } : u));
   }, []);
+
+  const handleUnidadeLogoChange = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setUnidades(prev => prev.map((u, i) => i === idx ? { ...u, logoFile: file, logoPreview: reader.result as string } : u));
+    };
+    reader.readAsDataURL(file);
+  };
 
   // PJ types that can use CNPJ
   const canUseCnpj = ['dono_escola', 'empresario'].includes(type);
@@ -371,11 +386,28 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
         }
       }
 
-      // Include unidades for dono_escola
+      // Include unidades for dono_escola -- a logo de cada unidade e so
+      // capturada aqui (logo_url), ainda sem nenhuma tela que a exiba (fica
+      // pronta pra quando a "Comunidade da Escola" for retomada).
       if (isDono && unidades.length > 0) {
         const validUnidades = unidades.filter(u => u.nome.trim() || u.bairro.trim());
         if (validUnidades.length > 0) {
-          dadosPerfil.unidades = validUnidades;
+          const unidadesComLogo = await Promise.all(validUnidades.map(async (u, idx) => {
+            let logoUrl = u.logo_url || null;
+            if (u.logoFile) {
+              const ext = u.logoFile.name.split('.').pop();
+              const path = `${userId}/unidade-logo-${Date.now()}-${idx}.${ext}`;
+              const { error: uploadError } = await supabase.storage
+                .from('atleta-fotos')
+                .upload(path, u.logoFile, { upsert: true });
+              if (!uploadError) {
+                const { data: urlData } = supabase.storage.from('atleta-fotos').getPublicUrl(path);
+                logoUrl = urlData.publicUrl;
+              }
+            }
+            return { nome: u.nome, endereco: u.endereco, bairro: u.bairro, referencia: u.referencia, logo_url: logoUrl };
+          }));
+          dadosPerfil.unidades = unidadesComLogo;
         }
       }
 
@@ -460,7 +492,12 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
 
         {/* Photo */}
         <div className="space-y-2">
-          <Label>Foto de Perfil</Label>
+          <Label>{isDono ? 'Foto do Perfil (você ou a logo da escola)' : 'Foto de Perfil'}</Label>
+          {isDono && (
+            <p className="text-xs text-muted-foreground">
+              Você escolhe: sua própria foto ou a logo da escola — o que subir aqui aparece publicamente no perfil, no selo de Escola Parceira e na seção Escolas Parceiras da home.
+            </p>
+          )}
           <div className="flex items-center gap-3">
             {fotoPreview ? (
               <img src={fotoPreview} alt="Preview" className="w-16 h-16 rounded-full object-cover border-2 border-border" />
@@ -750,6 +787,21 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
                   placeholder="Referência (ex: Próximo ao Maracanã)"
                   maxLength={200}
                 />
+                <div className="flex items-center gap-2 pt-1">
+                  {unidade.logoPreview ? (
+                    <img src={unidade.logoPreview} alt="Logo da unidade" className="w-10 h-10 rounded object-cover border border-border" />
+                  ) : (
+                    <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
+                      <Upload className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                  )}
+                  <label className="cursor-pointer">
+                    <span className="text-xs text-primary hover:underline">
+                      {unidade.logoPreview ? 'Trocar logo desta unidade' : 'Logo desta unidade (opcional)'}
+                    </span>
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUnidadeLogoChange(idx, e)} />
+                  </label>
+                </div>
               </div>
             ))}
             {unidades.length === 0 && (

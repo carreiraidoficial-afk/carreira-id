@@ -140,6 +140,10 @@ interface Unidade {
   endereco: string;
   bairro: string;
   referencia: string;
+  logo_url?: string | null;
+  // Campos so-de-formulario -- viram logo_url apos upload no submit.
+  logoFile?: File | null;
+  logoPreview?: string | null;
 }
 
 interface EditPerfilRedeDialogProps {
@@ -248,7 +252,9 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
       setCorDestaque(d.cor_destaque || '#3b82f6');
       setDisponivelTrabalho(!!d.disponivel_trabalho);
       setBrasaoUrl(d.brasao_url || '');
-      setUnidades(Array.isArray(d.unidades) ? d.unidades : []);
+      setUnidades(Array.isArray(d.unidades)
+        ? d.unidades.map((u: Unidade) => ({ ...u, logoPreview: u.logo_url || null }))
+        : []);
       loadDadosValues(d);
 
       // Load account data
@@ -283,7 +289,7 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
   };
 
   const addUnidade = useCallback(() => {
-    if (unidades.length < 5) setUnidades(prev => [...prev, { nome: '', endereco: '', bairro: '', referencia: '' }]);
+    if (unidades.length < 5) setUnidades(prev => [...prev, { nome: '', endereco: '', bairro: '', referencia: '', logo_url: null, logoFile: null, logoPreview: null }]);
   }, [unidades.length]);
 
   const removeUnidade = useCallback((idx: number) => {
@@ -293,6 +299,16 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
   const updateUnidade = useCallback((idx: number, field: keyof Unidade, value: string) => {
     setUnidades(prev => prev.map((u, i) => i === idx ? { ...u, [field]: value } : u));
   }, []);
+
+  const handleUnidadeLogoChange = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setUnidades(prev => prev.map((u, i) => i === idx ? { ...u, logoFile: file, logoPreview: reader.result as string } : u));
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleBrasaoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -365,9 +381,27 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
         newDados.brasao_url = brasaoUrl || null;
       }
 
-      // Unidades for dono_escola
+      // Unidades for dono_escola -- a logo de cada unidade e so capturada
+      // aqui (logo_url), ainda sem nenhuma tela que a exiba (fica pronta pra
+      // quando a "Comunidade da Escola" for retomada).
       if (isDono) {
-        newDados.unidades = unidades.filter(u => u.nome.trim() || u.bairro.trim());
+        const validUnidades = unidades.filter(u => u.nome.trim() || u.bairro.trim());
+        const effectiveId = getEffectiveUserId();
+        newDados.unidades = await Promise.all(validUnidades.map(async (u, idx) => {
+          let logoUrl = u.logo_url || null;
+          if (u.logoFile && effectiveId) {
+            const ext = u.logoFile.name.split('.').pop();
+            const path = `${effectiveId}/unidade-logo-${Date.now()}-${idx}.${ext}`;
+            const { error: uploadError } = await supabase.storage
+              .from('atleta-fotos')
+              .upload(path, u.logoFile, { upsert: true });
+            if (!uploadError) {
+              const { data: urlData } = supabase.storage.from('atleta-fotos').getPublicUrl(path);
+              logoUrl = urlData.publicUrl;
+            }
+          }
+          return { nome: u.nome, endereco: u.endereco, bairro: u.bairro, referencia: u.referencia, logo_url: logoUrl };
+        }));
       }
 
       const { error } = await supabase
@@ -515,6 +549,8 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
               onPhotoChange={setPhotoUrl}
               onBannerChange={() => {}}
               showBanner={false}
+              photoLabel={isDono ? 'Foto do Perfil (você ou a logo da escola)' : undefined}
+              photoHelperText={isDono ? 'Você escolhe: sua própria foto ou a logo da escola — o que subir aqui aparece publicamente no perfil, no selo de Escola Parceira e na seção Escolas Parceiras da home.' : undefined}
             />
 
             {/* Color picker */}
@@ -737,6 +773,21 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
                     <Input value={unidade.endereco || ''} onChange={(e) => updateUnidade(idx, 'endereco', e.target.value)} placeholder="Endereço (ex: Rua das Flores, 123)" maxLength={200} />
                     <Input value={unidade.bairro} onChange={(e) => updateUnidade(idx, 'bairro', e.target.value)} placeholder="Bairro" maxLength={100} />
                     <Input value={unidade.referencia} onChange={(e) => updateUnidade(idx, 'referencia', e.target.value)} placeholder="Referência" maxLength={200} />
+                    <div className="flex items-center gap-2 pt-1">
+                      {unidade.logoPreview ? (
+                        <img src={unidade.logoPreview} alt="Logo da unidade" className="w-10 h-10 rounded object-cover border border-border" />
+                      ) : (
+                        <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
+                          <Upload className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      <label className="cursor-pointer">
+                        <span className="text-xs text-primary hover:underline">
+                          {unidade.logoPreview ? 'Trocar logo desta unidade' : 'Logo desta unidade (opcional)'}
+                        </span>
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUnidadeLogoChange(idx, e)} />
+                      </label>
+                    </div>
                   </div>
                 ))}
                 {unidades.length === 0 && (

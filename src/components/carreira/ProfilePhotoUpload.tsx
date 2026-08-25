@@ -26,6 +26,8 @@ interface ProfilePhotoUploadProps {
   onPhotoChange: (url: string) => void;
   onBannerChange: (url: string) => void;
   showBanner?: boolean;
+  photoLabel?: string;
+  photoHelperText?: string;
 }
 
 export function ProfilePhotoUpload({
@@ -34,6 +36,8 @@ export function ProfilePhotoUpload({
   onPhotoChange,
   onBannerChange,
   showBanner = true,
+  photoLabel = 'Foto de Perfil',
+  photoHelperText,
 }: ProfilePhotoUploadProps) {
   const { user } = useAuth();
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -218,7 +222,10 @@ export function ProfilePhotoUpload({
 
       {/* Photo Upload */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">Foto de Perfil</label>
+        <label className="text-sm font-medium">{photoLabel}</label>
+        {photoHelperText && (
+          <p className="text-xs text-muted-foreground -mt-1">{photoHelperText}</p>
+        )}
         <div className="flex items-center gap-4">
           <div className="relative">
             <Avatar className="w-20 h-20 border-2 border-border">
