@@ -108,7 +108,7 @@ export default function CarreiraAdminLayout({ children }: { children: ReactNode 
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -123,7 +123,7 @@ export default function CarreiraAdminLayout({ children }: { children: ReactNode 
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full bg-background">
         <CarreiraAdminSidebar />
         <div className="flex-1 flex flex-col">
           <header className="h-14 flex items-center justify-between border-b px-4">
