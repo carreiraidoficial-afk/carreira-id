@@ -282,7 +282,7 @@ function EscolaParceiraCard({ escola }: { escola: EscolaParceira }) {
   );
 
   return escola.slug ? (
-    <Link to={`/escola/${escola.slug}`}>{conteudo}</Link>
+    <Link to={carreiraPath(`/${escola.slug}`)}>{conteudo}</Link>
   ) : (
     conteudo
   );

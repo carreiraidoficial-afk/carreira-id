@@ -46,9 +46,11 @@ interface Props {
   /** Perfil_atleta ativo de quem está vendo (filho selecionado no seletor de
    * irmãos de quem está logado), quando aplicável. */
   viewerPerfilAtletaId?: string | null;
+  /** dono_escola com cupom ativo vinculado (ver carreira_cupons.perfil_rede_id). */
+  isEscolaParceira?: boolean;
 }
 
-export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfile, accentColor, children, viewerPerfilAtletaId }: Props) {
+export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfile, accentColor, children, viewerPerfilAtletaId, isEscolaParceira }: Props) {
   const config = TYPE_CONFIG[perfil.tipo as ProfileType] || { label: perfil.tipo, icon: '👤', color: 'bg-muted text-muted-foreground' };
 
   const siteUrl = (perfil.site || perfil.dados_perfil?.site || perfil.dados_perfil?.portfolio || '').trim();
@@ -98,6 +100,11 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
               {perfil.dados_perfil?.disponivel_trabalho && (
                 <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 gap-1">
                   🟢 Disponível para oportunidades
+                </Badge>
+              )}
+              {perfil.tipo === 'dono_escola' && isEscolaParceira && (
+                <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 gap-1">
+                  🤝 Escola Parceira
                 </Badge>
               )}
             </div>

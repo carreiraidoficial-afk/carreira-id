@@ -1258,6 +1258,7 @@ export default function CarreiraPerfilPage() {
                   accentColor={accentColor}
                   onEditProfile={isOwner ? () => setEditDialogOpen(true) : undefined}
                   viewerPerfilAtletaId={meuPerfilAtivo?.id}
+                  isEscolaParceira={isEscolaParceira}
                 />
               </div>
             )}
