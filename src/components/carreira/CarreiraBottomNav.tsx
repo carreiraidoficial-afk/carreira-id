@@ -97,7 +97,28 @@ export function CarreiraBottomNav({ currentUserId, profileSlug }: CarreiraBottom
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      const foundSlug = pa?.slug || pr?.slug;
+      let foundSlug = pa?.slug || pr?.slug;
+
+      // Não é dono de nenhum perfil -- pode ser colaborador de um atleta
+      // (ex: o próprio atleta, ou outro responsável, com login próprio).
+      if (!foundSlug) {
+        const { data: colaboracao } = await supabase
+          .from('perfil_atleta_colaboradores')
+          .select('crianca_id')
+          .eq('user_id', currentUserId)
+          .eq('status', 'ativo')
+          .limit(1)
+          .maybeSingle();
+        if (colaboracao?.crianca_id) {
+          const { data: atletaColaborado } = await supabase
+            .from('perfil_atleta')
+            .select('slug')
+            .eq('crianca_id', colaboracao.crianca_id)
+            .maybeSingle();
+          foundSlug = atletaColaborado?.slug;
+        }
+      }
+
       if (foundSlug) navigate(carreiraPath(`/${foundSlug}`), { replace: true });
       else navigate(carreiraPath(`/perfil/${currentUserId}`), { replace: true });
     }

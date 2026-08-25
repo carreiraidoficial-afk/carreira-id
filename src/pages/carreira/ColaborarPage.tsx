@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
+import { useSEO } from '@/hooks/useSEO';
 import logoCarreira from '@/assets/logo-carreira-id-dark.png';
 
 /** Guarda o código do convite antes de mandar a pessoa criar conta/logar,
@@ -67,6 +68,18 @@ export default function ColaborarPage() {
   const { data: convite, isLoading: conviteLoading } = useConvitePendente(codigo);
   const queryClient = useQueryClient();
   const [aceitando, setAceitando] = useState(false);
+
+  // Título/descrição da aba pra quem abre o link já dentro do app (o preview
+  // pra bots do WhatsApp/Facebook é resolvido à parte, na edge function
+  // og-profile -- a SPA não roda JS pra esses crawlers).
+  useSEO({
+    title: 'Convite de Colaboração - CARREIRA ID',
+    description: convite?.atletas?.length
+      ? `Você foi convidado(a) a ajudar a registrar a jornada esportiva de ${listaComE(convite.atletas.map((a) => a.nome))} no Carreira ID.`
+      : 'Você foi convidado(a) a colaborar num perfil de atleta no Carreira ID.',
+    path: codigo ? `/colaborar?codigo=${codigo}` : '/colaborar',
+    noindex: true,
+  });
 
   const handleAceitar = async () => {
     if (!convite || !sessionUserId) return;
