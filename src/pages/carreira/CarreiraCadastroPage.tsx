@@ -231,6 +231,29 @@ export default function CarreiraCadastroPage() {
             navigate(carreiraPath(`/${perfilRede.slug}`), { replace: true });
             return true;
           }
+
+          // Não é dono de nenhum perfil -- pode ser colaborador (ex: o
+          // próprio atleta, ou outro responsável, com login próprio).
+          const { data: colaboracoes } = await supabase
+            .from('perfil_atleta_colaboradores')
+            .select('crianca_id')
+            .eq('user_id', session.user.id)
+            .eq('status', 'ativo');
+
+          const criancaIdsColaborados = (colaboracoes || []).map((c: any) => c.crianca_id).filter(Boolean);
+          if (criancaIdsColaborados.length > 0) {
+            const { data: perfisColaborados } = await supabase
+              .from('perfil_atleta')
+              .select('*')
+              .in('crianca_id', criancaIdsColaborados)
+              .order('created_at', { ascending: true });
+
+            const colaboradorAtivo = pickCriancaAtiva((perfisColaborados || []) as PerfilAtleta[], session.user.id);
+            if (colaboradorAtivo?.slug) {
+              navigate(carreiraPath(`/${colaboradorAtivo.slug}`), { replace: true });
+              return true;
+            }
+          }
         }
       } catch (err) {
         console.error('Erro ao verificar perfil:', err);
