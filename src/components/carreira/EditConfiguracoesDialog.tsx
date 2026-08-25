@@ -38,6 +38,9 @@ interface EditConfiguracoesDialogProps {
    * (Usuários/Colaboradores e Privacidade) e aponta a exclusão de conta
    * pra tabela certa. Default 'atleta' mantém o comportamento anterior. */
   perfilTipo?: 'atleta' | 'rede';
+  /** Permite abrir o dialog já na aba desejada (ex: 'usuarios', vindo do
+   * banner de convite de colaborador). Default 'responsavel'. */
+  defaultTab?: string;
 }
 
 /**
@@ -45,7 +48,7 @@ interface EditConfiguracoesDialogProps {
  * só com dados do atleta: foto, cor, modalidades etc) porque misturar as
  * duas coisas num só dialog com 5 abas estourava a tela no celular.
  */
-export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo = 'atleta' }: EditConfiguracoesDialogProps) {
+export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo = 'atleta', defaultTab = 'responsavel' }: EditConfiguracoesDialogProps) {
   const isAtleta = perfilTipo === 'atleta';
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -101,7 +104,7 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
           <DialogTitle>Configurações</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="responsavel" className="w-full">
+        <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="flex w-full overflow-x-auto justify-start gap-1 h-auto p-1">
             <TabsTrigger value="responsavel" className="shrink-0 flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3">
               <UserCircle className="w-3.5 h-3.5" />
@@ -114,7 +117,7 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
             {isAtleta && (
               <TabsTrigger value="usuarios" className="shrink-0 flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3">
                 <Users className="w-3.5 h-3.5" />
-                Usuários
+                Colaboradores
               </TabsTrigger>
             )}
             <TabsTrigger value="conta" className="shrink-0 flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3">

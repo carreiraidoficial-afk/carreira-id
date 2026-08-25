@@ -277,12 +277,14 @@ export function ExperienciaSection({
                               <DropdownMenuItem onClick={() => onEditExperiencia?.(exp.carreiraExp!)}>
                                 <Pencil className="w-3.5 h-3.5 mr-2" /> Editar
                               </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
-                                onClick={() => onDeleteExperiencia?.(exp.carreiraExp!.id)}
-                              >
-                                <Trash2 className="w-3.5 h-3.5 mr-2" /> Excluir
-                              </DropdownMenuItem>
+                              {onDeleteExperiencia && (
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => onDeleteExperiencia(exp.carreiraExp!.id)}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 mr-2" /> Excluir
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         )}

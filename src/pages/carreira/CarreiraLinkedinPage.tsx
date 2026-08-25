@@ -105,7 +105,7 @@ export default function CarreiraLinkedinPage() {
                 EditPerfilDialog (dentro de PerfilHeader) deve ficar restrito
                 ao dono real; postar/jornada (CarreiraTimeline) vale pros dois. */}
             <PerfilHeader perfil={perfil} isOwner={!perfil.souColaborador} viewerPerfilAtletaId={perfil.id} />
-            <CarreiraTimeline perfil={perfil} isOwner={true} />
+            <CarreiraTimeline perfil={perfil} isOwner={true} podeExcluir={!perfil.souColaborador} />
           </div>
         ) : (
           <CreatePerfilForm />

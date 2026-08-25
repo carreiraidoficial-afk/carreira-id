@@ -11,6 +11,11 @@ import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import logoCarreira from '@/assets/logo-carreira-id-dark.png';
 
+/** Guarda o código do convite antes de mandar a pessoa criar conta/logar,
+ * pra CarreiraCadastroPage trazer ela de volta pra cá assim que autenticar
+ * -- sem isso, o convite se perdia no meio do fluxo de cadastro geral. */
+export const PENDING_COLAB_KEY = 'carreira_pending_colab_codigo';
+
 function listaComE(nomes: string[]): string {
   if (nomes.length === 0) return '';
   if (nomes.length === 1) return nomes[0];
@@ -107,7 +112,15 @@ export default function ColaborarPage() {
                 Entre ou crie sua conta grátis pra aceitar este convite. Depois de entrar, volte a abrir este mesmo link.
               </p>
             </div>
-            <Button className="w-full" onClick={() => navigate(carreiraPath('/cadastro'))}>Criar conta / Entrar</Button>
+            <Button
+              className="w-full"
+              onClick={() => {
+                try { sessionStorage.setItem(PENDING_COLAB_KEY, codigo); } catch { /* ignore */ }
+                navigate(carreiraPath('/cadastro'));
+              }}
+            >
+              Criar conta / Entrar
+            </Button>
           </>
         ) : !convite ? (
           <>

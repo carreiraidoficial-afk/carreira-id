@@ -1,3 +1,4 @@
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useIsFollowing, useToggleFollow, useEscolinhasCarreira, usePostsRede } from '@/hooks/useCarreiraData';
 
@@ -20,11 +21,13 @@ import { HistoricoProfissionalSection, type HistoricoProfissional } from '@/comp
 import { HistoricoProfissionalFormDialog } from '@/components/carreira/HistoricoProfissionalFormDialog';
 import { EditPerfilDialog } from '@/components/carreira/EditPerfilDialog';
 import { EditConfiguracoesDialog } from '@/components/carreira/EditConfiguracoesDialog';
+import { ConvidarColaboradorBanner } from '@/components/carreira/ConvidarColaboradorBanner';
 // EditContaDialog removed — unified into EditPerfilRedeDialog
 import { ConectarButton } from '@/components/carreira/ConectarButton';
 import { MigrarPerfilBanner } from '@/components/carreira/MigrarPerfilBanner';
 import { GamificacaoHeroCard } from '@/components/carreira/GamificacaoHeroCard';
 import { FansSection } from '@/components/carreira/FansSection';
+import { ComunidadeEscolaSection } from '@/components/carreira/ComunidadeEscolaSection';
 import { AssinaturaExpiryReminder } from '@/components/carreira/AssinaturaExpiryReminder';
 import { NotificacoesBell } from '@/components/carreira/NotificacoesBell';
 import { CarreiraPushAutoSubscribe } from '@/components/carreira/CarreiraPushAutoSubscribe';
@@ -43,7 +46,6 @@ import { Input } from '@/components/ui/input';
 import { useSEO } from '@/hooks/useSEO';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useState, useEffect, lazy, Suspense } from 'react';
 import { toast } from 'sonner';
 import logoCarreira from '@/assets/logo-carreira-id-dark.png';
 import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
@@ -346,6 +348,7 @@ export default function CarreiraPerfilPage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [configDialogTab, setConfigDialogTab] = useState('responsavel');
   const [historicoDialogOpen, setHistoricoDialogOpen] = useState(false);
   const [editingHistorico, setEditingHistorico] = useState<HistoricoProfissional | null>(null);
   const { theme: carreiraTheme, isDarkTheme, setDarkTheme } = useCarreiraTheme();
@@ -796,7 +799,7 @@ export default function CarreiraPerfilPage() {
                         <Pencil className="w-3 h-3" />
                         <span className="hidden sm:inline">Editar Perfil</span>
                       </Button>
-                      <Button variant="outline" size="sm" className="h-8 text-xs px-2 sm:px-3 gap-1" style={{ borderColor: `${accentColor}50`, color: accentColor }} onClick={() => setConfigDialogOpen(true)}>
+                      <Button variant="outline" size="sm" className="h-8 text-xs px-2 sm:px-3 gap-1" style={{ borderColor: `${accentColor}50`, color: accentColor }} onClick={() => { setConfigDialogTab('responsavel'); setConfigDialogOpen(true); }}>
                         <Settings className="w-3 h-3" />
                         <span className="hidden sm:inline">Configurações</span>
                       </Button>
@@ -1191,6 +1194,16 @@ export default function CarreiraPerfilPage() {
             {perfil.type === 'atleta' && isOwner && perfil.crianca_id && (
               <AssinaturaExpiryReminder criancaId={perfil.crianca_id} />
             )}
+            {/* Convite pra colaborador (ex: o próprio atleta) postar com login próprio */}
+            {perfil.type === 'atleta' && isOwner && perfil.crianca_id && (
+              <ConvidarColaboradorBanner
+                criancaId={perfil.crianca_id}
+                onAbrirConvite={() => {
+                  setConfigDialogTab('usuarios');
+                  setConfigDialogOpen(true);
+                }}
+              />
+            )}
             {/* Mobile-only: full PerfilHeader */}
             {perfil.type === 'atleta' && (
               <div className="lg:hidden">
@@ -1239,6 +1252,11 @@ export default function CarreiraPerfilPage() {
                 onEdit={(item) => { setEditingHistorico(item); setHistoricoDialogOpen(true); }}
                 onDelete={handleDeleteHistorico}
               />
+            )}
+
+            {/* Comunidade da Escola — atletas conectados, visível a qualquer visitante */}
+            {isDonoEscolaProfile && (
+              <ComunidadeEscolaSection escolaUserId={perfil.user_id} accentColor={accentColor} />
             )}
 
             {/* Descobrir Atletas — scouting profiles on desktop */}
@@ -1343,7 +1361,7 @@ export default function CarreiraPerfilPage() {
               </div>
             )}
             {perfil.type === 'atleta' ? (
-              <CarreiraTimeline perfil={perfil as any} isOwner={canManageTimeline} />
+              <CarreiraTimeline perfil={perfil as any} isOwner={canManageTimeline} podeExcluir={isOwner} />
             ) : (
               <RedeTimelineInline perfilId={perfil.id} isOwner={isOwner} perfilNome={perfil.nome} perfilFoto={perfil.foto_url} accentColor={accentColor} />
             )}
@@ -1542,6 +1560,7 @@ export default function CarreiraPerfilPage() {
           onOpenChange={setConfigDialogOpen}
           perfil={perfil as any}
           perfilTipo={isRedeProfile ? 'rede' : 'atleta'}
+          defaultTab={configDialogTab}
         />
       )}
       {isOwner && showHistorico && (

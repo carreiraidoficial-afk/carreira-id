@@ -20,6 +20,7 @@ import { PLANOS, PRECO_PREMIUM, PRECO_FAMILIA, TRIAL_DIAS } from '@/config/carre
 import logoAtletaId from '@/assets/logo-atleta-id.png';
 import logoCarreiraId from '@/assets/logo-carreira-id-dark.png';
 import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
+import { PENDING_COLAB_KEY } from './ColaborarPage';
 import PwaInstallButton from '@/components/shared/PwaInstallButton';
 import { PwaInstallPopup } from '@/components/shared/PwaInstallPopup';
 import { PushNotificationPopup } from '@/components/shared/PushNotificationPopup';
@@ -165,6 +166,19 @@ export default function CarreiraCadastroPage() {
 
       // Normal flow
       setUserId(session.user.id);
+
+      // Se a pessoa veio de um convite de colaborador (precisou logar/criar
+      // conta no meio do caminho), volta direto pro convite em vez de cair
+      // no fluxo geral de criação de perfil.
+      try {
+        const pendingColabCodigo = sessionStorage.getItem(PENDING_COLAB_KEY);
+        if (pendingColabCodigo) {
+          sessionStorage.removeItem(PENDING_COLAB_KEY);
+          navigate(carreiraPath(`/colaborar?codigo=${encodeURIComponent(pendingColabCodigo)}`), { replace: true });
+          return true;
+        }
+      } catch { /* ignore */ }
+
       // Único ponto de registro do aceite: cobre tanto o cadastro por email
       // (justAcceptedRef.current fica true no handler do checkbox, síncrono,
       // antes deste listener disparar) quanto o login via Google, que não
@@ -910,6 +924,9 @@ export default function CarreiraCadastroPage() {
               <h3 className="text-xl font-bold">Perfil criado com sucesso! 🎉</h3>
               <p className="text-sm" style={{ color: 'hsl(0 0% 60%)' }}>
                 Você ganhou <strong style={{ color: PLANOS.premium.cor }}>{diasTrialConcedidos} dias grátis</strong> do <strong style={{ color: PLANOS.premium.cor }}>{PLANOS.premium.icone} {PLANOS.premium.nome}</strong> para turbinar o perfil{createdChildName ? ` de ${createdChildName}` : ' do atleta'}. Depois do trial, R$ {PRECO_PREMIUM.toFixed(2).replace('.', ',')}/mês para continuar.
+              </p>
+              <p className="text-xs" style={{ color: 'hsl(0 0% 50%)' }}>
+                Dica: o próprio atleta pode ter login próprio pra postar e registrar jornada — convide em Configurações → Colaboradores, dentro do perfil dele.
               </p>
               <div className="flex gap-3 pt-2">
                 <Button

@@ -43,7 +43,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 interface CarreiraTimelineProps {
   perfil: PerfilAtleta;
+  /** Pode criar/editar (dono real OU colaborador ativo). */
   isOwner?: boolean;
+  /** Pode excluir jogos/campeonatos/experiências -- só o dono real, nunca
+   * um colaborador, mesmo que ele tenha "isOwner" true pra poder postar. */
+  podeExcluir?: boolean;
 }
 
 const INSTITUTIONAL_TABS = [
@@ -59,7 +63,7 @@ const CARREIRA_TABS = [
   { value: 'carreira-atividades', label: 'Atividades', icon: Dumbbell },
 ];
 
-export function CarreiraTimeline({ perfil, isOwner = false }: CarreiraTimelineProps) {
+export function CarreiraTimeline({ perfil, isOwner = false, podeExcluir = isOwner }: CarreiraTimelineProps) {
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [atividadeFormOpen, setAtividadeFormOpen] = useState(false);
   const [experienciaFormOpen, setExperienciaFormOpen] = useState(false);
@@ -298,7 +302,7 @@ export function CarreiraTimeline({ perfil, isOwner = false }: CarreiraTimelinePr
               setExperienciaFormOpen(true);
             }}
             onEditExperiencia={handleEditExperiencia}
-            onDeleteExperiencia={(id) => setDeleteExpId(id)}
+            onDeleteExperiencia={podeExcluir ? (id) => setDeleteExpId(id) : undefined}
           />
         );
       case 'estatisticas':
@@ -342,16 +346,16 @@ export function CarreiraTimeline({ perfil, isOwner = false }: CarreiraTimelinePr
             onAddJogo={() => { setEditingJogo(null); setJogoFormOpen(true); }}
             onEditCampeonato={(c) => { setEditingCampeonato(c); setCampeonatoFormOpen(true); }}
             onEditJogo={(j) => { setEditingJogo(j); setJogoFormOpen(true); }}
-            onDeleteCampeonato={async (id) => {
+            onDeleteCampeonato={podeExcluir ? async (id) => {
               if (!confirm('Excluir este campeonato e todos os seus jogos?')) return;
               try { await jornada.excluirCampeonato(id); toast.success('Campeonato excluído'); }
               catch (e: any) { toast.error(e.message || 'Erro ao excluir'); }
-            }}
-            onDeleteJogo={async (id) => {
+            } : undefined}
+            onDeleteJogo={podeExcluir ? async (id) => {
               if (!confirm('Excluir este jogo?')) return;
               try { await jornada.excluirJogo(id); toast.success('Jogo excluído'); }
               catch (e: any) { toast.error(e.message || 'Erro ao excluir'); }
-            }}
+            } : undefined}
           />
         );
       case 'premiacoes':
