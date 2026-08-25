@@ -576,6 +576,26 @@ export default function CarreiraPerfilPage() {
     setConnectingId(null);
   };
 
+  // Precisa vir ANTES dos returns condicionais de isLoading/error -- hooks
+  // não podem ser chamados condicionalmente (React error #310: quebra a
+  // renderização de QUALQUER perfil assim que o loading termina, não só
+  // dono_escola, porque o número de hooks muda entre o 1o e o 2o render).
+  const isDonoEscolaForBadge = perfil?.type === 'rede' && (perfil as any)?.tipo === 'dono_escola';
+  const { data: isEscolaParceira = false } = useQuery({
+    queryKey: ['escola-parceira-badge', isDonoEscolaForBadge ? perfil!.id : null],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('carreira_cupons' as any)
+        .select('id')
+        .eq('perfil_rede_id', perfil!.id)
+        .eq('ativo', true)
+        .limit(1);
+      if (error) throw error;
+      return (data || []).length > 0;
+    },
+    enabled: isDonoEscolaForBadge,
+  });
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background" data-theme={carreiraTheme}>
@@ -613,20 +633,6 @@ export default function CarreiraPerfilPage() {
   const isRedeProfile = perfil.type === 'rede';
   const isDonoEscolaProfile = isRedeProfile && perfil.tipo === 'dono_escola';
 
-  const { data: isEscolaParceira = false } = useQuery({
-    queryKey: ['escola-parceira-badge', isDonoEscolaProfile ? perfil.id : null],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('carreira_cupons' as any)
-        .select('id')
-        .eq('perfil_rede_id', perfil.id)
-        .eq('ativo', true)
-        .limit(1);
-      if (error) throw error;
-      return (data || []).length > 0;
-    },
-    enabled: isDonoEscolaProfile,
-  });
   const NON_HISTORICO_TYPES = ['atleta_filho', 'pai_responsavel', 'influenciador', 'torcedor'];
   const showHistorico = isRedeProfile && !NON_HISTORICO_TYPES.includes(perfil.tipo || '');
   const historicoProfissional: HistoricoProfissional[] = isRedeProfile
