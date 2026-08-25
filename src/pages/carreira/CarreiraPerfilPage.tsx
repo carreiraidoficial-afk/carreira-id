@@ -612,6 +612,21 @@ export default function CarreiraPerfilPage() {
     : [];
   const isRedeProfile = perfil.type === 'rede';
   const isDonoEscolaProfile = isRedeProfile && perfil.tipo === 'dono_escola';
+
+  const { data: isEscolaParceira = false } = useQuery({
+    queryKey: ['escola-parceira-badge', isDonoEscolaProfile ? perfil.id : null],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('carreira_cupons' as any)
+        .select('id')
+        .eq('perfil_rede_id', perfil.id)
+        .eq('ativo', true)
+        .limit(1);
+      if (error) throw error;
+      return (data || []).length > 0;
+    },
+    enabled: isDonoEscolaProfile,
+  });
   const NON_HISTORICO_TYPES = ['atleta_filho', 'pai_responsavel', 'influenciador', 'torcedor'];
   const showHistorico = isRedeProfile && !NON_HISTORICO_TYPES.includes(perfil.tipo || '');
   const historicoProfissional: HistoricoProfissional[] = isRedeProfile
@@ -974,6 +989,13 @@ export default function CarreiraPerfilPage() {
               {/* Type label (rede only) */}
               {isRedeProfile && perfil.tipo && (
                 <p className="text-xs text-muted-foreground mt-1">{TYPE_LABELS[perfil.tipo] || perfil.tipo}</p>
+              )}
+
+              {/* Selo Escola Parceira — dono_escola com cupom ativo vinculado */}
+              {isDonoEscolaProfile && isEscolaParceira && (
+                <Badge className="mt-1.5 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 gap-1 text-[10px]">
+                  🤝 Escola Parceira
+                </Badge>
               )}
 
               {/* Disponível para oportunidades — estilo "Open to Work" do LinkedIn */}

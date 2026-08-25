@@ -248,6 +248,84 @@ export function TitularesDaBaseSection() {
   );
 }
 
+/* ─── Escolas Parceiras — donos de escola com cupom vinculado ───
+   Uma escola parceira EH definida por ter um carreira_cupons ativo com
+   perfil_rede_id apontando pra ela (gerido em /carreira/admin/cupons). */
+interface EscolaParceira {
+  id: string;
+  nome: string;
+  foto_url: string | null;
+  slug: string | null;
+  cidade: string | null;
+}
+
+function EscolaParceiraCard({ escola }: { escola: EscolaParceira }) {
+  const conteudo = (
+    <div className="w-52 shrink-0 rounded-2xl bg-[#1a2332] border border-[#2a3a4e] overflow-hidden hover:border-emerald-500/40 transition-colors">
+      <div className="w-full h-32 bg-[#0d1420] flex items-center justify-center overflow-hidden">
+        {escola.foto_url ? (
+          <img src={escola.foto_url} alt={escola.nome} className="w-full h-full object-cover" loading="lazy" />
+        ) : (
+          <School className="w-10 h-10 text-gray-600" />
+        )}
+      </div>
+      <div className="p-4">
+        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-full px-2 py-0.5 mb-2">
+          🤝 Escola Parceira
+        </span>
+        <h4 className="text-white font-bold text-sm truncate">{escola.nome}</h4>
+        {escola.cidade && <p className="text-gray-400 text-xs truncate">{escola.cidade}</p>}
+      </div>
+    </div>
+  );
+
+  return escola.slug ? (
+    <Link to={`/escola/${escola.slug}`}>{conteudo}</Link>
+  ) : (
+    conteudo
+  );
+}
+
+export function EscolasParceirasSection() {
+  const { data: escolas = [] } = useQuery({
+    queryKey: ['escolas-parceiras-landing'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('carreira_cupons' as any)
+        .select('perfil_rede_id, created_at, perfis_rede:perfil_rede_id(id, nome, foto_url, slug, cidade)')
+        .eq('ativo', true)
+        .not('perfil_rede_id', 'is', null)
+        .order('created_at');
+      if (error) throw error;
+      return ((data || []) as any[])
+        .map((c) => c.perfis_rede)
+        .filter(Boolean) as EscolaParceira[];
+    },
+  });
+
+  if (escolas.length === 0) return null;
+
+  return (
+    <section className="bg-[#0d1420] py-20 overflow-hidden border-t border-[#1a2332]">
+      <div className="container max-w-3xl mx-auto px-4 text-center mb-12">
+        <SectionBadge>Escolas Parceiras</SectionBadge>
+        <h2 className="mt-4 text-3xl sm:text-4xl font-bold text-white">
+          As escolinhas que já confiam no Carreira ID.
+        </h2>
+        <p className="mt-3 text-gray-400">
+          As primeiras 20 escolas parceiras ganham acesso especial e o selo de Escola Parceira no perfil.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-5 justify-center container mx-auto px-4">
+        {escolas.map((escola) => (
+          <EscolaParceiraCard key={escola.id} escola={escola} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function CarreiraLandingV2() {
   const cadastroLink = carreiraPath('/cadastro');
   const loginLink = carreiraPath('/cadastro');
@@ -871,6 +949,7 @@ export function CarreiraLandingV2() {
       {/* ═══ Titulares da Base — TESTE: fotos e nomes abaixo são só placeholder,
           precisam ser trocados por apoiadores reais antes de publicar de vez ═══ */}
       <TitularesDaBaseSection />
+      <EscolasParceirasSection />
 
       {/* ═══ Comunidade WhatsApp ═══ */}
       <section className="bg-gradient-to-br from-emerald-800 to-emerald-900 py-16">
