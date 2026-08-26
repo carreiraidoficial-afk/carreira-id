@@ -158,11 +158,16 @@ export function DadosEspecificos({ tipo, dados }: Props) {
             </span>
             <div className="mt-1.5 space-y-2">
               {unidades.map((u: any, idx: number) => (
-                <div key={idx} className="rounded-md border border-border p-2.5 bg-muted/20">
-                  {u.nome && <p className="text-sm font-medium text-foreground">{u.nome}</p>}
-                  {u.endereco && <p className="text-xs text-muted-foreground">🏠 {u.endereco}</p>}
-                  {u.bairro && <p className="text-xs text-muted-foreground">📍 {u.bairro}</p>}
-                  {u.referencia && <p className="text-xs text-muted-foreground">{u.referencia}</p>}
+                <div key={idx} className="rounded-md border border-border p-2.5 bg-muted/20 flex items-center gap-2.5">
+                  {u.logo_url && (
+                    <img src={u.logo_url} alt={u.nome || 'Logo da unidade'} className="w-10 h-10 rounded object-cover shrink-0 border border-border" />
+                  )}
+                  <div className="min-w-0">
+                    {u.nome && <p className="text-sm font-medium text-foreground">{u.nome}</p>}
+                    {u.endereco && <p className="text-xs text-muted-foreground">🏠 {u.endereco}</p>}
+                    {u.bairro && <p className="text-xs text-muted-foreground">📍 {u.bairro}</p>}
+                    {u.referencia && <p className="text-xs text-muted-foreground">{u.referencia}</p>}
+                  </div>
                 </div>
               ))}
             </div>
