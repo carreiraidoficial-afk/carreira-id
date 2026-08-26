@@ -682,22 +682,6 @@ export default function CarreiraPerfilPage() {
   const unidadesPerfil = isDonoEscolaProfile && Array.isArray(perfil.dados_perfil?.unidades)
     ? perfil.dados_perfil.unidades
     : [];
-  const schoolUnitsForConnection = isDonoEscolaProfile
-    ? [
-        {
-          nome: displayProfileName,
-          bairro: perfil.dados_perfil?.localizacao || '',
-          endereco: perfil.dados_perfil?.endereco || '',
-        },
-        ...unidadesPerfil.map((u: any, idx: number) => ({
-          nome: String(u?.nome || `Unidade ${idx + 1}`).trim(),
-          bairro: u?.bairro || '',
-          endereco: u?.endereco || '',
-        })),
-      ].filter((u, idx, arr) =>
-        !!u.nome && arr.findIndex(other => other.nome.toLowerCase() === u.nome.toLowerCase()) === idx
-      )
-    : [];
   const instagramHandle = isRedeProfile
     ? (perfil.instagram || perfil.dados_perfil?.arroba || '').replace(/^@+/, '').trim()
     : '';
@@ -1116,29 +1100,15 @@ export default function CarreiraPerfilPage() {
                   />
                 )}
 
-                {!isOwner && currentUserId && isDonoEscolaProfile && schoolUnitsForConnection.length > 0 && (
-                  <div className="space-y-1.5">
-                    {schoolUnitsForConnection.map((unidade, idx) => (
-                      <div key={`${unidade.nome}-${idx}`} className="rounded-md border border-border/70 bg-muted/20 p-2">
-                        <div className="mb-1 min-w-0 text-left">
-                          <p className="text-[11px] font-medium text-foreground truncate">{unidade.nome}</p>
-                          {(unidade.bairro || unidade.endereco) && (
-                            <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1">
-                              <MapPin className="w-2.5 h-2.5 shrink-0" />
-                              {[unidade.bairro, unidade.endereco].filter(Boolean).join(' • ')}
-                            </p>
-                          )}
-                        </div>
-                        <ConectarButton
-                          targetUserId={perfil.user_id}
-                          currentUserId={currentUserId}
-                          accentColor={accentColor}
-                          unidadeNome={unidade.nome}
-                          sourcePerfilAtletaId={meuPerfilAtivo?.id}
-                        />
-                      </div>
-                    ))}
-                  </div>
+                {!isOwner && currentUserId && isDonoEscolaProfile && (
+                  <ConectarButton
+                    targetUserId={perfil.user_id}
+                    currentUserId={currentUserId}
+                    accentColor={accentColor}
+                    isDono
+                    unidades={unidadesPerfil}
+                    sourcePerfilAtletaId={meuPerfilAtivo?.id}
+                  />
                 )}
 
                 {!isAnonymous && (

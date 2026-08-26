@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConectarButton } from '../ConectarButton';
 import { ConexoesCount } from '../ConexoesCount';
-import { Instagram, Globe, Phone, Settings, MapPin } from 'lucide-react';
+import { Instagram, Globe, Phone, Settings } from 'lucide-react';
 import type { ProfileType } from '../ProfileTypeSelector';
 
 const TYPE_CONFIG: Record<ProfileType, { label: string; icon: string; color: string }> = {
@@ -198,7 +198,10 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
 
             <div className="mt-3 flex items-center gap-3 justify-center flex-wrap">
               <ConexoesCount userId={perfil.user_id} />
-              {/* For non-escola profiles, show connect button here */}
+              {/* Non-escola: um único botão, conecta direto.
+                  dono_escola: um único botão também, mas abre o diálogo de
+                  escolher a unidade (a escola é UMA marca, não N entidades
+                  conectáveis separadas -- ver [[carreira-id-perfil-dono-escola-gotchas]]). */}
               {!isOwnProfile && currentUserId && perfil.tipo !== 'dono_escola' && (
                 <ConectarButton
                   targetUserId={perfil.user_id}
@@ -206,46 +209,21 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
                   sourcePerfilAtletaId={viewerPerfilAtletaId}
                 />
               )}
+              {!isOwnProfile && currentUserId && perfil.tipo === 'dono_escola' && (
+                <ConectarButton
+                  targetUserId={perfil.user_id}
+                  currentUserId={currentUserId}
+                  accentColor={accentColor}
+                  isDono
+                  unidades={Array.isArray(perfil.dados_perfil?.unidades) ? perfil.dados_perfil.unidades : []}
+                  sourcePerfilAtletaId={viewerPerfilAtletaId}
+                />
+              )}
             </div>
 
-            {/* Escola units with per-unit connect buttons */}
-            {perfil.tipo === 'dono_escola' && (() => {
-              const nomeEscola = perfil.dados_perfil?.nome_escola || perfil.nome;
-              const endereco = perfil.dados_perfil?.endereco || '';
-              const localizacao = perfil.dados_perfil?.localizacao || '';
-              const unidades = Array.isArray(perfil.dados_perfil?.unidades) ? perfil.dados_perfil.unidades : [];
-              const allUnits = [
-                { nome: nomeEscola, endereco, bairro: localizacao, referencia: '' },
-                ...unidades,
-              ];
-
-              return (
-                <div className="mt-3 space-y-2 w-full">
-                  {allUnits.map((u: any, idx: number) => (
-                    <div key={idx} className="rounded-md border border-border p-2.5 bg-muted/20 flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground">{u.nome || `Unidade ${idx + 1}`}</p>
-                        {u.bairro && (
-                          <p className="text-xs text-muted-foreground flex items-center gap-0.5">
-                            <MapPin className="w-3 h-3 shrink-0" />{u.bairro}
-                          </p>
-                        )}
-                        {u.endereco && <p className="text-xs text-muted-foreground">{u.endereco}</p>}
-                      </div>
-                      {!isOwnProfile && currentUserId && (
-                        <ConectarButton
-                          targetUserId={perfil.user_id}
-                          currentUserId={currentUserId}
-                          accentColor={accentColor}
-                          unidadeNome={u.nome || nomeEscola}
-                          sourcePerfilAtletaId={viewerPerfilAtletaId}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
+            {/* Sede/unidades já aparecem em "Informações Profissionais"
+                (DadosEspecificos, compartilhado com a versão desktop) --
+                não duplicar aqui. */}
 
             {/* Owner action button - single unified edit */}
             {isOwnProfile && onEditProfile && (
