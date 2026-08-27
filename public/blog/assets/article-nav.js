@@ -3,6 +3,7 @@
   // ordem dos cards em /blog/index.html. Ao publicar um artigo novo,
   // adicione ele aqui tambem (no topo), alem do card na listagem.
   var ARTICLES = [
+    { slug: 'tipos-de-pais-no-futebol-de-base', title: 'Os Tipos de Pais e Mães Que Todo Mundo Encontra no Futebol de Base' },
     { slug: 'mae-eu-sou-ruim-impacto-emocional-falas-de-tecnicos', title: '"Mãe, Eu Sou Ruim?": O Que Uma Fala Pode Fazer com uma Criança' },
     { slug: 'tecnicos-que-gritam-e-xingam-nao-e-motivacao-e-medo', title: 'Técnicos Que Gritam e Xingam: Isso Não É Motivação, É Medo' },
     { slug: 'efeito-da-idade-relativa-no-futebol-de-base', title: 'Efeito da Idade Relativa: Por Que o Mês de Nascimento Pode Afetar Seu Filho no Futebol' },
