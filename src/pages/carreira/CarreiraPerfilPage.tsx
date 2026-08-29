@@ -4,9 +4,6 @@ import { useIsFollowing, useToggleFollow, useEscolinhasCarreira, usePostsRede } 
 
 import { PerfilHeader } from '@/components/carreira/PerfilHeader';
 import { CarreiraTimeline } from '@/components/carreira/CarreiraTimeline';
-import { BaixarCurriculoPdfButton } from '@/components/carreira/curriculo/BaixarCurriculoPdfButton';
-import { FeatureGate } from '@/components/carreira/FeatureGate';
-import { useCarreiraPlano } from '@/hooks/useCarreiraPlano';
 import { ConexoesCount } from '@/components/carreira/ConexoesCount';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
 import { PerfilLayout } from '@/components/carreira/perfis/PerfilLayout';
@@ -26,7 +23,6 @@ import { ConvidarColaboradorBanner } from '@/components/carreira/ConvidarColabor
 import { ConectarButton } from '@/components/carreira/ConectarButton';
 import { MigrarPerfilBanner } from '@/components/carreira/MigrarPerfilBanner';
 import { GamificacaoHeroCard } from '@/components/carreira/GamificacaoHeroCard';
-import { FansSection } from '@/components/carreira/FansSection';
 import { AssinaturaExpiryReminder } from '@/components/carreira/AssinaturaExpiryReminder';
 import { NotificacoesBell } from '@/components/carreira/NotificacoesBell';
 import { CarreiraPushAutoSubscribe } from '@/components/carreira/CarreiraPushAutoSubscribe';
@@ -40,7 +36,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, UserX, MapPin, Trophy, Share2, User, UserPlus, UserCheck, Users, Copy, Check, Search, School, X, LogOut, Pencil, Instagram, Globe, Phone, Eye, Zap, Settings } from 'lucide-react';
+import { Loader2, ArrowLeft, UserX, MapPin, Trophy, Share2, User, UserPlus, UserCheck, Users, Copy, Check, Search, School, X, LogOut, Pencil, Instagram, Globe, Phone, Zap, Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useSEO } from '@/hooks/useSEO';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -353,8 +349,6 @@ export default function CarreiraPerfilPage() {
   const { theme: carreiraTheme, isDarkTheme, setDarkTheme } = useCarreiraTheme();
   const isOwner = !!(currentUserId && perfil && currentUserId === perfil.user_id);
   const isAnonymous = !currentUserId;
-  const { plano: planoAtleta, temAcesso: temAcessoAtleta } = useCarreiraPlano(perfil?.crianca_id || null);
-  const temAcessoCurriculoPdf = temAcessoAtleta('curriculo_pdf');
   const { trackProfileView, requireAuth } = useAnonymousGate();
   const [mySlug, setMySlug] = useState<string | null>(null);
   // Um responsável pode ter mais de um atleta cadastrado (irmãos) -- expõe o
@@ -478,56 +472,6 @@ export default function CarreiraPerfilPage() {
     enabled: !!currentUserId && isOwner,
   });
 
-  // Profile views (who viewed my profile - like LinkedIn) — enriched with fresh photos
-  const { data: profileViews } = useQuery({
-    queryKey: ['profile-views', perfil?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('perfil_visualizacoes')
-        .select('*')
-        .eq('perfil_atleta_id', perfil!.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      if (error) throw error;
-      if (!data || data.length === 0) return [];
-
-      // Enrich with fresh photos from perfis_rede and perfil_atleta
-      const viewerIds = [...new Set(data.map(v => v.viewer_user_id))];
-      const { data: redeProfiles } = await supabase
-        .from('perfis_rede')
-        .select('user_id, foto_url, nome, tipo')
-        .in('user_id', viewerIds);
-      const { data: atletaProfiles } = await supabase
-        .from('perfil_atleta')
-        .select('user_id, foto_url, nome')
-        .in('user_id', viewerIds);
-
-      const redeMap = new Map((redeProfiles || []).map(p => [p.user_id, p]));
-      const atletaMap = new Map((atletaProfiles || []).map(p => [p.user_id, p]));
-
-      // Deduplicate by viewer_user_id (keep most recent)
-      const seen = new Set<string>();
-      const unique = data.filter(v => {
-        if (seen.has(v.viewer_user_id)) return false;
-        seen.add(v.viewer_user_id);
-        return true;
-      });
-
-      return unique.map(view => {
-        const rede = redeMap.get(view.viewer_user_id);
-        const atleta = atletaMap.get(view.viewer_user_id);
-        // If user has perfil_atleta, show as "Atleta"; otherwise use rede tipo
-        const resolvedTipo = atleta ? 'atleta' : (rede?.tipo === 'pai_responsavel' ? 'atleta' : rede?.tipo || view.viewer_tipo);
-        return {
-          ...view,
-          viewer_foto_url: rede?.foto_url || atleta?.foto_url || view.viewer_foto_url,
-          viewer_nome: rede?.nome || atleta?.nome || view.viewer_nome,
-          viewer_tipo: resolvedTipo,
-        };
-      });
-    },
-    enabled: !!perfil?.id && perfil?.type === 'atleta',
-  });
 
   const handleAcceptRequest = async (connectionId: string) => {
     const { error } = await supabase.from('rede_conexoes').update({ status: 'aceita' } as any).eq('id', connectionId);
@@ -1276,23 +1220,6 @@ export default function CarreiraPerfilPage() {
               />
             )}
 
-            {/* Quem viu este perfil — somente para o dono do perfil, recurso Premium */}
-            {perfil.type === 'atleta' && isOwner && profileViews && profileViews.length > 0 && (
-              <FeatureGate
-                planoAtual={planoAtleta}
-                planoRequerido="premium"
-                liberado={temAcessoAtleta('ver_views')}
-                mensagem="Ver quem visualizou seu perfil é um recurso Premium"
-              >
-                <ProfileViewsSection views={profileViews} accentColor={accentColor} navigate={navigate} />
-              </FeatureGate>
-            )}
-
-            {/* Fãs / Torcida — below profile views */}
-            {perfil.type === 'atleta' && (
-              <FansSection perfilAtletaId={perfil.id} accentColor={accentColor} />
-            )}
-
             {isOwner && pendingRequests && pendingRequests.length > 0 && (
               <div className="lg:hidden">
                 <Card className="p-4" style={{ borderColor: `${accentColor}50`, borderWidth: 2 }}>
@@ -1331,28 +1258,6 @@ export default function CarreiraPerfilPage() {
               </div>
             )}
 
-            
-            {perfil.type === 'atleta' && isOwner && (
-              <div className="mb-4">
-                <FeatureGate
-                  planoAtual={planoAtleta}
-                  planoRequerido="premium"
-                  liberado={temAcessoCurriculoPdf}
-                  mensagem="Currículo em PDF disponível no plano Premium"
-                >
-                  <BaixarCurriculoPdfButton
-                    criancaId={perfil.crianca_id}
-                    nome={perfil.nome}
-                    fotoUrl={perfil.foto_url}
-                    modalidade={perfil.modalidade || null}
-                    categoria={perfil.categoria || null}
-                    cidade={perfil.cidade || null}
-                    estado={perfil.estado || null}
-                    slug={perfil.slug}
-                  />
-                </FeatureGate>
-              </div>
-            )}
             {perfil.type === 'atleta' ? (
               <CarreiraTimeline perfil={perfil as any} isOwner={canManageTimeline} podeExcluir={isOwner} />
             ) : (
@@ -1631,33 +1536,3 @@ function RedeTimelineInline({ perfilId, isOwner, perfilNome, perfilFoto, accentC
   );
 }
 
-function ProfileViewsSection({ views, accentColor, navigate }: { views: any[]; accentColor: string; navigate: (path: string) => void }) {
-  return (
-    <Card className="p-4" style={{ borderColor: `${accentColor}50`, borderWidth: 2 }}>
-      <h3 className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
-        <Eye className="w-3.5 h-3.5" style={{ color: accentColor }} />
-        Quem viu este perfil ({views.length})
-      </h3>
-      <div className="max-h-[120px] overflow-y-auto">
-        <div className="flex flex-wrap gap-2">
-          {views.map((view) => (
-            <div key={view.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded-lg p-1.5 transition-colors"
-              onClick={() => navigate(carreiraPath(`/perfil/${view.viewer_user_id}`))}>
-              {view.viewer_foto_url ? (
-                <img src={view.viewer_foto_url} alt="" className="w-8 h-8 rounded-full object-cover" />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground">
-                  {view.viewer_nome?.[0] || '?'}
-                </div>
-              )}
-              <div className="min-w-0">
-                <p className="text-xs font-medium truncate max-w-[100px]">{view.viewer_nome || 'Usuário'}</p>
-                <p className="text-[10px] text-muted-foreground">{TYPE_LABELS[view.viewer_tipo || ''] || view.viewer_tipo || ''}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </Card>
-  );
-}
