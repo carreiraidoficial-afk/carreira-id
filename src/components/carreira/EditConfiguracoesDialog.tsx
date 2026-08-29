@@ -153,16 +153,16 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
                 onClick={handleAlterarSenha}
                 disabled={enviandoReset}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
                     {enviandoReset ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
                   </div>
-                  <div className="text-left">
+                  <div className="text-left min-w-0">
                     <p className="text-sm font-medium">Alterar senha</p>
                     <p className="text-xs text-muted-foreground">Enviamos um link por e-mail pra você definir uma nova senha</p>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
               </button>
             </div>
 
@@ -171,11 +171,11 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
               <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Privacidade</p>
               <div className="rounded-lg border p-3 space-y-2.5">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
                       {isPublic ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium">Perfil {isPublic ? 'público' : 'oculto'}</p>
                       <p className="text-xs text-muted-foreground">
                         {isPublic ? 'Visível pra qualquer pessoa com o link' : 'Visível só pra quem tem conta no Carreira ID'}
@@ -186,6 +186,7 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
                     checked={isPublic}
                     disabled={togglePublic.isPending}
                     onCheckedChange={(checked) => togglePublic.mutate(checked)}
+                    className="shrink-0"
                   />
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-relaxed pt-2 border-t">
@@ -200,12 +201,12 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Notificações e Segurança</p>
               <div className="space-y-2">
-                <div className={`flex items-center justify-between rounded-lg border p-3 bg-muted/30 ${!pushSupported ? 'opacity-60' : ''}`}>
-                  <div className="flex items-center gap-3">
+                <div className={`flex items-center justify-between gap-3 rounded-lg border p-3 bg-muted/30 ${!pushSupported ? 'opacity-60' : ''}`}>
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
                       <Bell className="w-4 h-4" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium">
                         Notificações {isSubscribed ? 'ligadas' : 'desligadas'}
                       </p>
@@ -229,31 +230,32 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
                         await unsubscribe();
                       }
                     }}
+                    className="shrink-0"
                   />
                 </div>
-                <div className="flex items-center justify-between rounded-lg border p-3 opacity-60">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between gap-3 rounded-lg border p-3 opacity-60">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
                       <Fingerprint className="w-4 h-4" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium">Biometria</p>
                       <p className="text-xs text-muted-foreground">Use sua impressão digital ou Face ID para entrar mais rápido</p>
                     </div>
                   </div>
-                  <Switch checked={false} disabled />
+                  <Switch checked={false} disabled className="shrink-0" />
                 </div>
-                <div className="flex items-center justify-between rounded-lg border p-3 opacity-60">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between gap-3 rounded-lg border p-3 opacity-60">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
                       <Smartphone className="w-4 h-4" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium">Autenticação em duas etapas</p>
                       <p className="text-xs text-muted-foreground">Código SMS para mais segurança</p>
                     </div>
                   </div>
-                  <Badge variant="outline" className="text-[10px]">Em breve</Badge>
+                  <Badge variant="outline" className="text-[10px] shrink-0">Em breve</Badge>
                 </div>
               </div>
             </div>
@@ -264,18 +266,18 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
                 href={SUPPORT_WHATSAPP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors"
+                className="w-full flex items-center justify-between gap-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
                     <MessageCircle className="w-4 h-4" />
                   </div>
-                  <div className="text-left">
+                  <div className="text-left min-w-0">
                     <p className="text-sm font-medium">Falar com Suporte</p>
                     <p className="text-xs text-muted-foreground">Tire suas dúvidas direto pelo WhatsApp</p>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
               </a>
             </div>
 
@@ -283,24 +285,24 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
               <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Sobre</p>
               <div className="space-y-2">
                 <a href="/termos-de-uso" target="_blank" rel="noopener noreferrer"
-                  className="w-full flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
+                  className="w-full flex items-center justify-between gap-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
                       <FileText className="w-4 h-4" />
                     </div>
-                    <p className="text-sm font-medium">Termos de Uso</p>
+                    <p className="text-sm font-medium truncate">Termos de Uso</p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                 </a>
                 <a href="/politica-de-privacidade" target="_blank" rel="noopener noreferrer"
-                  className="w-full flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
+                  className="w-full flex items-center justify-between gap-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
                       <ShieldCheck className="w-4 h-4" />
                     </div>
-                    <p className="text-sm font-medium">Política de Privacidade</p>
+                    <p className="text-sm font-medium truncate">Política de Privacidade</p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                 </a>
               </div>
             </div>

@@ -179,19 +179,19 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
 
       {/* Current Plan */}
       <div className="rounded-lg p-3 border" style={{ borderColor: `${currentPlanoInfo.cor}40`, backgroundColor: `${currentPlanoInfo.cor}08` }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">{currentPlanoInfo.icone}</span>
-            <div>
-              <p className="text-sm font-bold" style={{ color: currentPlanoInfo.cor }}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-lg shrink-0">{currentPlanoInfo.icone}</span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold truncate" style={{ color: currentPlanoInfo.cor }}>
                 Plano {currentPlanoInfo.nome}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground truncate">
                 {currentPlanoInfo.preco === 0 ? 'Gratuito' : `R$ ${currentPlanoInfo.preco.toFixed(2).replace('.', ',')}/mês`}
               </p>
             </div>
           </div>
-          <Badge className="text-[10px]" style={{ backgroundColor: `${currentPlanoInfo.cor}20`, color: currentPlanoInfo.cor, border: `1px solid ${currentPlanoInfo.cor}40` }}>
+          <Badge className="text-[10px] shrink-0" style={{ backgroundColor: `${currentPlanoInfo.cor}20`, color: currentPlanoInfo.cor, border: `1px solid ${currentPlanoInfo.cor}40` }}>
             {isTrialActive ? (
               <><Clock className="w-3 h-3 mr-0.5" /> Trial</>
             ) : (
@@ -284,7 +284,7 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
             return (
               <button
                 key={targetPlano}
-                className="w-full flex items-center justify-between rounded-lg border p-2.5 hover:bg-muted/50 transition-colors text-left"
+                className="w-full flex items-center justify-between gap-2 rounded-lg border p-2.5 hover:bg-muted/50 transition-colors text-left"
                 style={{ borderColor: `${targetInfo.cor}30` }}
                 onClick={() => {
                   if (targetPlano === 'base' && currentPlano === 'base') return;
@@ -300,18 +300,18 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
                   setConfirmAction({ type: isUpgrade ? 'upgrade' : 'downgrade', target: targetPlano });
                 }}
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">{targetInfo.icone}</span>
-                  <div>
-                    <p className="text-xs font-semibold" style={{ color: targetInfo.cor }}>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm shrink-0">{targetInfo.icone}</span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold truncate" style={{ color: targetInfo.cor }}>
                       {targetInfo.nome}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-[10px] text-muted-foreground truncate">
                       {targetInfo.preco === 0 ? 'Gratuito' : `R$ ${targetInfo.preco.toFixed(2).replace('.', ',')}/mês`}
                     </p>
                   </div>
                 </div>
-                <Badge variant="outline" className="text-[10px] gap-0.5" style={{ borderColor: `${targetInfo.cor}50`, color: targetInfo.cor }}>
+                <Badge variant="outline" className="text-[10px] gap-0.5 shrink-0" style={{ borderColor: `${targetInfo.cor}50`, color: targetInfo.cor }}>
                   {isUpgrade ? <><ArrowUp className="w-2.5 h-2.5" /> Upgrade</> : <><ArrowDown className="w-2.5 h-2.5" /> Downgrade</>}
                 </Badge>
               </button>
