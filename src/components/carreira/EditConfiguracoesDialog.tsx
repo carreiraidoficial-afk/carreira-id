@@ -104,7 +104,7 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
           <DialogTitle>Configurações</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue={defaultTab} className="w-full">
+        <Tabs defaultValue={defaultTab} className="w-full min-w-0">
           <TabsList className="flex w-full overflow-x-auto justify-start gap-1 h-auto p-1">
             <TabsTrigger value="responsavel" className="shrink-0 flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3">
               <UserCircle className="w-3.5 h-3.5" />
