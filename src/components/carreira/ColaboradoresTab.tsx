@@ -6,7 +6,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, UserPlus, Copy, Check, ShieldOff, ShieldCheck, Clock } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Loader2, UserPlus, Copy, Check, ShieldOff, ShieldCheck, Clock, Send, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMinhasCriancas } from '@/hooks/useCriancaAtiva';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
@@ -61,6 +71,10 @@ export function ColaboradoresTab({ userId }: ColaboradoresTabProps) {
   const [saving, setSaving] = useState(false);
   const [linkGerado, setLinkGerado] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [linkReenvioCodigo, setLinkReenvioCodigo] = useState<string | null>(null);
+  const [reenvioCopied, setReenvioCopied] = useState(false);
+  const [excluirCodigo, setExcluirCodigo] = useState<string | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
 
   // Agrupa as linhas (uma por criança) pelo mesmo código de convite, pra
   // mostrar UMA pessoa com a lista de quais atletas ela tem acesso.
@@ -85,18 +99,54 @@ export function ColaboradoresTab({ userId }: ColaboradoresTabProps) {
 
     setSaving(true);
     try {
+      const emailNorm = email.trim().toLowerCase();
+      const telNorm = telefone.trim().replace(/\D/g, '');
       const codigo = gerarCodigoConvite();
-      const rows = selecionados.map((criancaId) => ({
-        crianca_id: criancaId,
-        convidado_por: userId,
-        nome: nome.trim(),
-        email: email.trim() || null,
-        telefone: telefone.trim() || null,
-        codigo_convite: codigo,
-        status: 'pendente' as const,
-      }));
-      const { error } = await supabase.from('perfil_atleta_colaboradores').insert(rows);
-      if (error) throw error;
+
+      // Reaproveita a linha existente (mesmo atleta + mesmo email/telefone)
+      // em vez de criar uma nova -- evita a lista crescer indefinidamente
+      // toda vez que a mesma pessoa e reconvidada apos ser revogada.
+      const idsParaAtualizar: string[] = [];
+      const linhasParaInserir: any[] = [];
+      for (const criancaId of selecionados) {
+        const existente = colaboradores.find((c) =>
+          c.crianca_id === criancaId &&
+          ((emailNorm && c.email?.trim().toLowerCase() === emailNorm) ||
+            (telNorm && c.telefone?.replace(/\D/g, '') === telNorm))
+        );
+        if (existente) {
+          idsParaAtualizar.push(existente.id);
+        } else {
+          linhasParaInserir.push({
+            crianca_id: criancaId,
+            convidado_por: userId,
+            nome: nome.trim(),
+            email: email.trim() || null,
+            telefone: telefone.trim() || null,
+            codigo_convite: codigo,
+            status: 'pendente' as const,
+          });
+        }
+      }
+
+      if (idsParaAtualizar.length > 0) {
+        const { error } = await supabase
+          .from('perfil_atleta_colaboradores')
+          .update({
+            nome: nome.trim(),
+            email: email.trim() || null,
+            telefone: telefone.trim() || null,
+            codigo_convite: codigo,
+            status: 'pendente',
+            revogado_em: null,
+          } as any)
+          .in('id', idsParaAtualizar);
+        if (error) throw error;
+      }
+      if (linhasParaInserir.length > 0) {
+        const { error } = await supabase.from('perfil_atleta_colaboradores').insert(linhasParaInserir);
+        if (error) throw error;
+      }
 
       const link = `${window.location.origin}${carreiraPath('/colaborar')}?codigo=${codigo}`;
       setLinkGerado(link);
@@ -145,6 +195,34 @@ export function ColaboradoresTab({ userId }: ColaboradoresTabProps) {
     }
   };
 
+  const handleReenviar = (codigo: string) => {
+    setLinkReenvioCodigo((atual) => (atual === codigo ? null : codigo));
+    setReenvioCopied(false);
+  };
+
+  const handleCopyReenvio = (codigo: string) => {
+    const link = `${window.location.origin}${carreiraPath('/colaborar')}?codigo=${codigo}`;
+    navigator.clipboard.writeText(link);
+    setReenvioCopied(true);
+    toast.success('Link copiado!');
+    setTimeout(() => setReenvioCopied(false), 2000);
+  };
+
+  const handleExcluir = async (ids: string[]) => {
+    setExcluindo(true);
+    try {
+      const { error } = await supabase.from('perfil_atleta_colaboradores').delete().in('id', ids);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['meus-colaboradores'] });
+      toast.success('Colaborador excluído');
+    } catch (e: any) {
+      toast.error('Erro ao excluir: ' + e.message);
+    } finally {
+      setExcluindo(false);
+      setExcluirCodigo(null);
+    }
+  };
+
   const resetForm = () => {
     setNome(''); setEmail(''); setTelefone(''); setSelecionados([]); setLinkGerado(null); setShowForm(false);
   };
@@ -164,14 +242,14 @@ export function ColaboradoresTab({ userId }: ColaboradoresTabProps) {
       </p>
 
       {[...grupos.entries()].map(([codigo, g]) => (
-        <div key={codigo} className="rounded-lg border p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold">{g.nome}</p>
-              <p className="text-xs text-muted-foreground">{g.email || g.telefone || '—'}</p>
+        <div key={codigo} className="rounded-lg border p-3 space-y-2 min-w-0">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0 max-w-full">
+              <p className="text-sm font-semibold truncate">{g.nome}</p>
+              <p className="text-xs text-muted-foreground truncate">{g.email || g.telefone || '—'}</p>
             </div>
             <Badge variant={g.status === 'ativo' ? 'default' : g.status === 'pendente' ? 'secondary' : 'outline'}
-              className={g.status === 'ativo' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1' : g.status === 'pendente' ? 'gap-1' : 'text-muted-foreground gap-1'}>
+              className={`shrink-0 ${g.status === 'ativo' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1' : g.status === 'pendente' ? 'gap-1' : 'text-muted-foreground gap-1'}`}>
               {g.status === 'ativo' ? <ShieldCheck className="w-3 h-3" /> : g.status === 'pendente' ? <Clock className="w-3 h-3" /> : <ShieldOff className="w-3 h-3" />}
               {g.status === 'ativo' ? 'Ativo' : g.status === 'pendente' ? 'Convite pendente' : 'Revogado'}
             </Badge>
@@ -181,15 +259,57 @@ export function ColaboradoresTab({ userId }: ColaboradoresTabProps) {
               <Badge key={cid} variant="outline" className="text-[10px]">{nomeCrianca(cid)}</Badge>
             ))}
           </div>
-          <div className="flex gap-2">
+
+          {linkReenvioCodigo === codigo && (
+            <div className="flex gap-2 pt-1">
+              <Input value={`${window.location.origin}${carreiraPath('/colaborar')}?codigo=${codigo}`} readOnly className="text-xs h-8" />
+              <Button size="icon" variant="outline" className="h-8 w-8 shrink-0" onClick={() => handleCopyReenvio(codigo)}>
+                {reenvioCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              </Button>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            {g.status === 'pendente' && (
+              <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => handleReenviar(codigo)}>
+                <Send className="w-3 h-3" /> Reenviar convite
+              </Button>
+            )}
             {g.status === 'revogado' ? (
               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleReativar(g.ids)}>Reativar acesso</Button>
             ) : (
               <Button size="sm" variant="outline" className="h-7 text-xs text-destructive" onClick={() => handleRevogar(g.ids)}>Revogar acesso</Button>
             )}
+            <Button size="sm" variant="ghost" className="h-7 text-xs gap-1 text-destructive hover:text-destructive" onClick={() => setExcluirCodigo(codigo)}>
+              <Trash2 className="w-3 h-3" /> Excluir
+            </Button>
           </div>
         </div>
       ))}
+
+      <AlertDialog open={!!excluirCodigo} onOpenChange={(open) => !open && setExcluirCodigo(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir colaborador?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso remove o acesso e o registro do convite permanentemente. Publicações, jogos e experiências que essa pessoa já criou <strong>não são afetados</strong> — continuam no perfil normalmente. Essa ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={excluindo}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                const g = excluirCodigo ? grupos.get(excluirCodigo) : undefined;
+                if (g) handleExcluir(g.ids);
+              }}
+            >
+              {excluindo ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {!showForm ? (
         <Button variant="outline" className="w-full gap-1.5" onClick={() => setShowForm(true)}>
