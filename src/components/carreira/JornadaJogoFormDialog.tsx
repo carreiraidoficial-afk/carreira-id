@@ -9,8 +9,8 @@ import { Switch } from '@/components/ui/switch';
 import { Loader2, Upload, X, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import { useJornada } from '@/hooks/useJornada';
-import type { CampeonatoComJogos, JogoComMidia, PosicaoJogo, SetDetalhe } from '@/types/jornada-esportiva';
-import { isModalidadeVolei } from '@/constants/esportes';
+import type { CampeonatoComJogos, JogoComMidia, PosicaoJogo, SetDetalhe, QuartoDetalhe } from '@/types/jornada-esportiva';
+import { isModalidadeVolei, isModalidadeBasquete } from '@/constants/esportes';
 
 interface Props {
   open: boolean;
@@ -45,9 +45,19 @@ const POSICOES_VOLEI_JOGO: { value: PosicaoJogo; label: string }[] = [
   { value: 'central', label: 'Central' },
   { value: 'libero', label: 'Líbero' },
 ];
+const POSICOES_BASQUETE_JOGO: { value: PosicaoJogo; label: string }[] = [
+  { value: 'armador', label: 'Armador' },
+  { value: 'ala-armador', label: 'Ala-Armador' },
+  { value: 'ala', label: 'Ala' },
+  { value: 'ala-pivo', label: 'Ala-Pivô' },
+  { value: 'pivo', label: 'Pivô' },
+];
 const MAX_SETS = 5;
 const emptySets = (): { pontos_time: string; pontos_adversario: string }[] =>
   Array.from({ length: MAX_SETS }, () => ({ pontos_time: '', pontos_adversario: '' }));
+const MAX_QUARTOS = 4;
+const emptyQuartos = (): { pontos_time: string; pontos_adversario: string }[] =>
+  Array.from({ length: MAX_QUARTOS }, () => ({ pontos_time: '', pontos_adversario: '' }));
 
 export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonatos, modalidades, editingJogo, onSaved }: Props) {
   const { criarJogo, editarJogo, adicionarMidiasJogo, excluirMidia } = useJornada(criancaId);
@@ -92,13 +102,30 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
   // Vôlei -- placar detalhado por set
   const [setsAtivo, setSetsAtivo] = useState(false);
   const [sets, setSets] = useState(emptySets());
+  // Basquete
+  const [pontosBasquete, setPontosBasquete] = useState('');
+  const [rebotesOfensivos, setRebotesOfensivos] = useState('');
+  const [rebotesDefensivos, setRebotesDefensivos] = useState('');
+  const [roubosBola, setRoubosBola] = useState('');
+  const [tocos, setTocos] = useState('');
+  const [faltasCometidas, setFaltasCometidas] = useState('');
+  const [arremessos2ptTentados, setArremessos2ptTentados] = useState('');
+  const [arremessos2ptConvertidos, setArremessos2ptConvertidos] = useState('');
+  const [arremessos3ptTentados, setArremessos3ptTentados] = useState('');
+  const [arremessos3ptConvertidos, setArremessos3ptConvertidos] = useState('');
+  const [lancesLivresTentados, setLancesLivresTentados] = useState('');
+  const [lancesLivresConvertidos, setLancesLivresConvertidos] = useState('');
+  // Basquete -- placar detalhado por quarto
+  const [quartosAtivo, setQuartosAtivo] = useState(false);
+  const [quartos, setQuartos] = useState(emptyQuartos());
   const [novosArquivos, setNovosArquivos] = useState<File[]>([]);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const isVolei = isModalidadeVolei(modalidade);
-  const posicoesDisponiveis = isVolei ? POSICOES_VOLEI_JOGO : POSICOES_FUTEBOL_JOGO;
+  const isBasquete = isModalidadeBasquete(modalidade);
+  const posicoesDisponiveis = isVolei ? POSICOES_VOLEI_JOGO : isBasquete ? POSICOES_BASQUETE_JOGO : POSICOES_FUTEBOL_JOGO;
   const isLibero = isVolei && posicao === 'libero';
-  const isGoleiro = !isVolei && posicao === 'goleiro';
+  const isGoleiro = !isVolei && !isBasquete && posicao === 'goleiro';
 
   useEffect(() => {
     if (open) {
@@ -124,6 +151,32 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
       } else {
         setSetsAtivo(false);
         setSets(emptySets());
+      }
+      setPontosBasquete(editingJogo?.pontos?.toString() ?? '');
+      setRebotesOfensivos(editingJogo?.rebotes_ofensivos?.toString() ?? '');
+      setRebotesDefensivos(editingJogo?.rebotes_defensivos?.toString() ?? '');
+      setRoubosBola(editingJogo?.roubos_bola?.toString() ?? '');
+      setTocos(editingJogo?.tocos?.toString() ?? '');
+      setFaltasCometidas(editingJogo?.faltas_cometidas?.toString() ?? '');
+      setArremessos2ptTentados(editingJogo?.arremessos_2pt_tentados?.toString() ?? '');
+      setArremessos2ptConvertidos(editingJogo?.arremessos_2pt_convertidos?.toString() ?? '');
+      setArremessos3ptTentados(editingJogo?.arremessos_3pt_tentados?.toString() ?? '');
+      setArremessos3ptConvertidos(editingJogo?.arremessos_3pt_convertidos?.toString() ?? '');
+      setLancesLivresTentados(editingJogo?.lances_livres_tentados?.toString() ?? '');
+      setLancesLivresConvertidos(editingJogo?.lances_livres_convertidos?.toString() ?? '');
+      const existingQuartos = editingJogo?.quartos_detalhe;
+      if (existingQuartos && existingQuartos.length > 0) {
+        setQuartosAtivo(true);
+        const filled = emptyQuartos();
+        existingQuartos.forEach((q) => {
+          if (q.quarto >= 1 && q.quarto <= MAX_QUARTOS) {
+            filled[q.quarto - 1] = { pontos_time: q.pontos_time.toString(), pontos_adversario: q.pontos_adversario.toString() };
+          }
+        });
+        setQuartos(filled);
+      } else {
+        setQuartosAtivo(false);
+        setQuartos(emptyQuartos());
       }
       setDataJogo(editingJogo?.data_jogo?.slice(0, 10) || '');
       setTimeAtleta(editingJogo?.time_atleta || '');
@@ -213,6 +266,11 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
             .map((s, idx) => ({ set: idx + 1, pontos_time: num(s.pontos_time), pontos_adversario: num(s.pontos_adversario) }))
             .filter((s): s is SetDetalhe => s.pontos_time !== undefined && s.pontos_adversario !== undefined)
         : [];
+      const quartosDetalhe: QuartoDetalhe[] = isBasquete && quartosAtivo
+        ? quartos
+            .map((q, idx) => ({ quarto: idx + 1, pontos_time: num(q.pontos_time), pontos_adversario: num(q.pontos_adversario) }))
+            .filter((q): q is QuartoDetalhe => q.pontos_time !== undefined && q.pontos_adversario !== undefined)
+        : [];
       const payload = {
         campeonato_id: campeonatoId === NONE ? null : campeonatoId,
         modalidade,
@@ -222,21 +280,21 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
         local: local.trim() || undefined,
         placar_time_atleta: num(placarA),
         placar_adversario: num(placarB),
-        gols_marcados: !isVolei && !isGoleiro ? num(gols) : undefined,
+        gols_marcados: !isVolei && !isBasquete && !isGoleiro ? num(gols) : undefined,
         assistencias: !isVolei && !isGoleiro ? num(assist) : undefined,
         posicao_jogo: posicao === POSICAO_NONE ? undefined : (posicao as PosicaoJogo),
         fase_campeonato: fase.trim() || undefined,
         observacoes: obs.trim() || undefined,
         // Prorrogação e disputa de pênaltis -- fatos do jogo, visíveis pra qualquer posição
         teve_prorrogacao: !isVolei ? teveProrrogacao : null,
-        teve_disputa_penaltis: !isVolei ? teveDisputa : null,
-        placar_penaltis_time: !isVolei && teveDisputa ? (num(placarPenA) ?? null) : null,
-        placar_penaltis_adversario: !isVolei && teveDisputa ? (num(placarPenB) ?? null) : null,
+        teve_disputa_penaltis: !isVolei && !isBasquete ? teveDisputa : null,
+        placar_penaltis_time: !isVolei && !isBasquete && teveDisputa ? (num(placarPenA) ?? null) : null,
+        placar_penaltis_adversario: !isVolei && !isBasquete && teveDisputa ? (num(placarPenB) ?? null) : null,
         // Pênalti marcado por jogador de linha
-        gols_penalti: !isVolei && !isGoleiro ? (num(golsPenalti) ?? null) : null,
-        penaltis_convertidos_disputa: !isVolei && !isGoleiro && teveDisputa ? (num(penConvertidosDisputa) ?? null) : null,
-        // Goleiro
-        minutos_jogados: isGoleiro ? (num(minutos) ?? null) : null,
+        gols_penalti: !isVolei && !isBasquete && !isGoleiro ? (num(golsPenalti) ?? null) : null,
+        penaltis_convertidos_disputa: !isVolei && !isBasquete && !isGoleiro && teveDisputa ? (num(penConvertidosDisputa) ?? null) : null,
+        // Goleiro (minutos_jogados também reaproveitado pelo basquete)
+        minutos_jogados: isGoleiro || isBasquete ? (num(minutos) ?? null) : null,
         gols_sofridos: isGoleiro ? (num(golsSofridos) ?? null) : null,
         defesas_importantes: isGoleiro ? (num(defesas) ?? null) : null,
         penaltis_defendidos: isGoleiro ? (num(penDef) ?? null) : null,
@@ -247,12 +305,27 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
         pontos_ataque: isVolei && !isLibero ? (num(pontosAtaque) ?? null) : null,
         pontos_bloqueio: isVolei && !isLibero ? (num(pontosBloqueio) ?? null) : null,
         pontos_saque: isVolei && !isLibero ? (num(pontosSaque) ?? null) : null,
-        erros_cometidos: isVolei && !isLibero ? (num(errosCometidos) ?? null) : null,
+        // erros_cometidos também reaproveitado pelo basquete (perdas de bola)
+        erros_cometidos: (isVolei && !isLibero) || isBasquete ? (num(errosCometidos) ?? null) : null,
         // Vôlei -- bloco líbero
         recepcoes_realizadas: isLibero ? (num(recepcoes) ?? null) : null,
         defesas_realizadas: isLibero ? (num(defesasVolei) ?? null) : null,
         erros_recepcao: isLibero ? (num(errosRecepcao) ?? null) : null,
         sets_detalhe: setsDetalhe.length > 0 ? setsDetalhe : null,
+        // Basquete
+        pontos: isBasquete ? (num(pontosBasquete) ?? null) : null,
+        rebotes_ofensivos: isBasquete ? (num(rebotesOfensivos) ?? null) : null,
+        rebotes_defensivos: isBasquete ? (num(rebotesDefensivos) ?? null) : null,
+        roubos_bola: isBasquete ? (num(roubosBola) ?? null) : null,
+        tocos: isBasquete ? (num(tocos) ?? null) : null,
+        faltas_cometidas: isBasquete ? (num(faltasCometidas) ?? null) : null,
+        arremessos_2pt_tentados: isBasquete ? (num(arremessos2ptTentados) ?? null) : null,
+        arremessos_2pt_convertidos: isBasquete ? (num(arremessos2ptConvertidos) ?? null) : null,
+        arremessos_3pt_tentados: isBasquete ? (num(arremessos3ptTentados) ?? null) : null,
+        arremessos_3pt_convertidos: isBasquete ? (num(arremessos3ptConvertidos) ?? null) : null,
+        lances_livres_tentados: isBasquete ? (num(lancesLivresTentados) ?? null) : null,
+        lances_livres_convertidos: isBasquete ? (num(lancesLivresConvertidos) ?? null) : null,
+        quartos_detalhe: quartosDetalhe.length > 0 ? quartosDetalhe : null,
       };
       let jogoId: string;
       if (editingJogo) {
@@ -354,6 +427,27 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
               )}
             </div>
           )}
+          {isBasquete && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Switch checked={quartosAtivo} onCheckedChange={setQuartosAtivo} id="quartos-ativo" />
+                <Label htmlFor="quartos-ativo" className="cursor-pointer">Registrar placar detalhado por quarto?</Label>
+              </div>
+              {quartosAtivo && (
+                <div className="space-y-2 rounded-lg border-2 p-3" style={{ borderColor: 'hsl(var(--border))' }}>
+                  {quartos.map((q, idx) => (
+                    <div key={idx} className="grid grid-cols-3 gap-2 items-center">
+                      <Label className="text-sm">{idx + 1}º Quarto</Label>
+                      <Input type="number" min={0} placeholder="Meu time" value={q.pontos_time}
+                        onChange={(e) => setQuartos((prev) => prev.map((p, i) => i === idx ? { ...p, pontos_time: e.target.value } : p))} />
+                      <Input type="number" min={0} placeholder="Adversário" value={q.pontos_adversario}
+                        onChange={(e) => setQuartos((prev) => prev.map((p, i) => i === idx ? { ...p, pontos_adversario: e.target.value } : p))} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Data *</Label>
@@ -376,7 +470,7 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
               </SelectContent>
             </Select>
           </div>
-          {!isVolei && posicao !== 'goleiro' && (
+          {!isVolei && !isBasquete && posicao !== 'goleiro' && (
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Gols do atleta</Label>
@@ -390,6 +484,78 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
                 <Label>Dos quais, gols de pênalti</Label>
                 <Input type="number" min={0} value={golsPenalti} onChange={(e) => setGolsPenalti(e.target.value)} />
               </div>
+            </div>
+          )}
+          {isBasquete && (
+            <div className="rounded-lg border-2 p-3 space-y-3" style={{ borderColor: 'hsl(var(--border))' }}>
+              <p className="text-sm font-semibold">🏀 Estatísticas de Basquete</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Pontos</Label>
+                  <Input type="number" min={0} value={pontosBasquete} onChange={(e) => setPontosBasquete(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Assistências</Label>
+                  <Input type="number" min={0} value={assist} onChange={(e) => setAssist(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Rebotes ofensivos</Label>
+                  <Input type="number" min={0} value={rebotesOfensivos} onChange={(e) => setRebotesOfensivos(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Rebotes defensivos</Label>
+                  <Input type="number" min={0} value={rebotesDefensivos} onChange={(e) => setRebotesDefensivos(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Roubos de bola</Label>
+                  <Input type="number" min={0} value={roubosBola} onChange={(e) => setRoubosBola(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Tocos</Label>
+                  <Input type="number" min={0} value={tocos} onChange={(e) => setTocos(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Erros (perdas de bola)</Label>
+                  <Input type="number" min={0} value={errosCometidos} onChange={(e) => setErrosCometidos(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Faltas cometidas</Label>
+                  <Input type="number" min={0} value={faltasCometidas} onChange={(e) => setFaltasCometidas(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Minutos jogados</Label>
+                  <Input type="number" min={0} value={minutos} onChange={(e) => setMinutos(e.target.value)} />
+                </div>
+              </div>
+              <details className="text-sm">
+                <summary className="cursor-pointer font-medium text-muted-foreground">Arremessos (opcional)</summary>
+                <div className="grid grid-cols-2 gap-3 mt-2">
+                  <div>
+                    <Label>Arremessos de 2 tentados</Label>
+                    <Input type="number" min={0} value={arremessos2ptTentados} onChange={(e) => setArremessos2ptTentados(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Arremessos de 2 convertidos</Label>
+                    <Input type="number" min={0} value={arremessos2ptConvertidos} onChange={(e) => setArremessos2ptConvertidos(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Arremessos de 3 tentados</Label>
+                    <Input type="number" min={0} value={arremessos3ptTentados} onChange={(e) => setArremessos3ptTentados(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Arremessos de 3 convertidos</Label>
+                    <Input type="number" min={0} value={arremessos3ptConvertidos} onChange={(e) => setArremessos3ptConvertidos(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Lances livres tentados</Label>
+                    <Input type="number" min={0} value={lancesLivresTentados} onChange={(e) => setLancesLivresTentados(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Lances livres convertidos</Label>
+                    <Input type="number" min={0} value={lancesLivresConvertidos} onChange={(e) => setLancesLivresConvertidos(e.target.value)} />
+                  </div>
+                </div>
+              </details>
             </div>
           )}
           {isVolei && !isLibero && (
@@ -434,7 +600,7 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
               </div>
             </div>
           )}
-          {!isVolei && (
+          {!isVolei && !isBasquete && (
             <div className="rounded-lg border-2 p-3 space-y-3" style={{ borderColor: 'hsl(var(--border))' }}>
               <p className="text-sm font-semibold">⚽ Disputa de Pênaltis</p>
               <div className="flex items-center gap-2">

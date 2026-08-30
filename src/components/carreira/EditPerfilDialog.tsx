@@ -59,7 +59,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-import { MODALIDADES, ESTADOS, POSICOES_FUTEBOL, POSICOES_VOLEI, isModalidadeVolei } from '@/constants/esportes';
+import { MODALIDADES, ESTADOS, POSICOES_FUTEBOL, POSICOES_VOLEI, POSICOES_BASQUETE, isModalidadeVolei, isModalidadeBasquete } from '@/constants/esportes';
 
 function EditCidadeField({ form }: { form: any }) {
   const estado = form.watch('estado');
@@ -110,7 +110,8 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
   const isPlatformProfile = perfil.modalidade === 'Plataforma' || !perfil.crianca_id;
   const modalidadePrincipal = selectedModalidades[0];
   const isVolei = isModalidadeVolei(modalidadePrincipal);
-  const POSICOES = isVolei ? POSICOES_VOLEI : POSICOES_FUTEBOL;
+  const isBasquete = isModalidadeBasquete(modalidadePrincipal);
+  const POSICOES = isVolei ? POSICOES_VOLEI : isBasquete ? POSICOES_BASQUETE : POSICOES_FUTEBOL;
 
   const { data: hasActiveSchoolLink } = useQuery({
     queryKey: ['has-school-link', perfil.crianca_id],

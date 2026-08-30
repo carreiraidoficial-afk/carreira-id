@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Image as ImageIcon, X, Upload, Plus, Trash2, Medal } from 'lucide-react';
 import { toast } from 'sonner';
 import { useJornada } from '@/hooks/useJornada';
-import { CATEGORIAS, isModalidadeVolei } from '@/constants/esportes';
+import { CATEGORIAS, isModalidadeVolei, isModalidadeBasquete } from '@/constants/esportes';
 import type {
   CampeonatoComJogos,
   PosicaoFinalCampeonato,
@@ -52,6 +52,14 @@ const TIPOS_PREMIACAO_VOLEI: { value: TipoPremiacaoIndividual; label: string; em
   { value: 'melhor_saque', label: 'Melhor saque', emoji: '🎾' },
   { value: 'melhor_bloqueio', label: 'Melhor bloqueio', emoji: '🧱' },
   { value: 'melhor_libero', label: 'Melhor líbero', emoji: '🎯' },
+  { value: 'destaque', label: 'Destaque', emoji: '⭐' },
+  { value: 'outro', label: 'Outro', emoji: '🏅' },
+];
+const TIPOS_PREMIACAO_BASQUETE: { value: TipoPremiacaoIndividual; label: string; emoji: string }[] = [
+  { value: 'melhor_jogador', label: 'Melhor jogador (MVP)', emoji: '🏆' },
+  { value: 'cestinha', label: 'Cestinha', emoji: '🏀' },
+  { value: 'melhor_reboteiro', label: 'Melhor reboteiro', emoji: '🔁' },
+  { value: 'melhor_defensor', label: 'Melhor defensor', emoji: '🛡️' },
   { value: 'destaque', label: 'Destaque', emoji: '⭐' },
   { value: 'outro', label: 'Outro', emoji: '🏅' },
 ];
@@ -177,11 +185,16 @@ export function JornadaCampeonatoFormDialog({ open, onOpenChange, criancaId, mod
     }
   };
 
-  const tiposPremiacaoDisponiveis = isModalidadeVolei(modalidade) ? TIPOS_PREMIACAO_VOLEI : TIPOS_PREMIACAO_FUTEBOL;
+  const tiposPremiacaoDisponiveis = isModalidadeVolei(modalidade)
+    ? TIPOS_PREMIACAO_VOLEI
+    : isModalidadeBasquete(modalidade)
+    ? TIPOS_PREMIACAO_BASQUETE
+    : TIPOS_PREMIACAO_FUTEBOL;
   const tipoLabel = (t: string) =>
     tiposPremiacaoDisponiveis.find((x) => x.value === t) ||
     TIPOS_PREMIACAO_FUTEBOL.find((x) => x.value === t) ||
-    TIPOS_PREMIACAO_VOLEI.find((x) => x.value === t);
+    TIPOS_PREMIACAO_VOLEI.find((x) => x.value === t) ||
+    TIPOS_PREMIACAO_BASQUETE.find((x) => x.value === t);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -5,10 +5,14 @@ import { Pencil, Trash2, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import type { JogoComMidia, JogoMidia } from '@/types/jornada-esportiva';
-import { isModalidadeVolei } from '@/constants/esportes';
+import { isModalidadeVolei, isModalidadeBasquete } from '@/constants/esportes';
 
 const POSICAO_VOLEI_LABEL: Record<string, string> = {
   levantador: 'Levantador', oposto: 'Oposto', ponteiro: 'Ponteiro', central: 'Central', libero: 'Líbero',
+};
+
+const POSICAO_BASQUETE_LABEL: Record<string, string> = {
+  armador: 'Armador', 'ala-armador': 'Ala-Armador', ala: 'Ala', 'ala-pivo': 'Ala-Pivô', pivo: 'Pivô',
 };
 
 interface Props {
@@ -129,6 +133,7 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
   const temPlacar = j.placar_time_atleta != null && j.placar_adversario != null;
   const isVolei = isModalidadeVolei((j as any).modalidade);
   const isLibero = isVolei && j.posicao_jogo === 'libero';
+  const isBasquete = isModalidadeBasquete((j as any).modalidade);
 
   const isVideoUrl = (url: string) => /\.(mp4|mov|webm|m4v|avi|mkv)(\?|$)/i.test(url);
 
@@ -170,6 +175,19 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
                 {!!j.erros_cometidos && <Tag>❌ {j.erros_cometidos} erro(s)</Tag>}
               </>
             )
+          ) : isBasquete ? (
+            <>
+              {j.posicao_jogo && POSICAO_BASQUETE_LABEL[j.posicao_jogo] && <Tag>🏀 {POSICAO_BASQUETE_LABEL[j.posicao_jogo]}</Tag>}
+              {!!j.pontos && <Tag>🏀 {j.pontos} pts</Tag>}
+              {!!j.assistencias && <Tag>🎯 {j.assistencias} assist.</Tag>}
+              {(!!j.rebotes_ofensivos || !!j.rebotes_defensivos) && (
+                <Tag>🔁 {(j.rebotes_ofensivos || 0) + (j.rebotes_defensivos || 0)} rebotes</Tag>
+              )}
+              {!!j.roubos_bola && <Tag>🖐️ {j.roubos_bola} roubo(s)</Tag>}
+              {!!j.tocos && <Tag>🚫 {j.tocos} toco(s)</Tag>}
+              {!!j.faltas_cometidas && <Tag>⚠️ {j.faltas_cometidas} falta(s)</Tag>}
+              {!!j.minutos_jogados && <Tag>⏱️ {j.minutos_jogados}'</Tag>}
+            </>
           ) : j.posicao_jogo === 'goleiro' ? (
             <>
               <Tag>🧤 Goleiro</Tag>
@@ -188,7 +206,7 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
           {!isVolei && j.teve_prorrogacao && <Tag>⏱️ Prorrogação</Tag>}
           {j.fase_campeonato && <Tag>{j.fase_campeonato}</Tag>}
         </div>
-        {!isVolei && j.teve_disputa_penaltis && (
+        {!isVolei && !isBasquete && j.teve_disputa_penaltis && (
           <p className="text-[11px] text-muted-foreground mt-1">
             Disputa de pênaltis: <strong>{j.placar_penaltis_time ?? '?'} × {j.placar_penaltis_adversario ?? '?'}</strong>
             {j.posicao_jogo === 'goleiro' && j.penaltis_defendidos_disputa != null && ` · ${j.penaltis_defendidos_disputa} def.`}
@@ -198,6 +216,11 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
         {isVolei && j.sets_detalhe && j.sets_detalhe.length > 0 && (
           <p className="text-[11px] text-muted-foreground mt-1">
             Sets: {j.sets_detalhe.map((s) => `${s.pontos_time}-${s.pontos_adversario}`).join(' · ')}
+          </p>
+        )}
+        {isBasquete && j.quartos_detalhe && j.quartos_detalhe.length > 0 && (
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Quartos: {j.quartos_detalhe.map((q) => `${q.pontos_time}-${q.pontos_adversario}`).join(' · ')}
           </p>
         )}
         {j.observacoes && <p className="text-xs text-muted-foreground mt-1.5">{j.observacoes}</p>}

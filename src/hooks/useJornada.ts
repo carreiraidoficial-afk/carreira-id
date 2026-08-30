@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { compressImage } from '@/lib/image-compressor';
-import { isModalidadeVolei } from '@/constants/esportes';
+import { isModalidadeVolei, isModalidadeBasquete } from '@/constants/esportes';
 import type {
   CampeonatoPremiacao,
   CreateCampeonatoInput,
@@ -158,6 +158,7 @@ export function useJornada(criancaId: string | undefined | null) {
       const jogosVolei = jogosComMidia.filter((j) => isModalidadeVolei((j as any).modalidade));
       const jogosLibero = jogosVolei.filter((j) => j.posicao_jogo === 'libero');
       const jogosVoleiNaoLibero = jogosVolei.filter((j) => j.posicao_jogo !== 'libero');
+      const jogosBasquete = jogosComMidia.filter((j) => isModalidadeBasquete((j as any).modalidade));
 
       const estatisticas: EstatisticasAtleta = {
         totalJogos: jogosComMidia.length,
@@ -182,6 +183,11 @@ export function useJornada(criancaId: string | undefined | null) {
         totalRecepcoes: jogosLibero.reduce((s, j) => s + (j.recepcoes_realizadas || 0), 0),
         totalDefesasVolei: jogosLibero.reduce((s, j) => s + (j.defesas_realizadas || 0), 0),
         totalErrosRecepcao: jogosLibero.reduce((s, j) => s + (j.erros_recepcao || 0), 0),
+        totalPontosBasquete: jogosBasquete.reduce((s, j) => s + (j.pontos || 0), 0),
+        totalRebotesOfensivos: jogosBasquete.reduce((s, j) => s + (j.rebotes_ofensivos || 0), 0),
+        totalRebotesDefensivos: jogosBasquete.reduce((s, j) => s + (j.rebotes_defensivos || 0), 0),
+        totalRoubosBola: jogosBasquete.reduce((s, j) => s + (j.roubos_bola || 0), 0),
+        totalTocos: jogosBasquete.reduce((s, j) => s + (j.tocos || 0), 0),
       };
 
     return { campeonatos: campeonatosComJogos, amistosos, estatisticas };
@@ -379,6 +385,19 @@ export function useJornada(criancaId: string | undefined | null) {
         defesas_realizadas: input.defesas_realizadas ?? null,
         erros_recepcao: input.erros_recepcao ?? null,
         sets_detalhe: input.sets_detalhe ?? null,
+        pontos: input.pontos ?? null,
+        rebotes_ofensivos: input.rebotes_ofensivos ?? null,
+        rebotes_defensivos: input.rebotes_defensivos ?? null,
+        roubos_bola: input.roubos_bola ?? null,
+        tocos: input.tocos ?? null,
+        faltas_cometidas: input.faltas_cometidas ?? null,
+        arremessos_2pt_tentados: input.arremessos_2pt_tentados ?? null,
+        arremessos_2pt_convertidos: input.arremessos_2pt_convertidos ?? null,
+        arremessos_3pt_tentados: input.arremessos_3pt_tentados ?? null,
+        arremessos_3pt_convertidos: input.arremessos_3pt_convertidos ?? null,
+        lances_livres_tentados: input.lances_livres_tentados ?? null,
+        lances_livres_convertidos: input.lances_livres_convertidos ?? null,
+        quartos_detalhe: input.quartos_detalhe ?? null,
       }).eq('id', inserted.id);
       await fetchData();
       return inserted.id as string;
@@ -426,6 +445,19 @@ export function useJornada(criancaId: string | undefined | null) {
           defesas_realizadas: input.defesas_realizadas ?? null,
           erros_recepcao: input.erros_recepcao ?? null,
           sets_detalhe: input.sets_detalhe ?? null,
+          pontos: input.pontos ?? null,
+          rebotes_ofensivos: input.rebotes_ofensivos ?? null,
+          rebotes_defensivos: input.rebotes_defensivos ?? null,
+          roubos_bola: input.roubos_bola ?? null,
+          tocos: input.tocos ?? null,
+          faltas_cometidas: input.faltas_cometidas ?? null,
+          arremessos_2pt_tentados: input.arremessos_2pt_tentados ?? null,
+          arremessos_2pt_convertidos: input.arremessos_2pt_convertidos ?? null,
+          arremessos_3pt_tentados: input.arremessos_3pt_tentados ?? null,
+          arremessos_3pt_convertidos: input.arremessos_3pt_convertidos ?? null,
+          lances_livres_tentados: input.lances_livres_tentados ?? null,
+          lances_livres_convertidos: input.lances_livres_convertidos ?? null,
+          quartos_detalhe: input.quartos_detalhe ?? null,
         })
         .eq('id', id);
       if (error) throw error;

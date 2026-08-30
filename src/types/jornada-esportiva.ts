@@ -16,7 +16,11 @@ export type PosicaoJogo =
   | 'oposto'
   | 'ponteiro'
   | 'central'
-  | 'libero';
+  | 'libero'
+  | 'armador'
+  | 'ala-armador'
+  | 'ala-pivo'
+  | 'pivo';
 
 export type PosicaoFinalCampeonato =
   | 'campeao'
@@ -38,12 +42,22 @@ export type TipoPremiacaoIndividual =
   | 'melhor_bloqueio'
   | 'melhor_libero'
   | 'melhor_levantador'
+  | 'cestinha'
+  | 'melhor_reboteiro'
+  | 'melhor_defensor'
   | 'destaque'
   | 'outro';
 
 /** Placar de um set de vôlei (opcional, dentro de sets_detalhe) */
 export interface SetDetalhe {
   set: number;
+  pontos_time: number;
+  pontos_adversario: number;
+}
+
+/** Placar de um quarto de basquete (opcional, dentro de quartos_detalhe) */
+export interface QuartoDetalhe {
+  quarto: number;
   pontos_time: number;
   pontos_adversario: number;
 }
@@ -118,6 +132,22 @@ export interface Jogo {
   erros_recepcao?: number | null;
   // Placar detalhado por set (opcional)
   sets_detalhe?: SetDetalhe[] | null;
+  // Estatísticas de basquete (opcionais) -- assistencias, erros_cometidos e
+  // minutos_jogados acima são reaproveitados (AS, ER, MIN da súmula)
+  pontos?: number | null;
+  rebotes_ofensivos?: number | null;
+  rebotes_defensivos?: number | null;
+  roubos_bola?: number | null;
+  tocos?: number | null;
+  faltas_cometidas?: number | null;
+  arremessos_2pt_tentados?: number | null;
+  arremessos_2pt_convertidos?: number | null;
+  arremessos_3pt_tentados?: number | null;
+  arremessos_3pt_convertidos?: number | null;
+  lances_livres_tentados?: number | null;
+  lances_livres_convertidos?: number | null;
+  // Placar detalhado por quarto (opcional)
+  quartos_detalhe?: QuartoDetalhe[] | null;
 }
 
 export interface JogoMidia {
@@ -168,6 +198,12 @@ export interface EstatisticasAtleta {
   totalRecepcoes?: number;
   totalDefesasVolei?: number;
   totalErrosRecepcao?: number;
+  // Agregados de basquete
+  totalPontosBasquete?: number;
+  totalRebotesOfensivos?: number;
+  totalRebotesDefensivos?: number;
+  totalRoubosBola?: number;
+  totalTocos?: number;
 }
 
 export interface JornadaEsportivaData {
@@ -237,6 +273,21 @@ export interface CreateJogoInput {
   erros_recepcao?: number | null;
   // Placar detalhado por set (opcional)
   sets_detalhe?: SetDetalhe[] | null;
+  // Estatísticas de basquete (opcionais)
+  pontos?: number | null;
+  rebotes_ofensivos?: number | null;
+  rebotes_defensivos?: number | null;
+  roubos_bola?: number | null;
+  tocos?: number | null;
+  faltas_cometidas?: number | null;
+  arremessos_2pt_tentados?: number | null;
+  arremessos_2pt_convertidos?: number | null;
+  arremessos_3pt_tentados?: number | null;
+  arremessos_3pt_convertidos?: number | null;
+  lances_livres_tentados?: number | null;
+  lances_livres_convertidos?: number | null;
+  // Placar detalhado por quarto (opcional)
+  quartos_detalhe?: QuartoDetalhe[] | null;
 }
 
 export interface CreateJogoMidiaInput {
