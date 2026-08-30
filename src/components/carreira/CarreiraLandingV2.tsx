@@ -381,6 +381,21 @@ export function CarreiraLandingV2() {
         </div>
       </header>
 
+      {/* ═══ Banner Multi-Esporte ═══ */}
+      <div className="bg-gradient-to-r from-orange-600/20 via-orange-500/10 to-emerald-500/15 border-b border-orange-500/20">
+        <div className="container max-w-6xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-center">
+          <p className="text-xs sm:text-sm text-gray-200">
+            ⚽🏐🏀 Atletas de <strong className="text-white font-semibold">Futebol, Vôlei e Basquete</strong> já estão documentando a carreira deles aqui.
+          </p>
+          <Link
+            to={cadastroLink}
+            className="shrink-0 inline-flex items-center gap-1 text-xs sm:text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 px-3 py-1 rounded-full transition"
+          >
+            Quero registrar minha trajetória <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
+      </div>
+
       {/* ═══ Hero ═══ */}
       <section className="relative overflow-hidden">
         <img src={heroLandingV2Bg} alt="" className="absolute inset-0 w-full h-full object-cover" loading="eager" />
