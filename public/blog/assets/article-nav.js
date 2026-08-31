@@ -3,6 +3,7 @@
   // ordem dos cards em /blog/index.html. Ao publicar um artigo novo,
   // adicione ele aqui tambem (no topo), alem do card na listagem.
   var ARTICLES = [
+    { slug: 'bruxismo-em-vigilia-no-esporte-de-base', title: 'Bruxismo em Vigília: O Inimigo Silencioso do Atleta de Base' },
     { slug: 'pais-presentes-x-pais-ausentes-no-esporte-de-base', title: 'Pais Presentes x Pais Ausentes: Por Que Isso Importa no Esporte do Seu Filho' },
     { slug: 'tipos-de-pais-no-futebol-de-base', title: 'Os Tipos de Pais e Mães Que Todo Mundo Encontra no Futebol de Base' },
     { slug: 'mae-eu-sou-ruim-impacto-emocional-falas-de-tecnicos', title: '"Mãe, Eu Sou Ruim?": O Que Uma Fala Pode Fazer com uma Criança' },
