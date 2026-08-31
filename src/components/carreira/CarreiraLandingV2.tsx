@@ -907,7 +907,7 @@ export function CarreiraLandingV2() {
             {[
               {
                 q: 'O Carreira ID é gratuito?',
-                a: 'Sim! O plano Base é gratuito para sempre. Você pode criar seu perfil público, fazer publicações, conectar-se a outros atletas e compartilhar seu link. Os planos Competidor (R$17,90/mês) e Elite (R$29,90/mês) oferecem recursos avançados.',
+                a: 'Sim! O plano Base é gratuito para sempre. Você pode criar seu perfil público, fazer publicações, conectar-se a outros atletas e compartilhar seu link. O plano Premium (R$ 12,00/mês) libera recursos avançados, como vídeos, estatísticas completas e destaque nas buscas.',
               },
               {
                 q: 'Quem pode criar um perfil?',
@@ -927,7 +927,7 @@ export function CarreiraLandingV2() {
               },
               {
                 q: 'O que são os níveis da Liga (Cria, Promessa, Craque...)?',
-                a: 'São faixas de progressão baseadas no seu XP acumulado. Você começa como "Cria" e pode evoluir para níveis como Promessa, Destaque e Craque. Cada nível traz reconhecimento e visibilidade no ranking.',
+                a: 'São faixas de progressão baseadas no seu XP acumulado. Você começa como "Cria" e vai subindo — Promessa, Fera, Brabo, Craque e outros níveis mais acima — conforme acumula pontos. Cada nível traz reconhecimento e visibilidade no ranking.',
               },
               {
                 q: 'O que é a integração com o Atleta ID?',
@@ -939,7 +939,7 @@ export function CarreiraLandingV2() {
               },
               {
                 q: 'Posso cancelar o plano a qualquer momento?',
-                a: 'Sim, os planos Competidor e Elite podem ser cancelados a qualquer momento sem multa. Seu perfil continua ativo no plano Base gratuito, preservando todas as suas publicações.',
+                a: 'Sim, o plano Premium pode ser cancelado a qualquer momento sem multa. Seu perfil continua ativo no plano Base gratuito, preservando todas as suas publicações.',
               },
               {
                 q: 'Como compartilho meu perfil?',
