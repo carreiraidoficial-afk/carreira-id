@@ -23,6 +23,7 @@ import {
   Trash2,
   RefreshCw,
   MoreVertical,
+  Camera,
 } from 'lucide-react';
 import { useState } from 'react';
 import { format } from 'date-fns';
@@ -287,6 +288,20 @@ export function ExperienciaSection({
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
+                        )}
+                        {/* Itens sincronizados via Atleta ID (escolinha_id preenchido): nome,
+                            datas etc. ficam travados no dialog, mas a logomarca pode ser
+                            atualizada -- é o único dado que não vem de lá. */}
+                        {isOwner && exp.type === 'carreira_exp' && exp.isSynced && exp.carreiraExp && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            title="Atualizar logomarca"
+                            onClick={(e) => { e.stopPropagation(); onEditExperiencia?.(exp.carreiraExp!); }}
+                          >
+                            <Camera className="w-3.5 h-3.5" />
+                          </Button>
                         )}
                         <button className="text-muted-foreground hover:text-foreground p-1">
                           {expandedItems.has(exp.id)

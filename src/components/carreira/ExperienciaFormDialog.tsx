@@ -46,14 +46,14 @@ type FormData = z.infer<typeof formSchema>;
 
 import { ESTADOS } from '@/constants/esportes';
 
-function ExpCidadeField({ form }: { form: any }) {
+function ExpCidadeField({ form, disabled }: { form: any; disabled?: boolean }) {
   const estado = form.watch('estado');
   const { data: cidades, isLoading } = useCidadesPorEstado(estado);
   return (
     <FormField control={form.control} name="cidade" render={({ field }: any) => (
       <FormItem>
         <FormLabel>Cidade</FormLabel>
-        <Select onValueChange={field.onChange} value={field.value} disabled={!estado}>
+        <Select onValueChange={field.onChange} value={field.value} disabled={!estado || disabled}>
           <FormControl><SelectTrigger><SelectValue placeholder={isLoading ? 'Carregando...' : 'Selecione'} /></SelectTrigger></FormControl>
           <SelectContent>
             {(cidades || []).map((c: string) => (
@@ -88,6 +88,10 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
 
   const isEditing = !!editingExperiencia;
   const isPending = createExperiencia.isPending || updateExperiencia.isPending;
+  // Experiencia vinculada a uma escolinha real (sincronizada via Atleta ID):
+  // nome, datas e demais dados vem de la e nao devem ser editados aqui pra
+  // nao divergir do que a escola registra -- so a logomarca fica liberada.
+  const isSyncedEdit = isEditing && !!editingExperiencia?.escolinha_id;
 
   useEffect(() => {
     const getUser = async () => {
@@ -222,9 +226,11 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar Experiência' : 'Nova Experiência'}</DialogTitle>
+          <DialogTitle>{isSyncedEdit ? 'Atualizar Logomarca' : isEditing ? 'Editar Experiência' : 'Nova Experiência'}</DialogTitle>
           <p className="text-sm text-muted-foreground">
-            {isEditing ? 'Editando experiência de' : 'Onde'} {childName.split(' ')[0]} {isEditing ? '' : 'treina ou treinou'}
+            {isSyncedEdit
+              ? 'Nome, datas e demais dados vêm do Atleta ID e ficam sincronizados automaticamente — você só pode atualizar a logomarca aqui.'
+              : `${isEditing ? 'Editando experiência de' : 'Onde'} ${childName.split(' ')[0]} ${isEditing ? '' : 'treina ou treinou'}`}
           </p>
         </DialogHeader>
 
@@ -267,6 +273,7 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
                       {...field}
                       placeholder="Ex: Flamengo, Escolinha do Bairro..."
                       className="pl-10"
+                      disabled={isSyncedEdit}
                       onChange={(e) => {
                         field.onChange(e);
                         setSearchTerm(e.target.value);
@@ -313,7 +320,7 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
             <FormField control={form.control} name="tipo_instituicao" render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipo de instituição *</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={isSyncedEdit}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo" />
@@ -336,7 +343,7 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
                   <FormLabel>Data de Início *</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Input type="date" {...field} />
+                      <Input type="date" {...field} disabled={isSyncedEdit} />
                       <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                     </div>
                   </FormControl>
@@ -348,7 +355,7 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
                   <FormLabel>Data de Fim</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Input type="date" {...field} disabled={isAtual} />
+                      <Input type="date" {...field} disabled={isAtual || isSyncedEdit} />
                       <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                     </div>
                   </FormControl>
@@ -361,7 +368,7 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
             <FormField control={form.control} name="atual" render={({ field }) => (
               <FormItem className="flex items-center gap-2">
                 <FormControl>
-                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                  <Checkbox checked={field.value} onCheckedChange={field.onChange} disabled={isSyncedEdit} />
                 </FormControl>
                 <FormLabel className="!mt-0 cursor-pointer">Treina atualmente nesta escola</FormLabel>
               </FormItem>
@@ -372,7 +379,7 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
               <FormField control={form.control} name="categoria_instituicao" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Categoria na instituição</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isSyncedEdit}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Ex: Sub-11" />
@@ -389,7 +396,7 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
               <FormField control={form.control} name="posicao_jogada" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Posição jogada</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isSyncedEdit}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Posição" />
@@ -409,7 +416,7 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
             <FormField control={form.control} name="bairro" render={({ field }) => (
               <FormItem>
                 <FormLabel>Bairro</FormLabel>
-                <FormControl><Input {...field} placeholder="Ex: Tijuca" /></FormControl>
+                <FormControl><Input {...field} placeholder="Ex: Tijuca" disabled={isSyncedEdit} /></FormControl>
               </FormItem>
             )} />
 
@@ -417,7 +424,7 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
               <FormField control={form.control} name="estado" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Estado</FormLabel>
-                  <Select onValueChange={(val) => { field.onChange(val); form.setValue('cidade', ''); }} value={field.value}>
+                  <Select onValueChange={(val) => { field.onChange(val); form.setValue('cidade', ''); }} value={field.value} disabled={isSyncedEdit}>
                     <FormControl>
                       <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
                     </FormControl>
@@ -429,7 +436,7 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
                   </Select>
                 </FormItem>
               )} />
-              <ExpCidadeField form={form} />
+              <ExpCidadeField form={form} disabled={isSyncedEdit} />
             </div>
 
             {/* Observações */}
@@ -437,7 +444,7 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
               <FormItem>
                 <FormLabel>Observações</FormLabel>
                 <FormControl>
-                  <Textarea {...field} placeholder="Conquistas, detalhes..." rows={2} />
+                  <Textarea {...field} placeholder="Conquistas, detalhes..." rows={2} disabled={isSyncedEdit} />
                 </FormControl>
               </FormItem>
             )} />
@@ -447,7 +454,7 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
               <Button type="button" variant="outline" onClick={handleClose}>Cancelar</Button>
               <Button type="submit" disabled={isPending}>
                 {isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                {isEditing ? 'Atualizar' : 'Salvar'}
+                {isSyncedEdit ? 'Salvar logomarca' : isEditing ? 'Atualizar' : 'Salvar'}
               </Button>
             </div>
           </form>
