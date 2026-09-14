@@ -92,14 +92,12 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
             new Date(new Date(assinatura.inicio_em).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
           
           if (targetPlano === 'base') {
-            await supabase
-              .from('carreira_assinaturas')
-              .update({ 
-                status: 'cancelada', 
-                cancelada_em: new Date().toISOString(),
-                expira_em: expiraEm,
-              } as any)
-              .eq('id', assinatura.id);
+            // Cancela de verdade na Asaas antes de marcar como cancelada
+            // aqui -- ver supabase/functions/cancel-carreira-subscription.
+            const { error } = await supabase.functions.invoke('cancel-carreira-subscription', {
+              body: { assinatura_id: assinatura.id },
+            });
+            if (error) throw error;
           } else {
             // Downgrade to competidor: mark current as ending, create pending new one
             await supabase
