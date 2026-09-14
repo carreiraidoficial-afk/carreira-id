@@ -143,21 +143,19 @@
         } catch (e) {}
 
         if ('serviceWorker' in navigator) {
-          // Unregister ALL service workers. The site does not need a SW to run,
-          // and stale SWs (carreira-sw.js, workbox, etc.) were blocking
-          // carreiraid.com.br from loading on desktop browsers.
+          // Mata qualquer SW antigo/desconhecido (carreira-sw.js, workbox,
+          // etc. -- os que travaram carreiraid.com.br no passado) e registra
+          // so o nosso, novo e deliberadamente simples (public/app-shell-sw.js).
           navigator.serviceWorker.getRegistrations().then(function(registrations) {
             registrations.forEach(function(reg) {
-              try { reg.unregister(); } catch (e) {}
+              var scriptURL = (reg.active || reg.installing || reg.waiting || {}).scriptURL || '';
+              if (scriptURL.indexOf('/app-shell-sw.js') === -1) {
+                try { reg.unregister(); } catch (e) {}
+              }
             });
           }).catch(function() {});
 
-          // Purge ALL caches left by previous SW versions.
-          if (window.caches && caches.keys) {
-            caches.keys().then(function(names) {
-              names.forEach(function(name) { caches.delete(name); });
-            }).catch(function() {});
-          }
+          navigator.serviceWorker.register('/app-shell-sw.js').catch(function() {});
         }
       })();
     </script>
