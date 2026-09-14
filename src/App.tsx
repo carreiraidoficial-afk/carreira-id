@@ -11,6 +11,7 @@ import { PWAUpdatePrompt } from "@/components/shared/PWAUpdatePrompt";
 import { OfflineBanner } from "@/components/shared/OfflineBanner";
 import { AnonymousGateProvider } from "@/hooks/useAnonymousGate";
 import { useGaPageview } from "@/hooks/useGaPageview";
+import { useTrackDicaClick } from "@/hooks/useTrackDicaClick";
 import { CarreiraErrorBoundary, reportClientError } from "@/components/shared/CarreiraErrorBoundary";
 import { registerCarreiraExperienciaMutationDefaults } from "@/hooks/useCarreiraExperienciasData";
 const RootRoute = lazy(() => import("./pages/RootRoute"));
@@ -89,6 +90,8 @@ const GaPageviewTracker = () => {
 };
 
 const App = () => {
+  useTrackDicaClick();
+
   // Limpa o numero no icone do app (Badging API) sempre que o app abre --
   // igual outros apps, o usuario nao deve ver contagem de notificacao
   // acumulada depois de ja ter aberto o app.
