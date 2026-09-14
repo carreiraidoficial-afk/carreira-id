@@ -2,10 +2,13 @@ import { Suspense, lazy, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PWAUpdatePrompt } from "@/components/shared/PWAUpdatePrompt";
+import { OfflineBanner } from "@/components/shared/OfflineBanner";
 import { AnonymousGateProvider } from "@/hooks/useAnonymousGate";
 import { useGaPageview } from "@/hooks/useGaPageview";
 import { CarreiraErrorBoundary, reportClientError } from "@/components/shared/CarreiraErrorBoundary";
@@ -28,6 +31,7 @@ const CarreiraGamerPage = lazy(() => import("./pages/carreira/CarreiraGamerPage"
 const CarreiraGamerPontosPage = lazy(() => import("./pages/carreira/CarreiraGamerPontosPage"));
 const CarreiraDescobrirPage = lazy(() => import("./pages/carreira/CarreiraDescobrirPage"));
 const ContatoPage = lazy(() => import("./pages/carreira/ContatoPage"));
+const SwotFamiliaPage = lazy(() => import("./pages/carreira/SwotFamiliaPage"));
 const CarreiraAdminDashboard = lazy(() => import("./pages/carreira/admin/CarreiraAdminDashboard"));
 const CarreiraAdminPerfisPage = lazy(() => import("./pages/carreira/admin/CarreiraAdminPerfisPage"));
 const CarreiraAdminPostsPage = lazy(() => import("./pages/carreira/admin/CarreiraAdminPostsPage"));
@@ -51,13 +55,22 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 30, // 30 seconds - keeps data fresh, avoids refetch flash on navigation
-      gcTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 60 * 24, // 24h - dá tempo do cache persistido em localStorage ser útil offline
       refetchOnWindowFocus: false,
       refetchOnMount: false,
       refetchOnReconnect: false,
     },
   },
 });
+
+const persister = createSyncStoragePersister({
+  storage: window.localStorage,
+  key: 'carreira-id-query-cache',
+});
+
+// Bump ao mudar o formato de dados de alguma query — invalida cache antigo
+// incompatível em vez de deixar a UI tentar renderizar um shape velho.
+const QUERY_CACHE_BUSTER = 'v1';
 
 const LegacyAdminRedirect = () => {
   const location = useLocation();
@@ -106,12 +119,20 @@ const App = () => {
   }, []);
 
   return (
-  <QueryClientProvider client={queryClient}>
+  <PersistQueryClientProvider
+    client={queryClient}
+    persistOptions={{
+      persister,
+      maxAge: 1000 * 60 * 60 * 24, // não reidrata cache com mais de 24h
+      buster: QUERY_CACHE_BUSTER,
+    }}
+  >
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <PWAUpdatePrompt />
+        <OfflineBanner />
         <BrowserRouter>
           <GaPageviewTracker />
           <CarreiraErrorBoundary>
@@ -145,6 +166,7 @@ const App = () => {
               <Route path="/contato" element={<ContatoPage />} />
               <Route path="/planos" element={<CarreiraPlanosPage />} />
               <Route path="/eventos" element={<CarreiraEventosPage />} />
+              <Route path="/swot-familia" element={<SwotFamiliaPage />} />
               {/* Carreira ID — Admin */}
               <Route path="/carreira/admin" element={<CarreiraAdminDashboard />} />
               <Route path="/carreira/admin/perfis" element={<CarreiraAdminPerfisPage />} />
@@ -176,7 +198,7 @@ const App = () => {
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
-  </QueryClientProvider>
+  </PersistQueryClientProvider>
   );
 };
 
