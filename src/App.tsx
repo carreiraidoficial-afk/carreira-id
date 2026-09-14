@@ -32,7 +32,6 @@ const CarreiraGamerPage = lazy(() => import("./pages/carreira/CarreiraGamerPage"
 const CarreiraGamerPontosPage = lazy(() => import("./pages/carreira/CarreiraGamerPontosPage"));
 const CarreiraDescobrirPage = lazy(() => import("./pages/carreira/CarreiraDescobrirPage"));
 const ContatoPage = lazy(() => import("./pages/carreira/ContatoPage"));
-const SwotFamiliaPage = lazy(() => import("./pages/carreira/SwotFamiliaPage"));
 const CarreiraAdminDashboard = lazy(() => import("./pages/carreira/admin/CarreiraAdminDashboard"));
 const CarreiraAdminPerfisPage = lazy(() => import("./pages/carreira/admin/CarreiraAdminPerfisPage"));
 const CarreiraAdminPostsPage = lazy(() => import("./pages/carreira/admin/CarreiraAdminPostsPage"));
@@ -176,7 +175,6 @@ const App = () => {
               <Route path="/contato" element={<ContatoPage />} />
               <Route path="/planos" element={<CarreiraPlanosPage />} />
               <Route path="/eventos" element={<CarreiraEventosPage />} />
-              <Route path="/swot-familia" element={<SwotFamiliaPage />} />
               {/* Carreira ID — Admin */}
               <Route path="/carreira/admin" element={<CarreiraAdminDashboard />} />
               <Route path="/carreira/admin/perfis" element={<CarreiraAdminPerfisPage />} />
