@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface CarreiraExperiencia {
@@ -38,18 +38,63 @@ export function useCarreiraExperiencias(criancaId?: string | null) {
   });
 }
 
+type CreateExperienciaPayload = Omit<CarreiraExperiencia, 'id' | 'created_at' | 'updated_at'>;
+type UpdateExperienciaPayload = Partial<CarreiraExperiencia> & { id: string; crianca_id: string };
+
+// mutationKey estavel + mutationFn como funcao nomeada (nao inline) --
+// necessario pra essas mutations sobreviverem a um reload do app enquanto
+// pausadas offline (ver registerCarreiraExperienciaMutationDefaults).
+export const CREATE_EXPERIENCIA_MUTATION_KEY = ['create-carreira-experiencia'];
+export const UPDATE_EXPERIENCIA_MUTATION_KEY = ['update-carreira-experiencia'];
+
+export async function createCarreiraExperiencia(payload: CreateExperienciaPayload) {
+  const { data, error } = await supabase
+    .from('carreira_experiencias')
+    .insert(payload as any)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateCarreiraExperiencia(payload: UpdateExperienciaPayload) {
+  const { id, ...rest } = payload;
+  const { data, error } = await supabase
+    .from('carreira_experiencias')
+    .update(rest as any)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Registra mutationFn + onSuccess no QueryClient global (chamar uma vez no
+ * App.tsx). Uma mutation pausada offline e persistida sem funcao (nao da pra
+ * serializar closures) -- ao reidratar apos reload, o React Query busca a
+ * funcao aqui via mutationKey pra conseguir retomar e invalidar o cache.
+ */
+export function registerCarreiraExperienciaMutationDefaults(queryClient: QueryClient) {
+  queryClient.setMutationDefaults(CREATE_EXPERIENCIA_MUTATION_KEY, {
+    mutationFn: createCarreiraExperiencia,
+    onSuccess: (_, vars: CreateExperienciaPayload) => {
+      queryClient.invalidateQueries({ queryKey: ['carreira-experiencias', vars.crianca_id] });
+    },
+  });
+  queryClient.setMutationDefaults(UPDATE_EXPERIENCIA_MUTATION_KEY, {
+    mutationFn: updateCarreiraExperiencia,
+    onSuccess: (_, vars: UpdateExperienciaPayload) => {
+      queryClient.invalidateQueries({ queryKey: ['carreira-experiencias', vars.crianca_id] });
+    },
+  });
+}
+
 export function useCreateCarreiraExperiencia() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: Omit<CarreiraExperiencia, 'id' | 'created_at' | 'updated_at'>) => {
-      const { data, error } = await supabase
-        .from('carreira_experiencias')
-        .insert(payload as any)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
+    mutationKey: CREATE_EXPERIENCIA_MUTATION_KEY,
+    mutationFn: createCarreiraExperiencia,
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['carreira-experiencias', vars.crianca_id] });
     },
@@ -59,17 +104,8 @@ export function useCreateCarreiraExperiencia() {
 export function useUpdateCarreiraExperiencia() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: Partial<CarreiraExperiencia> & { id: string; crianca_id: string }) => {
-      const { id, ...rest } = payload;
-      const { data, error } = await supabase
-        .from('carreira_experiencias')
-        .update(rest as any)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
+    mutationKey: UPDATE_EXPERIENCIA_MUTATION_KEY,
+    mutationFn: updateCarreiraExperiencia,
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['carreira-experiencias', vars.crianca_id] });
     },

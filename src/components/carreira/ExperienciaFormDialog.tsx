@@ -20,6 +20,7 @@ import {
 import { Calendar, Loader2, School, Camera, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCreateCarreiraExperiencia, useUpdateCarreiraExperiencia, useEscolinhasAutocomplete, CarreiraExperiencia } from '@/hooks/useCarreiraExperienciasData';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 const POSICOES = ['Goleiro', 'Zagueiro', 'Lateral', 'Volante', 'Meia', 'Atacante'];
 import { CATEGORIAS as CATEGORIAS_INSTITUICAO } from '@/constants/esportes';
@@ -77,6 +78,7 @@ interface ExperienciaFormDialogProps {
 export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName, editingExperiencia = null }: ExperienciaFormDialogProps) {
   const createExperiencia = useCreateCarreiraExperiencia();
   const updateExperiencia = useUpdateCarreiraExperiencia();
+  const isOnline = useOnlineStatus();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEscolinhaId, setSelectedEscolinhaId] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -198,6 +200,21 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
         posicao_jogada: data.posicao_jogada || null,
         logo_url: logoUrl || null,
       };
+
+      if (!isOnline) {
+        // Offline: mutateAsync ficaria pendurado ate a conexao voltar (a
+        // mutation so pausa e retoma sozinha). Dispara sem esperar e fecha
+        // -- ela fica na fila e sincroniza automaticamente depois, mesmo
+        // que o app seja fechado nesse meio tempo.
+        if (isEditing && editingExperiencia) {
+          updateExperiencia.mutate({ id: editingExperiencia.id, ...payload });
+        } else {
+          createExperiencia.mutate(payload);
+        }
+        toast.success('Salvo localmente — será sincronizado quando a conexão voltar.');
+        handleClose();
+        return;
+      }
 
       if (isEditing && editingExperiencia) {
         await updateExperiencia.mutateAsync({ id: editingExperiencia.id, ...payload });

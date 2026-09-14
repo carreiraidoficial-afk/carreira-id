@@ -12,6 +12,7 @@ import { OfflineBanner } from "@/components/shared/OfflineBanner";
 import { AnonymousGateProvider } from "@/hooks/useAnonymousGate";
 import { useGaPageview } from "@/hooks/useGaPageview";
 import { CarreiraErrorBoundary, reportClientError } from "@/components/shared/CarreiraErrorBoundary";
+import { registerCarreiraExperienciaMutationDefaults } from "@/hooks/useCarreiraExperienciasData";
 const RootRoute = lazy(() => import("./pages/RootRoute"));
 
 // Lazy load pages not needed on initial render
@@ -67,6 +68,10 @@ const persister = createSyncStoragePersister({
   storage: window.localStorage,
   key: 'carreira-id-query-cache',
 });
+
+// Mutations offline-safe precisam ter a mutationFn registrada aqui pra
+// conseguirem resumir apos um reload do app enquanto ainda pausadas offline.
+registerCarreiraExperienciaMutationDefaults(queryClient);
 
 // Bump ao mudar o formato de dados de alguma query — invalida cache antigo
 // incompatível em vez de deixar a UI tentar renderizar um shape velho.
@@ -125,6 +130,11 @@ const App = () => {
       persister,
       maxAge: 1000 * 60 * 60 * 24, // não reidrata cache com mais de 24h
       buster: QUERY_CACHE_BUSTER,
+    }}
+    onSuccess={() => {
+      // App reabriu (possivelmente ja online) com mutations que ficaram
+      // pausadas offline persistidas -- tenta sincronizar agora.
+      queryClient.resumePausedMutations();
     }}
   >
     <AuthProvider>
