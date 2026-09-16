@@ -80,18 +80,7 @@ const handler = async (req: Request): Promise<Response> => {
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="left" valign="middle">
-                    <table role="presentation" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td valign="middle" style="padding-right:10px;">
-                          <table role="presentation" width="30" height="30" cellpadding="0" cellspacing="0" style="width:30px;height:30px;background:#f97316;">
-                            <tr><td align="center" valign="middle" style="font-size:15px;font-weight:800;color:#0b1220;line-height:30px;">iD</td></tr>
-                          </table>
-                        </td>
-                        <td valign="middle">
-                          <span style="font-size:18px;font-weight:800;color:#f1f5f9;letter-spacing:0.2px;">CARREIRA<span style="color:#f97316;">ID</span></span>
-                        </td>
-                      </tr>
-                    </table>
+                    <img src="https://carreiraid.com.br/logo-carreira-id-email.png" width="36" height="36" alt="Carreira ID" style="display:block;border-radius:4px;">
                   </td>
                   <td align="right" valign="middle">
                     <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:1.2px;">Esporte de Base</span>
