@@ -6,11 +6,99 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Upload, X, Video } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Loader2, Upload, X, Video, Shield } from 'lucide-react';
 import { toast } from 'sonner';
-import { useJornada } from '@/hooks/useJornada';
-import type { CampeonatoComJogos, JogoComMidia, PosicaoJogo, SetDetalhe, QuartoDetalhe } from '@/types/jornada-esportiva';
+import { useJornada, useTimesLogosSalvos } from '@/hooks/useJornada';
+import type { CampeonatoComJogos, JogoComMidia, PosicaoJogo, SetDetalhe, QuartoDetalhe, TimeLogoSalvo } from '@/types/jornada-esportiva';
 import { isModalidadeVolei, isModalidadeBasquete } from '@/constants/esportes';
+
+/** Botão de escudo ao lado do nome do time: escolhe um já salvo ou envia um novo. */
+function TimeLogoField({
+  logoUrl,
+  onSelectSalvo,
+  onUploadNovo,
+  uploading,
+  savedLogos,
+}: {
+  logoUrl: string;
+  onSelectSalvo: (logo: TimeLogoSalvo) => void;
+  onUploadNovo: (file: File) => void;
+  uploading: boolean;
+  savedLogos: TimeLogoSalvo[];
+}) {
+  const [openPicker, setOpenPicker] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  return (
+    <Popover open={openPicker} onOpenChange={setOpenPicker}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="shrink-0 w-9 h-9 rounded-full border-2 border-dashed border-muted-foreground/40 overflow-hidden flex items-center justify-center bg-muted hover:border-primary transition-colors"
+          title="Escudo do time"
+        >
+          {uploading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : logoUrl ? (
+            <img src={logoUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <Shield className="w-4 h-4 text-muted-foreground" />
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Buscar time salvo..." />
+          <CommandList>
+            <CommandEmpty className="p-3 text-xs text-muted-foreground">Nenhum escudo salvo ainda.</CommandEmpty>
+            <CommandGroup>
+              {savedLogos.map((t) => (
+                <CommandItem
+                  key={t.id}
+                  value={t.nome_time}
+                  onSelect={() => { onSelectSalvo(t); setOpenPicker(false); }}
+                  className="gap-2"
+                >
+                  <Avatar className="w-6 h-6">
+                    <AvatarImage src={t.logo_url} alt="" />
+                    <AvatarFallback><Shield className="w-3 h-3" /></AvatarFallback>
+                  </Avatar>
+                  <span className="truncate">{t.nome_time}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+          <div className="border-t p-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="w-full"
+              onClick={() => fileRef.current?.click()}
+            >
+              <Upload className="w-3.5 h-3.5 mr-1.5" /> Enviar novo escudo
+            </Button>
+            <input
+              ref={fileRef}
+              type="file"
+              hidden
+              accept="image/*"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onUploadNovo(f);
+                setOpenPicker(false);
+                if (fileRef.current) fileRef.current.value = '';
+              }}
+            />
+          </div>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 interface Props {
   open: boolean;
@@ -60,8 +148,13 @@ const emptyQuartos = (): { pontos_time: string; pontos_adversario: string }[] =>
   Array.from({ length: MAX_QUARTOS }, () => ({ pontos_time: '', pontos_adversario: '' }));
 
 export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonatos, modalidades, editingJogo, onSaved }: Props) {
-  const { criarJogo, editarJogo, adicionarMidiasJogo, excluirMidia } = useJornada(criancaId);
+  const { criarJogo, editarJogo, adicionarMidiasJogo, excluirMidia, uploadArquivo } = useJornada(criancaId);
+  const { data: timesLogosSalvos } = useTimesLogosSalvos();
   const [saving, setSaving] = useState(false);
+  const [logoTimeAtletaUrl, setLogoTimeAtletaUrl] = useState('');
+  const [logoTimeAdversarioUrl, setLogoTimeAdversarioUrl] = useState('');
+  const [uploadingLogoAtleta, setUploadingLogoAtleta] = useState(false);
+  const [uploadingLogoAdversario, setUploadingLogoAdversario] = useState(false);
   const [campeonatoId, setCampeonatoId] = useState<string>(NONE);
   const [modalidade, setModalidade] = useState<string>(modalidades[0] || 'Futebol');
   const [dataJogo, setDataJogo] = useState('');
@@ -202,9 +295,25 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
       setPenDefDisputa(editingJogo?.penaltis_defendidos_disputa?.toString() ?? '');
       setPenLadoCerto(editingJogo?.penaltis_gol_lado_correto?.toString() ?? '');
       setPenLadoErrado(editingJogo?.penaltis_gol_lado_errado?.toString() ?? '');
+      setLogoTimeAtletaUrl(editingJogo?.logo_time_atleta_url || '');
+      setLogoTimeAdversarioUrl(editingJogo?.logo_time_adversario_url || '');
       setNovosArquivos([]);
     }
   }, [open, editingJogo]);
+
+  const handleUploadLogo = async (file: File, time: 'atleta' | 'adversario') => {
+    const setUploading = time === 'atleta' ? setUploadingLogoAtleta : setUploadingLogoAdversario;
+    const setUrl = time === 'atleta' ? setLogoTimeAtletaUrl : setLogoTimeAdversarioUrl;
+    setUploading(true);
+    try {
+      const url = await uploadArquivo(file, 'times');
+      setUrl(url);
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao enviar escudo');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const num = (s: string) => (s.trim() === '' ? undefined : Number(s));
 
@@ -285,6 +394,8 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
         posicao_jogo: posicao === POSICAO_NONE ? undefined : (posicao as PosicaoJogo),
         fase_campeonato: fase.trim() || undefined,
         observacoes: obs.trim() || undefined,
+        logo_time_atleta_url: logoTimeAtletaUrl || null,
+        logo_time_adversario_url: logoTimeAdversarioUrl || null,
         // Prorrogação e disputa de pênaltis -- fatos do jogo, visíveis pra qualquer posição
         teve_prorrogacao: !isVolei ? teveProrrogacao : null,
         teve_disputa_penaltis: !isVolei && !isBasquete ? teveDisputa : null,
@@ -383,11 +494,29 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Meu time</Label>
-              <Input value={timeAtleta} onChange={(e) => setTimeAtleta(e.target.value)} placeholder="Ex: Serra Macaense" />
+              <div className="flex items-center gap-2">
+                <TimeLogoField
+                  logoUrl={logoTimeAtletaUrl}
+                  uploading={uploadingLogoAtleta}
+                  savedLogos={timesLogosSalvos || []}
+                  onSelectSalvo={(t) => setLogoTimeAtletaUrl(t.logo_url)}
+                  onUploadNovo={(f) => handleUploadLogo(f, 'atleta')}
+                />
+                <Input value={timeAtleta} onChange={(e) => setTimeAtleta(e.target.value)} placeholder="Ex: Serra Macaense" />
+              </div>
             </div>
             <div>
               <Label>Adversário *</Label>
-              <Input value={adversario} onChange={(e) => setAdversario(e.target.value)} placeholder="Ex: Bonsucesso" />
+              <div className="flex items-center gap-2">
+                <TimeLogoField
+                  logoUrl={logoTimeAdversarioUrl}
+                  uploading={uploadingLogoAdversario}
+                  savedLogos={timesLogosSalvos || []}
+                  onSelectSalvo={(t) => setLogoTimeAdversarioUrl(t.logo_url)}
+                  onUploadNovo={(f) => handleUploadLogo(f, 'adversario')}
+                />
+                <Input value={adversario} onChange={(e) => setAdversario(e.target.value)} placeholder="Ex: Bonsucesso" />
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">

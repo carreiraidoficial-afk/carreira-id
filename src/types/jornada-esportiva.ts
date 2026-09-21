@@ -1,3 +1,9 @@
+export interface TimeLogoSalvo {
+  id: string;
+  nome_time: string;
+  logo_url: string;
+}
+
 export type TorneioAbrangencia = 'regional' | 'estadual' | 'nacional' | 'internacional';
 export type TipoJogo = 'campeonato' | 'amistoso';
 export type TipoMidia = 'foto' | 'video';
@@ -105,6 +111,8 @@ export interface Jogo {
   fase_campeonato?: string;
   modalidade: string;
   created_at: string;
+  logo_time_atleta_url?: string | null;
+  logo_time_adversario_url?: string | null;
   // Prorrogação e disputa de pênaltis -- fatos do jogo, não dependem da posição
   teve_prorrogacao?: boolean | null;
   teve_disputa_penaltis?: boolean | null;
@@ -246,6 +254,8 @@ export interface CreateJogoInput {
   observacoes?: string;
   fase_campeonato?: string;
   modalidade: string;
+  logo_time_atleta_url?: string | null;
+  logo_time_adversario_url?: string | null;
   // Prorrogação e disputa de pênaltis -- fatos do jogo, não dependem da posição
   teve_prorrogacao?: boolean | null;
   teve_disputa_penaltis?: boolean | null;

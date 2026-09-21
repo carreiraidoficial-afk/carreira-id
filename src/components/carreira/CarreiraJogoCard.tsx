@@ -143,7 +143,10 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
       style={{ backgroundColor: `${accentColor}08`, borderLeft: `3px solid ${accentColor}50` }}
     >
       <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-2 flex-wrap text-sm font-medium text-foreground">
+        <div className="flex items-center gap-2 flex-wrap text-sm font-medium text-foreground">
+          {j.logo_time_atleta_url && (
+            <img src={j.logo_time_atleta_url} alt="" className="w-4 h-4 rounded-full object-cover shrink-0" />
+          )}
           <span className="truncate">{meuTime}</span>
           {temPlacar && (
             <span className={`font-bold ${placarColor}`}>{j.placar_time_atleta}</span>
@@ -153,6 +156,9 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
             <span className={`font-bold ${placarColor}`}>{j.placar_adversario}</span>
           )}
           <span className="truncate">{j.time_adversario}</span>
+          {j.logo_time_adversario_url && (
+            <img src={j.logo_time_adversario_url} alt="" className="w-4 h-4 rounded-full object-cover shrink-0" />
+          )}
         </div>
         <p className="text-xs text-muted-foreground mt-0.5">
           {dataFmt}{j.local ? ` • ${j.local}` : ''}

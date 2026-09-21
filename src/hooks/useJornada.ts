@@ -14,6 +14,7 @@ import type {
   JogoMidia,
   JornadaEsportivaData,
   PosicaoJogo,
+  TimeLogoSalvo,
 } from '@/types/jornada-esportiva';
 
 const EMPTY: JornadaEsportivaData = {
@@ -333,6 +334,33 @@ export function useJornada(criancaId: string | undefined | null) {
     [fetchData],
   );
 
+  // Lembra o escudo de um time (meu time / adversario) pra próxima vez que o
+  // mesmo nome for usado -- silencioso, nunca bloqueia o salvamento do jogo.
+  const salvarLogosTimesSeInformados = useCallback(async (input: CreateJogoInput) => {
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData.user?.id;
+    if (!uid) return;
+    const pares: { nome_time: string; logo_url: string }[] = [];
+    if (input.time_atleta?.trim() && input.logo_time_atleta_url) {
+      pares.push({ nome_time: input.time_atleta.trim(), logo_url: input.logo_time_atleta_url });
+    }
+    if (input.time_adversario?.trim() && input.logo_time_adversario_url) {
+      pares.push({ nome_time: input.time_adversario.trim(), logo_url: input.logo_time_adversario_url });
+    }
+    if (pares.length === 0) return;
+    try {
+      await (supabase as any)
+        .from('carreira_times_logos')
+        .upsert(
+          pares.map((p) => ({ user_id: uid, nome_time: p.nome_time, logo_url: p.logo_url, updated_at: new Date().toISOString() })),
+          { onConflict: 'user_id,nome_time' },
+        );
+      queryClient.invalidateQueries({ queryKey: ['carreira-times-logos'] });
+    } catch (e) {
+      console.error('[useJornada] erro ao salvar logo do time na biblioteca:', e);
+    }
+  }, [queryClient]);
+
   const criarJogo = useCallback(
     async (input: CreateJogoInput): Promise<string> => {
       if (!criancaId) throw new Error('Atleta não definido');
@@ -358,10 +386,13 @@ export function useJornada(criancaId: string | undefined | null) {
           posicao_jogo: input.posicao_jogo,
           observacoes: input.observacoes,
           fase_campeonato: input.fase_campeonato,
+          logo_time_atleta_url: input.logo_time_atleta_url ?? null,
+          logo_time_adversario_url: input.logo_time_adversario_url ?? null,
         })
         .select('id')
         .single();
       if (error) throw error;
+      await salvarLogosTimesSeInformados(input);
       // Atualiza campos de goleiro/vôlei se fornecidos (sem quebrar caso colunas ainda não existam)
       await (supabase as any).from('carreira_jogos').update({
         minutos_jogados: input.minutos_jogados ?? null,
@@ -402,7 +433,7 @@ export function useJornada(criancaId: string | undefined | null) {
       await fetchData();
       return inserted.id as string;
     },
-    [criancaId, fetchData],
+    [criancaId, fetchData, salvarLogosTimesSeInformados],
   );
 
   const editarJogo = useCallback(
@@ -424,6 +455,8 @@ export function useJornada(criancaId: string | undefined | null) {
           posicao_jogo: input.posicao_jogo,
           observacoes: input.observacoes,
           fase_campeonato: input.fase_campeonato,
+          logo_time_atleta_url: input.logo_time_atleta_url ?? null,
+          logo_time_adversario_url: input.logo_time_adversario_url ?? null,
           minutos_jogados: input.minutos_jogados ?? null,
           gols_sofridos: input.gols_sofridos ?? null,
           defesas_importantes: input.defesas_importantes ?? null,
@@ -461,13 +494,14 @@ export function useJornada(criancaId: string | undefined | null) {
         })
         .eq('id', id);
       if (error) throw error;
+      await salvarLogosTimesSeInformados(input);
       await fetchData();
     },
-    [fetchData],
+    [fetchData, salvarLogosTimesSeInformados],
   );
 
   const uploadArquivo = useCallback(
-    async (file: File, subdir: 'campeonatos' | 'jogos'): Promise<string> => {
+    async (file: File, subdir: 'campeonatos' | 'jogos' | 'times'): Promise<string> => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
       if (!uid) throw new Error('Não autenticado');
@@ -570,4 +604,25 @@ export function useJornada(criancaId: string | undefined | null) {
     adicionarPremiacaoCampeonato,
     excluirPremiacaoCampeonato,
   };
+}
+
+/** Biblioteca de escudos de times salvos pelo usuário (meu time / adversário),
+ * pra reaproveitar ao registrar jogos sem subir a imagem de novo toda vez. */
+export function useTimesLogosSalvos() {
+  return useQuery({
+    queryKey: ['carreira-times-logos'],
+    queryFn: async (): Promise<TimeLogoSalvo[]> => {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) return [];
+      const { data, error } = await (supabase as any)
+        .from('carreira_times_logos')
+        .select('id, nome_time, logo_url')
+        .eq('user_id', uid)
+        .order('nome_time', { ascending: true });
+      if (error) throw error;
+      return (data || []) as TimeLogoSalvo[];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 }
