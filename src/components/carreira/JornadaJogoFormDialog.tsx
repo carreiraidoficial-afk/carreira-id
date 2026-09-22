@@ -151,6 +151,7 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
   const { criarJogo, editarJogo, adicionarMidiasJogo, excluirMidia, uploadArquivo } = useJornada(criancaId);
   const { data: timesLogosSalvos } = useTimesLogosSalvos();
   const [saving, setSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [logoTimeAtletaUrl, setLogoTimeAtletaUrl] = useState('');
   const [logoTimeAdversarioUrl, setLogoTimeAdversarioUrl] = useState('');
   const [uploadingLogoAtleta, setUploadingLogoAtleta] = useState(false);
@@ -446,7 +447,8 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
         jogoId = await criarJogo(payload);
       }
       if (novosArquivos.length > 0) {
-        await adicionarMidiasJogo(jogoId, novosArquivos);
+        setUploadProgress({ done: 0, total: novosArquivos.length });
+        await adicionarMidiasJogo(jogoId, novosArquivos, (done, total) => setUploadProgress({ done, total }));
       }
       await onSaved?.();
       toast.success('Jogo salvo');
@@ -456,14 +458,19 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
       toast.error(err.message || 'Erro ao salvar jogo');
     } finally {
       setSaving(false);
+      setUploadProgress(null);
     }
   };
 
   const midiasExistentes = editingJogo?.midias || [];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(v) => { if (saving && !v) return; onOpenChange(v); }}>
+      <DialogContent
+        className="max-w-lg max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => { if (saving) e.preventDefault(); }}
+        onEscapeKeyDown={(e) => { if (saving) e.preventDefault(); }}
+      >
         <DialogHeader>
           <DialogTitle>{editingJogo ? 'Editar Jogo' : 'Novo Jogo'}</DialogTitle>
         </DialogHeader>
@@ -879,11 +886,20 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
             </div>
           </div>
 
+          {uploadProgress && (
+            <div className="flex items-center gap-2 rounded-lg border-2 border-primary/30 bg-primary/5 p-3 text-sm">
+              <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+              <span>
+                Enviando fotos/vídeos: {uploadProgress.done} de {uploadProgress.total} concluído(s)... não feche esta janela.
+              </span>
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
             <Button type="submit" disabled={saving}>
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Salvar
+              {uploadProgress ? `Enviando ${uploadProgress.done}/${uploadProgress.total}...` : saving ? 'Salvando...' : 'Salvar'}
             </Button>
           </div>
         </form>

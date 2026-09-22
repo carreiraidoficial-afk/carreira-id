@@ -523,7 +523,7 @@ export function useJornada(criancaId: string | undefined | null) {
   );
 
   const adicionarMidiasJogo = useCallback(
-    async (jogoId: string, files: File[]) => {
+    async (jogoId: string, files: File[], onProgress?: (done: number, total: number) => void) => {
       if (!files.length) return;
       const rows: { jogo_id: string; tipo_midia: 'foto' | 'video'; url: string; ordem: number }[] = [];
       for (let i = 0; i < files.length; i++) {
@@ -535,6 +535,7 @@ export function useJornada(criancaId: string | undefined | null) {
           url,
           ordem: i,
         });
+        onProgress?.(i + 1, files.length);
       }
       const { error } = await (supabase as any).from('carreira_jogo_midias').insert(rows);
       if (error) throw error;
