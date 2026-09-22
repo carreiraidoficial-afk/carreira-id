@@ -168,37 +168,37 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
       )}
       <div className="min-w-0 pr-8">
         {/* Confronto: escudo + nome de cada time, placar em destaque no meio */}
-        <div className="flex items-center gap-2">
-          <div className="flex flex-col items-center gap-1 w-[72px] shrink-0">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex flex-col items-center gap-1 w-[72px] sm:w-24 shrink-0">
             {j.logo_time_atleta_url ? (
-              <img src={j.logo_time_atleta_url} alt="" className="w-9 h-9 rounded-full object-cover border border-border" />
+              <img src={j.logo_time_atleta_url} alt="" className="w-9 h-9 sm:w-14 sm:h-14 rounded-full object-cover border border-border" />
             ) : (
-              <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
-                <Shield className="w-4 h-4 text-muted-foreground" />
+              <div className="w-9 h-9 sm:w-14 sm:h-14 rounded-full bg-muted flex items-center justify-center">
+                <Shield className="w-4 h-4 sm:w-6 sm:h-6 text-muted-foreground" />
               </div>
             )}
-            <span className="text-[11px] font-medium text-foreground text-center leading-tight line-clamp-2">{meuTime}</span>
+            <span className="text-[11px] sm:text-sm font-medium text-foreground text-center leading-tight line-clamp-2">{meuTime}</span>
           </div>
-          <div className="flex-1 flex items-center justify-center gap-2 text-xl font-bold">
+          <div className="flex-1 flex items-center justify-center gap-2 sm:gap-3 text-xl sm:text-3xl font-bold">
             {temPlacar ? (
               <>
                 <span className={placarColor}>{j.placar_time_atleta}</span>
-                <span className="text-muted-foreground text-sm font-normal">×</span>
+                <span className="text-muted-foreground text-sm sm:text-lg font-normal">×</span>
                 <span className={placarColor}>{j.placar_adversario}</span>
               </>
             ) : (
-              <span className="text-muted-foreground text-sm font-normal">vs</span>
+              <span className="text-muted-foreground text-sm sm:text-lg font-normal">vs</span>
             )}
           </div>
-          <div className="flex flex-col items-center gap-1 w-[72px] shrink-0">
+          <div className="flex flex-col items-center gap-1 w-[72px] sm:w-24 shrink-0">
             {j.logo_time_adversario_url ? (
-              <img src={j.logo_time_adversario_url} alt="" className="w-9 h-9 rounded-full object-cover border border-border" />
+              <img src={j.logo_time_adversario_url} alt="" className="w-9 h-9 sm:w-14 sm:h-14 rounded-full object-cover border border-border" />
             ) : (
-              <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
-                <Shield className="w-4 h-4 text-muted-foreground" />
+              <div className="w-9 h-9 sm:w-14 sm:h-14 rounded-full bg-muted flex items-center justify-center">
+                <Shield className="w-4 h-4 sm:w-6 sm:h-6 text-muted-foreground" />
               </div>
             )}
-            <span className="text-[11px] font-medium text-foreground text-center leading-tight line-clamp-2">{j.time_adversario}</span>
+            <span className="text-[11px] sm:text-sm font-medium text-foreground text-center leading-tight line-clamp-2">{j.time_adversario}</span>
           </div>
         </div>
         <p className="text-xs text-muted-foreground mt-1.5 text-center">

@@ -201,7 +201,12 @@ export function useJornada(criancaId: string | undefined | null) {
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    // Mostra o cache persistido na hora (sem tela de loading), mas busca uma
+    // versão atualizada em segundo plano se já passou o staleTime -- pega
+    // edições feitas em outro aparelho (ex: escudo adicionado no computador)
+    // que o realtime abaixo só captura se este dispositivo estava com o app
+    // aberto no momento da mudança.
+    refetchOnMount: true,
   });
 
   const data = query.data ?? EMPTY;
