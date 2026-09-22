@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Pencil, Trash2, X, Loader2 } from 'lucide-react';
+import { Pencil, Trash2, X, Loader2, MoreVertical, ChevronDown, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { JogoComMidia, JogoMidia } from '@/types/jornada-esportiva';
 import { isModalidadeVolei, isModalidadeBasquete } from '@/constants/esportes';
 
@@ -116,6 +118,7 @@ function MidiaThumb({
 export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdit, onDelete }: Props) {
   const j = jogo;
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [obsOpen, setObsOpen] = useState(false);
 
   const placarColor = (() => {
     if (j.placar_time_atleta == null || j.placar_adversario == null) return 'text-muted-foreground';
@@ -139,28 +142,66 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
 
   return (
     <div
-      className="flex items-start gap-3 p-3 rounded-lg"
+      className="relative p-3 rounded-lg"
       style={{ backgroundColor: `${accentColor}08`, borderLeft: `3px solid ${accentColor}50` }}
     >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap text-sm font-medium text-foreground">
-          {j.logo_time_atleta_url && (
-            <img src={j.logo_time_atleta_url} alt="" className="w-4 h-4 rounded-full object-cover shrink-0" />
-          )}
-          <span className="truncate">{meuTime}</span>
-          {temPlacar && (
-            <span className={`font-bold ${placarColor}`}>{j.placar_time_atleta}</span>
-          )}
-          <span className="text-muted-foreground">x</span>
-          {temPlacar && (
-            <span className={`font-bold ${placarColor}`}>{j.placar_adversario}</span>
-          )}
-          <span className="truncate">{j.time_adversario}</span>
-          {j.logo_time_adversario_url && (
-            <img src={j.logo_time_adversario_url} alt="" className="w-4 h-4 rounded-full object-cover shrink-0" />
-          )}
+      {isOwner && (onEdit || onDelete) && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-7 w-7 absolute top-1.5 right-1.5 z-10">
+              <MoreVertical className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {onEdit && (
+              <DropdownMenuItem onClick={() => onEdit(j)}>
+                <Pencil className="w-3.5 h-3.5 mr-2" /> Editar
+              </DropdownMenuItem>
+            )}
+            {onDelete && (
+              <DropdownMenuItem onClick={() => onDelete(j.id)} className="text-destructive focus:text-destructive">
+                <Trash2 className="w-3.5 h-3.5 mr-2" /> Excluir
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+      <div className="min-w-0 pr-8">
+        {/* Confronto: escudo + nome de cada time, placar em destaque no meio */}
+        <div className="flex items-center gap-2">
+          <div className="flex flex-col items-center gap-1 w-[72px] shrink-0">
+            {j.logo_time_atleta_url ? (
+              <img src={j.logo_time_atleta_url} alt="" className="w-9 h-9 rounded-full object-cover border border-border" />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
+                <Shield className="w-4 h-4 text-muted-foreground" />
+              </div>
+            )}
+            <span className="text-[11px] font-medium text-foreground text-center leading-tight line-clamp-2">{meuTime}</span>
+          </div>
+          <div className="flex-1 flex items-center justify-center gap-2 text-xl font-bold">
+            {temPlacar ? (
+              <>
+                <span className={placarColor}>{j.placar_time_atleta}</span>
+                <span className="text-muted-foreground text-sm font-normal">×</span>
+                <span className={placarColor}>{j.placar_adversario}</span>
+              </>
+            ) : (
+              <span className="text-muted-foreground text-sm font-normal">vs</span>
+            )}
+          </div>
+          <div className="flex flex-col items-center gap-1 w-[72px] shrink-0">
+            {j.logo_time_adversario_url ? (
+              <img src={j.logo_time_adversario_url} alt="" className="w-9 h-9 rounded-full object-cover border border-border" />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
+                <Shield className="w-4 h-4 text-muted-foreground" />
+              </div>
+            )}
+            <span className="text-[11px] font-medium text-foreground text-center leading-tight line-clamp-2">{j.time_adversario}</span>
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground mt-0.5">
+        <p className="text-xs text-muted-foreground mt-1.5 text-center">
           {dataFmt}{j.local ? ` • ${j.local}` : ''}
         </p>
         <div className="flex flex-wrap gap-1.5 mt-1.5 text-[11px]">
@@ -229,7 +270,19 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
             Quartos: {j.quartos_detalhe.map((q) => `${q.pontos_time}-${q.pontos_adversario}`).join(' · ')}
           </p>
         )}
-        {j.observacoes && <p className="text-xs text-muted-foreground mt-1.5">{j.observacoes}</p>}
+        {j.observacoes && (
+          <Collapsible open={obsOpen} onOpenChange={setObsOpen} className="mt-1.5">
+            <CollapsibleTrigger asChild>
+              <button type="button" className="flex items-center gap-1 text-[11px] font-medium text-primary">
+                <ChevronDown className={`w-3 h-3 transition-transform ${obsOpen ? 'rotate-180' : ''}`} />
+                {obsOpen ? 'Ocultar observações' : 'Ver observações'}
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <p className="text-xs text-muted-foreground mt-1.5 whitespace-pre-wrap">{j.observacoes}</p>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
         {j.midias && j.midias.length > 0 && (
           <div className="grid grid-cols-4 gap-1 mt-2">
             {j.midias.slice(0, 8).map((m) => (
@@ -238,20 +291,6 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
           </div>
         )}
       </div>
-      {isOwner && (
-        <div className="flex items-center gap-0.5 shrink-0">
-          {onEdit && (
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(j)}>
-              <Pencil className="w-3.5 h-3.5" />
-            </Button>
-          )}
-          {onDelete && (
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => onDelete(j.id)}>
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
-          )}
-        </div>
-      )}
 
       <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
         <DialogContent
