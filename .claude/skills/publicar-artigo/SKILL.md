@@ -173,6 +173,45 @@ Resposta esperada: `200` ou `202` sem corpo. Não é bloqueante — se falhar,
 o Bing ainda vai descobrir a página pelo sitemap/crawl normal, só mais
 devagar; avise o usuário e siga em frente.
 
+## Etapa 7.6 — Avisar o Make (publicação automática no Facebook)
+
+Existe uma automação no Make que publica o artigo na Página do Facebook.
+Ela é disparada pela edge function `notify-blog-post-published`, que repassa
+os dados pro webhook do Make autenticado por API key (cabeçalho
+`x-make-apikey`) -- endereço e chave ficam só nos secrets
+`MAKE_FACEBOOK_WEBHOOK_URL` e `MAKE_FACEBOOK_WEBHOOK_APIKEY` do Supabase,
+nunca no código, porque este repositório é público. Depois do deploy do
+artigo estar no ar:
+
+**Importante (Windows/Git Bash): nunca use `curl -d '{...}'` com o JSON
+inline quando title/excerpt tiverem acento.** O Windows retranscreve
+argumentos de linha de comando pra uma code page antiga antes do curl.exe
+receber, corrompendo qualquer acento (silenciosamente -- sem erro, só o
+texto errado do outro lado). Escreva o JSON num arquivo primeiro (via Write)
+e use `-d @arquivo`, que lê os bytes direto do disco sem passar pelo argv:
+
+```bash
+curl -s -X POST "https://fppsotlycinwqsjpoybg.supabase.co/functions/v1/notify-blog-post-published" \
+  -H "Content-Type: application/json" \
+  -d @/caminho/do/scratchpad/notify-payload.json
+```
+
+onde `notify-payload.json` tem exatamente:
+```json
+{
+  "title": "TÍTULO DO ARTIGO",
+  "url": "https://carreiraid.com.br/blog/{slug}/",
+  "image": "https://carreiraid.com.br/blog/{slug}/capa.jpg",
+  "excerpt": "A meta description do artigo, curta"
+}
+```
+
+Resposta esperada: `{"success":true}`. Se vier
+`{"success":false,"error":"MAKE_FACEBOOK_WEBHOOK_URL ou MAKE_FACEBOOK_WEBHOOK_APIKEY não configurada"}`,
+é porque os secrets ainda não foram configurados -- não é erro seu, apenas
+avise e siga em frente (não bloqueia a publicação). Se vier qualquer outro
+erro, também não é bloqueante: avise o usuário e continue.
+
 ## Etapa 8 — Verificar (sem `npm run dev`)
 
 **Não tente abrir o artigo pelo servidor de dev do Vite** (`npm run dev` /
