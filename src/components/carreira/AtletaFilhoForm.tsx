@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, Loader2, Upload, Shield, Lock, CheckCircle } from 'lucide-react';
 import { validateCPF, formatCPF } from '@/lib/cpf-validator';
 import { validatePhone, SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
+import { trackOnboardingFunil } from '@/lib/onboardingFunil';
 
 interface Props {
   userId: string;
@@ -112,6 +113,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
 
     setIsLoading(true);
     console.log('[AtletaFilhoForm] Validação OK, criando perfil...');
+    trackOnboardingFunil(userId, 'formulario_enviado', 'atleta_filho');
     try {
       // Bloqueia duplicata só quando NÃO for um cadastro intencional de mais
       // um atleta (irmãos) -- ver allowMultiple, ligado ao botão "Adicionar

@@ -12,6 +12,7 @@ import { validateCPF, formatCPF, cleanCPF } from '@/lib/cpf-validator';
 import { validateCNPJ, formatCNPJ } from '@/lib/cnpj-validator';
 import { validatePhone as validatePhoneNumber, validateEmail as validateEmailAddress, validateDocument, SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
 import { UfCidadeSelect } from '@/components/shared/UfCidadeSelect';
+import { trackOnboardingFunil } from '@/lib/onboardingFunil';
 
 
 interface Props {
@@ -335,6 +336,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
     }
 
     setIsLoading(true);
+    trackOnboardingFunil(userId, 'formulario_enviado', type);
 
     try {
       // Upload photo if provided

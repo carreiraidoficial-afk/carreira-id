@@ -26,6 +26,7 @@ import { PwaInstallPopup } from '@/components/shared/PwaInstallPopup';
 import { PushNotificationPopup } from '@/components/shared/PushNotificationPopup';
 import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { trackCompleteRegistration, trackProfileCreated, trackInitiateCheckout, trackSubscribe, pushDataLayer } from '@/lib/fbPixel';
+import { trackOnboardingFunil } from '@/lib/onboardingFunil';
 import { salvarPendingRef, processarConviteRef } from '@/lib/processar-convite-ref';
 import { TERMOS_VERSAO } from '@/lib/termosVersao';
 import { pickCriancaAtiva } from '@/hooks/useCriancaAtiva';
@@ -261,6 +262,7 @@ export default function CarreiraCadastroPage() {
 
       const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.nome;
       if (fullName) setNome(fullName);
+      trackOnboardingFunil(session.user.id, 'tipo_perfil_exibido');
       setStep('profile-type');
       setCheckingAuth(false);
       return true;
@@ -896,6 +898,7 @@ export default function CarreiraCadastroPage() {
         {step === 'profile-type' && (
           <ProfileTypeSelector
             onSelect={(type) => {
+              if (userId) trackOnboardingFunil(userId, 'tipo_selecionado', type);
               setSelectedType(type);
               setStep('profile-form');
             }}
