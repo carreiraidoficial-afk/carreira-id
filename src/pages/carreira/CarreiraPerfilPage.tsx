@@ -16,6 +16,9 @@ import { PostCard } from '@/components/carreira/PostCard';
 import { EditPerfilRedeDialog } from '@/components/carreira/EditPerfilRedeDialog';
 import { HistoricoProfissionalSection, type HistoricoProfissional } from '@/components/carreira/HistoricoProfissionalSection';
 import { HistoricoProfissionalFormDialog } from '@/components/carreira/HistoricoProfissionalFormDialog';
+import { SalaTrofeusEscola } from '@/components/carreira/SalaTrofeusEscola';
+import { SalaTrofeusEscolaFormDialog } from '@/components/carreira/SalaTrofeusEscolaFormDialog';
+import { useCreateTrofeuEscola, useUpdateTrofeuEscola, useDeleteTrofeuEscola, type TrofeuEscola, type TrofeuEscolaInput } from '@/hooks/useSalaTrofeusEscola';
 import { EditPerfilDialog } from '@/components/carreira/EditPerfilDialog';
 import { EditConfiguracoesDialog } from '@/components/carreira/EditConfiguracoesDialog';
 import { ConvidarColaboradorBanner } from '@/components/carreira/ConvidarColaboradorBanner';
@@ -303,6 +306,15 @@ export default function CarreiraPerfilPage() {
   const navigate = useNavigate();
   const { data: perfil, isLoading, error } = useProfileBySlug(slug || '');
 
+  // Precisa ficar antes de qualquer `return` condicional (isLoading/erro
+  // abaixo) -- hook chamado depois de um return condicional já derrubou
+  // esse componente inteiro antes (ver memória carreira-id-hooks-order-crash).
+  const isDonoEscolaProfileForHooks = perfil?.type === 'rede' && perfil.tipo === 'dono_escola';
+  const trofeuEscolaPerfilRedeId = isDonoEscolaProfileForHooks ? perfil.id : undefined;
+  const createTrofeuEscola = useCreateTrofeuEscola(trofeuEscolaPerfilRedeId);
+  const updateTrofeuEscola = useUpdateTrofeuEscola(trofeuEscolaPerfilRedeId);
+  const deleteTrofeuEscola = useDeleteTrofeuEscola(trofeuEscolaPerfilRedeId);
+
   useSEO({
     title: perfil
       ? (perfil.type === 'atleta'
@@ -346,6 +358,8 @@ export default function CarreiraPerfilPage() {
   const [configDialogTab, setConfigDialogTab] = useState('responsavel');
   const [historicoDialogOpen, setHistoricoDialogOpen] = useState(false);
   const [editingHistorico, setEditingHistorico] = useState<HistoricoProfissional | null>(null);
+  const [trofeuEscolaDialogOpen, setTrofeuEscolaDialogOpen] = useState(false);
+  const [editingTrofeuEscola, setEditingTrofeuEscola] = useState<TrofeuEscola | null>(null);
   const { theme: carreiraTheme, isDarkTheme, setDarkTheme } = useCarreiraTheme();
   const isOwner = !!(currentUserId && perfil && currentUserId === perfil.user_id);
   const isAnonymous = !currentUserId;
@@ -617,6 +631,27 @@ export default function CarreiraPerfilPage() {
     queryClient.invalidateQueries({ queryKey: ['carreira-profile-by-slug'] });
     toast.success('Experiência removida');
   };
+
+  const handleSaveTrofeuEscola = async (input: TrofeuEscolaInput, editingId?: string) => {
+    if (editingId) {
+      await updateTrofeuEscola.mutateAsync({ id: editingId, input });
+      toast.success('Troféu atualizado!');
+    } else {
+      await createTrofeuEscola.mutateAsync(input);
+      toast.success('Troféu adicionado!');
+    }
+    setEditingTrofeuEscola(null);
+  };
+
+  const handleDeleteTrofeuEscola = async (id: string) => {
+    try {
+      await deleteTrofeuEscola.mutateAsync(id);
+      toast.success('Troféu removido');
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao remover troféu');
+    }
+  };
+
   const displayProfileName = isDonoEscolaProfile
     ? (String(perfil.dados_perfil?.nome_escola || perfil.nome || '').trim() || perfil.nome)
     : perfil.nome;
@@ -1196,6 +1231,18 @@ export default function CarreiraPerfilPage() {
               />
             )}
 
+            {/* Sala de Troféus — perfil dono_escola, histórico institucional próprio */}
+            {isDonoEscolaProfile && (
+              <SalaTrofeusEscola
+                perfilRedeId={perfil.id}
+                isOwner={isOwner}
+                accentColor={accentColor}
+                onAdd={() => { setEditingTrofeuEscola(null); setTrofeuEscolaDialogOpen(true); }}
+                onEdit={(item) => { setEditingTrofeuEscola(item); setTrofeuEscolaDialogOpen(true); }}
+                onDelete={handleDeleteTrofeuEscola}
+              />
+            )}
+
             {/* Descobrir Atletas — scouting profiles on desktop */}
             {isOwner && perfil.type === 'rede' && (() => {
               const SCOUTING_TYPES = ['tecnico', 'scout', 'agente_clube', 'escola_esportes', 'empresario', 'torcedor'];
@@ -1467,6 +1514,14 @@ export default function CarreiraPerfilPage() {
           onOpenChange={setHistoricoDialogOpen}
           editing={editingHistorico}
           onSave={handleSaveHistorico}
+        />
+      )}
+      {isOwner && isDonoEscolaProfile && (
+        <SalaTrofeusEscolaFormDialog
+          open={trofeuEscolaDialogOpen}
+          onOpenChange={setTrofeuEscolaDialogOpen}
+          editing={editingTrofeuEscola}
+          onSave={handleSaveTrofeuEscola}
         />
       )}
 
