@@ -115,21 +115,29 @@ function useAdminPerfisRede(search: string) {
 }
 
 // Contas que fizeram login (existem em `profiles`) mas nunca completaram
-// nenhum perfil (nem atleta, nem rede) -- gente que se interessou e travou
-// em algum ponto do cadastro, sem deixar nenhum rastro visível até aqui.
+// nenhum perfil (nem atleta, nem rede) E não são colaboradoras ativas de
+// nenhum atleta -- gente que se interessou e travou em algum ponto do
+// cadastro, sem deixar nenhum rastro visível até aqui.
+//
+// Colaborador (ex: o próprio atleta menor convidado pelo responsável via
+// /colaborar) tem conta própria mas nunca cria perfil_atleta/perfis_rede
+// dele mesmo -- isso é esperado, não é cadastro incompleto. Ver
+// perfil_atleta_colaboradores.status = 'ativo'.
 function useAdminCadastrosIncompletos(search: string) {
   return useQuery({
     queryKey: ['carreira-admin-cadastros-incompletos', search],
     queryFn: async () => {
-      const [{ data: profiles, error: profilesError }, { data: atletas }, { data: redes }] = await Promise.all([
+      const [{ data: profiles, error: profilesError }, { data: atletas }, { data: redes }, { data: colaboradores }] = await Promise.all([
         supabase.from('profiles').select('user_id, nome, email, telefone, provider, created_at').order('created_at', { ascending: false }).limit(500),
         supabase.from('perfil_atleta').select('user_id'),
         supabase.from('perfis_rede').select('user_id'),
+        supabase.from('perfil_atleta_colaboradores').select('user_id').eq('status', 'ativo'),
       ]);
       if (profilesError) throw profilesError;
       const comPerfil = new Set([
         ...((atletas || []).map((a: any) => a.user_id)),
         ...((redes || []).map((r: any) => r.user_id)),
+        ...((colaboradores || []).map((c: any) => c.user_id)),
       ]);
       let incompletos = (profiles || []).filter((p: any) =>
         !comPerfil.has(p.user_id) && !p.email?.toLowerCase().endsWith('@example.com')
