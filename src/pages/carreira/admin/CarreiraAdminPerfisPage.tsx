@@ -127,7 +127,9 @@ function useAdminCadastrosIncompletos(search: string) {
         ...((atletas || []).map((a: any) => a.user_id)),
         ...((redes || []).map((r: any) => r.user_id)),
       ]);
-      let incompletos = (profiles || []).filter((p: any) => !comPerfil.has(p.user_id));
+      let incompletos = (profiles || []).filter((p: any) =>
+        !comPerfil.has(p.user_id) && !p.email?.toLowerCase().endsWith('@example.com')
+      );
       if (search) {
         const s = search.toLowerCase();
         incompletos = incompletos.filter((p: any) =>

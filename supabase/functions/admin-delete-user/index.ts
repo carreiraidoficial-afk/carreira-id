@@ -137,11 +137,22 @@ Deno.serve(async (req) => {
     await adminClient.from("profiles").delete().eq("user_id", targetUserId);
 
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(targetUserId);
-    if (deleteError) {
+    // "User not found" -- a conta já não existe no Auth (ex: apagada antes
+    // por fora dessa função). O objetivo final (conta + dados sumidos) já
+    // foi alcançado pelos deletes acima, então trata como sucesso em vez de
+    // travar a limpeza por causa de um passo que já não tem o que fazer.
+    const jaNaoExistia = deleteError && (
+      (deleteError as any).status === 404 ||
+      /not found|does not exist/i.test(deleteError.message || '')
+    );
+    if (deleteError && !jaNaoExistia) {
       console.error("[admin-delete-user] deleteUser error:", deleteError);
       return new Response(JSON.stringify({ error: "Erro ao apagar usuário: " + deleteError.message }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+    if (jaNaoExistia) {
+      console.warn(`[admin-delete-user] target=${targetUserId} já não existia no Auth -- dados relacionados limpos mesmo assim`);
     }
 
     console.log(`[admin-delete-user] target=${targetUserId} deletado.`);
