@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Loader2, User, Eye, EyeOff, ExternalLink, Mail, Phone, Pencil, Trash2, MessageCircle, FlaskConical, X, Copy, UserX } from 'lucide-react';
+import { Search, Loader2, User, Eye, EyeOff, ExternalLink, Mail, Phone, Pencil, Trash2, MessageCircle, FlaskConical, X, Copy, UserX, Users } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
@@ -112,6 +112,116 @@ function useAdminPerfisRede(search: string) {
     staleTime: 0,
     refetchOnMount: true,
   });
+}
+
+// Todos os vínculos de colaborador (ativo, pendente ou revogado), com o
+// nome do atleta vinculado -- pra saber quem ajuda a gerir os dados de
+// quem (ex: o próprio atleta, um dos pais, etc.), sem precisar caçar isso
+// em SQL toda vez.
+function useAdminColaboradores(search: string) {
+  return useQuery({
+    queryKey: ['carreira-admin-colaboradores', search],
+    queryFn: async () => {
+      const { data: colaboradores, error } = await supabase
+        .from('perfil_atleta_colaboradores')
+        .select('id, nome, email, telefone, status, user_id, crianca_id, created_at, ativado_em')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+
+      const criancaIds = [...new Set((colaboradores || []).map((c: any) => c.crianca_id).filter(Boolean))];
+      const userIds = [...new Set((colaboradores || []).map((c: any) => c.user_id).filter(Boolean))];
+
+      const [{ data: atletas }, { data: profiles }] = await Promise.all([
+        criancaIds.length ? supabase.from('perfil_atleta').select('crianca_id, nome, slug').in('crianca_id', criancaIds) : Promise.resolve({ data: [] as any[] }),
+        userIds.length ? supabase.from('profiles').select('user_id, nome, email').in('user_id', userIds) : Promise.resolve({ data: [] as any[] }),
+      ]);
+
+      const atletaMap = new Map((atletas || []).map((a: any) => [a.crianca_id, a]));
+      const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+
+      let resultado = (colaboradores || []).map((c: any) => {
+        const atleta = atletaMap.get(c.crianca_id);
+        const perfil = c.user_id ? profileMap.get(c.user_id) : null;
+        return {
+          ...c,
+          nome_exibicao: perfil?.nome || c.nome,
+          email_exibicao: perfil?.email || c.email,
+          nome_atleta: atleta?.nome || '—',
+          slug_atleta: atleta?.slug || null,
+        };
+      });
+
+      if (search) {
+        const s = search.toLowerCase();
+        resultado = resultado.filter((c: any) =>
+          c.nome_exibicao?.toLowerCase().includes(s) ||
+          c.email_exibicao?.toLowerCase().includes(s) ||
+          c.nome_atleta?.toLowerCase().includes(s)
+        );
+      }
+      return resultado;
+    },
+    staleTime: 0,
+    refetchOnMount: true,
+  });
+}
+
+function ColaboradoresTable({ colaboradores }: { colaboradores: any[] }) {
+  const STATUS_META: Record<string, { label: string; className: string }> = {
+    ativo: { label: 'Ativo', className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
+    pendente: { label: 'Pendente', className: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
+    revogado: { label: 'Revogado', className: 'bg-muted text-muted-foreground' },
+  };
+
+  return (
+    <Card>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Colaborador</TableHead>
+              <TableHead>Contato</TableHead>
+              <TableHead>Atleta vinculado</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Desde</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {colaboradores.map((c: any) => {
+              const meta = STATUS_META[c.status] || { label: c.status, className: '' };
+              return (
+                <TableRow key={c.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="w-8 h-8"><AvatarFallback><User className="w-3 h-3" /></AvatarFallback></Avatar>
+                      <p className="font-medium text-sm">{c.nome_exibicao || '—'}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs">
+                    {c.email_exibicao && <div className="flex items-center gap-1 text-muted-foreground"><Mail className="w-3 h-3 shrink-0" /><span className="truncate max-w-[180px]">{c.email_exibicao}</span></div>}
+                    {c.telefone && <div className="flex items-center gap-1 text-muted-foreground mt-0.5"><Phone className="w-3 h-3 shrink-0" /><span>{c.telefone}</span></div>}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {c.slug_atleta ? (
+                      <a href={`/${c.slug_atleta}`} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-1">
+                        {c.nome_atleta} <ExternalLink className="w-3 h-3" />
+                      </a>
+                    ) : c.nome_atleta}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={`text-xs ${meta.className}`}>{meta.label}</Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {format(new Date(c.ativado_em || c.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </Card>
+  );
 }
 
 // Contas que fizeram login (existem em `profiles`) mas nunca completaram
@@ -561,11 +671,13 @@ export default function CarreiraAdminPerfisPage() {
   const [posicaoTeste, setPosicaoTeste] = useState('');
   const [searchRede, setSearchRede] = useState('');
   const [searchIncompletos, setSearchIncompletos] = useState('');
+  const [searchColaboradores, setSearchColaboradores] = useState('');
 
   const { data: perfisAtleta, isLoading: loadingAtleta } = useAdminPerfisAtleta({ search: searchAtleta, isTeste: false, estado: estadoAtleta, posicao: posicaoAtleta });
   const { data: perfisTeste, isLoading: loadingTeste } = useAdminPerfisAtleta({ search: searchTeste, isTeste: true, estado: estadoTeste, posicao: posicaoTeste });
   const { data: perfisRede, isLoading: loadingRede } = useAdminPerfisRede(searchRede);
   const { data: cadastrosIncompletos, isLoading: loadingIncompletos } = useAdminCadastrosIncompletos(searchIncompletos);
+  const { data: colaboradores, isLoading: loadingColaboradores } = useAdminColaboradores(searchColaboradores);
 
   return (
     <CarreiraAdminLayout>
@@ -581,6 +693,7 @@ export default function CarreiraAdminPerfisPage() {
             <TabsTrigger value="rede">Rede Profissional ({perfisRede?.length || 0})</TabsTrigger>
             <TabsTrigger value="teste" className="gap-1.5"><FlaskConical className="w-3.5 h-3.5" />Perfil de Teste ({perfisTeste?.length || 0})</TabsTrigger>
             <TabsTrigger value="incompletos" className="gap-1.5"><UserX className="w-3.5 h-3.5" />Cadastro Incompleto ({cadastrosIncompletos?.length || 0})</TabsTrigger>
+            <TabsTrigger value="colaboradores" className="gap-1.5"><Users className="w-3.5 h-3.5" />Colaboradores ({colaboradores?.length || 0})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="atleta" className="space-y-4">
@@ -629,6 +742,20 @@ export default function CarreiraAdminPerfisPage() {
             {loadingIncompletos ? <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
               : !cadastrosIncompletos?.length ? <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum cadastro incompleto</CardContent></Card>
               : <CadastrosIncompletosTable pessoas={cadastrosIncompletos} />}
+          </TabsContent>
+
+          <TabsContent value="colaboradores" className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Quem tem acesso pra ajudar a gerenciar os dados de um atleta (convidado via /colaborar) --
+              o próprio atleta, um dos pais, etc. — junto com o atleta a que estão vinculados.
+            </p>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input placeholder="Buscar por nome, email ou atleta..." value={searchColaboradores} onChange={(e) => setSearchColaboradores(e.target.value)} className="pl-10" />
+            </div>
+            {loadingColaboradores ? <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+              : !colaboradores?.length ? <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum colaborador encontrado</CardContent></Card>
+              : <ColaboradoresTable colaboradores={colaboradores} />}
           </TabsContent>
         </Tabs>
       </div>
