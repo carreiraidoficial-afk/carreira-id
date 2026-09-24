@@ -70,6 +70,8 @@ function useAdminPerfisAtleta(filtros: AtletaFiltros) {
       }
       return perfis;
     },
+    staleTime: 0,
+    refetchOnMount: true,
   });
 }
 
@@ -107,6 +109,8 @@ function useAdminPerfisRede(search: string) {
       }
       return perfis;
     },
+    staleTime: 0,
+    refetchOnMount: true,
   });
 }
 
@@ -138,6 +142,11 @@ function useAdminCadastrosIncompletos(search: string) {
       }
       return incompletos;
     },
+    // Tela de admin -- prefere dado sempre fresco a resposta instantânea do
+    // cache (o padrão global do app é cache-first + refetchOnMount:false,
+    // que já causou dado velho aparecer aqui depois de uma limpeza no banco).
+    staleTime: 0,
+    refetchOnMount: true,
   });
 }
 
