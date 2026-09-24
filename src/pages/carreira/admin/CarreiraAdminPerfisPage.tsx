@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Loader2, User, Eye, EyeOff, ExternalLink, Mail, Phone, Pencil, Trash2, MessageCircle, FlaskConical, X } from 'lucide-react';
+import { Search, Loader2, User, Eye, EyeOff, ExternalLink, Mail, Phone, Pencil, Trash2, MessageCircle, FlaskConical, X, Copy, UserX } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
@@ -108,6 +108,130 @@ function useAdminPerfisRede(search: string) {
       return perfis;
     },
   });
+}
+
+// Contas que fizeram login (existem em `profiles`) mas nunca completaram
+// nenhum perfil (nem atleta, nem rede) -- gente que se interessou e travou
+// em algum ponto do cadastro, sem deixar nenhum rastro visível até aqui.
+function useAdminCadastrosIncompletos(search: string) {
+  return useQuery({
+    queryKey: ['carreira-admin-cadastros-incompletos', search],
+    queryFn: async () => {
+      const [{ data: profiles, error: profilesError }, { data: atletas }, { data: redes }] = await Promise.all([
+        supabase.from('profiles').select('user_id, nome, email, telefone, provider, created_at').order('created_at', { ascending: false }).limit(500),
+        supabase.from('perfil_atleta').select('user_id'),
+        supabase.from('perfis_rede').select('user_id'),
+      ]);
+      if (profilesError) throw profilesError;
+      const comPerfil = new Set([
+        ...((atletas || []).map((a: any) => a.user_id)),
+        ...((redes || []).map((r: any) => r.user_id)),
+      ]);
+      let incompletos = (profiles || []).filter((p: any) => !comPerfil.has(p.user_id));
+      if (search) {
+        const s = search.toLowerCase();
+        incompletos = incompletos.filter((p: any) =>
+          p.nome?.toLowerCase().includes(s) || p.email?.toLowerCase().includes(s)
+        );
+      }
+      return incompletos;
+    },
+  });
+}
+
+function CadastrosIncompletosTable({ pessoas }: { pessoas: any[] }) {
+  const qc = useQueryClient();
+  const [deleting, setDeleting] = useState<any>(null);
+  const [deletingLoading, setDeletingLoading] = useState(false);
+
+  const copiarEmail = (email: string) => {
+    navigator.clipboard.writeText(email).then(() => toast.success('Email copiado'));
+  };
+
+  const handleDelete = async () => {
+    if (!deleting) return;
+    setDeletingLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { user_id: deleting.user_id },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success('Conta apagada');
+      qc.invalidateQueries({ queryKey: ['carreira-admin-cadastros-incompletos'] });
+      setDeleting(null);
+    } catch (e: any) {
+      toast.error('Erro: ' + (e.message || 'falha ao excluir'));
+    } finally { setDeletingLoading(false); }
+  };
+
+  return (
+    <Card>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Contato</TableHead>
+              <TableHead>Origem Auth</TableHead>
+              <TableHead>Criado em</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {pessoas.map((p: any) => (
+              <TableRow key={p.user_id}>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Avatar className="w-8 h-8"><AvatarFallback><User className="w-3 h-3" /></AvatarFallback></Avatar>
+                    <p className="font-medium text-sm">{p.nome || '—'}</p>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1 text-xs">
+                    <Mail className="w-3 h-3 shrink-0 text-muted-foreground" />
+                    <a href={`mailto:${p.email}`} className="truncate max-w-[200px] hover:underline">{p.email}</a>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => copiarEmail(p.email)} title="Copiar email">
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="text-xs">
+                    {p.provider === 'google' ? '🔵 Google' : '📧 Email'}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">{format(new Date(p.created_at), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={() => setDeleting(p)} title="Excluir conta">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <AlertDialog open={!!deleting} onOpenChange={(v) => { if (!v) setDeleting(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {deleting?.nome || deleting?.email}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso apaga a conta do Auth e qualquer dado relacionado. Ação irreversível.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deletingLoading} className="bg-destructive hover:bg-destructive/90">
+              {deletingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Card>
+  );
 }
 
 function useToggleVisibility() {
@@ -417,10 +541,12 @@ export default function CarreiraAdminPerfisPage() {
   const [estadoTeste, setEstadoTeste] = useState('');
   const [posicaoTeste, setPosicaoTeste] = useState('');
   const [searchRede, setSearchRede] = useState('');
+  const [searchIncompletos, setSearchIncompletos] = useState('');
 
   const { data: perfisAtleta, isLoading: loadingAtleta } = useAdminPerfisAtleta({ search: searchAtleta, isTeste: false, estado: estadoAtleta, posicao: posicaoAtleta });
   const { data: perfisTeste, isLoading: loadingTeste } = useAdminPerfisAtleta({ search: searchTeste, isTeste: true, estado: estadoTeste, posicao: posicaoTeste });
   const { data: perfisRede, isLoading: loadingRede } = useAdminPerfisRede(searchRede);
+  const { data: cadastrosIncompletos, isLoading: loadingIncompletos } = useAdminCadastrosIncompletos(searchIncompletos);
 
   return (
     <CarreiraAdminLayout>
@@ -435,6 +561,7 @@ export default function CarreiraAdminPerfisPage() {
             <TabsTrigger value="atleta">Atletas ({perfisAtleta?.length || 0})</TabsTrigger>
             <TabsTrigger value="rede">Rede Profissional ({perfisRede?.length || 0})</TabsTrigger>
             <TabsTrigger value="teste" className="gap-1.5"><FlaskConical className="w-3.5 h-3.5" />Perfil de Teste ({perfisTeste?.length || 0})</TabsTrigger>
+            <TabsTrigger value="incompletos" className="gap-1.5"><UserX className="w-3.5 h-3.5" />Cadastro Incompleto ({cadastrosIncompletos?.length || 0})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="atleta" className="space-y-4">
@@ -468,6 +595,21 @@ export default function CarreiraAdminPerfisPage() {
             {loadingTeste ? <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
               : !perfisTeste?.length ? <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum perfil de teste</CardContent></Card>
               : <PerfilTable perfis={perfisTeste} type="atleta" isTesteTab />}
+          </TabsContent>
+
+          <TabsContent value="incompletos" className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Pessoas que criaram conta (login com email/senha ou Google) mas nunca completaram nenhum
+              perfil de atleta ou profissional — a jornada parou na tela de escolha de tipo de perfil ou
+              no formulário seguinte. Dá pra entrar em contato direto pelo email.
+            </p>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input placeholder="Buscar por nome ou email..." value={searchIncompletos} onChange={(e) => setSearchIncompletos(e.target.value)} className="pl-10" />
+            </div>
+            {loadingIncompletos ? <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+              : !cadastrosIncompletos?.length ? <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum cadastro incompleto</CardContent></Card>
+              : <CadastrosIncompletosTable pessoas={cadastrosIncompletos} />}
           </TabsContent>
         </Tabs>
       </div>
