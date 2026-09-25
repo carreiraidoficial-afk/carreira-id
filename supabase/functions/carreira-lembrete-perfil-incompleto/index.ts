@@ -95,6 +95,7 @@ const handler = async (req: Request): Promise<Response> => {
         await supabase.from("carreira_lembretes_perfil_enviados").insert({
           user_id: pessoa.user_id,
           numero_lembrete: proximoTemplate.numero_lembrete,
+          resend_email_id: data?.id ?? null,
         });
         enviados++;
       } catch (e: any) {

@@ -267,7 +267,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Email de perfil incompleto enviado com sucesso para:", email);
 
     return new Response(
-      JSON.stringify({ success: true, data: emailResponse }),
+      JSON.stringify({ success: true, id: emailResponse.data?.id ?? null }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
