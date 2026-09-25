@@ -19,13 +19,17 @@ const COLOCACAO_META: Record<ColocacaoTrofeuEscola, { label: string; emoji: stri
 interface Props {
   perfilRedeId: string;
   isOwner?: boolean;
+  /** Quem pode excluir -- por padrão igual a isOwner, mas em Modo Suporte
+   * o admin edita/adiciona sem poder apagar (mesma régua do dono real). */
+  podeExcluir?: boolean;
   accentColor?: string;
   onAdd?: () => void;
   onEdit?: (item: TrofeuEscola) => void;
   onDelete?: (id: string) => void;
 }
 
-export function SalaTrofeusEscola({ perfilRedeId, isOwner, accentColor = '#3b82f6', onAdd, onEdit, onDelete }: Props) {
+export function SalaTrofeusEscola({ perfilRedeId, isOwner, podeExcluir, accentColor = '#3b82f6', onAdd, onEdit, onDelete }: Props) {
+  const podeMesmoExcluir = podeExcluir ?? isOwner;
   const { data: trofeus, isLoading } = useTrofeusEscola(perfilRedeId);
 
   const byYear = useMemo(() => {
@@ -98,7 +102,7 @@ export function SalaTrofeusEscola({ perfilRedeId, isOwner, accentColor = '#3b82f
                   </div>
                   <div className="space-y-2">
                     {byYear[ano].map((item) => (
-                      <TrofeuRow key={item.id} item={item} isOwner={isOwner} onEdit={onEdit} onDelete={onDelete} />
+                      <TrofeuRow key={item.id} item={item} isOwner={isOwner} podeExcluir={podeMesmoExcluir} onEdit={onEdit} onDelete={onDelete} />
                     ))}
                   </div>
                 </div>
@@ -121,7 +125,7 @@ function StatBox({ label, value, accentColor, color }: { label: string; value: n
   );
 }
 
-function TrofeuRow({ item, isOwner, onEdit, onDelete }: { item: TrofeuEscola; isOwner?: boolean; onEdit?: (item: TrofeuEscola) => void; onDelete?: (id: string) => void }) {
+function TrofeuRow({ item, isOwner, podeExcluir, onEdit, onDelete }: { item: TrofeuEscola; isOwner?: boolean; podeExcluir?: boolean; onEdit?: (item: TrofeuEscola) => void; onDelete?: (id: string) => void }) {
   const meta = COLOCACAO_META[item.colocacao];
   const subLinha = [meta.label, item.categoria].filter(Boolean).join(' • ');
 
@@ -146,7 +150,7 @@ function TrofeuRow({ item, isOwner, onEdit, onDelete }: { item: TrofeuEscola; is
                 <Pencil className="w-3.5 h-3.5 mr-2" /> Editar
               </DropdownMenuItem>
             )}
-            {onDelete && (
+            {onDelete && podeExcluir && (
               <DropdownMenuItem onClick={() => onDelete(item.id)} className="text-destructive focus:text-destructive">
                 <Trash2 className="w-3.5 h-3.5 mr-2" /> Excluir
               </DropdownMenuItem>

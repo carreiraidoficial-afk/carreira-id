@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Loader2, User, Eye, EyeOff, ExternalLink, Mail, Phone, Pencil, Trash2, MessageCircle, FlaskConical, X, Copy, UserX, Users } from 'lucide-react';
+import { Search, Loader2, User, Eye, EyeOff, ExternalLink, Mail, Phone, Pencil, Trash2, MessageCircle, FlaskConical, X, Copy, UserX, Users, Wrench } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
@@ -584,6 +584,13 @@ function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atlet
                         onClick={() => toggle.mutate({ id: p.id, is_public: !p.is_public })}
                         title={p.is_public ? 'Ocultar' : 'Tornar público'}>
                         {p.is_public ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </Button>
+                    )}
+                    {p.slug && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8"
+                        onClick={() => window.open(`/${p.slug}?suporte=1`, '_blank')}
+                        title="Entrar como suporte (editar pontualmente)">
+                        <Wrench className="w-4 h-4" />
                       </Button>
                     )}
                     <Button variant="ghost" size="icon" className="h-8 w-8"

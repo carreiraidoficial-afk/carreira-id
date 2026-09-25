@@ -18,6 +18,9 @@ export interface HistoricoProfissional {
 interface Props {
   historico: HistoricoProfissional[];
   isOwner?: boolean;
+  /** Quem pode excluir -- por padrão igual a isOwner, mas em Modo Suporte
+   * o admin edita/adiciona sem poder apagar (mesma régua do dono real). */
+  podeExcluir?: boolean;
   onAdd?: () => void;
   onEdit?: (item: HistoricoProfissional) => void;
   onDelete?: (id: string) => void;
@@ -38,7 +41,8 @@ function formatPeriod(inicio: string, fim: string | null, atual: boolean) {
   return startStr;
 }
 
-export function HistoricoProfissionalSection({ historico, isOwner, onAdd, onEdit, onDelete, accentColor = '#3b82f6' }: Props) {
+export function HistoricoProfissionalSection({ historico, isOwner, podeExcluir, onAdd, onEdit, onDelete, accentColor = '#3b82f6' }: Props) {
+  const podeMesmoExcluir = podeExcluir ?? isOwner;
   if (historico.length === 0 && !isOwner) return null;
 
   return (
@@ -96,7 +100,7 @@ export function HistoricoProfissionalSection({ historico, isOwner, onAdd, onEdit
                             <Pencil className="w-3 h-3" />
                           </Button>
                         )}
-                        {onDelete && (
+                        {onDelete && podeMesmoExcluir && (
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => onDelete(item.id)}>
                             <Trash2 className="w-3 h-3" />
                           </Button>

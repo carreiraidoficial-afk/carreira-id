@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { useIsFollowing, useToggleFollow, useEscolinhasCarreira, usePostsRede } from '@/hooks/useCarreiraData';
 
 import { PerfilHeader } from '@/components/carreira/PerfilHeader';
@@ -40,7 +41,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, UserX, MapPin, Trophy, Share2, User, UserPlus, UserCheck, Users, Copy, Check, Search, School, X, LogOut, Pencil, Instagram, Globe, Phone, Zap, Settings, Info } from 'lucide-react';
+import { Loader2, ArrowLeft, UserX, MapPin, Trophy, Share2, User, UserPlus, UserCheck, Users, Copy, Check, Search, School, X, LogOut, Pencil, Instagram, Globe, Phone, Zap, Settings, Info, Wrench } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useSEO } from '@/hooks/useSEO';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -372,6 +373,14 @@ export default function CarreiraPerfilPage() {
   const [avisoAmbienteVisto, setAvisoAmbienteVisto] = useState(true);
   const { theme: carreiraTheme, isDarkTheme, setDarkTheme } = useCarreiraTheme();
   const isOwner = !!(currentUserId && perfil && currentUserId === perfil.user_id);
+  const { user: authUser } = useAuth();
+  const [searchParams] = useSearchParams();
+  // Modo Suporte -- admin edita um perfil pontualmente, sem virar
+  // colaborador permanente (não grava nada no banco, some ao sair da
+  // página). Só decide o que MOSTRAR: a trava real é o RLS no servidor,
+  // que também exige has_role admin nas tabelas cobertas por isso.
+  const suporteAtivo = authUser?.role === 'admin' && searchParams.get('suporte') === '1';
+  const isOwnerOuSuporte = isOwner || suporteAtivo;
   const isAnonymous = !currentUserId;
   const { trackProfileView, requireAuth } = useAnonymousGate();
   const [mySlug, setMySlug] = useState<string | null>(null);
@@ -402,7 +411,7 @@ export default function CarreiraPerfilPage() {
   // (editar perfil, peneiras, assinatura etc) -- por isso um flag à parte.
   const { data: minhaColaboracao } = useColaboradorInfo(perfil?.type === 'atleta' ? perfil.crianca_id : null, currentUserId);
   const souColaboradorAtivo = !!minhaColaboracao;
-  const canManageTimeline = isOwner || souColaboradorAtivo;
+  const canManageTimeline = isOwnerOuSuporte || souColaboradorAtivo;
 
   // Track profile view for anonymous visitors (drives gating after N profiles)
   useEffect(() => {
@@ -817,17 +826,17 @@ export default function CarreiraPerfilPage() {
                     <User className="w-3 h-3 sm:hidden" />
                     <span className="hidden sm:inline">Meu Perfil</span>
                   </Button>
+                  {isOwnerOuSuporte && (
+                    <Button variant="outline" size="sm" className="h-8 text-xs px-2 sm:px-3 gap-1" style={{ borderColor: `${accentColor}50`, color: accentColor }} onClick={() => setEditDialogOpen(true)}>
+                      <Pencil className="w-3 h-3" />
+                      <span className="hidden sm:inline">Editar Perfil</span>
+                    </Button>
+                  )}
                   {isOwner && (
-                    <>
-                      <Button variant="outline" size="sm" className="h-8 text-xs px-2 sm:px-3 gap-1" style={{ borderColor: `${accentColor}50`, color: accentColor }} onClick={() => setEditDialogOpen(true)}>
-                        <Pencil className="w-3 h-3" />
-                        <span className="hidden sm:inline">Editar Perfil</span>
-                      </Button>
-                      <Button variant="outline" size="sm" className="h-8 text-xs px-2 sm:px-3 gap-1" style={{ borderColor: `${accentColor}50`, color: accentColor }} onClick={() => { setConfigDialogTab('responsavel'); setConfigDialogOpen(true); }}>
-                        <Settings className="w-3 h-3" />
-                        <span className="hidden sm:inline">Configurações</span>
-                      </Button>
-                    </>
+                    <Button variant="outline" size="sm" className="h-8 text-xs px-2 sm:px-3 gap-1" style={{ borderColor: `${accentColor}50`, color: accentColor }} onClick={() => { setConfigDialogTab('responsavel'); setConfigDialogOpen(true); }}>
+                      <Settings className="w-3 h-3" />
+                      <span className="hidden sm:inline">Configurações</span>
+                    </Button>
                   )}
                 </div>
                 <Button variant="ghost" size="sm" className="text-muted-foreground hidden sm:flex h-8 text-xs" onClick={async () => {
@@ -918,6 +927,23 @@ export default function CarreiraPerfilPage() {
             </p>
             <button onClick={dispensarAvisoAmbiente} className="text-xs font-medium underline shrink-0" style={{ color: accentColor }}>
               Entendi
+            </button>
+          </div>
+        </div>
+      )}
+
+      {suporteAtivo && perfil && (
+        <div className="container max-w-6xl px-4 pt-3">
+          <div className="flex items-center gap-2.5 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+            <Wrench className="w-4 h-4 shrink-0 text-amber-600" />
+            <p className="flex-1 text-foreground">
+              <strong>Modo Suporte</strong> — editando como admin, sem poder apagar nada.
+            </p>
+            <button
+              onClick={() => navigate(carreiraPath(`/${perfil.slug}`), { replace: true })}
+              className="text-xs font-medium underline shrink-0 text-amber-700"
+            >
+              Sair
             </button>
           </div>
         </div>
@@ -1290,7 +1316,8 @@ export default function CarreiraPerfilPage() {
             {showHistorico && (
               <HistoricoProfissionalSection
                 historico={historicoProfissional}
-                isOwner={isOwner}
+                isOwner={isOwnerOuSuporte}
+                podeExcluir={isOwner}
                 accentColor={accentColor}
                 onAdd={() => { setEditingHistorico(null); setHistoricoDialogOpen(true); }}
                 onEdit={(item) => { setEditingHistorico(item); setHistoricoDialogOpen(true); }}
@@ -1302,7 +1329,8 @@ export default function CarreiraPerfilPage() {
             {isDonoEscolaProfile && (
               <SalaTrofeusEscola
                 perfilRedeId={perfil.id}
-                isOwner={isOwner}
+                isOwner={isOwnerOuSuporte}
+                podeExcluir={isOwner}
                 accentColor={accentColor}
                 onAdd={() => { setEditingTrofeuEscola(null); setTrofeuEscolaDialogOpen(true); }}
                 onEdit={(item) => { setEditingTrofeuEscola(item); setTrofeuEscolaDialogOpen(true); }}
@@ -1557,7 +1585,7 @@ export default function CarreiraPerfilPage() {
       <CarreiraBottomNav currentUserId={currentUserId} profileSlug={mySlug} />
 
       {/* Edit dialog for rede profiles */}
-      {isOwner && isRedeProfile && perfil && (
+      {isOwnerOuSuporte && isRedeProfile && perfil && (
         <EditPerfilRedeDialog
           open={editDialogOpen}
           onOpenChange={setEditDialogOpen}
@@ -1565,7 +1593,7 @@ export default function CarreiraPerfilPage() {
         />
       )}
       {/* Edit dialog for athlete profiles */}
-      {isOwner && !isRedeProfile && perfil && (
+      {isOwnerOuSuporte && !isRedeProfile && perfil && (
         <EditPerfilDialog
           open={editDialogOpen}
           onOpenChange={setEditDialogOpen}
@@ -1581,7 +1609,7 @@ export default function CarreiraPerfilPage() {
           defaultTab={configDialogTab}
         />
       )}
-      {isOwner && showHistorico && (
+      {isOwnerOuSuporte && showHistorico && (
         <HistoricoProfissionalFormDialog
           open={historicoDialogOpen}
           onOpenChange={setHistoricoDialogOpen}
@@ -1589,7 +1617,7 @@ export default function CarreiraPerfilPage() {
           onSave={handleSaveHistorico}
         />
       )}
-      {isOwner && isDonoEscolaProfile && (
+      {isOwnerOuSuporte && isDonoEscolaProfile && (
         <SalaTrofeusEscolaFormDialog
           open={trofeuEscolaDialogOpen}
           onOpenChange={setTrofeuEscolaDialogOpen}
