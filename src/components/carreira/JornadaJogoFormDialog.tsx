@@ -847,6 +847,9 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
                       f.type !== 'image/tiff';
                     return (
                       <div key={i} className="relative aspect-square rounded-md overflow-hidden bg-muted border-2 border-dashed border-primary/40">
+                        <span className="absolute top-1 left-1 z-10 rounded-full bg-primary/90 text-primary-foreground text-[9px] font-medium px-1.5 py-0.5">
+                          Pendente
+                        </span>
                         {isVid ? (
                           <div className="w-full h-full flex flex-col items-center justify-center text-xs gap-1 p-1 text-center">
                             <Video className="w-5 h-5" />
@@ -870,6 +873,11 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
                     );
                   })}
                 </div>
+              )}
+              {novosArquivos.length > 0 && !uploadProgress && (
+                <p className="text-[11px] text-primary">
+                  📎 {novosArquivos.length} arquivo(s) selecionado(s) — só são enviados de verdade quando você clicar em "Salvar".
+                </p>
               )}
               <Button type="button" size="sm" variant="outline" onClick={() => fileRef.current?.click()}>
                 <Upload className="w-3.5 h-3.5 mr-1" /> Adicionar fotos/vídeos
