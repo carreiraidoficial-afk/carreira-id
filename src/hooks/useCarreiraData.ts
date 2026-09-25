@@ -743,6 +743,49 @@ export function useToggleFollow() {
   });
 }
 
+export interface ComunidadeAtleta {
+  id: string;
+  nome: string;
+  foto_url: string | null;
+  slug: string;
+  modalidade: string | null;
+}
+
+/** Atletas com conexão aceita com esta escola (perfil dono_escola) --
+ * a "comunidade" pública da escola, tipo seguidores de uma empresa no LinkedIn. */
+export function useComunidadeEscola(escolaUserId: string | undefined) {
+  return useQuery({
+    queryKey: ['comunidade-escola', escolaUserId],
+    queryFn: async () => {
+      if (!escolaUserId) return [];
+
+      const { data: conexoes, error } = await supabase
+        .from('rede_conexoes')
+        .select('solicitante_id, destinatario_id, solicitante_perfil_atleta_id, destinatario_perfil_atleta_id')
+        .eq('status', 'aceita')
+        .or(`solicitante_id.eq.${escolaUserId},destinatario_id.eq.${escolaUserId}`);
+      if (error) throw error;
+
+      // Só conta conexões vindas de um perfil_atleta (exclui outros perfis
+      // de rede que também podem "conectar" com a escola).
+      const atletaIds = (conexoes || [])
+        .map((row) => (row.solicitante_id === escolaUserId ? row.destinatario_perfil_atleta_id : row.solicitante_perfil_atleta_id))
+        .filter((id): id is string => !!id);
+      if (atletaIds.length === 0) return [];
+
+      const { data: atletas, error: atletasError } = await supabase
+        .from('perfil_atleta')
+        .select('id, nome, foto_url, slug, modalidade')
+        .in('id', atletaIds)
+        .eq('is_public', true);
+      if (atletasError) throw atletasError;
+
+      return (atletas || []) as ComunidadeAtleta[];
+    },
+    enabled: !!escolaUserId,
+  });
+}
+
 // Convert HEIC to JPEG before upload
 async function convertHeicIfNeeded(file: File): Promise<File> {
   if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {

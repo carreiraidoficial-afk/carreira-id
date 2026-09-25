@@ -17,6 +17,7 @@ import { EditPerfilRedeDialog } from '@/components/carreira/EditPerfilRedeDialog
 import { HistoricoProfissionalSection, type HistoricoProfissional } from '@/components/carreira/HistoricoProfissionalSection';
 import { HistoricoProfissionalFormDialog } from '@/components/carreira/HistoricoProfissionalFormDialog';
 import { SalaTrofeusEscola } from '@/components/carreira/SalaTrofeusEscola';
+import { ComunidadeEscolaSection } from '@/components/carreira/ComunidadeEscolaSection';
 import { SalaTrofeusEscolaFormDialog } from '@/components/carreira/SalaTrofeusEscolaFormDialog';
 import { useCreateTrofeuEscola, useUpdateTrofeuEscola, useDeleteTrofeuEscola, type TrofeuEscola, type TrofeuEscolaInput } from '@/hooks/useSalaTrofeusEscola';
 import { EditPerfilDialog } from '@/components/carreira/EditPerfilDialog';
@@ -316,11 +317,18 @@ export default function CarreiraPerfilPage() {
   const updateTrofeuEscola = useUpdateTrofeuEscola(trofeuEscolaPerfilRedeId);
   const deleteTrofeuEscola = useDeleteTrofeuEscola(trofeuEscolaPerfilRedeId);
 
+  // Pra dono_escola o nome exibido/usado em SEO é o da escola, não o de
+  // quem cadastrou -- dados_perfil.nome_escola é só resquício de perfis
+  // criados antes desse campo virar o `nome` principal do formulário.
+  const seoNome = perfil
+    ? (isDonoEscolaProfileForHooks ? ((perfil as any).dados_perfil?.nome_escola || perfil.nome) : perfil.nome)
+    : null;
+
   useSEO({
     title: perfil
       ? (perfil.type === 'atleta'
-          ? `${perfil.nome}${(perfil as any).modalidade ? ` - ${(perfil as any).modalidade}` : ''} | CARREIRA ID`
-          : `${perfil.nome} | CARREIRA ID`)
+          ? `${seoNome}${(perfil as any).modalidade ? ` - ${(perfil as any).modalidade}` : ''} | CARREIRA ID`
+          : `${seoNome} | CARREIRA ID`)
       : 'Perfil de Atleta | CARREIRA ID',
     description: perfil
       ? (perfil.type === 'atleta'
@@ -328,16 +336,16 @@ export default function CarreiraPerfilPage() {
               (perfil as any).modalidade,
               [(perfil as any).cidade, (perfil as any).estado].filter(Boolean).join('/'),
               (perfil as any).bio,
-            ].filter(Boolean).join(' — ') || `Perfil esportivo de ${perfil.nome} no CARREIRA ID.`
-          : ((perfil as any).bio || `Perfil de ${perfil.nome} na rede CARREIRA ID.`))
+            ].filter(Boolean).join(' — ') || `Perfil esportivo de ${seoNome} no CARREIRA ID.`
+          : ((perfil as any).bio || `Perfil de ${seoNome} na rede CARREIRA ID.`))
       : 'Veja a trajetória esportiva documentada no CARREIRA ID.',
     path: perfil?.slug ? `/${perfil.slug}` : undefined,
     image: (perfil as any)?.foto_url || undefined,
     type: 'profile',
     noindex: perfil ? (perfil as any).is_public === false : false,
     jsonLd: perfil ? {
-      '@type': 'Person',
-      name: perfil.nome,
+      '@type': isDonoEscolaProfileForHooks ? 'Organization' : 'Person',
+      name: seoNome,
       url: `https://carreiraid.com.br/${perfil.slug}`,
       image: (perfil as any).foto_url || undefined,
       description: perfil.type === 'atleta' ? (perfil as any).modalidade : undefined,
@@ -1300,6 +1308,12 @@ export default function CarreiraPerfilPage() {
                 onEdit={(item) => { setEditingTrofeuEscola(item); setTrofeuEscolaDialogOpen(true); }}
                 onDelete={handleDeleteTrofeuEscola}
               />
+            )}
+
+            {/* Comunidade da Escola — alunos (perfil_atleta) com conexão
+                aceita com a escola, pública pra qualquer visitante. */}
+            {isDonoEscolaProfile && (
+              <ComunidadeEscolaSection escolaUserId={perfil.user_id} accentColor={accentColor} />
             )}
 
             {/* Descobrir Atletas — scouting profiles on desktop */}

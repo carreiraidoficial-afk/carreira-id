@@ -65,7 +65,6 @@ function getFields(type: ProfileType): FieldDef[] {
       ];
     case 'dono_escola':
       return [
-        { key: 'nome_escola', label: 'Nome da Escolinha / Clube', type: 'text', required: true, placeholder: 'Ex: Escola de Futebol Gol de Placa' },
         { key: 'endereco', label: 'Endereço da Sede', type: 'text', placeholder: 'Ex: Rua das Flores, 123 - Centro' },
         { key: 'localizacao', label: 'Localização (Cidade, Estado)', type: 'text', required: true, placeholder: 'Ex: São Paulo, SP' },
         { key: 'modalidades', label: 'Modalidades Oferecidas', type: 'multiselect', required: true, options: MODALIDADES_ESCOLA },
@@ -177,7 +176,11 @@ const EMPTY_UNIDADE: Unidade = { nome: '', endereco: '', bairro: '', referencia:
 
 export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack, onComplete }: Props) {
   const fields = getFields(type);
-  const [nome, setNome] = useState(defaultName || '');
+  // Pra dono_escola esse campo vira o nome DA ESCOLA (é o que gera a URL
+  // pública e o título da página) -- não faz sentido pré-preencher com o
+  // nome da pessoa que está cadastrando. O nome da pessoa já é guardado à
+  // parte em profiles.nome (editável em Configurações > Responsável).
+  const [nome, setNome] = useState(type === 'dono_escola' ? '' : (defaultName || ''));
   const [values, setValues] = useState<Record<string, string | string[]>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [fotoFile, setFotoFile] = useState<File | null>(null);
@@ -273,7 +276,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nome.trim()) {
-      toast.error('Nome é obrigatório');
+      toast.error(isDono ? 'Nome da escola é obrigatório' : 'Nome é obrigatório');
       scrollToError(nomeRef.current);
       return;
     }
@@ -488,8 +491,8 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Name */}
         <div className="space-y-2">
-          <Label htmlFor="nome">Nome Completo *</Label>
-          <Input id="nome" ref={nomeRef} value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Seu nome completo" required maxLength={100} />
+          <Label htmlFor="nome">{isDono ? 'Nome da Escolinha / Clube *' : 'Nome Completo *'}</Label>
+          <Input id="nome" ref={nomeRef} value={nome} onChange={(e) => setNome(e.target.value)} placeholder={isDono ? 'Ex: Escola de Futebol Gol de Placa' : 'Seu nome completo'} required maxLength={100} />
         </div>
 
         {/* Photo */}
