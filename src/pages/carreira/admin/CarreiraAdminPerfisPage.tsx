@@ -692,7 +692,7 @@ export default function CarreiraAdminPerfisPage() {
             <TabsTrigger value="atleta">Atletas ({perfisAtleta?.length || 0})</TabsTrigger>
             <TabsTrigger value="rede">Rede Profissional ({perfisRede?.length || 0})</TabsTrigger>
             <TabsTrigger value="teste" className="gap-1.5"><FlaskConical className="w-3.5 h-3.5" />Perfil de Teste ({perfisTeste?.length || 0})</TabsTrigger>
-            <TabsTrigger value="incompletos" className="gap-1.5"><UserX className="w-3.5 h-3.5" />Cadastro Incompleto ({cadastrosIncompletos?.length || 0})</TabsTrigger>
+            <TabsTrigger value="incompletos" className="gap-1.5"><UserX className="w-3.5 h-3.5" />Perfil Incompleto ({cadastrosIncompletos?.length || 0})</TabsTrigger>
             <TabsTrigger value="colaboradores" className="gap-1.5"><Users className="w-3.5 h-3.5" />Colaboradores ({colaboradores?.length || 0})</TabsTrigger>
           </TabsList>
 
@@ -731,16 +731,16 @@ export default function CarreiraAdminPerfisPage() {
 
           <TabsContent value="incompletos" className="space-y-4">
             <p className="text-xs text-muted-foreground">
-              Pessoas que criaram conta (login com email/senha ou Google) mas nunca completaram nenhum
-              perfil de atleta ou profissional — a jornada parou na tela de escolha de tipo de perfil ou
-              no formulário seguinte. Dá pra entrar em contato direto pelo email.
+              O cadastro (conta de login) já está feito — só falta a pessoa escolher o tipo de perfil e
+              preencher os dados (nenhum perfil de atleta ou profissional foi criado ainda). Dá pra entrar
+              em contato direto pelo email.
             </p>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input placeholder="Buscar por nome ou email..." value={searchIncompletos} onChange={(e) => setSearchIncompletos(e.target.value)} className="pl-10" />
             </div>
             {loadingIncompletos ? <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-              : !cadastrosIncompletos?.length ? <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum cadastro incompleto</CardContent></Card>
+              : !cadastrosIncompletos?.length ? <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum perfil incompleto</CardContent></Card>
               : <CadastrosIncompletosTable pessoas={cadastrosIncompletos} />}
           </TabsContent>
 

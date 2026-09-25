@@ -7,11 +7,17 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const WHATSAPP_SUPORTE = "https://wa.me/5521969622045";
+const WHATSAPP_GRUPO_PAIS = "https://chat.whatsapp.com/HowU46FP9KfE5da6g9PORV";
+
 interface PerfilIncompletoEmailRequest {
   nome: string;
   email: string;
+  assunto: string;
+  titulo: string;
+  corpo: string;
+  ctaTexto?: string;
   profileUrl?: string;
-  percentualCompleto?: number;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -29,26 +35,28 @@ const handler = async (req: Request): Promise<Response> => {
     const {
       nome,
       email,
+      assunto,
+      titulo,
+      corpo,
+      ctaTexto = "Completar meu perfil",
       profileUrl = "https://carreiraid.com.br/cadastro",
-      percentualCompleto = 50,
     }: PerfilIncompletoEmailRequest = await req.json();
 
-    if (!nome || !email) {
+    if (!nome || !email || !assunto || !titulo || !corpo) {
       return new Response(
-        JSON.stringify({ success: false, error: "nome e email são obrigatórios" }),
+        JSON.stringify({ success: false, error: "nome, email, assunto, titulo e corpo são obrigatórios" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
     const primeiroNome = nome.trim().split(" ")[0];
-    const pct = Math.max(0, Math.min(100, Math.round(percentualCompleto)));
 
-    console.log(`Enviando email de perfil incompleto para ${email} (${pct}%)`);
+    console.log(`Enviando lembrete de perfil incompleto para ${email}`);
 
     const emailResponse = await resend.emails.send({
       from: "Carreira ID <contato@carreiraid.com.br>",
       to: [email],
-      subject: "Falta pouco pro seu perfil ficar completo ⚽",
+      subject: assunto,
       html: `<!DOCTYPE html>
 <html>
 <head>
@@ -68,7 +76,7 @@ const handler = async (req: Request): Promise<Response> => {
 </head>
 <body style="margin:0;padding:0;background:#0b1220;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">
-    Falta pouco — complete seu perfil e apareça pra quem importa no esporte de base.
+    ${titulo} — complete seu perfil e apareça pra quem importa no esporte de base.
   </div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0b1220;">
     <tr>
@@ -96,42 +104,16 @@ const handler = async (req: Request): Promise<Response> => {
                 Olá, ${primeiroNome}!
               </p>
               <h1 class="hero-headline" style="margin:0 0 14px 0;font-size:32px;line-height:1.2;font-weight:800;color:#f1f5f9;letter-spacing:-0.3px;">
-                Falta pouco pro seu<br>perfil ficar completo
+                ${titulo}
               </h1>
-              <p style="margin:0;font-size:15px;line-height:1.6;color:#94a3b8;max-width:440px;">
-                Você já deu o primeiro passo e criou seu perfil de atleta — mas o cadastro ainda não foi concluído.
+              <p style="margin:0;font-size:15px;line-height:1.6;color:#94a3b8;max-width:480px;">
+                ${corpo}
               </p>
             </td>
           </tr>
 
           <tr>
-            <td align="center" style="padding:28px 40px 8px 40px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0f1a2e;border:1px solid #24324a;">
-                <tr>
-                  <td align="center" style="padding:36px 20px;">
-                    <table role="presentation" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td style="font-size:64px;font-weight:800;color:#f1f5f9;letter-spacing:-2px;">
-                          ${pct}<span style="color:#f97316;">%</span>
-                        </td>
-                      </tr>
-                    </table>
-                    <table role="presentation" width="220" cellpadding="0" cellspacing="0" style="margin-top:14px;">
-                      <tr>
-                        <td style="height:6px;background:#24324a;">
-                          <table role="presentation" width="${pct}%" height="6" cellpadding="0" cellspacing="0"><tr><td style="background:#f97316;height:6px;"></td></tr></table>
-                        </td>
-                      </tr>
-                    </table>
-                    <p style="margin:14px 0 0 0;font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">do perfil preenchido</p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <tr>
-            <td class="stack-pad" style="padding:32px 40px 4px 40px;">
+            <td class="stack-pad" style="padding:36px 40px 4px 40px;">
               <p style="margin:0;font-size:15px;line-height:1.6;color:#f1f5f9;">
                 <strong>Ao concluir seu cadastro, você poderá:</strong>
               </p>
@@ -190,20 +172,12 @@ const handler = async (req: Request): Promise<Response> => {
           </tr>
 
           <tr>
-            <td class="stack-pad" style="padding:28px 40px 0 40px;">
-              <p style="margin:0;font-size:14px;line-height:1.6;color:#f1f5f9;">
-                Quanto mais completo o perfil, maiores as chances de <strong style="color:#f97316;">alguém enxergar seu potencial</strong>.
-              </p>
-            </td>
-          </tr>
-
-          <tr>
-            <td align="center" style="padding:32px 40px 12px 40px;">
+            <td align="center" style="padding:32px 40px 8px 40px;">
               <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center" style="background:#f97316;">
                     <a href="${profileUrl}" style="display:inline-block;padding:15px 36px;font-size:15px;font-weight:700;color:#0b1220;">
-                      Completar meu perfil →
+                      ${ctaTexto} →
                     </a>
                   </td>
                 </tr>
@@ -213,7 +187,28 @@ const handler = async (req: Request): Promise<Response> => {
           </tr>
 
           <tr>
-            <td class="stack-pad" style="padding:20px 40px 40px 40px;">
+            <td align="center" style="padding:20px 40px 8px 40px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0f1a2e;border:1px solid #24324a;">
+                <tr>
+                  <td align="center" style="padding:22px 20px;">
+                    <p style="margin:0 0 12px 0;font-size:13px;line-height:1.5;color:#94a3b8;">Ficou com alguma dúvida? A gente te ajuda na hora.</p>
+                    <table role="presentation" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center" style="background:#22c55e;">
+                          <a href="${WHATSAPP_SUPORTE}" style="display:inline-block;padding:11px 24px;font-size:13px;font-weight:700;color:#0b1220;">
+                            💬 Falar no WhatsApp
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="stack-pad" style="padding:28px 40px 0 40px;">
               <p style="margin:0;font-size:14px;line-height:1.6;color:#94a3b8;">
                 Estamos na torcida pela sua jornada.<br>
                 <strong style="color:#f1f5f9;">Equipe Carreira ID</strong>
@@ -222,12 +217,31 @@ const handler = async (req: Request): Promise<Response> => {
           </tr>
 
           <tr>
-            <td class="stack-pad" style="padding:24px 40px;background:#0f1a2e;border-top:1px solid #24324a;">
-              <p style="margin:0 0 8px 0;font-size:12px;line-height:1.6;color:#64748b;">
-                Dúvidas? Fale com a gente no <a href="https://wa.me/5521969622045" style="color:#22c55e;font-weight:600;">WhatsApp</a>.
-              </p>
+            <td align="center" style="padding:28px 40px 32px 40px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px dashed #24324a;">
+                <tr>
+                  <td align="center" style="padding:24px 20px;">
+                    <p style="margin:0 0 4px 0;font-size:14px;font-weight:700;color:#f1f5f9;">👨‍👩‍👧 Grupo de Pais de Atletas de Base</p>
+                    <p style="margin:0 0 14px 0;font-size:13px;line-height:1.5;color:#94a3b8;">Troca com outros pais e mães, dicas e novidades — direto no seu WhatsApp.</p>
+                    <table role="presentation" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center" style="border:1px solid #f97316;">
+                          <a href="${WHATSAPP_GRUPO_PAIS}" style="display:inline-block;padding:11px 24px;font-size:13px;font-weight:700;color:#f97316;">
+                            Entrar no grupo →
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="stack-pad" style="padding:20px 40px;background:#0f1a2e;border-top:1px solid #24324a;">
               <p style="margin:0;font-size:11px;line-height:1.6;color:#475569;">
-                Você recebeu este e-mail porque criou um perfil no Carreira ID.
+                Você recebeu este e-mail porque criou uma conta no Carreira ID.
               </p>
             </td>
           </tr>
