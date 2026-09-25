@@ -29,8 +29,7 @@ import { trackCompleteRegistration, trackProfileCreated, trackInitiateCheckout, 
 import { trackOnboardingFunil } from '@/lib/onboardingFunil';
 import { salvarPendingRef, processarConviteRef } from '@/lib/processar-convite-ref';
 import { TERMOS_VERSAO } from '@/lib/termosVersao';
-import { pickCriancaAtiva } from '@/hooks/useCriancaAtiva';
-import type { PerfilAtleta } from '@/hooks/useCarreiraData';
+import { resolverSlugPosLogin } from '@/hooks/useCriancaAtiva';
 
 type Step = 'tutorial' | 'auth' | 'recuperar-senha' | 'profile-type' | 'profile-form';
 
@@ -70,8 +69,9 @@ export default function CarreiraCadastroPage() {
   const refParam = searchParams.get('ref') as 'torcedor' | 'atleta' | 'rede' | null;
   const refConviteCodigo = searchParams.get('c');
   const refAtletaSlug = searchParams.get('a');
-  // Cadastro intencional de mais um atleta (irmãos) pra um responsável que já
-  // tem perfil -- ligado ao botão "Adicionar outro atleta" no painel.
+  // Cadastro intencional de mais um perfil pra quem já tem conta -- mais um
+  // atleta (irmãos, botão "Adicionar outro atleta") ou um 2º tipo de perfil
+  // na mesma conta (botão "Adicionar outro tipo de perfil" nas Configurações).
   const wantsNewProfile = searchParams.get('novo') === '1';
 
   const [step, setStep] = useState<Step>('tutorial');
@@ -205,55 +205,10 @@ export default function CarreiraCadastroPage() {
 
       try {
         if (!wantsNewProfile) {
-          // Um responsável pode ter mais de um atleta cadastrado (irmãos) --
-          // busca todos e respeita a última criança selecionada no seletor,
-          // em vez de sempre cair na criada mais recentemente.
-          const { data: perfisAtleta } = await supabase
-            .from('perfil_atleta')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .order('created_at', { ascending: true });
-
-          const perfilAtivo = pickCriancaAtiva((perfisAtleta || []) as PerfilAtleta[], session.user.id);
-          if (perfilAtivo?.slug) {
-            navigate(carreiraPath(`/${perfilAtivo.slug}`), { replace: true });
+          const slug = await resolverSlugPosLogin(session.user.id);
+          if (slug) {
+            navigate(carreiraPath(`/${slug}`), { replace: true });
             return true;
-          }
-
-          const { data: perfilRede } = await supabase
-            .from('perfis_rede')
-            .select('id, slug')
-            .eq('user_id', session.user.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (perfilRede?.slug) {
-            navigate(carreiraPath(`/${perfilRede.slug}`), { replace: true });
-            return true;
-          }
-
-          // Não é dono de nenhum perfil -- pode ser colaborador (ex: o
-          // próprio atleta, ou outro responsável, com login próprio).
-          const { data: colaboracoes } = await supabase
-            .from('perfil_atleta_colaboradores')
-            .select('crianca_id')
-            .eq('user_id', session.user.id)
-            .eq('status', 'ativo');
-
-          const criancaIdsColaborados = (colaboracoes || []).map((c: any) => c.crianca_id).filter(Boolean);
-          if (criancaIdsColaborados.length > 0) {
-            const { data: perfisColaborados } = await supabase
-              .from('perfil_atleta')
-              .select('*')
-              .in('crianca_id', criancaIdsColaborados)
-              .order('created_at', { ascending: true });
-
-            const colaboradorAtivo = pickCriancaAtiva((perfisColaborados || []) as PerfilAtleta[], session.user.id);
-            if (colaboradorAtivo?.slug) {
-              navigate(carreiraPath(`/${colaboradorAtivo.slug}`), { replace: true });
-              return true;
-            }
           }
         }
       } catch (err) {
@@ -319,27 +274,11 @@ export default function CarreiraCadastroPage() {
           trackCompleteRegistration('email');
           pushDataLayer('login', { method: 'email' });
           setUserId(data.user.id);
-          const { data: perfisAtleta } = await supabase
-            .from('perfil_atleta')
-            .select('*')
-            .eq('user_id', data.user.id)
-            .order('created_at', { ascending: true });
-          const perfilAtivo = pickCriancaAtiva((perfisAtleta || []) as PerfilAtleta[], data.user.id);
-          if (perfilAtivo?.slug) {
-            navigate(carreiraPath(`/${perfilAtivo.slug}`), { replace: true });
+          const slug = await resolverSlugPosLogin(data.user.id);
+          if (slug) {
+            navigate(carreiraPath(`/${slug}`), { replace: true });
           } else {
-            const { data: perfilRede } = await supabase
-              .from('perfis_rede')
-              .select('id, slug')
-              .eq('user_id', data.user.id)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            if (perfilRede?.slug) {
-              navigate(carreiraPath(`/${perfilRede.slug}`), { replace: true });
-            } else {
-              setStep('profile-type');
-            }
+            setStep('profile-type');
           }
         }
       } else {
@@ -455,6 +394,32 @@ export default function CarreiraCadastroPage() {
     if (userId) {
       // Processa convite/auto-follow vindos de ?ref&c&a (não bloqueia o fluxo)
       processarConviteRef(userId).catch(() => { /* silencioso */ });
+
+      // Decide pelo tipo que acabou de ser submetido (`selectedType`), não
+      // por "qual tabela tem alguma linha" -- uma conta que já tinha um
+      // perfil_atleta e acabou de criar um perfis_rede (2º tipo de perfil)
+      // sempre encontraria o atleta ANTIGO aqui e re-rodaria a lógica de
+      // trial/família dele, ignorando o perfil novo.
+      if (selectedType !== 'atleta_filho') {
+        const { data: perfilRede } = await supabase
+          .from('perfis_rede')
+          .select('slug, tipo')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (perfilRede?.slug) {
+          trackProfileCreated(perfilRede.tipo || 'rede');
+          pushDataLayer('profile_created', { type: perfilRede.tipo });
+          setProfileSlug(perfilRede.slug);
+          finishOnboarding(perfilRede.slug);
+          return;
+        }
+        setProfileSlug(null);
+        finishOnboarding(null);
+        return;
+      }
 
       const { data: perfilAtleta } = await supabase
         .from('perfil_atleta')
@@ -578,22 +543,6 @@ export default function CarreiraCadastroPage() {
         }
 
         finishOnboarding(perfilAtleta.slug);
-        return;
-      }
-
-      const { data: perfilRede } = await supabase
-        .from('perfis_rede')
-        .select('slug, tipo')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      
-      if (perfilRede?.slug) {
-        trackProfileCreated(perfilRede.tipo || 'rede');
-        pushDataLayer('profile_created', { type: perfilRede.tipo });
-        setProfileSlug(perfilRede.slug);
-        finishOnboarding(perfilRede.slug);
         return;
       }
     }

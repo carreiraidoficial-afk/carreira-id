@@ -39,7 +39,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, UserX, MapPin, Trophy, Share2, User, UserPlus, UserCheck, Users, Copy, Check, Search, School, X, LogOut, Pencil, Instagram, Globe, Phone, Zap, Settings } from 'lucide-react';
+import { Loader2, ArrowLeft, UserX, MapPin, Trophy, Share2, User, UserPlus, UserCheck, Users, Copy, Check, Search, School, X, LogOut, Pencil, Instagram, Globe, Phone, Zap, Settings, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useSEO } from '@/hooks/useSEO';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -50,8 +50,9 @@ import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { useCarreiraRanking } from '@/hooks/useCarreiraRanking';
 import { useAnonymousGate } from '@/hooks/useAnonymousGate';
-import { useCriancaAtiva, useColaboradorInfo } from '@/hooks/useCriancaAtiva';
+import { useCriancaAtiva, useColaboradorInfo, useMeusAmbientes } from '@/hooks/useCriancaAtiva';
 import { SeletorCrianca } from '@/components/carreira/SeletorCrianca';
+import { AmbienteSwitcher } from '@/components/carreira/AmbienteSwitcher';
 import { LockedSection } from '@/components/carreira/AnonymousFeedCTA';
 
 const TYPE_LABELS: Record<string, string> = {
@@ -360,6 +361,7 @@ export default function CarreiraPerfilPage() {
   const [editingHistorico, setEditingHistorico] = useState<HistoricoProfissional | null>(null);
   const [trofeuEscolaDialogOpen, setTrofeuEscolaDialogOpen] = useState(false);
   const [editingTrofeuEscola, setEditingTrofeuEscola] = useState<TrofeuEscola | null>(null);
+  const [avisoAmbienteVisto, setAvisoAmbienteVisto] = useState(true);
   const { theme: carreiraTheme, isDarkTheme, setDarkTheme } = useCarreiraTheme();
   const isOwner = !!(currentUserId && perfil && currentUserId === perfil.user_id);
   const isAnonymous = !currentUserId;
@@ -369,6 +371,24 @@ export default function CarreiraPerfilPage() {
   // seletor bem onde o dono realmente costuma ver o próprio perfil (aqui),
   // não só na tela "Minha Carreira" em /minha.
   const { perfis: meusPerfis, perfilAtivo: meuPerfilAtivo, selecionarCrianca } = useCriancaAtiva(currentUserId);
+  // Conta com os dois tipos de perfil (atleta E rede) -- ex: pai de atleta
+  // que também é dono de escola. `temMultiploAmbiente` fica false pra
+  // praticamente todo mundo, então o switcher/banner abaixo não aparecem.
+  const meusAmbientes = useMeusAmbientes(currentUserId);
+  useEffect(() => {
+    if (!currentUserId || !meusAmbientes.temMultiploAmbiente) return;
+    try {
+      setAvisoAmbienteVisto(!!localStorage.getItem(`carreira_aviso_multi_ambiente_visto_${currentUserId}`));
+    } catch {
+      setAvisoAmbienteVisto(true);
+    }
+  }, [currentUserId, meusAmbientes.temMultiploAmbiente]);
+  const dispensarAvisoAmbiente = () => {
+    setAvisoAmbienteVisto(true);
+    if (currentUserId) {
+      try { localStorage.setItem(`carreira_aviso_multi_ambiente_visto_${currentUserId}`, '1'); } catch { /* ok */ }
+    }
+  };
   // Colaborador ativo (mãe/pai/o próprio atleta com outro login) pode postar
   // e registrar jornada, mas NÃO deve virar "isOwner" pras seções restritas
   // (editar perfil, peneiras, assinatura etc) -- por isso um flag à parte.
@@ -590,6 +610,7 @@ export default function CarreiraPerfilPage() {
     : [];
   const isRedeProfile = perfil.type === 'rede';
   const isDonoEscolaProfile = isRedeProfile && perfil.tipo === 'dono_escola';
+  const ambienteAtual: 'atleta' | 'rede' = isRedeProfile ? 'rede' : 'atleta';
 
   const NON_HISTORICO_TYPES = ['atleta_filho', 'pai_responsavel', 'influenciador', 'torcedor'];
   const showHistorico = isRedeProfile && !NON_HISTORICO_TYPES.includes(perfil.tipo || '');
@@ -758,6 +779,18 @@ export default function CarreiraPerfilPage() {
                       />
                     </div>
                   )}
+                  {isOwner && currentUserId && meusAmbientes.temMultiploAmbiente && (
+                    <div className="hidden lg:block">
+                      <AmbienteSwitcher
+                        userId={currentUserId}
+                        ambienteAtual={ambienteAtual}
+                        atletaSlug={meusAmbientes.atletaSlug!}
+                        atletaNome={meusAmbientes.atletaNome || 'Atleta'}
+                        redeSlug={meusAmbientes.redeSlug!}
+                        redeNome={meusAmbientes.redeNome || 'Escola'}
+                      />
+                    </div>
+                  )}
                   <Button variant="outline" size="sm" className="h-8 text-xs px-2 sm:px-3"
                     style={{ borderColor: `${accentColor}50`, color: accentColor }}
                     onClick={async () => {
@@ -831,6 +864,18 @@ export default function CarreiraPerfilPage() {
             />
           </div>
         )}
+        {isOwner && currentUserId && meusAmbientes.temMultiploAmbiente && (
+          <div className="lg:hidden container px-4 pb-2 max-w-6xl">
+            <AmbienteSwitcher
+              userId={currentUserId}
+              ambienteAtual={ambienteAtual}
+              atletaSlug={meusAmbientes.atletaSlug!}
+              atletaNome={meusAmbientes.atletaNome || 'Atleta'}
+              redeSlug={meusAmbientes.redeSlug!}
+              redeNome={meusAmbientes.redeNome || 'Escola'}
+            />
+          </div>
+        )}
         {/* Row 2: Search bar + theme toggle — mobile only */}
         <div className="lg:hidden container px-4 pb-2 max-w-6xl flex items-center gap-2">
           <div className="relative flex-1">
@@ -855,6 +900,20 @@ export default function CarreiraPerfilPage() {
           />
         </div>
       </header>
+
+      {isOwner && meusAmbientes.temMultiploAmbiente && !avisoAmbienteVisto && (
+        <div className="container max-w-6xl px-4 pt-3">
+          <div className="flex items-start gap-2.5 rounded-lg border p-3 text-sm" style={{ borderColor: `${accentColor}40`, backgroundColor: `${accentColor}0d` }}>
+            <Info className="w-4 h-4 shrink-0 mt-0.5" style={{ color: accentColor }} />
+            <p className="flex-1 text-foreground">
+              Você tem dois perfis nessa conta — agora dá pra alternar entre eles, e o próximo login já abre direto no último que você visitou.
+            </p>
+            <button onClick={dispensarAvisoAmbiente} className="text-xs font-medium underline shrink-0" style={{ color: accentColor }}>
+              Entendi
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Search overlay + results — OUTSIDE header to fix z-index stacking */}
       {searchOpen && <div className="fixed inset-0 z-[55]" onClick={() => setSearchOpen(false)} />}

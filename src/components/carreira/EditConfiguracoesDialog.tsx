@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, UserCircle, Save, CreditCard, ShieldCheck, Fingerprint, Smartphone, Bell, KeyRound, MessageCircle, FileText, ChevronRight, Users, Lock, Globe, Trash2 } from 'lucide-react';
+import { Loader2, UserCircle, Save, CreditCard, ShieldCheck, Fingerprint, Smartphone, Bell, KeyRound, MessageCircle, FileText, ChevronRight, Users, Lock, Globe, Trash2, Layers } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
 import { AssinaturaCard } from './AssinaturaCard';
@@ -50,6 +52,7 @@ interface EditConfiguracoesDialogProps {
  */
 export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo = 'atleta', defaultTab = 'responsavel' }: EditConfiguracoesDialogProps) {
   const isAtleta = perfilTipo === 'atleta';
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [enviandoReset, setEnviandoReset] = useState(false);
@@ -160,6 +163,25 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
                   <div className="text-left min-w-0">
                     <p className="text-sm font-medium">Alterar senha</p>
                     <p className="text-xs text-muted-foreground">Enviamos um link por e-mail pra você definir uma nova senha</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+              </button>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                className="w-full flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors"
+                onClick={() => { onOpenChange(false); navigate(carreiraPath('/cadastro?novo=1')); }}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <Layers className="w-4 h-4" />
+                  </div>
+                  <div className="text-left min-w-0">
+                    <p className="text-sm font-medium">Adicionar outro tipo de perfil</p>
+                    <p className="text-xs text-muted-foreground">Também é dono de escola ou pai de atleta? Crie o segundo perfil nessa mesma conta.</p>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />

@@ -4,6 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import type { PerfilAtleta } from '@/hooks/useCarreiraData';
 
 const STORAGE_PREFIX = 'carreira_crianca_ativa_id';
+const AMBIENTE_STORAGE_PREFIX = 'carreira_ultimo_ambiente';
+
+export type Ambiente = 'atleta' | 'rede';
 
 export interface MeuPerfilAtleta extends PerfilAtleta {
   /** true quando o acesso vem de uma colaboração concedida (não é o dono) */
@@ -83,6 +86,114 @@ function getSavedCriancaId(userId: string): string | null {
   } catch {
     return null;
   }
+}
+
+/** Segue o mesmo padrão de `saveCriancaId`/`getSavedCriancaId` acima -- por
+ * dispositivo/navegador, não sincronizado entre aparelhos. Só entra em jogo
+ * pra contas com os dois tipos de perfil (atleta E rede); pra todo o resto
+ * não muda nada. */
+export function getUltimoAmbiente(userId: string): Ambiente | null {
+  try {
+    const v = localStorage.getItem(`${AMBIENTE_STORAGE_PREFIX}_${userId}`);
+    return v === 'atleta' || v === 'rede' ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+export function salvarUltimoAmbiente(userId: string, ambiente: Ambiente) {
+  try {
+    localStorage.setItem(`${AMBIENTE_STORAGE_PREFIX}_${userId}`, ambiente);
+  } catch {
+    /* localStorage indisponível -- só não persiste entre sessões */
+  }
+}
+
+/**
+ * Decide pra onde mandar a pessoa depois de logar -- usada tanto no listener
+ * de sessão quanto no login por senha em CarreiraCadastroPage.tsx (antes eram
+ * duas cópias quase idênticas dessa lógica). Pra contas com um só tipo de
+ * perfil o resultado é idêntico ao de sempre; só quando a conta tem
+ * `perfil_atleta` E `perfis_rede` a última escolha salva entra em jogo.
+ */
+export async function resolverSlugPosLogin(userId: string): Promise<string | null> {
+  const { data: perfisAtleta } = await supabase
+    .from('perfil_atleta')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true });
+  const perfilAtivo = pickCriancaAtiva((perfisAtleta || []) as PerfilAtleta[], userId);
+
+  const { data: perfilRede } = await supabase
+    .from('perfis_rede')
+    .select('id, slug')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (perfilAtivo?.slug && perfilRede?.slug) {
+    return getUltimoAmbiente(userId) === 'rede' ? perfilRede.slug : perfilAtivo.slug;
+  }
+  if (perfilAtivo?.slug) return perfilAtivo.slug;
+  if (perfilRede?.slug) return perfilRede.slug;
+
+  // Não é dono de nenhum perfil -- pode ser colaborador (ex: o próprio
+  // atleta, ou outro responsável, com login próprio).
+  const { data: colaboracoes } = await supabase
+    .from('perfil_atleta_colaboradores')
+    .select('crianca_id')
+    .eq('user_id', userId)
+    .eq('status', 'ativo');
+
+  const criancaIdsColaborados = (colaboracoes || []).map((c: any) => c.crianca_id).filter(Boolean);
+  if (criancaIdsColaborados.length > 0) {
+    const { data: perfisColaborados } = await supabase
+      .from('perfil_atleta')
+      .select('*')
+      .in('crianca_id', criancaIdsColaborados)
+      .order('created_at', { ascending: true });
+
+    const colaboradorAtivo = pickCriancaAtiva((perfisColaborados || []) as PerfilAtleta[], userId);
+    if (colaboradorAtivo?.slug) return colaboradorAtivo.slug;
+  }
+
+  return null;
+}
+
+/**
+ * Diz se a conta logada tem os dois tipos de perfil (atleta E rede) --
+ * usada pra decidir se mostra o seletor de ambiente / banner de aviso no
+ * perfil. Pra maioria das contas (só um tipo) retorna `temMultiploAmbiente:
+ * false` e nada muda na tela.
+ */
+export function useMeusAmbientes(userId: string | null | undefined) {
+  const { perfilAtivo: atletaAtivo } = useCriancaAtiva(userId);
+
+  const { data: rede } = useQuery({
+    queryKey: ['meu-ambiente-rede', userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('perfis_rede')
+        .select('slug, tipo, nome')
+        .eq('user_id', userId!)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data || null;
+    },
+    enabled: !!userId,
+  });
+
+  return {
+    temAtleta: !!atletaAtivo?.slug,
+    atletaSlug: atletaAtivo?.slug ?? null,
+    atletaNome: atletaAtivo?.nome ?? null,
+    temRede: !!rede?.slug,
+    redeSlug: rede?.slug ?? null,
+    redeNome: rede?.nome ?? null,
+    temMultiploAmbiente: !!atletaAtivo?.slug && !!rede?.slug,
+  };
 }
 
 /**
