@@ -27,8 +27,10 @@ interface Props {
 }
 
 import { MODALIDADES, CATEGORIAS_BASE as CATEGORIAS } from '@/constants/esportes';
-import { CountrySelect, StateSelect, CitySelect } from 'react-country-state-city';
+import { CountrySelect, StateSelect } from 'react-country-state-city';
 import 'react-country-state-city/dist/react-country-state-city.css';
+import { GeoCitySelect } from '@/components/shared/GeoCitySelect';
+import { GEO_DATA_BASE_URL } from '@/lib/geoData';
 
 function generateSlug(name: string): string {
   return name
@@ -410,6 +412,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
             placeHolder="Selecione o país"
             containerClassName="w-full"
             inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+            src={GEO_DATA_BASE_URL}
             onChange={(c: any) => {
               setPaisObj(c);
               setPais(c?.iso2 === 'BR' ? 'Brasil' : (c?.name || 'Brasil'));
@@ -435,18 +438,17 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
                 placeHolder="Selecione"
                 containerClassName="w-full"
                 inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                src={GEO_DATA_BASE_URL}
                 onChange={(s: any) => { setEstado(s?.name || ''); setEstadoIntlId(s?.id); setCidade(''); }}
               />
             </div>
             <div className="space-y-2">
               <Label>Cidade</Label>
-              <CitySelect
-                countryid={paisObj?.id}
-                stateid={estadoIntlId}
-                placeHolder="Selecione"
-                containerClassName="w-full"
-                inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                onChange={(c: any) => setCidade(c?.name || '')}
+              <GeoCitySelect
+                countryId={paisObj?.id}
+                stateId={estadoIntlId}
+                value={cidade}
+                onChange={setCidade}
               />
             </div>
           </div>

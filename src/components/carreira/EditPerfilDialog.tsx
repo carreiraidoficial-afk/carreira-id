@@ -61,8 +61,10 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 import { MODALIDADES, ESTADOS, POSICOES_FUTEBOL, POSICOES_VOLEI, POSICOES_BASQUETE, isModalidadeVolei, isModalidadeBasquete } from '@/constants/esportes';
-import { CountrySelect, StateSelect, CitySelect } from 'react-country-state-city';
+import { CountrySelect, StateSelect } from 'react-country-state-city';
 import 'react-country-state-city/dist/react-country-state-city.css';
+import { GeoCitySelect } from '@/components/shared/GeoCitySelect';
+import { GEO_DATA_BASE_URL } from '@/lib/geoData';
 
 function EditCidadeField({ form }: { form: any }) {
   const estado = form.watch('estado');
@@ -375,6 +377,7 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
                   placeHolder="Selecione o país"
                   containerClassName="w-full"
                   inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                  src={GEO_DATA_BASE_URL}
                   onChange={(c: any) => {
                     setPaisObj(c);
                     field.onChange(c?.iso2 === 'BR' ? 'Brasil' : (c?.name || 'Brasil'));
@@ -413,21 +416,20 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
                       placeHolder="Selecione"
                       containerClassName="w-full"
                       inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                      src={GEO_DATA_BASE_URL}
                       onChange={(s: any) => { form.setValue('estado', s?.name || ''); setEstadoIntlId(s?.id); form.setValue('cidade', ''); }}
                     />
                     <FormMessage />
                   </FormItem>
                 )} />
-                <FormField control={form.control} name="cidade" render={() => (
+                <FormField control={form.control} name="cidade" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cidade</FormLabel>
-                    <CitySelect
-                      countryid={paisObj?.id}
-                      stateid={estadoIntlId}
-                      placeHolder="Selecione"
-                      containerClassName="w-full"
-                      inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                      onChange={(c: any) => form.setValue('cidade', c?.name || '')}
+                    <GeoCitySelect
+                      countryId={paisObj?.id}
+                      stateId={estadoIntlId}
+                      value={field.value || ''}
+                      onChange={(nome) => form.setValue('cidade', nome)}
                     />
                     <FormMessage />
                   </FormItem>
