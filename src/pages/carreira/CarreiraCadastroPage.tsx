@@ -27,7 +27,7 @@ import { PushNotificationPopup } from '@/components/shared/PushNotificationPopup
 import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { trackCompleteRegistration, trackProfileCreated, trackInitiateCheckout, trackSubscribe, pushDataLayer } from '@/lib/fbPixel';
 import { trackOnboardingFunil } from '@/lib/onboardingFunil';
-import { salvarPendingRef, processarConviteRef } from '@/lib/processar-convite-ref';
+import { salvarPendingRef, lerPendingRef, processarConviteRef } from '@/lib/processar-convite-ref';
 import { TERMOS_VERSAO } from '@/lib/termosVersao';
 import { resolverSlugPosLogin } from '@/hooks/useCriancaAtiva';
 
@@ -120,13 +120,18 @@ export default function CarreiraCadastroPage() {
 
   // Auto-seleciona tipo quando vem de ?ref=torcedor ou ?ref=atleta -- pula a
   // tela de escolha de perfil pra quem já entrou por um link dedicado (ex:
-  // botão "Criar Perfil Gratuito" da landing, voltado a pais de atleta).
+  // botão "Cadastrar Meu Atleta" da landing, voltado a pais de atleta).
+  // Usa lerPendingRef() como fallback pro caso de "Entrar com Google": o
+  // redirect da OAuth volta pra /cadastro sem o ?ref na URL (ver
+  // handleGoogleLogin), mas o valor já foi salvo em sessionStorage antes de
+  // sair pro Google, então continua disponível na volta.
   useEffect(() => {
     if (step !== 'profile-type' || selectedType) return;
-    if (refParam === 'torcedor') {
+    const ref = refParam || lerPendingRef()?.ref;
+    if (ref === 'torcedor') {
       setSelectedType('torcedor');
       setStep('profile-form');
-    } else if (refParam === 'atleta') {
+    } else if (ref === 'atleta') {
       setSelectedType('atleta_filho');
       setStep('profile-form');
     }
