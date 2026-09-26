@@ -505,6 +505,19 @@ export default function CarreiraExplorarPage() {
                   Criar conta grátis
                 </Button>
               </Card>
+            ) : !hasProfile ? (
+              <Card className="p-4 text-center">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
+                  <UserPlus className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="font-semibold text-foreground text-sm">Falta pouco!</h3>
+                <p className="text-[11px] text-muted-foreground mt-1 mb-3">
+                  Você criou sua conta, mas ainda não terminou o cadastro do atleta.
+                </p>
+                <Button size="sm" className="w-full text-xs" onClick={() => navigate(carreiraPath('/cadastro?ref=atleta'))}>
+                  Continuar cadastro
+                </Button>
+              </Card>
             ) : (
               <>
                 <Card className="p-4 text-center">
