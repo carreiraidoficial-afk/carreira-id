@@ -411,3 +411,25 @@ input:-webkit-autofill:active {
   caret-color: hsl(var(--foreground)) !important;
   transition: background-color 5000s ease-in-out 0s;
 }
+
+/* react-country-state-city (seletor de País/Estado no cadastro) vem com
+   fundo branco fixo no menu -- destoa dos temas escuros de perfil
+   (data-theme dark-orange etc). Sobrescreve com as mesmas variáveis do
+   resto do app, pra seguir qualquer tema ativo em vez de um preto fixo. */
+.stdropdown-container {
+  border-color: hsl(var(--border)) !important;
+}
+.stdropdown-menu {
+  background-color: hsl(var(--popover)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+.stdropdown-item {
+  color: hsl(var(--popover-foreground)) !important;
+}
+.stdropdown-item:hover {
+  background-color: hsl(var(--muted)) !important;
+}
+.stdropdown-item.selected {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
