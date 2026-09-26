@@ -118,10 +118,16 @@ export default function CarreiraCadastroPage() {
     }
   }, [refParam, refConviteCodigo, refAtletaSlug]);
 
-  // Auto-seleciona tipo quando vem de ?ref=torcedor
+  // Auto-seleciona tipo quando vem de ?ref=torcedor ou ?ref=atleta -- pula a
+  // tela de escolha de perfil pra quem já entrou por um link dedicado (ex:
+  // botão "Criar Perfil Gratuito" da landing, voltado a pais de atleta).
   useEffect(() => {
-    if (step === 'profile-type' && refParam === 'torcedor' && !selectedType) {
+    if (step !== 'profile-type' || selectedType) return;
+    if (refParam === 'torcedor') {
       setSelectedType('torcedor');
+      setStep('profile-form');
+    } else if (refParam === 'atleta') {
+      setSelectedType('atleta_filho');
       setStep('profile-form');
     }
   }, [step, refParam, selectedType]);

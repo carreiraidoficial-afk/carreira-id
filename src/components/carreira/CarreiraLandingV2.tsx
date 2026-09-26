@@ -330,6 +330,11 @@ export function EscolasParceirasSection() {
 
 export function CarreiraLandingV2() {
   const cadastroLink = carreiraPath('/cadastro');
+  // ?ref=atleta pula a tela de escolha de perfil (ver CarreiraCadastroPage) --
+  // usado nos CTAs principais, que são majoritariamente clicados por pais de
+  // atleta. cadastroLink (sem ref) continua mostrando a lista completa de
+  // perfis, usado pelo botão dedicado a profissionais do esporte.
+  const cadastroAtletaLink = `${cadastroLink}?ref=atleta`;
   const loginLink = carreiraPath('/cadastro');
 
   const jsonLd = {
@@ -417,12 +422,18 @@ export function CarreiraLandingV2() {
               Para atletas independentes ou integrados a escolas que utilizam o{' '}
               <span className="text-emerald-400 font-medium">Atleta ID</span>.
             </p>
-            <div className="mt-8 flex flex-col sm:flex-row gap-3">
+            <div className="mt-8 flex flex-col sm:flex-row flex-wrap gap-3">
               <Link
-                to={cadastroLink}
+                to={cadastroAtletaLink}
                 className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-7 py-3.5 rounded-xl text-base transition"
               >
-                Criar Perfil Gratuito <ArrowRight className="w-5 h-5" />
+                Cadastrar Meu Atleta <ArrowRight className="w-5 h-5" />
+              </Link>
+              <Link
+                to={cadastroLink}
+                className="inline-flex items-center justify-center gap-2 border border-orange-500/40 text-orange-400 hover:bg-orange-500/10 font-semibold px-7 py-3.5 rounded-xl text-base transition"
+              >
+                Criar Perfil Profissional
               </Link>
               <a
                 href="#solucao"
@@ -881,12 +892,20 @@ export function CarreiraLandingV2() {
           <p className="mt-6 text-gray-300 text-xl font-semibold">
             Registre. Organize. <span className="text-emerald-400">Valorize.</span>
           </p>
-          <Link
-            to={cadastroLink}
-            className="mt-8 inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-10 py-4 rounded-xl text-lg transition shadow-lg shadow-orange-500/20"
-          >
-            Criar Perfil Gratuito <ArrowRight className="w-5 h-5" />
-          </Link>
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              to={cadastroAtletaLink}
+              className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-10 py-4 rounded-xl text-lg transition shadow-lg shadow-orange-500/20"
+            >
+              Cadastrar Meu Atleta <ArrowRight className="w-5 h-5" />
+            </Link>
+            <Link
+              to={cadastroLink}
+              className="inline-flex items-center justify-center gap-2 border border-orange-500/40 text-orange-400 hover:bg-orange-500/10 font-bold px-10 py-4 rounded-xl text-lg transition"
+            >
+              Criar Perfil Profissional
+            </Link>
+          </div>
           <p className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500">
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
             Gratuito para sempre. Sem cartão de crédito.
