@@ -578,10 +578,10 @@ export default function CarreiraCadastroPage() {
       </div>
 
       <header className="sticky top-0 z-50 backdrop-blur border-b" style={{ backgroundColor: 'hsl(220 15% 6% / 0.95)', borderColor: 'hsl(220 10% 18%)' }}>
-        <div className="container flex items-center justify-between h-14 px-4">
+        <div className="container flex items-center justify-between h-16 px-4">
           <button onClick={() => navigate(carreiraPath('/'))} className="flex items-center gap-2 transition-colors" style={{ color: 'hsl(0 0% 60%)' }}>
             <ArrowLeft className="w-4 h-4" />
-            <img src={currentLogo} alt={brandName} className="h-7" />
+            <img src={currentLogo} alt={brandName} className="h-9" />
           </button>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 text-xs" style={{ color: 'hsl(0 0% 50%)' }}>
@@ -633,6 +633,7 @@ export default function CarreiraCadastroPage() {
         {step === 'tutorial' && (
           <OnboardingTutorial
             brandName={brandName}
+            paraAtleta={refParam === 'atleta'}
             onStart={() => setStep('auth')}
           />
         )}

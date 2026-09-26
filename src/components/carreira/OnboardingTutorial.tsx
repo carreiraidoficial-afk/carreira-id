@@ -5,9 +5,14 @@ import { UserPlus, Shield, Camera, MapPin, Trophy, Share2, ChevronRight, Chevron
 interface Props {
   onStart: () => void;
   brandName: string;
+  /** Veio pelo botão dedicado a pais de atleta (?ref=atleta) -- já sabemos o
+   * tipo de perfil, então o tutorial pula a etapa de escolha (que só serviria
+   * pra confundir/assustar quem já veio decidido) e reforça a privacidade
+   * dos dados do responsável, que costuma ser a maior hesitação aqui. */
+  paraAtleta?: boolean;
 }
 
-const STEPS = [
+const STEPS_PADRAO = [
   {
     icon: UserPlus,
     emoji: '👋',
@@ -58,7 +63,26 @@ const STEPS = [
   },
 ];
 
-export function OnboardingTutorial({ onStart, brandName }: Props) {
+const STEPS_ATLETA = [
+  STEPS_PADRAO[0],
+  {
+    icon: Shield,
+    emoji: '📋',
+    title: 'Preencha o perfil do seu atleta',
+    description: 'Alguns dados básicos pra criar o perfil esportivo dele:',
+    details: [
+      'Nome do atleta e data de nascimento',
+      'CPF e WhatsApp do responsável (privados, nunca aparecem no perfil)',
+      'Modalidade e categoria esportiva',
+      'Cidade e estado',
+      'Foto do atleta (opcional)',
+    ],
+  },
+  STEPS_PADRAO[3],
+];
+
+export function OnboardingTutorial({ onStart, brandName, paraAtleta }: Props) {
+  const STEPS = paraAtleta ? STEPS_ATLETA : STEPS_PADRAO;
   const [currentStep, setCurrentStep] = useState(0);
   const step = STEPS[currentStep];
   const isLast = currentStep === STEPS.length - 1;
@@ -66,8 +90,12 @@ export function OnboardingTutorial({ onStart, brandName }: Props) {
   return (
     <div className="animate-fade-in">
       <div className="text-center mb-6">
-        <h1 className="text-xl font-bold" style={{ color: 'hsl(0 0% 95%)' }}>Como funciona o {brandName}?</h1>
-        <p className="text-sm mt-1" style={{ color: 'hsl(0 0% 55%)' }}>Veja o passo a passo antes de começar</p>
+        <h1 className="text-xl font-bold" style={{ color: 'hsl(0 0% 95%)' }}>
+          {paraAtleta ? `Como cadastrar seu atleta no ${brandName}?` : `Como funciona o ${brandName}?`}
+        </h1>
+        <p className="text-sm mt-1" style={{ color: 'hsl(0 0% 55%)' }}>
+          {paraAtleta ? 'São só 3 passos rápidos, com controle total dos dados do seu filho.' : 'Veja o passo a passo antes de começar'}
+        </p>
       </div>
 
       {/* Step indicator */}
