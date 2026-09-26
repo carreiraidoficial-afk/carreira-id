@@ -48,5 +48,5 @@ export function formatPhoneMask(value: string): string {
 }
 
 /** WhatsApp support number */
-export const SUPPORT_WHATSAPP = '5521999999999';
+export const SUPPORT_WHATSAPP = '5521969622045';
 export const SUPPORT_WHATSAPP_URL = `https://wa.me/${SUPPORT_WHATSAPP}?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20meu%20cadastro%20no%20Carreira%20ID`;
