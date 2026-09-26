@@ -49,6 +49,7 @@ const formSchema = z.object({
   categoria: z.string().optional(),
   cidade: z.string().optional(),
   estado: z.string().optional(),
+  pais: z.string().optional(),
   bio: z.string().max(280, 'Máximo de 280 caracteres').optional(),
   instagram_url: z.string().max(200, 'Máximo de 200 caracteres').optional(),
   pe_dominante: z.string().optional(),
@@ -60,6 +61,8 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 import { MODALIDADES, ESTADOS, POSICOES_FUTEBOL, POSICOES_VOLEI, POSICOES_BASQUETE, isModalidadeVolei, isModalidadeBasquete } from '@/constants/esportes';
+import { CountrySelect, StateSelect, CitySelect } from 'react-country-state-city';
+import 'react-country-state-city/dist/react-country-state-city.css';
 
 function EditCidadeField({ form }: { form: any }) {
   const estado = form.watch('estado');
@@ -100,6 +103,8 @@ interface EditPerfilDialogProps {
 export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialogProps) {
   const updatePerfil = useUpdatePerfilAtleta();
   const [photoUrl, setPhotoUrl] = useState(perfil.foto_url || '');
+  const [paisObj, setPaisObj] = useState<any>(null);
+  const [estadoIntlId, setEstadoIntlId] = useState<number | undefined>();
   const [bannerUrl, setBannerUrl] = useState(perfil.banner_url || '');
   const [selectedModalidades, setSelectedModalidades] = useState<string[]>([]);
   const [corDestaque, setCorDestaque] = useState(perfil.cor_destaque || '#3b82f6');
@@ -152,6 +157,7 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
       categoria: perfil.categoria || '',
       cidade: perfil.cidade || '',
       estado: perfil.estado || '',
+      pais: (perfil as any).pais || 'Brasil',
       bio: perfil.bio || '',
       instagram_url: (perfil as any).instagram_url || '',
     },
@@ -164,6 +170,7 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
         categoria: perfil.categoria || '',
         cidade: perfil.cidade || '',
         estado: perfil.estado || '',
+        pais: (perfil as any).pais || 'Brasil',
         bio: perfil.bio || '',
         instagram_url: (perfil as any).instagram_url || '',
         pe_dominante: perfil.pe_dominante || '',
@@ -216,6 +223,7 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
       nome: data.nome,
       cidade: data.cidade || null,
       estado: data.estado || null,
+      pais: data.pais || 'Brasil',
       bio: data.bio || null,
       foto_url: photoUrl || null,
       banner_url: bannerUrl || null,
@@ -358,22 +366,74 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
               </>
             )}
 
-            {/* City and State */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="estado" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estado</FormLabel>
-                  <Select onValueChange={(val) => { field.onChange(val); form.setValue('cidade', ''); }} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      {ESTADOS.map((uf) => (<SelectItem key={uf} value={uf}>{uf}</SelectItem>))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <EditCidadeField form={form} />
-            </div>
+            {/* País */}
+            <FormField control={form.control} name="pais" render={({ field }) => (
+              <FormItem>
+                <FormLabel>País</FormLabel>
+                <CountrySelect
+                  defaultValue={field.value === 'Brasil' || !field.value ? 'Brazil' : field.value}
+                  placeHolder="Selecione o país"
+                  containerClassName="w-full"
+                  inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                  onChange={(c: any) => {
+                    setPaisObj(c);
+                    field.onChange(c?.iso2 === 'BR' ? 'Brasil' : (c?.name || 'Brasil'));
+                    form.setValue('estado', ''); form.setValue('cidade', ''); setEstadoIntlId(undefined);
+                  }}
+                />
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {/* City and State -- seletor de UF só faz sentido no Brasil
+                (usa a API do IBGE); fora daqui usa a base real da lib. */}
+            {(form.watch('pais') || 'Brasil') === 'Brasil' ? (
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="estado" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estado</FormLabel>
+                    <Select onValueChange={(val) => { field.onChange(val); form.setValue('cidade', ''); }} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        {ESTADOS.map((uf) => (<SelectItem key={uf} value={uf}>{uf}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <EditCidadeField form={form} />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="estado" render={() => (
+                  <FormItem>
+                    <FormLabel>Estado / Região</FormLabel>
+                    <StateSelect
+                      countryid={paisObj?.id}
+                      placeHolder="Selecione"
+                      containerClassName="w-full"
+                      inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                      onChange={(s: any) => { form.setValue('estado', s?.name || ''); setEstadoIntlId(s?.id); form.setValue('cidade', ''); }}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="cidade" render={() => (
+                  <FormItem>
+                    <FormLabel>Cidade</FormLabel>
+                    <CitySelect
+                      countryid={paisObj?.id}
+                      stateid={estadoIntlId}
+                      placeHolder="Selecione"
+                      containerClassName="w-full"
+                      inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                      onChange={(c: any) => form.setValue('cidade', c?.name || '')}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+            )}
 
             {/* Bio */}
             <FormField control={form.control} name="bio" render={({ field }) => (

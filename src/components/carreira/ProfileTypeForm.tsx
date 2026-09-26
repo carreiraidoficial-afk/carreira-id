@@ -36,6 +36,8 @@ interface FieldDef {
 }
 
 import { CATEGORIAS, MODALIDADES_ESCOLA, MODALIDADES_PROFISSIONAL } from '@/constants/esportes';
+import { CountrySelect, StateSelect, CitySelect } from 'react-country-state-city';
+import 'react-country-state-city/dist/react-country-state-city.css';
 const POSICOES = ['Goleiro', 'Zagueiro', 'Lateral', 'Volante', 'Meia', 'Atacante'];
 
 function getFields(type: ProfileType): FieldDef[] {
@@ -194,6 +196,9 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
   const [dataNascimento, setDataNascimento] = useState('');
   const [cidade, setCidade] = useState('');
   const [estado, setEstado] = useState('');
+  const [pais, setPais] = useState<string>('Brasil');
+  const [paisObj, setPaisObj] = useState<any>(null);
+  const [estadoIntlId, setEstadoIntlId] = useState<number | undefined>();
   const [brasaoFile, setBrasaoFile] = useState<File | null>(null);
   const [brasaoPreview, setBrasaoPreview] = useState<string | null>(null);
 
@@ -436,6 +441,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
         site: dadosPerfil.site || null,
         cidade: cidade || null,
         estado: estado || null,
+        pais: pais || 'Brasil',
       } as any);
 
       if (error) throw error;
@@ -603,15 +609,50 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
           </div>
         </div>
 
+        <div className="space-y-2">
+          <Label>País</Label>
+          <CountrySelect
+            defaultValue="Brazil"
+            placeHolder="Selecione o país"
+            containerClassName="w-full"
+            inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+            onChange={(c: any) => {
+              setPaisObj(c);
+              setPais(c?.iso2 === 'BR' ? 'Brasil' : (c?.name || 'Brasil'));
+              setEstado(''); setCidade(''); setEstadoIntlId(undefined);
+            }}
+          />
+        </div>
+
         <div className="space-y-2" ref={localizacaoRef}>
           <Label>Onde você está localizado? *</Label>
-          <UfCidadeSelect
-            estado={estado}
-            cidade={cidade}
-            onEstadoChange={setEstado}
-            onCidadeChange={setCidade}
-            className="grid grid-cols-2 gap-3"
-          />
+          {pais === 'Brasil' ? (
+            <UfCidadeSelect
+              estado={estado}
+              cidade={cidade}
+              onEstadoChange={setEstado}
+              onCidadeChange={setCidade}
+              className="grid grid-cols-2 gap-3"
+            />
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <StateSelect
+                countryid={paisObj?.id}
+                placeHolder="Estado / Região"
+                containerClassName="w-full"
+                inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                onChange={(s: any) => { setEstado(s?.name || ''); setEstadoIntlId(s?.id); setCidade(''); }}
+              />
+              <CitySelect
+                countryid={paisObj?.id}
+                stateid={estadoIntlId}
+                placeHolder="Cidade"
+                containerClassName="w-full"
+                inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                onChange={(c: any) => setCidade(c?.name || '')}
+              />
+            </div>
+          )}
         </div>
 
         {/* Brasão upload for torcedor */}

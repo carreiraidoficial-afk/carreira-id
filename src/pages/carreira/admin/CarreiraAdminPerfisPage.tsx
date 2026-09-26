@@ -504,6 +504,7 @@ function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atlet
               {type === 'atleta' && <TableHead>Posição</TableHead>}
               <TableHead>Cidade</TableHead>
               <TableHead>UF</TableHead>
+              <TableHead>País</TableHead>
               <TableHead>Origem Auth</TableHead>
               <TableHead>Criado em</TableHead>
               <TableHead>Status</TableHead>
@@ -551,6 +552,13 @@ function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atlet
                 {type === 'atleta' && <TableCell className="text-sm">{p.posicao_principal || '—'}</TableCell>}
                 <TableCell className="text-sm text-muted-foreground">{p.cidade || '—'}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{p.estado || '—'}</TableCell>
+                <TableCell className="text-sm">
+                  {p.pais && p.pais !== 'Brasil' ? (
+                    <Badge variant="outline" className="text-xs">{p.pais}</Badge>
+                  ) : (
+                    <span className="text-muted-foreground">Brasil</span>
+                  )}
+                </TableCell>
                 <TableCell>
                   <Badge variant="outline" className="text-xs">
                     {p.provider === 'google' ? '🔵 Google' : '📧 Email'}

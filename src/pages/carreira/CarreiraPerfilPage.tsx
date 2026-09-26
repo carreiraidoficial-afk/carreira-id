@@ -335,7 +335,7 @@ export default function CarreiraPerfilPage() {
       ? (perfil.type === 'atleta'
           ? [
               (perfil as any).modalidade,
-              [(perfil as any).cidade, (perfil as any).estado].filter(Boolean).join('/'),
+              [(perfil as any).cidade, (perfil as any).estado, (perfil as any).pais && (perfil as any).pais !== 'Brasil' ? (perfil as any).pais : null].filter(Boolean).join('/'),
               (perfil as any).bio,
             ].filter(Boolean).join(' — ') || `Perfil esportivo de ${seoNome} no CARREIRA ID.`
           : ((perfil as any).bio || `Perfil de ${seoNome} na rede CARREIRA ID.`))
@@ -1082,7 +1082,7 @@ export default function CarreiraPerfilPage() {
               {(perfil.cidade || perfil.estado) && (
                 <div className="flex items-center justify-center gap-1 text-[11px] text-muted-foreground mt-2">
                   <MapPin className="w-3 h-3" />
-                  <span>{[perfil.cidade, perfil.estado].filter(Boolean).join(', ')}</span>
+                  <span>{[perfil.cidade, perfil.estado, (perfil as any).pais && (perfil as any).pais !== 'Brasil' ? (perfil as any).pais : null].filter(Boolean).join(', ')}</span>
                 </div>
               )}
 

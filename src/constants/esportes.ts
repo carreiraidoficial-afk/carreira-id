@@ -71,3 +71,12 @@ export const ESTADO_LABELS: Record<string, string> = {
   RS: 'Rio Grande do Sul', RO: 'Rondônia', RR: 'Roraima', SC: 'Santa Catarina',
   SP: 'São Paulo', SE: 'Sergipe', TO: 'Tocantins',
 };
+
+/** Cadastro assistido, não lista ISO completa -- cobre os destinos mais
+ * comuns de intercâmbio de brasileiros no exterior, com "Outro" como
+ * fallback pra qualquer país fora da lista. */
+export const PAISES_INTERCAMBIO = [
+  'Brasil', 'Estados Unidos', 'Canadá', 'Portugal', 'Espanha',
+  'Reino Unido', 'Suíça', 'Alemanha', 'Itália', 'França',
+  'Austrália', 'Japão', 'Outro',
+] as const;

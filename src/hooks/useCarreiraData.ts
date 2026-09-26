@@ -60,6 +60,7 @@ export interface PerfilAtleta {
   categoria: string | null;
   cidade: string | null;
   estado: string | null;
+  pais: string | null;
   bio: string | null;
   instagram_url: string | null;
   cor_destaque: string | null;

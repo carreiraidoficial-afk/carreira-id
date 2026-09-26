@@ -27,6 +27,8 @@ interface Props {
 }
 
 import { MODALIDADES, CATEGORIAS_BASE as CATEGORIAS } from '@/constants/esportes';
+import { CountrySelect, StateSelect, CitySelect } from 'react-country-state-city';
+import 'react-country-state-city/dist/react-country-state-city.css';
 
 function generateSlug(name: string): string {
   return name
@@ -48,7 +50,10 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
   const [categoria, setCategoria] = useState('');
   const [cidade, setCidade] = useState('');
   const [estado, setEstado] = useState('');
-  
+  const [pais, setPais] = useState<string>('Brasil');
+  const [paisObj, setPaisObj] = useState<any>(null);
+  const [estadoIntlId, setEstadoIntlId] = useState<number | undefined>();
+
   const [cpf, setCpf] = useState('');
   const [telefoneWhatsapp, setTelefoneWhatsapp] = useState('');
   const [fotoFile, setFotoFile] = useState<File | null>(null);
@@ -181,6 +186,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
           categoria: categoria || null,
           cidade: cidade || null,
           estado: estado || null,
+          pais: pais || 'Brasil',
           bio: null,
           foto_url: fotoUrl,
           crianca_id: criancaId,
@@ -394,14 +400,57 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
           </Select>
         </div>
 
-        {/* Cidade / Estado */}
-        <UfCidadeSelect
-          estado={estado}
-          cidade={cidade}
-          onEstadoChange={setEstado}
-          onCidadeChange={setCidade}
-          className="grid grid-cols-2 gap-3"
-        />
+        {/* País -- lib com base real de países/estados/cidades (mesma
+            usada por concorrentes); Brasil continua no seletor por IBGE
+            já existente, o resto usa Estado/Cidade da própria lib. */}
+        <div className="space-y-2">
+          <Label>País</Label>
+          <CountrySelect
+            defaultValue="Brazil"
+            placeHolder="Selecione o país"
+            containerClassName="w-full"
+            inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+            onChange={(c: any) => {
+              setPaisObj(c);
+              setPais(c?.iso2 === 'BR' ? 'Brasil' : (c?.name || 'Brasil'));
+              setEstado(''); setCidade(''); setEstadoIntlId(undefined);
+            }}
+          />
+        </div>
+
+        {pais === 'Brasil' ? (
+          <UfCidadeSelect
+            estado={estado}
+            cidade={cidade}
+            onEstadoChange={setEstado}
+            onCidadeChange={setCidade}
+            className="grid grid-cols-2 gap-3"
+          />
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Estado / Região</Label>
+              <StateSelect
+                countryid={paisObj?.id}
+                placeHolder="Selecione"
+                containerClassName="w-full"
+                inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                onChange={(s: any) => { setEstado(s?.name || ''); setEstadoIntlId(s?.id); setCidade(''); }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Cidade</Label>
+              <CitySelect
+                countryid={paisObj?.id}
+                stateid={estadoIntlId}
+                placeHolder="Selecione"
+                containerClassName="w-full"
+                inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                onChange={(c: any) => setCidade(c?.name || '')}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Cupom de convite */}
         <div className="space-y-2">
