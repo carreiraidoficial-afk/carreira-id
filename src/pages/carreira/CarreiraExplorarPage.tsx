@@ -415,7 +415,7 @@ export default function CarreiraExplorarPage() {
                     .limit(1)
                     .maybeSingle();
                   if (pr?.slug) navigate(carreiraPath(`/${pr.slug}`));
-                  else navigate(carreiraPath(`/perfil/${sessionUserId}`));
+                  else navigate(carreiraPath('/cadastro'));
                 }}>
                   Meu Perfil
                 </Button>

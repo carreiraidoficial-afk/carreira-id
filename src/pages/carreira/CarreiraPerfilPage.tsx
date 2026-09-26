@@ -820,7 +820,7 @@ export default function CarreiraPerfilPage() {
                       .order('created_at', { ascending: false }).limit(1).maybeSingle();
                     const foundSlug = pa?.slug || pr?.slug;
                     if (foundSlug) navigate(carreiraPath(`/${foundSlug}`));
-                    else navigate(carreiraPath(`/perfil/${currentUserId}`));
+                    else navigate(carreiraPath('/cadastro'));
                   }
                   }}>
                     <User className="w-3 h-3 sm:hidden" />

@@ -291,8 +291,8 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
                 className="w-full flex items-center justify-between gap-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
-                    <MessageCircle className="w-4 h-4" />
+                  <div className="w-9 h-9 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
+                    <MessageCircle className="w-4 h-4 text-green-600" />
                   </div>
                   <div className="text-left min-w-0">
                     <p className="text-sm font-medium">Falar com Suporte</p>
@@ -309,8 +309,8 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
                 <a href="/termos-de-uso" target="_blank" rel="noopener noreferrer"
                   className="w-full flex items-center justify-between gap-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
-                      <FileText className="w-4 h-4" />
+                    <div className="w-9 h-9 rounded-full bg-orange-500/10 flex items-center justify-center shrink-0">
+                      <FileText className="w-4 h-4 text-orange-500" />
                     </div>
                     <p className="text-sm font-medium truncate">Termos de Uso</p>
                   </div>
@@ -319,8 +319,8 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
                 <a href="/politica-de-privacidade" target="_blank" rel="noopener noreferrer"
                   className="w-full flex items-center justify-between gap-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
-                      <ShieldCheck className="w-4 h-4" />
+                    <div className="w-9 h-9 rounded-full bg-orange-500/10 flex items-center justify-center shrink-0">
+                      <ShieldCheck className="w-4 h-4 text-orange-500" />
                     </div>
                     <p className="text-sm font-medium truncate">Política de Privacidade</p>
                   </div>

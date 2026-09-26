@@ -120,7 +120,7 @@ export function CarreiraBottomNav({ currentUserId, profileSlug }: CarreiraBottom
       }
 
       if (foundSlug) navigate(carreiraPath(`/${foundSlug}`), { replace: true });
-      else navigate(carreiraPath(`/perfil/${currentUserId}`), { replace: true });
+      else navigate(carreiraPath('/cadastro'), { replace: true });
     }
   };
 
