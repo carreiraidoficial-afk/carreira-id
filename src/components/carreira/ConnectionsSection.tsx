@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, UserPlus, Check, X, Users, MapPin, Search, Heart, Inbox } from 'lucide-react';
+import { Loader2, UserPlus, Check, X, Users, MapPin, Search, Heart, Inbox, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -17,14 +17,14 @@ function useSearchParaConectar(query: string, meuUserId: string | null) {
       const termo = `%${query.trim()}%`;
       const { data: atletas } = await supabase
         .from('perfil_atleta')
-        .select('id, user_id, nome, foto_url, slug, modalidade')
+        .select('id, user_id, nome, foto_url, slug, modalidade, cidade, estado')
         .eq('is_public', true)
         .neq('user_id', meuUserId || '')
         .ilike('nome', termo)
         .limit(10);
       const { data: rede } = await supabase
         .from('perfis_rede')
-        .select('id, user_id, nome, tipo, foto_url')
+        .select('id, user_id, nome, tipo, foto_url, cidade, estado')
         .neq('user_id', meuUserId || '')
         .ilike('nome', termo)
         .limit(10);
@@ -66,6 +66,63 @@ function pertenceAoAtivo(row: any, meuUserId: string, meuPerfilAtletaId: string 
   return !meuLado || meuLado === meuPerfilAtletaId;
 }
 
+/** Linha padrão de pessoa (avatar + nome + subtítulo + cidade), igual em
+ * todas as listas da tela -- só muda o que vai em `action` à direita. */
+function PersonRow({
+  fotoUrl, nome, subtitle, cidade, estado, onClick, action,
+}: {
+  fotoUrl?: string | null;
+  nome: string;
+  subtitle?: string;
+  cidade?: string | null;
+  estado?: string | null;
+  onClick?: () => void;
+  action?: React.ReactNode;
+}) {
+  return (
+    <Card
+      className={`flex items-center gap-3 p-3 ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+      onClick={onClick}
+    >
+      {fotoUrl ? (
+        <img src={fotoUrl} alt="" className="w-12 h-12 rounded-full object-cover shrink-0" />
+      ) : (
+        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground shrink-0">
+          {nome?.[0]}
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold truncate">{nome}</p>
+        {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
+        {(cidade || estado) && (
+          <p className="text-[11px] text-muted-foreground flex items-center gap-0.5 mt-0.5">
+            <MapPin className="w-2.5 h-2.5" />{[cidade, estado].filter(Boolean).join(', ')}
+          </p>
+        )}
+      </div>
+      {action && <div onClick={(e) => e.stopPropagation()} className="shrink-0">{action}</div>}
+    </Card>
+  );
+}
+
+/** Botão de mensagem via WhatsApp -- só existe pra perfil profissional que
+ * ativou o campo "WhatsApp público" nas Configurações. Atleta (responsável)
+ * não tem contato público hoje, de propósito (dado de menor de idade), então
+ * não tem "Mensagem" nesse caso -- ver decisão registrada na memória do
+ * projeto. */
+function MensagemButton({ whatsappPublico, telefoneWhatsapp }: { whatsappPublico?: boolean; telefoneWhatsapp?: string | null }) {
+  if (!whatsappPublico || !telefoneWhatsapp) return null;
+  const digits = String(telefoneWhatsapp).replace(/\D/g, '');
+  const intl = digits.startsWith('55') ? digits : `55${digits}`;
+  return (
+    <a href={`https://wa.me/${intl}`} target="_blank" rel="noopener noreferrer">
+      <Button size="sm" variant="outline" className="h-8 text-xs gap-1">
+        <MessageCircle className="w-3.5 h-3.5" /> Mensagem
+      </Button>
+    </a>
+  );
+}
+
 export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Props) {
   const navigate = useNavigate();
   const [respondingId, setRespondingId] = useState<string | null>(null);
@@ -99,11 +156,11 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
       if (connectedUserIds.length === 0) return [];
       const { data: redeProfiles } = await supabase
         .from('perfis_rede')
-        .select('id, user_id, nome, tipo, foto_url')
+        .select('id, user_id, nome, tipo, foto_url, cidade, estado, telefone_whatsapp, whatsapp_publico')
         .in('user_id', connectedUserIds);
       const { data: atletaProfiles } = await supabase
         .from('perfil_atleta')
-        .select('id, user_id, nome, foto_url, slug')
+        .select('id, user_id, nome, foto_url, slug, cidade, estado')
         .eq('is_public', true)
         .in('user_id', connectedUserIds);
       const redeByUser = new Map((redeProfiles || []).map((p) => [p.user_id, p]));
@@ -138,11 +195,11 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
       const senderIds = minhas.map(r => r.solicitante_id);
       const { data: redeProfiles2 } = await supabase
         .from('perfis_rede')
-        .select('id, user_id, nome, tipo, foto_url')
+        .select('id, user_id, nome, tipo, foto_url, cidade, estado')
         .in('user_id', senderIds);
       const { data: atletaProfiles2 } = await supabase
         .from('perfil_atleta')
-        .select('id, user_id, nome, foto_url, slug')
+        .select('id, user_id, nome, foto_url, slug, cidade, estado')
         .eq('is_public', true)
         .in('user_id', senderIds);
       const redeByUser2 = new Map((redeProfiles2 || []).map((p) => [p.user_id, p]));
@@ -181,11 +238,11 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
       connectedIds.add(userId);
       const { data: redeData } = await supabase
         .from('perfis_rede')
-        .select('id, user_id, nome, tipo, foto_url, dados_perfil')
+        .select('id, user_id, nome, tipo, foto_url, cidade, estado, dados_perfil')
         .limit(50);
       const { data: atletaData } = await supabase
         .from('perfil_atleta')
-        .select('id, user_id, nome, foto_url, slug, modalidade')
+        .select('id, user_id, nome, foto_url, slug, modalidade, cidade, estado')
         .eq('is_public', true)
         .limit(30);
       const redeProfiles = (redeData || []).filter(p => !connectedIds.has(p.user_id)).map(p => ({ ...p, source: 'rede' as const }));
@@ -226,9 +283,9 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
       if (!follows || follows.length === 0) return [];
       const followerIds = follows.map((f) => f.follower_id);
       const { data: redeProfiles } = await supabase
-        .from('perfis_rede').select('user_id, nome, foto_url, tipo').in('user_id', followerIds);
+        .from('perfis_rede').select('user_id, nome, foto_url, tipo, cidade, estado, telefone_whatsapp, whatsapp_publico').in('user_id', followerIds);
       const { data: atletaProfiles } = await supabase
-        .from('perfil_atleta').select('user_id, nome, foto_url, slug').in('user_id', followerIds);
+        .from('perfil_atleta').select('user_id, nome, foto_url, slug, cidade, estado').in('user_id', followerIds);
       const redeMap = new Map((redeProfiles || []).map((p) => [p.user_id, p]));
       const atletaMap = new Map((atletaProfiles || []).map((p) => [p.user_id, p]));
       return follows.map((f) => {
@@ -239,6 +296,10 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
           nome: rede?.nome || atleta?.nome || 'Usuário',
           foto_url: rede?.foto_url || atleta?.foto_url || null,
           tipo: rede?.tipo || 'Atleta',
+          cidade: rede?.cidade || atleta?.cidade || null,
+          estado: rede?.estado || atleta?.estado || null,
+          telefone_whatsapp: rede?.telefone_whatsapp || null,
+          whatsapp_publico: rede?.whatsapp_publico || false,
         };
       });
     },
@@ -258,7 +319,7 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
       if (!follows || follows.length === 0) return [];
       const perfilIds = follows.map((f) => f.following_perfil_id);
       const { data: atletaProfiles } = await supabase
-        .from('perfil_atleta').select('id, nome, foto_url, slug').in('id', perfilIds);
+        .from('perfil_atleta').select('id, nome, foto_url, slug, cidade, estado').in('id', perfilIds);
       const atletaMap = new Map((atletaProfiles || []).map((p) => [p.id, p]));
       return follows
         .map((f) => atletaMap.get(f.following_perfil_id))
@@ -373,25 +434,23 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
                 <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
               ) : searchResults && searchResults.length > 0 ? (
                 searchResults.map((person: any) => (
-                  <Card key={`${person.source}-${person.id}`} className="flex items-center gap-3 p-3">
-                    {person.foto_url ? (
-                      <img src={person.foto_url} alt="" className="w-9 h-9 rounded-full object-cover cursor-pointer" onClick={() => navigate(carreiraPath(`/${person.slug || `perfil/${person.user_id}`}`))} />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground cursor-pointer" onClick={() => navigate(carreiraPath(`/${person.slug || `perfil/${person.user_id}`}`))}>
-                        {person.nome?.[0]}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate cursor-pointer hover:underline" onClick={() => navigate(carreiraPath(`/${person.slug || `perfil/${person.user_id}`}`))}>{person.nome}</p>
-                      <p className="text-xs text-muted-foreground">{person.source === 'atleta' ? (person.modalidade || 'Atleta') : (TYPE_LABELS[person.tipo] || person.tipo)}</p>
-                    </div>
-                    <ConectarButton
-                      targetUserId={person.user_id}
-                      currentUserId={currentUserId}
-                      targetPerfilAtletaId={person.source === 'atleta' ? person.id : undefined}
-                      sourcePerfilAtletaId={perfilAtletaId}
-                    />
-                  </Card>
+                  <PersonRow
+                    key={`${person.source}-${person.id}`}
+                    fotoUrl={person.foto_url}
+                    nome={person.nome}
+                    subtitle={person.source === 'atleta' ? (person.modalidade || 'Atleta') : (TYPE_LABELS[person.tipo] || person.tipo)}
+                    cidade={person.cidade}
+                    estado={person.estado}
+                    onClick={() => navigate(carreiraPath(`/${person.slug || `perfil/${person.user_id}`}`))}
+                    action={
+                      <ConectarButton
+                        targetUserId={person.user_id}
+                        currentUserId={currentUserId}
+                        targetPerfilAtletaId={person.source === 'atleta' ? person.id : undefined}
+                        sourcePerfilAtletaId={perfilAtletaId}
+                      />
+                    }
+                  />
                 ))
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-4">Nenhum resultado encontrado</p>
@@ -406,32 +465,25 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
         pendingRequests && pendingRequests.length > 0 ? (
           <div className="space-y-2">
             {pendingRequests.map((person) => (
-              <Card key={person.id} className="flex items-center gap-3 p-3">
-                {person.foto_url ? (
-                  <img src={person.foto_url} alt="" className="w-10 h-10 rounded-full object-cover cursor-pointer" onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))} />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground cursor-pointer" onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))}>
-                    {person.nome?.[0]}
+              <PersonRow
+                key={person.id}
+                fotoUrl={person.foto_url}
+                nome={person.nome}
+                subtitle={TYPE_LABELS[person.tipo] || person.tipo}
+                cidade={person.cidade}
+                estado={person.estado}
+                onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))}
+                action={
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="default" className="h-8" disabled={respondingId === person.connectionId} onClick={() => person.connectionId && handleAccept(person.connectionId)}>
+                      <Check className="w-3.5 h-3.5 mr-1" /> Aceitar
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-8" disabled={respondingId === person.connectionId} onClick={() => person.connectionId && handleReject(person.connectionId)}>
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate cursor-pointer hover:underline" onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))}>{person.nome}</p>
-                  <p className="text-xs text-muted-foreground">{TYPE_LABELS[person.tipo] || person.tipo}</p>
-                  {person.unidade_nome && (
-                    <p className="text-[10px] text-muted-foreground flex items-center gap-0.5 mt-0.5">
-                      <MapPin className="w-2.5 h-2.5" />{person.unidade_nome}
-                    </p>
-                  )}
-                </div>
-                <div className="flex gap-1">
-                  <Button size="sm" variant="default" className="h-8" disabled={respondingId === person.connectionId} onClick={() => person.connectionId && handleAccept(person.connectionId)}>
-                    <Check className="w-3.5 h-3.5 mr-1" /> Aceitar
-                  </Button>
-                  <Button size="sm" variant="ghost" className="h-8" disabled={respondingId === person.connectionId} onClick={() => person.connectionId && handleReject(person.connectionId)}>
-                    <X className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              </Card>
+                }
+              />
             ))}
           </div>
         ) : (
@@ -447,25 +499,18 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
         torcedoresLoading ? (
           <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
         ) : torcedores && torcedores.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="space-y-2">
             {torcedores.map((person) => (
-              <Card
+              <PersonRow
                 key={person.user_id}
-                className="flex items-center gap-3 p-3 cursor-pointer hover:shadow-md transition-shadow"
+                fotoUrl={person.foto_url}
+                nome={person.nome}
+                subtitle={TYPE_LABELS[person.tipo] || person.tipo}
+                cidade={person.cidade}
+                estado={person.estado}
                 onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))}
-              >
-                {person.foto_url ? (
-                  <img src={person.foto_url} alt="" className="w-10 h-10 rounded-full object-cover" />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground">
-                    {person.nome?.[0]}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{person.nome}</p>
-                  <p className="text-xs text-muted-foreground">{TYPE_LABELS[person.tipo] || person.tipo}</p>
-                </div>
-              </Card>
+                action={<MensagemButton whatsappPublico={person.whatsapp_publico} telefoneWhatsapp={person.telefone_whatsapp} />}
+              />
             ))}
           </div>
         ) : (
@@ -481,25 +526,17 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
         torcendoLoading ? (
           <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
         ) : torcendo && torcendo.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="space-y-2">
             {torcendo.map((atleta) => (
-              <Card
+              <PersonRow
                 key={atleta.id}
-                className="flex items-center gap-3 p-3 cursor-pointer hover:shadow-md transition-shadow"
+                fotoUrl={atleta.foto_url}
+                nome={atleta.nome}
+                subtitle="Atleta"
+                cidade={atleta.cidade}
+                estado={atleta.estado}
                 onClick={() => navigate(carreiraPath(atleta.slug ? `/${atleta.slug}` : `/perfil/${atleta.id}`))}
-              >
-                {atleta.foto_url ? (
-                  <img src={atleta.foto_url} alt="" className="w-10 h-10 rounded-full object-cover" />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground">
-                    {atleta.nome?.[0]}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{atleta.nome}</p>
-                  <p className="text-xs text-muted-foreground">Atleta</p>
-                </div>
-              </Card>
+              />
             ))}
           </div>
         ) : (
@@ -519,34 +556,32 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
                 <UserPlus className="w-4 h-4 inline mr-1.5" />
                 Sugestões para você
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="space-y-2">
                 {suggestions.map((person) => (
-                  <Card key={person.id} className="flex items-center gap-3 p-3">
-                    {person.foto_url ? (
-                      <img src={person.foto_url} alt="" className="w-10 h-10 rounded-full object-cover cursor-pointer" onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))} />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground cursor-pointer" onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))}>
-                        {person.nome?.[0]}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate cursor-pointer hover:underline" onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))}>{person.nome}</p>
-                      <p className="text-xs text-muted-foreground">{TYPE_LABELS[person.tipo] || person.tipo}</p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs"
-                      disabled={connectingId === person.user_id}
-                      onClick={() => handleConnect(person.user_id)}
-                    >
-                      {connectingId === person.user_id ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <><UserPlus className="w-3 h-3 mr-0.5" /> Conectar</>
-                      )}
-                    </Button>
-                  </Card>
+                  <PersonRow
+                    key={person.id}
+                    fotoUrl={person.foto_url}
+                    nome={person.nome}
+                    subtitle={TYPE_LABELS[person.tipo] || person.tipo}
+                    cidade={person.cidade}
+                    estado={person.estado}
+                    onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))}
+                    action={
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-xs"
+                        disabled={connectingId === person.user_id}
+                        onClick={() => handleConnect(person.user_id)}
+                      >
+                        {connectingId === person.user_id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <><UserPlus className="w-3 h-3 mr-0.5" /> Conectar</>
+                        )}
+                      </Button>
+                    }
+                  />
                 ))}
               </div>
             </div>
@@ -559,30 +594,18 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
               Suas conexões ({connections?.length || 0})
             </h3>
             {connections && connections.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="space-y-2">
                 {connections.map((person) => (
-                  <Card
+                  <PersonRow
                     key={person.id}
-                    className="flex items-center gap-3 p-3 cursor-pointer hover:shadow-md transition-shadow"
+                    fotoUrl={person.foto_url}
+                    nome={person.nome}
+                    subtitle={person.unidade_nome ? `${TYPE_LABELS[person.tipo] || person.tipo} · ${person.unidade_nome}` : (TYPE_LABELS[person.tipo] || person.tipo)}
+                    cidade={person.cidade}
+                    estado={person.estado}
                     onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))}
-                  >
-                    {person.foto_url ? (
-                      <img src={person.foto_url} alt="" className="w-10 h-10 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground">
-                        {person.nome?.[0]}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{person.nome}</p>
-                      <p className="text-xs text-muted-foreground">{TYPE_LABELS[person.tipo] || person.tipo}</p>
-                      {person.unidade_nome && (
-                        <p className="text-[10px] text-muted-foreground flex items-center gap-0.5 mt-0.5">
-                          <MapPin className="w-2.5 h-2.5" />{person.unidade_nome}
-                        </p>
-                      )}
-                    </div>
-                  </Card>
+                    action={<MensagemButton whatsappPublico={person.whatsapp_publico} telefoneWhatsapp={person.telefone_whatsapp} />}
+                  />
                 ))}
               </div>
             ) : (

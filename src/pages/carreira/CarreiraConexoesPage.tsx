@@ -8,8 +8,9 @@ import { ProfileViewsSection } from '@/components/carreira/ProfileViewsSection';
 import { NotificacoesBell } from '@/components/carreira/NotificacoesBell';
 import { FeatureGate } from '@/components/carreira/FeatureGate';
 import { useCarreiraPlano } from '@/hooks/useCarreiraPlano';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Users, Heart } from 'lucide-react';
 import logoCarreira from '@/assets/logo-carreira-id-dark.png';
+import conexoesBannerBg from '@/assets/torcida-pais-bg.jpg';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
@@ -126,8 +127,10 @@ export default function CarreiraConexoesPage() {
 
   return (
     <div className="min-h-screen bg-background" data-theme={theme}>
-      <header className="relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${accentColor}, #0a0f18)` }}>
-        <div className="container max-w-2xl px-4 pt-4 pb-6">
+      <header className="relative overflow-hidden">
+        <img src={conexoesBannerBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${accentColor}cc, #0a0f18e6)` }} />
+        <div className="container max-w-2xl px-4 pt-4 pb-6 relative">
           <div className="flex items-center justify-between">
             <Link to={carreiraPath('/feed')} className="flex items-center gap-2 shrink-0">
               <img src={logoCarreira} alt="Carreira" className="h-8" />
@@ -137,13 +140,19 @@ export default function CarreiraConexoesPage() {
           <h1 className="mt-4 text-3xl font-extrabold text-white">Conexões</h1>
           <p className="text-white/70 text-sm mt-1">Construa sua rede no esporte</p>
           <div className="flex items-center gap-3 mt-4">
-            <div className="bg-black/30 rounded-xl px-4 py-2 text-center">
-              <p className="text-white font-bold text-lg leading-tight">{conexoesTotal ?? 0}</p>
-              <p className="text-white/70 text-[11px]">Conexões</p>
+            <div className="bg-black/30 rounded-xl px-4 py-2 flex items-center gap-2">
+              <Users className="w-4 h-4 text-white/80" />
+              <div>
+                <p className="text-white font-bold text-lg leading-tight">{conexoesTotal ?? 0}</p>
+                <p className="text-white/70 text-[11px]">Conexões</p>
+              </div>
             </div>
-            <div className="bg-black/30 rounded-xl px-4 py-2 text-center">
-              <p className="text-white font-bold text-lg leading-tight">{torcedoresTotal}</p>
-              <p className="text-white/70 text-[11px]">Torcedores</p>
+            <div className="bg-black/30 rounded-xl px-4 py-2 flex items-center gap-2">
+              <Heart className="w-4 h-4 text-white/80" />
+              <div>
+                <p className="text-white font-bold text-lg leading-tight">{torcedoresTotal}</p>
+                <p className="text-white/70 text-[11px]">Torcedores</p>
+              </div>
             </div>
           </div>
         </div>
