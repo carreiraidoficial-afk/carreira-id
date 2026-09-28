@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Users, User, LogOut, Gamepad2, Search, Bell, CalendarDays, Shield } from 'lucide-react';
+import { Home, Users, User, LogOut, Gamepad2, Search, Bell, CalendarDays, Shield, ClipboardList } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
@@ -33,6 +33,22 @@ export function CarreiraBottomNav({ currentUserId, profileSlug }: CarreiraBottom
         .eq('status', 'pendente');
       if (error) return 0;
       return count || 0;
+    },
+    enabled: !!currentUserId,
+  });
+
+  // Só mostra "Currículo" pra quem tem perfil de atleta (a grade é toda
+  // baseada em jornada/estatísticas/premiações do crianca_id -- não existe
+  // pra quem só tem perfil_rede).
+  const { data: temPerfilAtleta } = useQuery({
+    queryKey: ['nav-tem-perfil-atleta', currentUserId],
+    queryFn: async () => {
+      if (!currentUserId) return false;
+      const { count } = await supabase
+        .from('perfil_atleta')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', currentUserId);
+      return (count || 0) > 0;
     },
     enabled: !!currentUserId,
   });
@@ -129,6 +145,7 @@ export function CarreiraBottomNav({ currentUserId, profileSlug }: CarreiraBottom
   const ligaPath = carreiraPath('/liga');
   const descobrirPath = carreiraPath('/descobrir');
   const eventosPath = carreiraPath('/eventos');
+  const curriculoPath = carreiraPath('/curriculo');
   const ligaAliasPath = carreiraPath('/gamer');
 
   const baseItems = [
@@ -182,6 +199,13 @@ export function CarreiraBottomNav({ currentUserId, profileSlug }: CarreiraBottom
       badge: 0,
     }] : []),
     middleItem,
+    ...(temPerfilAtleta ? [{
+      icon: ClipboardList,
+      label: 'Currículo',
+      onClick: () => navigate(curriculoPath, { replace: true }),
+      active: location.pathname === curriculoPath,
+      badge: 0,
+    }] : []),
     {
       icon: User,
       label: 'Meu Perfil',

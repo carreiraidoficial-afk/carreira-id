@@ -10,7 +10,7 @@ import { PostCard } from './PostCard';
 import { AtividadePublicaCard } from './AtividadePublicaCard';
 import { ExperienciaSection } from './ExperienciaSection';
 import { CarreiraStatsCards } from './CarreiraStatsCards';
-import { SalaTrofeusAtleta } from './SalaTrofeusAtleta';
+import { SalaTrofeusAtleta, useCarreiraCampeonatoTrofeus } from './SalaTrofeusAtleta';
 import { CarreiraAtividadeFormDialog } from './CarreiraAtividadeFormDialog';
 import { ExperienciaFormDialog } from './ExperienciaFormDialog';
 import { JornadaEsportivaSection } from './JornadaEsportivaSection';
@@ -25,7 +25,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, FileText, Building2, BarChart3, Dumbbell, Swords, Medal, Plus, Pencil, Trash2, Save } from 'lucide-react';
+import { Loader2, FileText, Building2, BarChart3, Dumbbell, Swords, Medal, Plus, Pencil, Trash2, Save, ChevronRight, ChevronLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -48,7 +48,39 @@ interface CarreiraTimelineProps {
   /** Pode excluir jogos/campeonatos/experiências -- só o dono real, nunca
    * um colaborador, mesmo que ele tenha "isOwner" true pra poder postar. */
   podeExcluir?: boolean;
+  /** 'tabs' (default) é o comportamento de sempre -- pills + publicações
+   * sempre visíveis embaixo. 'grid' é a página dedicada de Currículo: vira
+   * uma grade de cards grandes (Publicações incluída como card), sem nada
+   * visível até a pessoa clicar em um. */
+  layout?: 'tabs' | 'grid';
 }
+
+const GRID_TABS = [
+  { value: 'jornada', label: 'Jornada Esportiva', icon: Swords, description: 'Registre seus jogos, treinos, campeonatos e evolução.', color: 'blue' },
+  { value: 'publicacoes', label: 'Publicações', icon: FileText, description: 'Compartilhe suas conquistas, treinos e momentos especiais.', color: 'orange' },
+  { value: 'estatisticas', label: 'Estatísticas', icon: BarChart3, description: 'Acompanhe seu desempenho em jogos e competições.', color: 'green' },
+  { value: 'premiacoes', label: 'Premiações', icon: Medal, description: 'Seus títulos, medalhas e conquistas.', color: 'purple' },
+  { value: 'experiencia', label: 'Experiência', icon: Building2, description: 'Clubes, escolinhas e eventos que participou.', color: 'indigo' },
+  { value: 'atividades', label: 'Atividades Extras', icon: Dumbbell, description: 'Cursos, avaliações, peneiras e outras atividades.', color: 'red' },
+] as const;
+
+const GRID_COLOR_CLASSES: Record<string, { bg: string; text: string }> = {
+  blue: { bg: 'bg-blue-500/10', text: 'text-blue-600' },
+  orange: { bg: 'bg-orange-500/10', text: 'text-orange-600' },
+  green: { bg: 'bg-green-500/10', text: 'text-green-600' },
+  purple: { bg: 'bg-purple-500/10', text: 'text-purple-600' },
+  indigo: { bg: 'bg-indigo-500/10', text: 'text-indigo-600' },
+  red: { bg: 'bg-red-500/10', text: 'text-red-600' },
+};
+
+const GRID_COUNT_LABELS: Record<string, string> = {
+  jornada: 'registros',
+  publicacoes: 'publicações',
+  estatisticas: 'jogos',
+  premiacoes: 'premiações',
+  experiencia: 'experiências',
+  atividades: 'atividades',
+};
 
 const INSTITUTIONAL_TABS = [
   { value: 'experiencia', label: 'Experiência', icon: Building2, hint: 'Clubes, escolinhas e passagens do atleta' },
@@ -63,7 +95,7 @@ const CARREIRA_TABS = [
   { value: 'carreira-atividades', label: 'Atividades', icon: Dumbbell },
 ];
 
-export function CarreiraTimeline({ perfil, isOwner = false, podeExcluir = isOwner }: CarreiraTimelineProps) {
+export function CarreiraTimeline({ perfil, isOwner = false, podeExcluir = isOwner, layout = 'tabs' }: CarreiraTimelineProps) {
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [atividadeFormOpen, setAtividadeFormOpen] = useState(false);
   const [experienciaFormOpen, setExperienciaFormOpen] = useState(false);
@@ -83,6 +115,16 @@ export function CarreiraTimeline({ perfil, isOwner = false, podeExcluir = isOwne
   const { data: limitResult } = useCarreiraAtividadeLimit(isOwner && perfil.crianca_id ? perfil.crianca_id : null);
   const deleteExperiencia = useDeleteCarreiraExperiencia();
   const jornada = useJornada(isPlatformProfile ? null : perfil.crianca_id);
+  const { data: trofeus } = useCarreiraCampeonatoTrofeus(isPlatformProfile ? null : perfil.crianca_id);
+
+  const gridCounts: Record<string, number> = {
+    jornada: jornada.data.campeonatos.length + jornada.data.amistosos.length,
+    publicacoes: posts?.length || 0,
+    estatisticas: jornada.data.estatisticas?.totalJogos || 0,
+    premiacoes: trofeus?.length || 0,
+    experiencia: experiencias?.length || 0,
+    atividades: atividades?.length || 0,
+  };
 
   const dadosPublicos = (perfil as any).dados_publicos as {
     gols?: boolean; campeonatos?: boolean; amistosos?: boolean; premiacoes?: boolean; conquistas?: boolean;
@@ -307,6 +349,33 @@ export function CarreiraTimeline({ perfil, isOwner = false, podeExcluir = isOwne
         );
       case 'estatisticas':
         return <CarreiraStatsCards criancaId={perfil.crianca_id} accentColor={accentColor} />;
+      case 'publicacoes':
+        return (
+          <div className="space-y-4">
+            {isOwner && (
+              <Suspense fallback={null}>
+                <CreatePostForm perfil={perfil} accentColor={accentColor} />
+              </Suspense>
+            )}
+            {postsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (posts?.length || 0) > 0 ? (
+              <div className="space-y-4">
+                {posts?.map((post) => (
+                  <PostCard key={`post-${post.id}`} post={post} showAuthor={true} accentColor={accentColor} />
+                ))}
+              </div>
+            ) : isOwner ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <FileText className="w-10 h-10 mx-auto opacity-40 mb-2" />
+                <p className="text-sm">Nenhuma publicação ainda.</p>
+                <p className="text-xs">Use o campo acima para compartilhar sua jornada!</p>
+              </div>
+            ) : null}
+          </div>
+        );
       case 'atividades':
         return atividadesLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -377,71 +446,119 @@ export function CarreiraTimeline({ perfil, isOwner = false, podeExcluir = isOwne
 
   return (
     <div className="space-y-4">
-      {/* Tab buttons */}
-      {!isPlatformProfile && (
-      <TooltipProvider delayDuration={200}>
-      <div className="flex flex-wrap gap-2 justify-center">
-        {activeTabs.map(({ value, label, icon: Icon, hint }) => {
-          const isActive = activeTab === value;
-          return (
-            <Tooltip key={value}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => handleTabClick(value)}
-                  aria-label={hint}
-                  className="flex items-center gap-1.5 text-xs font-semibold rounded-full border-2 px-4 py-2 transition-all duration-200"
-                  style={{
-                    backgroundColor: isActive ? accentColor : `${accentColor}15`,
-                    color: isActive ? '#fff' : accentColor,
-                    borderColor: accentColor,
-                  }}
-                >
-                  <Icon className="w-4 h-4" />
-                  {label}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">{hint}</TooltipContent>
-            </Tooltip>
-          );
-        })}
-      </div>
-      </TooltipProvider>
-      )}
+      {layout === 'grid' ? (
+        !isPlatformProfile && (
+          activeTab ? (
+            <div className="animate-in fade-in-0 slide-in-from-top-2 duration-200">
+              <button
+                onClick={() => setActiveTab(null)}
+                className="flex items-center gap-1 text-sm font-semibold mb-3"
+                style={{ color: accentColor }}
+              >
+                <ChevronLeft className="w-4 h-4" /> Voltar
+              </button>
+              <div className="rounded-xl bg-card p-4" style={{ border: `2px solid ${accentColor}50` }}>
+                {renderTabContent()}
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {GRID_TABS.map(({ value, label, icon: Icon, description, color }) => {
+                const cls = GRID_COLOR_CLASSES[color];
+                return (
+                  <button
+                    key={value}
+                    onClick={() => handleTabClick(value)}
+                    className={`text-left rounded-2xl p-4 border transition-transform hover:scale-[1.02] ${cls.bg}`}
+                    style={{ borderColor: `${accentColor}20` }}
+                  >
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 ${cls.text}`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <h3 className="font-bold text-sm text-foreground leading-tight">{label}</h3>
+                    <p className="text-xs text-muted-foreground mt-1 leading-snug">{description}</p>
+                    <div className="flex items-center justify-between mt-3">
+                      <span className={`text-sm font-bold ${cls.text}`}>
+                        {gridCounts[value]}{' '}
+                        <span className="font-normal text-muted-foreground">{GRID_COUNT_LABELS[value]}</span>
+                      </span>
+                      <ChevronRight className={`w-4 h-4 ${cls.text}`} />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )
+        )
+      ) : (
+        <>
+          {/* Tab buttons */}
+          {!isPlatformProfile && (
+          <TooltipProvider delayDuration={200}>
+          <div className="flex flex-wrap gap-2 justify-center">
+            {activeTabs.map(({ value, label, icon: Icon, hint }) => {
+              const isActive = activeTab === value;
+              return (
+                <Tooltip key={value}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => handleTabClick(value)}
+                      aria-label={hint}
+                      className="flex items-center gap-1.5 text-xs font-semibold rounded-full border-2 px-4 py-2 transition-all duration-200"
+                      style={{
+                        backgroundColor: isActive ? accentColor : `${accentColor}15`,
+                        color: isActive ? '#fff' : accentColor,
+                        borderColor: accentColor,
+                      }}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {label}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">{hint}</TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
+          </TooltipProvider>
+          )}
 
-      {/* Tab content */}
-      {activeTab && (
-        <div
-          className="rounded-xl bg-card p-4 animate-in fade-in-0 slide-in-from-top-2 duration-200"
-          style={{ border: `2px solid ${accentColor}50` }}
-        >
-          {renderTabContent()}
-        </div>
-      )}
+          {/* Tab content */}
+          {activeTab && (
+            <div
+              className="rounded-xl bg-card p-4 animate-in fade-in-0 slide-in-from-top-2 duration-200"
+              style={{ border: `2px solid ${accentColor}50` }}
+            >
+              {renderTabContent()}
+            </div>
+          )}
 
-      {/* Posts feed */}
-      {isOwner && (
-        <Suspense fallback={null}>
-          <CreatePostForm perfil={perfil} accentColor={accentColor} />
-        </Suspense>
-      )}
+          {/* Posts feed */}
+          {isOwner && (
+            <Suspense fallback={null}>
+              <CreatePostForm perfil={perfil} accentColor={accentColor} />
+            </Suspense>
+          )}
 
-      {postsLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : (posts?.length || 0) > 0 ? (
-        <div className="space-y-4">
-          {posts?.map((post) => (
-            <PostCard key={`post-${post.id}`} post={post} showAuthor={true} accentColor={accentColor} />
-          ))}
-        </div>
-      ) : isOwner ? (
-        <div className="text-center py-8 text-muted-foreground">
-          <FileText className="w-10 h-10 mx-auto opacity-40 mb-2" />
-          <p className="text-sm">Nenhuma publicação ainda.</p>
-          <p className="text-xs">Use o campo acima para compartilhar sua jornada!</p>
-        </div>
-      ) : null}
+          {postsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (posts?.length || 0) > 0 ? (
+            <div className="space-y-4">
+              {posts?.map((post) => (
+                <PostCard key={`post-${post.id}`} post={post} showAuthor={true} accentColor={accentColor} />
+              ))}
+            </div>
+          ) : isOwner ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <FileText className="w-10 h-10 mx-auto opacity-40 mb-2" />
+              <p className="text-sm">Nenhuma publicação ainda.</p>
+              <p className="text-xs">Use o campo acima para compartilhar sua jornada!</p>
+            </div>
+          ) : null}
+        </>
+      )}
 
       {/* Dialogs */}
       {isOwner && perfil.crianca_id && (

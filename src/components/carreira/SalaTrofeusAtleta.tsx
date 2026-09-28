@@ -58,7 +58,7 @@ const PREMIACAO_META: Record<string, { label: string; emoji: string }> = {
 };
 
 // Hook: Campeonatos com posição final (coletivos) + premiações dos campeonatos (individuais)
-function useCarreiraCampeonatoTrofeus(criancaId: string | null | undefined) {
+export function useCarreiraCampeonatoTrofeus(criancaId: string | null | undefined) {
   return useQuery({
     queryKey: ['sala-trofeus-campeonatos', criancaId],
     queryFn: async (): Promise<TrofeuItem[]> => {
