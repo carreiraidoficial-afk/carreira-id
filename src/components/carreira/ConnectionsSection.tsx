@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, UserPlus, Check, X, Users, MapPin, Search, Heart, Inbox, MessageCircle } from 'lucide-react';
+import { Loader2, UserPlus, Check, X, Users, MapPin, Search, Heart, Inbox, MessageCircle, Zap, Briefcase, Link2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -105,6 +105,15 @@ function PersonRow({
       {action && <div onClick={(e) => e.stopPropagation()} className="shrink-0">{action}</div>}
     </Card>
   );
+}
+
+/** Ícone/cor do selo no card de sugestão -- azul pra atleta, roxo pra
+ * escola/clube, laranja pra profissional individual (técnico, professor
+ * etc.), só pra diferenciar visualmente de relance. */
+function getSuggestionBadge(person: { source?: 'atleta' | 'rede'; tipo?: string }) {
+  if (person.source === 'atleta') return { Icon: Zap, color: '#3b82f6' };
+  if (person.tipo === 'dono_escola' || person.tipo === 'agente_clube') return { Icon: Briefcase, color: '#8b5cf6' };
+  return { Icon: Link2, color: '#f97316' };
 }
 
 /** Botão de mensagem via WhatsApp -- só existe pra perfil profissional que
@@ -332,6 +341,7 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
 
   const [activeTab, setActiveTab] = useState<'todas' | 'torcedores' | 'torcendo' | 'solicitacoes'>('todas');
   const [mostrarTodasSugestoes, setMostrarTodasSugestoes] = useState(false);
+  const [sugestoesDispensadas, setSugestoesDispensadas] = useState<Set<string>>(new Set());
   const SUGESTOES_PREVIEW = 3;
 
   const queryClient = useQueryClient();
@@ -554,37 +564,65 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
       {(!isOwnProfile || activeTab === 'todas') && (
         <>
           {/* Suggestions */}
-          {isOwnProfile && suggestions && suggestions.length > 0 && (
+          {isOwnProfile && (() => {
+            const visiveis = (suggestions || []).filter((p) => !sugestoesDispensadas.has(p.id));
+            if (visiveis.length === 0) return null;
+            return (
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-foreground">
-                  <UserPlus className="w-4 h-4 inline mr-1.5" />
                   Sugestões para você
                 </h3>
-                {suggestions.length > SUGESTOES_PREVIEW && (
+                {visiveis.length > SUGESTOES_PREVIEW && (
                   <button
                     onClick={() => setMostrarTodasSugestoes((v) => !v)}
-                    className="text-xs font-medium text-primary hover:underline shrink-0"
+                    className="text-xs font-medium text-primary hover:underline shrink-0 flex items-center gap-0.5"
                   >
-                    {mostrarTodasSugestoes ? 'Ver menos' : `Ver todas (${suggestions.length})`}
+                    {mostrarTodasSugestoes ? 'Ver menos' : 'Ver todas'}
                   </button>
                 )}
               </div>
-              <div className="space-y-2">
-                {(mostrarTodasSugestoes ? suggestions : suggestions.slice(0, SUGESTOES_PREVIEW)).map((person) => (
-                  <PersonRow
-                    key={person.id}
-                    fotoUrl={person.foto_url}
-                    nome={person.nome}
-                    subtitle={TYPE_LABELS[person.tipo] || person.tipo}
-                    cidade={person.cidade}
-                    estado={person.estado}
-                    onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))}
-                    action={
+              <div className="grid grid-cols-3 gap-2">
+                {(mostrarTodasSugestoes ? visiveis : visiveis.slice(0, SUGESTOES_PREVIEW)).map((person) => {
+                  const badge = getSuggestionBadge(person);
+                  return (
+                    <div key={person.id} className="relative bg-card border border-border rounded-xl p-2.5 text-center">
+                      <button
+                        onClick={() => setSugestoesDispensadas((s) => new Set(s).add(person.id))}
+                        className="absolute top-1 right-1 text-muted-foreground hover:text-foreground p-0.5"
+                        aria-label="Dispensar sugestão"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => navigate(carreiraPath(`/${person.slug || `perfil/${person.user_id}`}`))}
+                        className="relative w-12 h-12 mx-auto block"
+                      >
+                        {person.foto_url ? (
+                          <img src={person.foto_url} alt="" className="w-12 h-12 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground">
+                            {person.nome?.[0]}
+                          </div>
+                        )}
+                        <span
+                          className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center border-2 border-card"
+                          style={{ backgroundColor: badge.color }}
+                        >
+                          <badge.Icon className="w-2.5 h-2.5 text-white" />
+                        </span>
+                      </button>
+                      <p className="text-xs font-semibold mt-1.5 truncate">{person.nome}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{TYPE_LABELS[person.tipo] || person.tipo}</p>
+                      {(person.cidade || person.estado) && (
+                        <p className="text-[9px] text-muted-foreground truncate flex items-center justify-center gap-0.5 mt-0.5">
+                          <MapPin className="w-2 h-2 shrink-0" />{[person.cidade, person.estado].filter(Boolean).join(', ')}
+                        </p>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-8 text-xs"
+                        className="w-full h-7 text-[10px] mt-2 px-1"
                         disabled={connectingId === person.user_id}
                         onClick={() => handleConnect(person.user_id)}
                       >
@@ -594,12 +632,13 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
                           <><UserPlus className="w-3 h-3 mr-0.5" /> Conectar</>
                         )}
                       </Button>
-                    }
-                  />
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* Connections */}
           <div>

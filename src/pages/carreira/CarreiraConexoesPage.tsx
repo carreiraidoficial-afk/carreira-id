@@ -4,10 +4,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ConnectionsSection } from '@/components/carreira/ConnectionsSection';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
-import { ProfileViewsSection } from '@/components/carreira/ProfileViewsSection';
 import { NotificacoesBell } from '@/components/carreira/NotificacoesBell';
-import { FeatureGate } from '@/components/carreira/FeatureGate';
-import { useCarreiraPlano } from '@/hooks/useCarreiraPlano';
 import { Loader2, Users, Heart } from 'lucide-react';
 import logoCarreira from '@/assets/logo-carreira-id-dark.png';
 import conexoesBannerBg from '@/assets/torcida-pais-bg.jpg';
@@ -100,8 +97,6 @@ export default function CarreiraConexoesPage() {
   const { perfilAtivo } = useCriancaAtiva(currentUserId);
   const mySlug = slugDoDono(perfilAtivo) || mySlugRede;
   const accentColor = perfilAtivo?.cor_destaque || '#3b82f6';
-  const { data: profileViews } = useProfileViews(perfilAtivo?.id);
-  const { plano: planoAtleta, temAcesso: temAcessoAtleta } = useCarreiraPlano(perfilAtivo?.crianca_id || null);
   const { data: conexoesTotal } = useConexoesTotal(currentUserId, perfilAtivo?.id);
   const torcedoresTotal = perfilAtivo?.followers_count || 0;
 
@@ -158,18 +153,11 @@ export default function CarreiraConexoesPage() {
         </div>
       </header>
 
+      {/* "Quem viu este perfil" tirado da tela por enquanto -- estava
+          atrapalhando o layout que a gente quer pra Conexões. Feature
+          (useProfileViews acima, ProfileViewsSection) continua intacta,
+          só não está plugada aqui. */}
       <main className="container max-w-2xl px-4 py-6 pb-24 space-y-6">
-        {perfilAtivo?.id && profileViews && profileViews.length > 0 && (
-          <FeatureGate
-            planoAtual={planoAtleta}
-            planoRequerido="premium"
-            liberado={temAcessoAtleta('ver_views')}
-            mensagem="Ver quem visualizou seu perfil é um recurso Premium"
-          >
-            <ProfileViewsSection views={profileViews} accentColor={accentColor} navigate={navigate} />
-          </FeatureGate>
-        )}
-
         <ConnectionsSection userId={currentUserId} currentUserId={currentUserId} perfilAtletaId={perfilAtivo?.id} />
       </main>
 
