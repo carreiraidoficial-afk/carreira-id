@@ -41,20 +41,17 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, UserX, MapPin, Trophy, Share2, User, UserPlus, UserCheck, Users, Copy, Check, Search, School, X, LogOut, Pencil, Instagram, Globe, Phone, Zap, Settings, Info, Wrench } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Loader2, ArrowLeft, UserX, MapPin, Trophy, Share2, User, UserPlus, UserCheck, Users, Copy, Check, Search, School, X, LogOut, Pencil, Instagram, Globe, Phone, Zap, Settings, Info, Wrench, ChevronDown } from 'lucide-react';
 import { useSEO } from '@/hooks/useSEO';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import logoCarreira from '@/assets/logo-carreira-id-dark.png';
 import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { useCarreiraRanking } from '@/hooks/useCarreiraRanking';
 import { useAnonymousGate } from '@/hooks/useAnonymousGate';
-import { useCriancaAtiva, useColaboradorInfo, useMeusAmbientes } from '@/hooks/useCriancaAtiva';
-import { SeletorCrianca } from '@/components/carreira/SeletorCrianca';
-import { AmbienteSwitcher } from '@/components/carreira/AmbienteSwitcher';
+import { useCriancaAtiva, useColaboradorInfo, useMeusAmbientes, salvarUltimoAmbiente } from '@/hooks/useCriancaAtiva';
 import { LockedSection } from '@/components/carreira/AnonymousFeedCTA';
 
 const TYPE_LABELS: Record<string, string> = {
@@ -152,65 +149,6 @@ function useConnectionsList(userId?: string) {
       return merged;
     },
     enabled: !!userId,
-  });
-}
-
-// Search hook for people across the network
-function useSearchPeople(query: string) {
-  return useQuery({
-    queryKey: ['search-people', query],
-    queryFn: async () => {
-      if (!query || query.length < 2) return { rede: [] as any[], atletas: [] as any[] };
-      const searchTerm = `%${query}%`;
-      
-      // Search in perfil_atleta
-      const { data: atletaResults } = await supabase
-        .from('perfil_atleta')
-        .select('id, user_id, nome, foto_url, slug, modalidade, categoria')
-        .eq('is_public', true)
-        .ilike('nome', searchTerm)
-        .limit(10);
-
-      // Collect user_ids already covered by athlete profiles to avoid duplicates
-      const atletaUserIds = new Set((atletaResults || []).map((a: any) => a.user_id));
-
-      // Search in perfis_rede by name
-      const { data: redeByName } = await supabase
-        .from('perfis_rede')
-        .select('id, user_id, nome, tipo, foto_url, slug, dados_perfil')
-        .ilike('nome', searchTerm)
-        .limit(15);
-
-      // Also fetch dono_escola profiles broadly to match escola name client-side
-      const { data: redeEscolas } = await supabase
-        .from('perfis_rede')
-        .select('id, user_id, nome, tipo, foto_url, slug, dados_perfil')
-        .eq('tipo', 'dono_escola')
-        .limit(50);
-
-      // Merge and deduplicate
-      const redeMap = new Map<string, any>();
-      (redeByName || []).forEach((r: any) => redeMap.set(r.id, r));
-
-      // Client-side filter escola names
-      const lowerQuery = query.toLowerCase();
-      (redeEscolas || []).forEach((r: any) => {
-        if (redeMap.has(r.id)) return;
-        const nomeEscola = r.dados_perfil?.nome_escola || '';
-        if (nomeEscola.toLowerCase().includes(lowerQuery)) {
-          redeMap.set(r.id, r);
-        }
-      });
-
-      // Filter out rede profiles that already have an athlete profile (same user_id)
-      const filteredRede = Array.from(redeMap.values()).filter((r: any) => !atletaUserIds.has(r.user_id)).slice(0, 10);
-
-      return {
-        rede: filteredRede,
-        atletas: atletaResults || [],
-      };
-    },
-    enabled: query.length >= 2,
   });
 }
 
@@ -361,8 +299,6 @@ export default function CarreiraPerfilPage() {
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [connectingId, setConnectingId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchOpen, setSearchOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [configDialogTab, setConfigDialogTab] = useState('responsavel');
@@ -437,7 +373,6 @@ export default function CarreiraPerfilPage() {
   const { data: suggestions } = useSuggestionsForProfile(currentUserId);
   const { data: connections } = useConnectionsList(perfil?.user_id);
   const { data: escolinhas } = useEscolinhasCarreira(perfil?.type === 'atleta' ? perfil?.crianca_id : undefined);
-  const { data: searchResults } = useSearchPeople(searchQuery);
   const { data: ligaRanking } = useCarreiraRanking(20);
 
   // Track profile view (like LinkedIn) — only for non-owner visits on atleta profiles
@@ -740,29 +675,23 @@ export default function CarreiraPerfilPage() {
         className={`sticky top-0 z-50 backdrop-blur-sm shadow-sm border-b ${isDarkTheme ? 'bg-[hsl(0_0%_0%/0.97)]' : 'bg-background/95'}`}
         style={{ borderColor: `${accentColor}40` }}
       >
-        {/* Row 1: Logo + Search (desktop inline) + Actions */}
-        <div className="container flex items-center justify-between h-14 lg:h-16 px-4 max-w-6xl">
-          <Link to={carreiraPath('/feed')} className="flex items-center gap-2 shrink-0">
-            <img src={logoCarreira} alt="Carreira" className="h-16 lg:h-20" />
-          </Link>
-
-          {/* Search bar — desktop inline */}
-          <div className="hidden lg:block flex-1 max-w-xs mx-auto relative">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-              <Input
-                placeholder="Buscar pessoas na rede..."
-                className="pl-9 pr-8 h-9 text-sm text-foreground placeholder:text-muted-foreground"
-                value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
-                onFocus={() => setSearchOpen(true)}
+        {/* Row 1: Voltar + Seletor de identidade + Actions */}
+        <div className="container flex items-center justify-between h-14 lg:h-16 px-4 max-w-6xl gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Link to={carreiraPath('/feed')} className="shrink-0 text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            {currentUserId && isOwner && (
+              <MeuPerfilIdentidadeSeletor
+                meusPerfis={meusPerfis}
+                meuPerfilAtivo={meuPerfilAtivo}
+                selecionarCrianca={selecionarCrianca}
+                meusAmbientes={meusAmbientes}
+                ambienteAtual={ambienteAtual}
+                currentUserId={currentUserId}
+                navigate={navigate}
               />
-              {searchQuery && (
-                <button className="absolute right-2.5 top-1/2 -translate-y-1/2 z-10" onClick={() => { setSearchQuery(''); setSearchOpen(false); }}>
-                  <X className="w-3.5 h-3.5 text-muted-foreground" />
-                </button>
-              )}
-            </div>
+            )}
           </div>
 
           {/* overflow-x-auto como rede de segurança: em telas muito estreitas,
@@ -776,38 +705,8 @@ export default function CarreiraPerfilPage() {
                   isDarkTheme={isDarkTheme}
                   onCheckedChange={setDarkTheme}
                   compact
-                  className="hidden sm:flex"
                 />
                 <div className="flex items-center gap-1.5 shrink-0">
-                  {/* No mobile o seletor vira sua própria linha (ver Row 1.5
-                      abaixo) -- competir por espaço com os botões de ação
-                      nessa mesma linha era exatamente o que apertava tudo.
-                      No desktop tem espaço de sobra, continua inline. */}
-                  {meuPerfilAtivo && (
-                    <div className="hidden lg:block">
-                      <SeletorCrianca
-                        perfis={meusPerfis}
-                        perfilAtivoId={meuPerfilAtivo.crianca_id || null}
-                        onSelecionar={(criancaId) => {
-                          selecionarCrianca(criancaId);
-                          const escolhido = meusPerfis.find((p) => p.crianca_id === criancaId);
-                          if (escolhido?.slug) navigate(carreiraPath(`/${escolhido.slug}`));
-                        }}
-                      />
-                    </div>
-                  )}
-                  {isOwner && currentUserId && meusAmbientes.temMultiploAmbiente && (
-                    <div className="hidden lg:block">
-                      <AmbienteSwitcher
-                        userId={currentUserId}
-                        ambienteAtual={ambienteAtual}
-                        atletaSlug={meusAmbientes.atletaSlug!}
-                        atletaNome={meusAmbientes.atletaNome || 'Atleta'}
-                        redeSlug={meusAmbientes.redeSlug!}
-                        redeNome={meusAmbientes.redeNome || 'Escola'}
-                      />
-                    </div>
-                  )}
                   <Button variant="outline" size="sm" className="h-8 text-xs px-2 sm:px-3"
                     style={{ borderColor: `${accentColor}50`, color: accentColor }}
                     onClick={async () => {
@@ -866,56 +765,6 @@ export default function CarreiraPerfilPage() {
             )}
           </div>
         </div>
-        {/* Row 1.5: Seletor de filho — mobile only, linha própria pra não
-            competir por espaço com os botões de ação da Row 1 */}
-        {meuPerfilAtivo && (
-          <div className="lg:hidden container px-4 pb-2 max-w-6xl">
-            <SeletorCrianca
-              perfis={meusPerfis}
-              perfilAtivoId={meuPerfilAtivo.crianca_id || null}
-              onSelecionar={(criancaId) => {
-                selecionarCrianca(criancaId);
-                const escolhido = meusPerfis.find((p) => p.crianca_id === criancaId);
-                if (escolhido?.slug) navigate(carreiraPath(`/${escolhido.slug}`));
-              }}
-            />
-          </div>
-        )}
-        {isOwner && currentUserId && meusAmbientes.temMultiploAmbiente && (
-          <div className="lg:hidden container px-4 pb-2 max-w-6xl">
-            <AmbienteSwitcher
-              userId={currentUserId}
-              ambienteAtual={ambienteAtual}
-              atletaSlug={meusAmbientes.atletaSlug!}
-              atletaNome={meusAmbientes.atletaNome || 'Atleta'}
-              redeSlug={meusAmbientes.redeSlug!}
-              redeNome={meusAmbientes.redeNome || 'Escola'}
-            />
-          </div>
-        )}
-        {/* Row 2: Search bar + theme toggle — mobile only */}
-        <div className="lg:hidden container px-4 pb-2 max-w-6xl flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-            <Input
-              placeholder="Buscar pessoas na rede..."
-              className="pl-9 pr-8 h-9 text-sm w-full text-foreground placeholder:text-muted-foreground"
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
-              onFocus={() => setSearchOpen(true)}
-            />
-            {searchQuery && (
-              <button className="absolute right-2.5 top-1/2 -translate-y-1/2 z-10" onClick={() => { setSearchQuery(''); setSearchOpen(false); }}>
-                <X className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
-            )}
-          </div>
-          <CarreiraThemeToggle
-            isDarkTheme={isDarkTheme}
-            onCheckedChange={setDarkTheme}
-            compact
-          />
-        </div>
       </header>
 
       {isOwner && meusAmbientes.temMultiploAmbiente && !avisoAmbienteVisto && (
@@ -945,51 +794,6 @@ export default function CarreiraPerfilPage() {
             >
               Sair
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* Search overlay + results — OUTSIDE header to fix z-index stacking */}
-      {searchOpen && <div className="fixed inset-0 z-[55]" onClick={() => setSearchOpen(false)} />}
-      {searchOpen && searchQuery.length >= 2 && searchResults && (
-        <div className="sticky top-[7.5rem] lg:top-16 z-[60] container max-w-6xl px-4">
-          <div className="lg:max-w-sm lg:mx-auto relative">
-            <Card className="absolute top-0 left-0 right-0 max-h-80 overflow-y-auto p-2 shadow-lg">
-              {searchResults.atletas.length === 0 && searchResults.rede.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-4">Nenhum resultado encontrado</p>
-              ) : (
-                <>
-                  {searchResults.atletas.map((a) => (
-                    <div key={`a-${a.id}`} className="flex items-center gap-3 p-2.5 hover:bg-muted/50 rounded-lg cursor-pointer"
-                      onClick={() => { navigate(carreiraPath(`/${a.slug}`)); setSearchOpen(false); setSearchQuery(''); }}>
-                      {a.foto_url ? <img src={a.foto_url} alt="" className="w-9 h-9 rounded-full object-cover" /> : <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-foreground">{a.nome?.[0]}</div>}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{a.nome}</p>
-                        <p className="text-xs text-muted-foreground">{a.modalidade}{a.categoria ? ` • ${a.categoria}` : ''} • Atleta</p>
-                      </div>
-                    </div>
-                  ))}
-                  {searchResults.rede.map((r) => {
-                    const isDono = r.tipo === 'dono_escola';
-                    const nomeEscola = isDono ? (r.dados_perfil?.nome_escola || r.nome) : r.nome;
-                    const modalidades = isDono && Array.isArray(r.dados_perfil?.modalidades) ? r.dados_perfil.modalidades : [];
-                    return (
-                    <div key={`r-${r.id}`} className="flex items-center gap-3 p-2.5 hover:bg-muted/50 rounded-lg cursor-pointer"
-                      onClick={() => { navigate(carreiraPath(`/${r.slug || `perfil/${r.user_id}`}`)); setSearchOpen(false); setSearchQuery(''); }}>
-                      {r.foto_url ? <img src={r.foto_url} alt="" className="w-9 h-9 rounded-full object-cover" /> : <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-foreground">{(isDono ? nomeEscola : r.nome)?.[0]}</div>}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{nomeEscola}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {isDono ? 'Escola de Esportes' : (TYPE_LABELS[r.tipo] || r.tipo)}
-                          {isDono && modalidades.length > 0 ? ` • ${modalidades.join(', ')}` : ''}
-                        </p>
-                      </div>
-                    </div>
-                    );
-                  })}
-                </>
-              )}
-            </Card>
           </div>
         </div>
       )}
@@ -1631,6 +1435,84 @@ export default function CarreiraPerfilPage() {
 }
 
 /* --- Sub-components --- */
+
+/** Seletor único de identidade -- substitui os dois dropdowns separados
+ * (filho e ambiente) que existiam antes nessa tela. Junta atletas
+ * (irmãos) e o perfil de rede (escola/profissional) numa lista só, já
+ * que pra quem tem os dois é só "qual dos meus perfis eu quero ver
+ * agora", não duas decisões diferentes. Some sozinho quando só existe
+ * uma identidade (nada pra escolher). */
+function MeuPerfilIdentidadeSeletor({
+  meusPerfis, meuPerfilAtivo, selecionarCrianca, meusAmbientes, ambienteAtual, currentUserId, navigate,
+}: {
+  meusPerfis: any[];
+  meuPerfilAtivo: any;
+  selecionarCrianca: (criancaId: string) => void;
+  meusAmbientes: { redeSlug?: string | null; redeNome?: string | null };
+  ambienteAtual: 'atleta' | 'rede';
+  currentUserId: string;
+  navigate: ReturnType<typeof useNavigate>;
+}) {
+  const temRede = !!meusAmbientes.redeSlug;
+  const totalOpcoes = meusPerfis.length + (temRede ? 1 : 0);
+  if (totalOpcoes <= 1) return null;
+
+  const ativoNome = ambienteAtual === 'rede' ? (meusAmbientes.redeNome || 'Escola') : (meuPerfilAtivo?.nome || 'Perfil');
+  const ativoFoto = ambienteAtual === 'rede' ? null : meuPerfilAtivo?.foto_url;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-full border border-border hover:bg-muted/50 transition-colors text-xs font-medium max-w-[220px]">
+          <Avatar className="w-5 h-5 shrink-0">
+            {ativoFoto ? <AvatarImage src={ativoFoto} className="object-cover" /> : null}
+            <AvatarFallback className="text-[9px]">
+              {ambienteAtual === 'rede' ? <School className="w-2.5 h-2.5" /> : <Users className="w-2.5 h-2.5" />}
+            </AvatarFallback>
+          </Avatar>
+          <span className="truncate">{ativoNome}</span>
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-56">
+        {meusPerfis.map((p) => (
+          <DropdownMenuItem
+            key={p.crianca_id || p.id}
+            className="gap-2"
+            onClick={() => {
+              if (!p.crianca_id) return;
+              selecionarCrianca(p.crianca_id);
+              salvarUltimoAmbiente(currentUserId, 'atleta');
+              if (p.slug) navigate(carreiraPath(`/${p.slug}`));
+            }}
+          >
+            <Avatar className="w-6 h-6">
+              {p.foto_url ? <AvatarImage src={p.foto_url} className="object-cover" /> : null}
+              <AvatarFallback className="text-[10px]"><Users className="w-3 h-3" /></AvatarFallback>
+            </Avatar>
+            <span className="flex-1 text-sm font-medium truncate">{p.nome}</span>
+            {ambienteAtual === 'atleta' && p.crianca_id === meuPerfilAtivo?.crianca_id && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
+          </DropdownMenuItem>
+        ))}
+        {temRede && (
+          <DropdownMenuItem
+            className="gap-2"
+            onClick={() => {
+              salvarUltimoAmbiente(currentUserId, 'rede');
+              navigate(carreiraPath(`/${meusAmbientes.redeSlug}`));
+            }}
+          >
+            <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0">
+              <School className="w-3.5 h-3.5" />
+            </div>
+            <span className="flex-1 text-sm font-medium truncate">{meusAmbientes.redeNome || 'Escola'}</span>
+            {ambienteAtual === 'rede' && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 function FollowButton({ perfil, currentUserId, isOwner }: { perfil: any; currentUserId: string | null; isOwner: boolean }) {
   const { data: isFollowing } = useIsFollowing(perfil.id);
