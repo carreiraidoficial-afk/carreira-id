@@ -24,20 +24,6 @@ import { EditPerfilDialog } from './EditPerfilDialog';
 import { EditConfiguracoesDialog } from './EditConfiguracoesDialog';
 import { CompartilharPerfilDialog } from './CompartilharPerfilDialog';
 
-function TorcedoresCount({ perfilId }: { perfilId: string }) {
-  const { data: count } = useQuery({
-    queryKey: ['torcedores-count', perfilId],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from('atleta_follows')
-        .select('*', { count: 'exact', head: true })
-        .eq('following_perfil_id', perfilId);
-      return count || 0;
-    },
-  });
-  return <span><strong className="text-foreground">{count ?? 0}</strong> torcedores</span>;
-}
-
 interface PerfilHeaderProps {
   perfil: PerfilAtleta;
   isOwner?: boolean;
@@ -263,9 +249,8 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
           <div className="mt-3 flex flex-col items-center text-center">
             {/* Stats */}
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <span><strong className="text-foreground">{perfil.followers_count || 0}</strong> seguidores</span>
+              <span><strong className="text-foreground">{perfil.followers_count || 0}</strong> torcedores</span>
               <ConexoesCount userId={perfil.user_id} perfilAtletaId={perfil.id} />
-              <TorcedoresCount perfilId={perfil.id} />
             </div>
 
             {perfil.bio && <p className="mt-2 text-sm text-muted-foreground whitespace-pre-line">{perfil.bio}</p>}
@@ -316,7 +301,7 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
                   <Button size="sm" className="h-7 text-xs px-2.5" variant={isFollowing ? 'outline' : 'default'}
                     onClick={handleFollow} disabled={toggleFollow.isPending}
                     style={!isFollowing ? { backgroundColor: perfil.cor_destaque || undefined } : undefined}>
-                    {isFollowing ? <><UserCheck className="w-3 h-3 mr-1" />Seguindo</> : <><UserPlus className="w-3 h-3 mr-1" />Seguir</>}
+                    {isFollowing ? <><UserCheck className="w-3 h-3 mr-1" />Torcendo</> : <><UserPlus className="w-3 h-3 mr-1" />Torcer</>}
                   </Button>
                 </>
               )}

@@ -1144,7 +1144,7 @@ export default function CarreiraPerfilPage() {
               {/* Followers & Connections */}
               <div className="mt-3 pt-3 border-t border-border space-y-1">
                 <div className="text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">{perfil.followers_count || 0}</span> seguidores
+                  <span className="font-semibold text-foreground">{perfil.followers_count || 0}</span> torcedores
                 </div>
                 <ConexoesCount userId={perfil.user_id} perfilAtletaId={perfil.type === 'atleta' ? perfil.id : undefined} />
               </div>
@@ -1157,7 +1157,7 @@ export default function CarreiraPerfilPage() {
                       <UserPlus className="w-3.5 h-3.5 mr-1" />Conectar
                     </Button>
                     <Button size="sm" variant="outline" className="w-full text-xs h-8" style={{ borderColor: `${accentColor}50`, color: accentColor }} onClick={() => requireAuth('follow')}>
-                      <UserPlus className="w-3.5 h-3.5 mr-1" />Seguir
+                      <UserPlus className="w-3.5 h-3.5 mr-1" />Torcer
                     </Button>
                   </>
                 )}
@@ -1646,7 +1646,7 @@ function FollowButton({ perfil, currentUserId, isOwner }: { perfil: any; current
     <Button size="sm" className="w-full text-xs h-8" variant={isFollowing ? 'outline' : 'default'}
       onClick={handleFollow} disabled={toggleFollow.isPending}
       style={!isFollowing ? { backgroundColor: perfil.cor_destaque || undefined } : undefined}>
-      {isFollowing ? <><UserCheck className="w-3.5 h-3.5 mr-1" />Seguindo</> : <><UserPlus className="w-3.5 h-3.5 mr-1" />Seguir</>}
+      {isFollowing ? <><UserCheck className="w-3.5 h-3.5 mr-1" />Torcendo</> : <><UserPlus className="w-3.5 h-3.5 mr-1" />Torcer</>}
     </Button>
   );
 }
