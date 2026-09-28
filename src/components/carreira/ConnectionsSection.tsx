@@ -45,9 +45,11 @@ const TYPE_LABELS: Record<string, string> = {
   empresario: 'Empresário',
   influenciador: 'Influenciador',
   pai_responsavel: 'Atleta',
+  jogador_profissional: 'Jogador Profissional',
   scout: 'Scout',
   agente_clube: 'Agente de Clube',
   fotografo: 'Fotógrafo',
+  torcedor: 'Torcedor',
 };
 
 interface Props {
@@ -329,6 +331,8 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
   });
 
   const [activeTab, setActiveTab] = useState<'todas' | 'torcedores' | 'torcendo' | 'solicitacoes'>('todas');
+  const [mostrarTodasSugestoes, setMostrarTodasSugestoes] = useState(false);
+  const SUGESTOES_PREVIEW = 3;
 
   const queryClient = useQueryClient();
 
@@ -552,12 +556,22 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
           {/* Suggestions */}
           {isOwnProfile && suggestions && suggestions.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-foreground mb-3">
-                <UserPlus className="w-4 h-4 inline mr-1.5" />
-                Sugestões para você
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-foreground">
+                  <UserPlus className="w-4 h-4 inline mr-1.5" />
+                  Sugestões para você
+                </h3>
+                {suggestions.length > SUGESTOES_PREVIEW && (
+                  <button
+                    onClick={() => setMostrarTodasSugestoes((v) => !v)}
+                    className="text-xs font-medium text-primary hover:underline shrink-0"
+                  >
+                    {mostrarTodasSugestoes ? 'Ver menos' : `Ver todas (${suggestions.length})`}
+                  </button>
+                )}
+              </div>
               <div className="space-y-2">
-                {suggestions.map((person) => (
+                {(mostrarTodasSugestoes ? suggestions : suggestions.slice(0, SUGESTOES_PREVIEW)).map((person) => (
                   <PersonRow
                     key={person.id}
                     fotoUrl={person.foto_url}

@@ -10,6 +10,7 @@ const TYPE_LABELS: Record<string, string> = {
   empresario: 'Empresário',
   influenciador: 'Influenciador',
   pai_responsavel: 'Atleta',
+  atleta: 'Atleta',
   scout: 'Scout',
   agente_clube: 'Agente de Clube',
   fotografo: 'Fotógrafo',
