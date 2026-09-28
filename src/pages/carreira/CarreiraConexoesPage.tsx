@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ConnectionsSection } from '@/components/carreira/ConnectionsSection';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
 import { ProfileViewsSection } from '@/components/carreira/ProfileViewsSection';
-import { FansSection } from '@/components/carreira/FansSection';
+import { NotificacoesBell } from '@/components/carreira/NotificacoesBell';
 import { FeatureGate } from '@/components/carreira/FeatureGate';
 import { useCarreiraPlano } from '@/hooks/useCarreiraPlano';
 import { Loader2 } from 'lucide-react';
@@ -68,6 +68,26 @@ function useProfileViews(perfilAtletaId?: string) {
   });
 }
 
+function useConexoesTotal(userId: string | null, perfilAtletaId?: string | null) {
+  return useQuery({
+    queryKey: ['conexoes-total', userId, perfilAtletaId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('rede_conexoes')
+        .select('solicitante_id, destinatario_id, solicitante_perfil_atleta_id, destinatario_perfil_atleta_id')
+        .eq('status', 'aceita')
+        .or(`solicitante_id.eq.${userId},destinatario_id.eq.${userId}`);
+      const minhas = (data || []).filter((row) => {
+        const souSolicitante = row.solicitante_id === userId;
+        const meuLado = souSolicitante ? row.solicitante_perfil_atleta_id : row.destinatario_perfil_atleta_id;
+        return !meuLado || meuLado === perfilAtletaId;
+      });
+      return minhas.length;
+    },
+    enabled: !!userId,
+  });
+}
+
 export default function CarreiraConexoesPage() {
   const { sessionUserId: currentUserId, loading } = useCarreiraSession();
   const navigate = useNavigate();
@@ -81,6 +101,8 @@ export default function CarreiraConexoesPage() {
   const accentColor = perfilAtivo?.cor_destaque || '#3b82f6';
   const { data: profileViews } = useProfileViews(perfilAtivo?.id);
   const { plano: planoAtleta, temAcesso: temAcessoAtleta } = useCarreiraPlano(perfilAtivo?.crianca_id || null);
+  const { data: conexoesTotal } = useConexoesTotal(currentUserId, perfilAtivo?.id);
+  const torcedoresTotal = perfilAtivo?.followers_count || 0;
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -104,13 +126,26 @@ export default function CarreiraConexoesPage() {
 
   return (
     <div className="min-h-screen bg-background" data-theme={theme}>
-      <div className="h-1 w-full bg-[hsl(25_95%_55%)]" />
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
-        <div className="container flex items-center h-14 px-4 max-w-2xl">
-          <Link to={carreiraPath('/feed')} className="flex items-center gap-2 shrink-0">
-            <img src={logoCarreira} alt="Carreira" className="h-16 lg:h-20" />
-          </Link>
-          <h1 className="ml-4 text-lg font-semibold text-foreground">Conexões</h1>
+      <header className="relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${accentColor}, #0a0f18)` }}>
+        <div className="container max-w-2xl px-4 pt-4 pb-6">
+          <div className="flex items-center justify-between">
+            <Link to={carreiraPath('/feed')} className="flex items-center gap-2 shrink-0">
+              <img src={logoCarreira} alt="Carreira" className="h-8" />
+            </Link>
+            <NotificacoesBell />
+          </div>
+          <h1 className="mt-4 text-3xl font-extrabold text-white">Conexões</h1>
+          <p className="text-white/70 text-sm mt-1">Construa sua rede no esporte</p>
+          <div className="flex items-center gap-3 mt-4">
+            <div className="bg-black/30 rounded-xl px-4 py-2 text-center">
+              <p className="text-white font-bold text-lg leading-tight">{conexoesTotal ?? 0}</p>
+              <p className="text-white/70 text-[11px]">Conexões</p>
+            </div>
+            <div className="bg-black/30 rounded-xl px-4 py-2 text-center">
+              <p className="text-white font-bold text-lg leading-tight">{torcedoresTotal}</p>
+              <p className="text-white/70 text-[11px]">Torcedores</p>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -124,10 +159,6 @@ export default function CarreiraConexoesPage() {
           >
             <ProfileViewsSection views={profileViews} accentColor={accentColor} navigate={navigate} />
           </FeatureGate>
-        )}
-
-        {perfilAtivo?.id && (
-          <FansSection perfilAtletaId={perfilAtivo.id} accentColor={accentColor} />
         )}
 
         <ConnectionsSection userId={currentUserId} currentUserId={currentUserId} perfilAtletaId={perfilAtivo?.id} />

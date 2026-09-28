@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, UserPlus, Check, X, Users, MapPin, Search } from 'lucide-react';
+import { Loader2, UserPlus, Check, X, Users, MapPin, Search, Heart, Inbox } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -210,6 +210,65 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
     enabled: isOwnProfile,
   });
 
+  // Torcedores/Torcendo são a mesma tabela (atleta_follows), só invertendo
+  // de qual lado se consulta -- ver [[carreira-id]] decisão de unificar
+  // Seguidor e Torcedor num conceito só.
+  const { data: torcedores, isLoading: torcedoresLoading } = useQuery({
+    queryKey: ['perfil-torcedores', perfilAtletaId],
+    queryFn: async () => {
+      if (!perfilAtletaId) return [];
+      const { data: follows, error } = await supabase
+        .from('atleta_follows')
+        .select('follower_id, created_at')
+        .eq('following_perfil_id', perfilAtletaId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      if (!follows || follows.length === 0) return [];
+      const followerIds = follows.map((f) => f.follower_id);
+      const { data: redeProfiles } = await supabase
+        .from('perfis_rede').select('user_id, nome, foto_url, tipo').in('user_id', followerIds);
+      const { data: atletaProfiles } = await supabase
+        .from('perfil_atleta').select('user_id, nome, foto_url, slug').in('user_id', followerIds);
+      const redeMap = new Map((redeProfiles || []).map((p) => [p.user_id, p]));
+      const atletaMap = new Map((atletaProfiles || []).map((p) => [p.user_id, p]));
+      return follows.map((f) => {
+        const rede = redeMap.get(f.follower_id);
+        const atleta = atletaMap.get(f.follower_id);
+        return {
+          user_id: f.follower_id,
+          nome: rede?.nome || atleta?.nome || 'Usuário',
+          foto_url: rede?.foto_url || atleta?.foto_url || null,
+          tipo: rede?.tipo || 'Atleta',
+        };
+      });
+    },
+    enabled: isOwnProfile && !!perfilAtletaId,
+  });
+
+  const { data: torcendo, isLoading: torcendoLoading } = useQuery({
+    queryKey: ['meus-torcendo', currentUserId],
+    queryFn: async () => {
+      if (!currentUserId) return [];
+      const { data: follows, error } = await supabase
+        .from('atleta_follows')
+        .select('following_perfil_id, created_at')
+        .eq('follower_id', currentUserId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      if (!follows || follows.length === 0) return [];
+      const perfilIds = follows.map((f) => f.following_perfil_id);
+      const { data: atletaProfiles } = await supabase
+        .from('perfil_atleta').select('id, nome, foto_url, slug').in('id', perfilIds);
+      const atletaMap = new Map((atletaProfiles || []).map((p) => [p.id, p]));
+      return follows
+        .map((f) => atletaMap.get(f.following_perfil_id))
+        .filter((p): p is NonNullable<typeof p> => !!p);
+    },
+    enabled: isOwnProfile && !!currentUserId,
+  });
+
+  const [activeTab, setActiveTab] = useState<'todas' | 'torcedores' | 'torcendo' | 'solicitacoes'>('todas');
+
   const queryClient = useQueryClient();
 
   const invalidateConnections = () => {
@@ -269,7 +328,33 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Abas */}
+      {isOwnProfile && (
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          {([
+            { value: 'todas' as const, label: 'Todas', icon: Users, count: connections?.length || 0 },
+            { value: 'torcedores' as const, label: 'Torcedores', icon: Heart, count: torcedores?.length || 0 },
+            { value: 'torcendo' as const, label: 'Torcendo', icon: Heart, count: torcendo?.length || 0 },
+            { value: 'solicitacoes' as const, label: 'Solicitações', icon: Inbox, count: pendingRequests?.length || 0 },
+          ]).map(({ value, label, icon: Icon, count }) => (
+            <button
+              key={value}
+              onClick={() => setActiveTab(value)}
+              className={`shrink-0 flex items-center gap-1.5 text-xs font-semibold rounded-full border px-3 py-1.5 transition-colors ${
+                activeTab === value
+                  ? 'bg-foreground text-background border-foreground'
+                  : 'border-border text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+              {count > 0 && <span className="text-[10px] opacity-70">({count})</span>}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Buscar pessoas pra conectar */}
       {isOwnProfile && (
         <div>
@@ -316,13 +401,9 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
         </div>
       )}
 
-      {/* Pending requests */}
-      {isOwnProfile && pendingRequests && pendingRequests.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-            Solicitações pendentes ({pendingRequests.length})
-          </h3>
+      {/* Solicitações pendentes */}
+      {isOwnProfile && activeTab === 'solicitacoes' && (
+        pendingRequests && pendingRequests.length > 0 ? (
           <div className="space-y-2">
             {pendingRequests.map((person) => (
               <Card key={person.id} className="flex items-center gap-3 p-3">
@@ -353,20 +434,23 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
               </Card>
             ))}
           </div>
-        </div>
+        ) : (
+          <Card className="p-6 text-center text-sm text-muted-foreground">
+            <Inbox className="w-8 h-8 mx-auto opacity-30 mb-2" />
+            <p>Nenhuma solicitação pendente</p>
+          </Card>
+        )
       )}
 
-      {/* Connections */}
-      <div>
-        <h3 className="text-sm font-semibold text-foreground mb-3">
-          <Users className="w-4 h-4 inline mr-1.5" />
-          Conexões ({connections?.length || 0})
-        </h3>
-        {connections && connections.length > 0 ? (
+      {/* Torcedores (quem torce por você) */}
+      {isOwnProfile && activeTab === 'torcedores' && (
+        torcedoresLoading ? (
+          <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+        ) : torcedores && torcedores.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {connections.map((person) => (
+            {torcedores.map((person) => (
               <Card
-                key={person.id}
+                key={person.user_id}
                 className="flex items-center gap-3 p-3 cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))}
               >
@@ -380,61 +464,135 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{person.nome}</p>
                   <p className="text-xs text-muted-foreground">{TYPE_LABELS[person.tipo] || person.tipo}</p>
-                  {person.unidade_nome && (
-                    <p className="text-[10px] text-muted-foreground flex items-center gap-0.5 mt-0.5">
-                      <MapPin className="w-2.5 h-2.5" />{person.unidade_nome}
-                    </p>
-                  )}
                 </div>
               </Card>
             ))}
           </div>
         ) : (
           <Card className="p-6 text-center text-sm text-muted-foreground">
-            <Users className="w-8 h-8 mx-auto opacity-30 mb-2" />
-            <p>Nenhuma conexão ainda</p>
+            <Heart className="w-8 h-8 mx-auto opacity-30 mb-2" />
+            <p>Ninguém torcendo ainda</p>
           </Card>
-        )}
-      </div>
+        )
+      )}
 
-      {/* Suggestions */}
-      {isOwnProfile && suggestions && suggestions.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold text-foreground mb-3">
-            <UserPlus className="w-4 h-4 inline mr-1.5" />
-            Pessoas que você pode conhecer
-          </h3>
+      {/* Torcendo (atletas que você torce) */}
+      {isOwnProfile && activeTab === 'torcendo' && (
+        torcendoLoading ? (
+          <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+        ) : torcendo && torcendo.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {suggestions.map((person) => (
-              <Card key={person.id} className="flex items-center gap-3 p-3">
-                {person.foto_url ? (
-                  <img src={person.foto_url} alt="" className="w-10 h-10 rounded-full object-cover cursor-pointer" onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))} />
+            {torcendo.map((atleta) => (
+              <Card
+                key={atleta.id}
+                className="flex items-center gap-3 p-3 cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => navigate(carreiraPath(atleta.slug ? `/${atleta.slug}` : `/perfil/${atleta.id}`))}
+              >
+                {atleta.foto_url ? (
+                  <img src={atleta.foto_url} alt="" className="w-10 h-10 rounded-full object-cover" />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground cursor-pointer" onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))}>
-                    {person.nome?.[0]}
+                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground">
+                    {atleta.nome?.[0]}
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate cursor-pointer hover:underline" onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))}>{person.nome}</p>
-                  <p className="text-xs text-muted-foreground">{TYPE_LABELS[person.tipo] || person.tipo}</p>
+                  <p className="text-sm font-medium truncate">{atleta.nome}</p>
+                  <p className="text-xs text-muted-foreground">Atleta</p>
                 </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs"
-                  disabled={connectingId === person.user_id}
-                  onClick={() => handleConnect(person.user_id)}
-                >
-                  {connectingId === person.user_id ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <><UserPlus className="w-3 h-3 mr-0.5" /> Conectar</>
-                  )}
-                </Button>
               </Card>
             ))}
           </div>
-        </div>
+        ) : (
+          <Card className="p-6 text-center text-sm text-muted-foreground">
+            <Heart className="w-8 h-8 mx-auto opacity-30 mb-2" />
+            <p>Você ainda não está torcendo por ninguém</p>
+          </Card>
+        )
+      )}
+
+      {(!isOwnProfile || activeTab === 'todas') && (
+        <>
+          {/* Suggestions */}
+          {isOwnProfile && suggestions && suggestions.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-3">
+                <UserPlus className="w-4 h-4 inline mr-1.5" />
+                Sugestões para você
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {suggestions.map((person) => (
+                  <Card key={person.id} className="flex items-center gap-3 p-3">
+                    {person.foto_url ? (
+                      <img src={person.foto_url} alt="" className="w-10 h-10 rounded-full object-cover cursor-pointer" onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))} />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground cursor-pointer" onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))}>
+                        {person.nome?.[0]}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate cursor-pointer hover:underline" onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))}>{person.nome}</p>
+                      <p className="text-xs text-muted-foreground">{TYPE_LABELS[person.tipo] || person.tipo}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      disabled={connectingId === person.user_id}
+                      onClick={() => handleConnect(person.user_id)}
+                    >
+                      {connectingId === person.user_id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <><UserPlus className="w-3 h-3 mr-0.5" /> Conectar</>
+                      )}
+                    </Button>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Connections */}
+          <div>
+            <h3 className="text-sm font-semibold text-foreground mb-3">
+              <Users className="w-4 h-4 inline mr-1.5" />
+              Suas conexões ({connections?.length || 0})
+            </h3>
+            {connections && connections.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {connections.map((person) => (
+                  <Card
+                    key={person.id}
+                    className="flex items-center gap-3 p-3 cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))}
+                  >
+                    {person.foto_url ? (
+                      <img src={person.foto_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground">
+                        {person.nome?.[0]}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{person.nome}</p>
+                      <p className="text-xs text-muted-foreground">{TYPE_LABELS[person.tipo] || person.tipo}</p>
+                      {person.unidade_nome && (
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-0.5 mt-0.5">
+                          <MapPin className="w-2.5 h-2.5" />{person.unidade_nome}
+                        </p>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="p-6 text-center text-sm text-muted-foreground">
+                <Users className="w-8 h-8 mx-auto opacity-30 mb-2" />
+                <p>Nenhuma conexão ainda</p>
+              </Card>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
