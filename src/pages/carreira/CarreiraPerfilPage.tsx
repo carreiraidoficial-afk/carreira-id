@@ -1314,7 +1314,7 @@ export default function CarreiraPerfilPage() {
             )}
 
 
-            {currentUserId && suggestions && suggestions.length > 0 && (
+            {isOwner && currentUserId && suggestions && suggestions.length > 0 && (
               <Card className="p-4" style={{ borderColor: `${accentColor}50`, borderWidth: 2 }}>
                 <h3 className="text-sm font-semibold text-foreground mb-3">Sugestões para conectar</h3>
                 <div className="space-y-3">

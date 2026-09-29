@@ -474,7 +474,13 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
         <DialogHeader>
           <DialogTitle>{editingJogo ? 'Editar Jogo' : 'Novo Jogo'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form
+          onSubmit={handleSubmit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') e.preventDefault();
+          }}
+          className="space-y-3"
+        >
           {modalidades.length > 1 && (
             <div>
               <Label>Modalidade</Label>
