@@ -121,6 +121,15 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
   };
 
   const [shareOpen, setShareOpen] = useState(false);
+  const [bioExpandida, setBioExpandida] = useState(false);
+  const [bioTruncada, setBioTruncada] = useState(false);
+  const bioRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    if (bioRef.current) {
+      setBioTruncada(bioRef.current.scrollHeight > bioRef.current.clientHeight + 1);
+    }
+  }, [perfil.bio]);
 
   const handleFollow = () => {
     if (!user) { toast.error('Faça login para seguir'); return; }
@@ -253,7 +262,26 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
               <ConexoesCount userId={perfil.user_id} perfilAtletaId={perfil.id} />
             </div>
 
-            {perfil.bio && <p className="mt-2 text-sm text-muted-foreground whitespace-pre-line">{perfil.bio}</p>}
+            {perfil.bio && (
+              <div className="mt-2 max-w-sm">
+                <p
+                  ref={bioRef}
+                  className={`text-sm text-muted-foreground whitespace-pre-line ${bioExpandida ? '' : 'line-clamp-4'}`}
+                >
+                  {perfil.bio}
+                </p>
+                {(bioTruncada || bioExpandida) && (
+                  <button
+                    type="button"
+                    onClick={() => setBioExpandida(!bioExpandida)}
+                    className="text-xs font-medium mt-0.5 hover:underline"
+                    style={{ color: perfil.cor_destaque || '#3b82f6' }}
+                  >
+                    {bioExpandida ? 'ver menos' : 'ver mais'}
+                  </button>
+                )}
+              </div>
+            )}
 
             {(perfil as any).instagram_url && (
               <a href={(perfil as any).instagram_url.startsWith('http') ? (perfil as any).instagram_url : `https://instagram.com/${(perfil as any).instagram_url.replace('@', '')}`}
