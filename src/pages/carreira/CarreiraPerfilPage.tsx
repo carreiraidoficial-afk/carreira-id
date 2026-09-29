@@ -705,26 +705,29 @@ export default function CarreiraPerfilPage() {
                   isDarkTheme={isDarkTheme}
                   onCheckedChange={setDarkTheme}
                   compact
+                  className="hidden sm:flex"
                 />
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <Button variant="outline" size="sm" className="h-8 text-xs px-2 sm:px-3"
-                    style={{ borderColor: `${accentColor}50`, color: accentColor }}
-                    onClick={async () => {
-                  if (mySlug) {
-                    navigate(carreiraPath(`/${mySlug}`));
-                  } else {
-                    const { data: pa } = await supabase.from('perfil_atleta').select('slug').eq('user_id', currentUserId!)
-                      .order('created_at', { ascending: true }).limit(1).maybeSingle();
-                    const { data: pr } = await supabase.from('perfis_rede').select('slug').eq('user_id', currentUserId!)
-                      .order('created_at', { ascending: false }).limit(1).maybeSingle();
-                    const foundSlug = pa?.slug || pr?.slug;
-                    if (foundSlug) navigate(carreiraPath(`/${foundSlug}`));
-                    else navigate(carreiraPath('/cadastro'));
-                  }
-                  }}>
-                    <User className="w-3 h-3 sm:hidden" />
-                    <span className="hidden sm:inline">Meu Perfil</span>
-                  </Button>
+                  {!isOwner && (
+                    <Button variant="outline" size="sm" className="h-8 text-xs px-2 sm:px-3"
+                      style={{ borderColor: `${accentColor}50`, color: accentColor }}
+                      onClick={async () => {
+                    if (mySlug) {
+                      navigate(carreiraPath(`/${mySlug}`));
+                    } else {
+                      const { data: pa } = await supabase.from('perfil_atleta').select('slug').eq('user_id', currentUserId!)
+                        .order('created_at', { ascending: true }).limit(1).maybeSingle();
+                      const { data: pr } = await supabase.from('perfis_rede').select('slug').eq('user_id', currentUserId!)
+                        .order('created_at', { ascending: false }).limit(1).maybeSingle();
+                      const foundSlug = pa?.slug || pr?.slug;
+                      if (foundSlug) navigate(carreiraPath(`/${foundSlug}`));
+                      else navigate(carreiraPath('/cadastro'));
+                    }
+                    }}>
+                      <User className="w-3 h-3 sm:hidden" />
+                      <span className="hidden sm:inline">Meu Perfil</span>
+                    </Button>
+                  )}
                   {isOwnerOuSuporte && (
                     <Button variant="outline" size="sm" className="h-8 text-xs px-2 sm:px-3 gap-1" style={{ borderColor: `${accentColor}50`, color: accentColor }} onClick={() => setEditDialogOpen(true)}>
                       <Pencil className="w-3 h-3" />
