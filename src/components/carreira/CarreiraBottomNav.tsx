@@ -1,22 +1,27 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Home, Users, User, LogOut, Gamepad2, Search, Bell, CalendarDays, Shield, ClipboardList } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
 import { useUnreadCarreiraComunicados } from '@/hooks/useCarreiraComunicadosData';
+import logoCarreira from '@/assets/logo-carreira-id-dark.png';
 
 const ADMIN_EMAIL = 'carreiraidoficial@gmail.com';
 
 interface CarreiraBottomNavProps {
   currentUserId?: string | null;
   profileSlug?: string | null;
+  /** Barra de navegação de topo pra telas largas -- só desativada em
+   * páginas que já têm seu próprio header fixo (CarreiraLayout), pra não
+   * empilhar duas barras fixas no mesmo lugar. */
+  showDesktopBar?: boolean;
 }
 
 const SCOUTING_TYPES = ['tecnico', 'scout', 'agente_clube', 'escola_esportes', 'empresario'];
 const PENEIRA_TYPES = ['tecnico', 'scout', 'agente_clube', 'dono_escola'];
 
-export function CarreiraBottomNav({ currentUserId, profileSlug }: CarreiraBottomNavProps) {
+export function CarreiraBottomNav({ currentUserId, profileSlug, showDesktopBar = true }: CarreiraBottomNavProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { unreadCount: unreadComunicados } = useUnreadCarreiraComunicados();
@@ -232,32 +237,67 @@ export function CarreiraBottomNav({ currentUserId, profileSlug }: CarreiraBottom
   if (!currentUserId) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-[9999] bg-background border-t border-border lg:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-      <div className="flex items-center justify-around h-14">
-        {navItems.map((item) => (
-          <button
-            key={item.label}
-            onClick={() => {
-              if (!item.active) item.onClick();
-            }}
-            className={`relative flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors ${
-              item.active
-                ? 'text-primary'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <div className="relative">
-              <item.icon className="w-5 h-5" />
-              {item.badge > 0 && (
-                <span className="absolute -top-1.5 -right-2.5 bg-orange-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
-                  {item.badge}
-                </span>
-              )}
-            </div>
-            <span className="text-[10px] font-medium">{item.label}</span>
-          </button>
-        ))}
-      </div>
-    </nav>
+    <>
+      {showDesktopBar && (
+        <nav className="hidden lg:flex fixed top-0 left-0 right-0 z-[9999] bg-background border-b border-border h-14">
+          <div className="container max-w-6xl h-full flex items-center gap-1 px-4">
+            <Link to={carreiraPath('/feed')} className="shrink-0 mr-2">
+              <img src={logoCarreira} alt="Carreira ID" className="h-8" />
+            </Link>
+            {navItems.map((item) => (
+              <button
+                key={item.label}
+                onClick={() => {
+                  if (!item.active) item.onClick();
+                }}
+                className={`relative flex items-center gap-1.5 px-3 h-9 rounded-md text-sm font-medium transition-colors ${
+                  item.active
+                    ? 'text-primary bg-primary/10'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
+              >
+                <div className="relative">
+                  <item.icon className="w-4 h-4" />
+                  {item.badge > 0 && (
+                    <span className="absolute -top-1.5 -right-2 bg-orange-500 text-white text-[9px] font-bold rounded-full min-w-[14px] h-3.5 flex items-center justify-center px-1">
+                      {item.badge}
+                    </span>
+                  )}
+                </div>
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </nav>
+      )}
+
+      <nav className="fixed bottom-0 left-0 right-0 z-[9999] bg-background border-t border-border lg:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+        <div className="flex items-center justify-around h-14">
+          {navItems.map((item) => (
+            <button
+              key={item.label}
+              onClick={() => {
+                if (!item.active) item.onClick();
+              }}
+              className={`relative flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors ${
+                item.active
+                  ? 'text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <div className="relative">
+                <item.icon className="w-5 h-5" />
+                {item.badge > 0 && (
+                  <span className="absolute -top-1.5 -right-2.5 bg-orange-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                    {item.badge}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] font-medium">{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
+    </>
   );
 }

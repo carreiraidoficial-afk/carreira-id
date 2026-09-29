@@ -33,10 +33,10 @@ export default function CarreiraGamerPontosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background" data-theme={carreiraTheme}>
+    <div className="min-h-screen bg-background lg:pt-14" data-theme={carreiraTheme}>
       <div className="h-[2px] w-full" style={{ backgroundColor: accentColor }} />
       <header
-        className={`sticky top-0 z-50 ${isDarkTheme ? 'bg-[hsl(0_0%_0%/0.97)]' : 'bg-background/95 backdrop-blur-sm'}`}
+        className={`sticky top-0 lg:top-14 z-50 ${isDarkTheme ? 'bg-[hsl(0_0%_0%/0.97)]' : 'bg-background/95 backdrop-blur-sm'}`}
         style={{ borderBottom: `2px solid ${accentColor}50` }}
       >
         <div className="container flex items-center h-14 px-4 max-w-2xl">

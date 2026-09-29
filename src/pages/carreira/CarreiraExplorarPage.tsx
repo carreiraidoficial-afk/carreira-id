@@ -346,11 +346,11 @@ export default function CarreiraExplorarPage() {
   const profileType = meuPerfilRede?.tipo ? TYPE_LABELS[meuPerfilRede.tipo] : 'Atleta';
 
   return (
-    <div className="min-h-screen bg-background" data-theme={theme}>
+    <div className="min-h-screen bg-background lg:pt-14" data-theme={theme}>
       {/* Accent top bar */}
       <div className="h-1 w-full bg-[hsl(25_95%_55%)]" />
       {/* Header */}
-        <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
+        <header className="sticky top-0 lg:top-14 z-50 bg-background/95 backdrop-blur border-b border-border">
         {/* Row 1: Logo + Search (desktop inline) + Actions */}
         <div className="container flex items-center justify-between h-14 lg:h-16 px-4 max-w-6xl">
           <Link to={carreiraPath('/feed')} className="flex items-center gap-2 shrink-0">

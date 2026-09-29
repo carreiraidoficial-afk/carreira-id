@@ -39,8 +39,8 @@ export default function CarreiraPostPage() {
   }, [postId]);
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b">
+    <div className="min-h-screen bg-background pb-20 lg:pt-14">
+      <header className="sticky top-0 lg:top-14 z-30 bg-background/95 backdrop-blur border-b">
         <div className="max-w-2xl mx-auto px-3 py-2 flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-5 h-5" />

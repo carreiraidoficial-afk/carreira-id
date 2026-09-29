@@ -105,7 +105,7 @@ export function CarreiraLayout({ children }: CarreiraLayoutProps) {
         {children}
       </main>
 
-      {user && <CarreiraBottomNav currentUserId={user.id} />}
+      {user && <CarreiraBottomNav currentUserId={user.id} showDesktopBar={false} />}
 
       {/* Footer */}
       <footer className="border-t border-border mt-12 py-8 bg-card">

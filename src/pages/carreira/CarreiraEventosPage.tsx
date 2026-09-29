@@ -67,8 +67,8 @@ export default function CarreiraEventosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background" data-theme={theme}>
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
+    <div className="min-h-screen bg-background lg:pt-14" data-theme={theme}>
+      <header className="sticky top-0 lg:top-14 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="container flex items-center justify-between h-16 px-4">
           <button
             onClick={() => navigate(carreiraPath('/feed'))}

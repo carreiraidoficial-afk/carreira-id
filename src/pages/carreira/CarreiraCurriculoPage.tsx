@@ -31,8 +31,8 @@ export default function CarreiraCurriculoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20" data-theme={theme}>
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
+    <div className="min-h-screen bg-background pb-20 lg:pt-14" data-theme={theme}>
+      <header className="sticky top-0 lg:top-14 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="container flex items-center gap-3 h-14 px-4 max-w-2xl">
           <Link to={carreiraPath('/feed')} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-5 h-5" />

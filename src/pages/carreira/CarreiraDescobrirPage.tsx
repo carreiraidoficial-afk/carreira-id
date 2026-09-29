@@ -34,9 +34,9 @@ export default function CarreiraDescobrirPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background" data-theme={theme}>
+    <div className="min-h-screen bg-background lg:pt-14" data-theme={theme}>
       <div className="h-1 w-full bg-[hsl(25_95%_55%)]" />
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
+      <header className="sticky top-0 lg:top-14 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="container flex items-center h-14 lg:h-16 px-4 max-w-6xl gap-3">
           <button onClick={() => navigate(carreiraPath('/feed'))} className="flex items-center gap-2 text-muted-foreground hover:text-foreground shrink-0">
             <ArrowLeft className="w-4 h-4" />

@@ -121,7 +121,7 @@ export default function CarreiraConexoesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background" data-theme={theme}>
+    <div className="min-h-screen bg-background lg:pt-14" data-theme={theme}>
       <header className="relative overflow-hidden">
         <img src={conexoesBannerBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${accentColor}cc, #0a0f18e6)` }} />

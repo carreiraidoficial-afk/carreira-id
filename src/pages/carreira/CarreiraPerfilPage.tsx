@@ -664,7 +664,7 @@ export default function CarreiraPerfilPage() {
   const topRanking = (ligaRanking || []).slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-background" data-theme={carreiraTheme}>
+    <div className="min-h-screen bg-background lg:pt-14" data-theme={carreiraTheme}>
       {/* Auto-subscribe to push notifications for logged-in users */}
       {isOwner && <CarreiraPushAutoSubscribe />}
       {/* Accent top bar */}
@@ -672,7 +672,7 @@ export default function CarreiraPerfilPage() {
 
       {/* Header */}
       <header
-        className={`sticky top-0 z-50 backdrop-blur-sm shadow-sm border-b ${isDarkTheme ? 'bg-[hsl(0_0%_0%/0.97)]' : 'bg-background/95'}`}
+        className={`sticky top-0 lg:top-14 z-50 backdrop-blur-sm shadow-sm border-b ${isDarkTheme ? 'bg-[hsl(0_0%_0%/0.97)]' : 'bg-background/95'}`}
         style={{ borderColor: `${accentColor}40` }}
       >
         {/* Row 1: Voltar + Seletor de identidade + Actions */}
