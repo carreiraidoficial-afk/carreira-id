@@ -38,9 +38,9 @@ export function CarreiraLayout({ children }: CarreiraLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground" data-theme={theme}>
+    <div className="min-h-screen bg-background text-foreground lg:pt-14" data-theme={theme}>
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
+      <header className="sticky top-0 lg:top-14 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="container flex items-center justify-between h-20 px-4">
           {/* Logo e identidade */}
           <div className="flex items-center gap-3">
@@ -105,7 +105,7 @@ export function CarreiraLayout({ children }: CarreiraLayoutProps) {
         {children}
       </main>
 
-      {user && <CarreiraBottomNav currentUserId={user.id} showDesktopBar={false} />}
+      {user && <CarreiraBottomNav currentUserId={user.id} />}
 
       {/* Footer */}
       <footer className="border-t border-border mt-12 py-8 bg-card">

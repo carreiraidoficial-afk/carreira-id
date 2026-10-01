@@ -12,16 +12,12 @@ const ADMIN_EMAIL = 'carreiraidoficial@gmail.com';
 interface CarreiraBottomNavProps {
   currentUserId?: string | null;
   profileSlug?: string | null;
-  /** Barra de navegação de topo pra telas largas -- só desativada em
-   * páginas que já têm seu próprio header fixo (CarreiraLayout), pra não
-   * empilhar duas barras fixas no mesmo lugar. */
-  showDesktopBar?: boolean;
 }
 
 const SCOUTING_TYPES = ['tecnico', 'scout', 'agente_clube', 'escola_esportes', 'empresario'];
 const PENEIRA_TYPES = ['tecnico', 'scout', 'agente_clube', 'dono_escola'];
 
-export function CarreiraBottomNav({ currentUserId, profileSlug, showDesktopBar = true }: CarreiraBottomNavProps) {
+export function CarreiraBottomNav({ currentUserId, profileSlug }: CarreiraBottomNavProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { unreadCount: unreadComunicados } = useUnreadCarreiraComunicados();
@@ -238,8 +234,7 @@ export function CarreiraBottomNav({ currentUserId, profileSlug, showDesktopBar =
 
   return (
     <>
-      {showDesktopBar && (
-        <nav className="hidden lg:flex fixed top-0 left-0 right-0 z-[9999] bg-background border-b border-border h-14">
+      <nav className="hidden lg:flex fixed top-0 left-0 right-0 z-[9999] bg-background border-b border-border h-14">
           <div className="container max-w-6xl h-full flex items-center gap-1 px-4">
             <Link to={carreiraPath('/feed')} className="shrink-0 mr-2">
               <img src={logoCarreira} alt="Carreira ID" className="h-8" />
@@ -269,7 +264,6 @@ export function CarreiraBottomNav({ currentUserId, profileSlug, showDesktopBar =
             ))}
           </div>
         </nav>
-      )}
 
       <nav className="fixed bottom-0 left-0 right-0 z-[9999] bg-background border-t border-border lg:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <div className="flex items-center justify-around h-14">
