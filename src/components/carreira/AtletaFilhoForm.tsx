@@ -11,6 +11,7 @@ import { ArrowLeft, Loader2, Upload, Shield, Lock, CheckCircle } from 'lucide-re
 import { validateCPF, formatCPF } from '@/lib/cpf-validator';
 import { validatePhone, SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
 import { trackOnboardingFunil } from '@/lib/onboardingFunil';
+import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 
 interface Props {
   userId: string;
@@ -244,6 +245,29 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
       }
 
       toast.success('Perfil do atleta criado com sucesso!');
+
+      // E-mail de boas-vindas pro responsável -- não bloqueia nem falha o
+      // cadastro se o envio der problema, é só um "bônus".
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email) {
+          const primeiroNomeResponsavel = (nomeResponsavel || 'responsável').trim().split(' ')[0];
+          await supabase.functions.invoke('send-perfil-incompleto-email', {
+            body: {
+              nome: nomeResponsavel.trim() || 'Responsável',
+              email: user.email,
+              assunto: `Bem-vindo ao Carreira ID, ${primeiroNomeResponsavel}! 🎉`,
+              titulo: `O perfil de ${nome.trim()} já está no ar`,
+              corpo: `Seu cadastro foi concluído com sucesso. Agora é só completar o perfil de ${nome.trim()} pra ele aparecer com tudo pra quem importa no esporte de base.`,
+              ctaTexto: 'Ver o perfil',
+              profileUrl: `https://carreiraid.com.br${carreiraPath(`/${slug}`)}`,
+            },
+          });
+        }
+      } catch (emailErr) {
+        console.error('[AtletaFilhoForm] Erro ao enviar email de boas-vindas (não bloqueia o cadastro):', emailErr);
+      }
+
       // Show an explicit success screen and only advance (which triggers the
       // PWA install popup upstream) once the user acknowledges it — otherwise
       // the popup covers the still-visible form and it looks like nothing happened.
