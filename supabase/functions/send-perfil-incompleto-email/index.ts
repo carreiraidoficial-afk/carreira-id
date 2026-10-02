@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,6 +19,12 @@ interface PerfilIncompletoEmailRequest {
   corpo: string;
   ctaTexto?: string;
   profileUrl?: string;
+  /** Opcionais -- quando presentes, registram o envio em
+   * carreira_emails_enviados (log central usado pelo motor de e-mails pra
+   * aplicar intervalo mínimo entre envios não-críticos pra mesma pessoa). */
+  userId?: string;
+  tipoEmail?: string;
+  categoria?: "critico" | "lifecycle";
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -40,6 +47,9 @@ const handler = async (req: Request): Promise<Response> => {
       corpo,
       ctaTexto = "Completar meu perfil",
       profileUrl = "https://carreiraid.com.br/cadastro",
+      userId,
+      tipoEmail,
+      categoria = "lifecycle",
     }: PerfilIncompletoEmailRequest = await req.json();
 
     if (!nome || !email || !assunto || !titulo || !corpo) {
@@ -265,6 +275,24 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log("Email de perfil incompleto enviado com sucesso para:", email);
+
+    // Log central pro motor de e-mails (cooldown entre envios não-críticos).
+    // Não falha o envio se o log der erro -- o email já saiu.
+    if (userId && tipoEmail) {
+      try {
+        const supabase = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+        await supabase.from("carreira_emails_enviados").insert({
+          user_id: userId,
+          tipo_email: tipoEmail,
+          categoria,
+        });
+      } catch (logErr) {
+        console.error("Erro ao logar em carreira_emails_enviados (não bloqueia o envio):", logErr);
+      }
+    }
 
     return new Response(
       JSON.stringify({ success: true, id: emailResponse.data?.id ?? null }),

@@ -36,12 +36,28 @@ const handler = async (req: Request): Promise<Response> => {
       .select("user_id, nome, email, created_at");
     if (profilesError) throw profilesError;
 
-    const [{ data: atletas }, { data: redes }, { data: colaboradores }, { data: jaEnviados }] = await Promise.all([
+    const [{ data: atletas }, { data: redes }, { data: colaboradores }, { data: jaEnviados }, { data: catalogo }] = await Promise.all([
       supabase.from("perfil_atleta").select("user_id"),
       supabase.from("perfis_rede").select("user_id"),
       supabase.from("perfil_atleta_colaboradores").select("user_id").eq("status", "ativo"),
       supabase.from("carreira_lembretes_perfil_enviados").select("user_id, numero_lembrete"),
+      supabase.from("carreira_email_catalogo").select("tipo_email, cooldown_dias").like("tipo_email", "lembrete_perfil_%"),
     ]);
+
+    // Cooldown: não manda lembrete se a pessoa recebeu QUALQUER email
+    // lifecycle (boas-vindas, outro lembrete, etc) há menos dias do que o
+    // cooldown configurado no catálogo pra esse número de lembrete.
+    const cooldownPorTipo = new Map<string, number>(
+      (catalogo || []).map((c: any) => [c.tipo_email, c.cooldown_dias])
+    );
+    const { data: ultimosEnvios } = await supabase
+      .from("carreira_emails_enviados")
+      .select("user_id, enviado_em")
+      .order("enviado_em", { ascending: false });
+    const ultimoEnvioPorUser = new Map<string, string>();
+    for (const e of ultimosEnvios || []) {
+      if (!ultimoEnvioPorUser.has(e.user_id)) ultimoEnvioPorUser.set(e.user_id, e.enviado_em);
+    }
 
     const comPerfil = new Set([
       ...(atletas || []).map((a: any) => a.user_id),
@@ -74,6 +90,14 @@ const handler = async (req: Request): Promise<Response> => {
       );
       if (!proximoTemplate) continue;
 
+      const tipoEmail = `lembrete_perfil_${proximoTemplate.numero_lembrete}`;
+      const cooldownDias = cooldownPorTipo.get(tipoEmail) ?? 3;
+      const ultimoEnvio = ultimoEnvioPorUser.get(pessoa.user_id);
+      if (ultimoEnvio) {
+        const diasDesdeUltimoEnvio = (Date.now() - new Date(ultimoEnvio).getTime()) / (1000 * 60 * 60 * 24);
+        if (diasDesdeUltimoEnvio < cooldownDias) continue; // ainda dentro do cooldown, tenta de novo amanhã
+      }
+
       try {
         const resp = await fetch(`${functionsUrl}/send-perfil-incompleto-email`, {
           method: "POST",
@@ -85,6 +109,8 @@ const handler = async (req: Request): Promise<Response> => {
             titulo: proximoTemplate.titulo,
             corpo: proximoTemplate.corpo,
             ctaTexto: proximoTemplate.cta_texto,
+            userId: pessoa.user_id,
+            tipoEmail,
           }),
         });
         const data = await resp.json().catch(() => ({}));

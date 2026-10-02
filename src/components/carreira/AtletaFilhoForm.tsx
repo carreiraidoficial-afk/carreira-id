@@ -261,6 +261,8 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
               corpo: `Seu cadastro foi concluído com sucesso. Agora é só completar o perfil de ${nome.trim()} pra ele aparecer com tudo pra quem importa no esporte de base.`,
               ctaTexto: 'Ver o perfil',
               profileUrl: `https://carreiraid.com.br${carreiraPath(`/${slug}`)}`,
+              userId,
+              tipoEmail: 'boas_vindas',
             },
           });
         }
