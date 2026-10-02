@@ -88,6 +88,22 @@ export function usePushNotifications() {
           // criada com uma chave VAPID antiga (ficaria travada em 403 pra sempre).
           if (!existingSub || !isSameApplicationServerKey(existingSub)) {
             await doSubscribe(userId);
+          } else {
+            // A assinatura local "parece" valida, mas o servico de push (FCM)
+            // pode te-la invalidado silenciosamente em algum momento -- nesse
+            // caso o backend ja apagou a linha correspondente (ver cleanup de
+            // endpoints expirados em send-carreira-push). O navegador nao tem
+            // como saber disso sozinho, entao confirmamos aqui se a linha
+            // ainda existe no banco; se nao existir, re-envia pra recriar.
+            const { data: subRow } = await supabase
+              .from('carreira_push_subscriptions')
+              .select('user_id')
+              .eq('user_id', userId)
+              .eq('endpoint', existingSub.endpoint)
+              .maybeSingle();
+            if (!subRow) {
+              await doSubscribe(userId);
+            }
           }
         } catch { /* silencioso: tentativa de reconciliacao em segundo plano */ }
       }
