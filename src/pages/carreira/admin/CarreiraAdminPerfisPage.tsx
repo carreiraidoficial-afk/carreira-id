@@ -9,11 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Loader2, User, Eye, EyeOff, ExternalLink, Mail, Phone, Pencil, Trash2, MessageCircle, FlaskConical, X, Copy, UserX, Users, Wrench, BellOff, Bell } from 'lucide-react';
+import { Search, Loader2, User, Eye, EyeOff, ExternalLink, Mail, Phone, Pencil, Trash2, MessageCircle, FlaskConical, X, Copy, UserX, Users, Wrench, BellOff, Bell, ChevronDown, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -383,6 +384,28 @@ function CadastrosIncompletosTable({ pessoas }: { pessoas: any[] }) {
   );
 }
 
+interface PerfilCompletude {
+  perfil_atleta_id: string;
+  tem_foto: boolean;
+  tem_bio: boolean;
+  tem_posicao: boolean;
+  tem_experiencia: boolean;
+  tem_jornada: boolean;
+  percentual_completo: number;
+}
+
+function useCompletudePerfis(enabled: boolean) {
+  return useQuery({
+    queryKey: ['carreira-admin-perfil-completude'],
+    queryFn: async (): Promise<Map<string, PerfilCompletude>> => {
+      const { data, error } = await (supabase as any).from('carreira_perfil_completude').select('*');
+      if (error) throw error;
+      return new Map((data || []).map((c: PerfilCompletude) => [c.perfil_atleta_id, c]));
+    },
+    enabled,
+  });
+}
+
 function useToggleVisibility() {
   const qc = useQueryClient();
   return useMutation({
@@ -480,6 +503,40 @@ function EditPerfilDialog({ perfil, type, open, onOpenChange }: { perfil: any; t
   );
 }
 
+function CompletudeCell({ completude }: { completude?: PerfilCompletude }) {
+  if (!completude) return <span className="text-xs text-muted-foreground">—</span>;
+  const itens: [string, boolean][] = [
+    ['Foto', completude.tem_foto],
+    ['Bio', completude.tem_bio],
+    ['Posição', completude.tem_posicao],
+    ['Experiência', completude.tem_experiencia],
+    ['Jornada (jogos)', completude.tem_jornada],
+  ];
+  const cor = completude.percentual_completo >= 80 ? 'text-emerald-600 border-emerald-500/30 bg-emerald-500/10'
+    : completude.percentual_completo >= 40 ? 'text-amber-600 border-amber-500/30 bg-amber-500/10'
+    : 'text-destructive border-destructive/30 bg-destructive/10';
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button type="button" className={`text-xs font-semibold rounded-full px-2 py-0.5 border ${cor}`}>
+          {completude.percentual_completo}%
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-3" align="start">
+        <p className="text-xs font-semibold mb-2">Completude do cadastro</p>
+        <div className="space-y-1.5">
+          {itens.map(([label, ok]) => (
+            <div key={label} className="flex items-center gap-2 text-xs">
+              {ok ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <Circle className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
+              <span className={ok ? '' : 'text-muted-foreground'}>{label}</span>
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atleta' | 'rede'; isTesteTab?: boolean }) {
   const toggle = useToggleVisibility();
   const toggleTeste = useToggleTeste();
@@ -487,6 +544,8 @@ function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atlet
   const [editing, setEditing] = useState<any>(null);
   const [deleting, setDeleting] = useState<any>(null);
   const [deletingLoading, setDeletingLoading] = useState(false);
+  const [mostrarCompletude, setMostrarCompletude] = useState(false);
+  const { data: completudePorPerfil } = useCompletudePerfis(type === 'atleta' && mostrarCompletude);
 
   const handleDelete = async () => {
     console.log('[admin-delete] handleDelete start', deleting);
@@ -512,6 +571,16 @@ function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atlet
 
   return (
     <Card>
+      {type === 'atleta' && (
+        <button
+          type="button"
+          onClick={() => setMostrarCompletude((v) => !v)}
+          className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground border-b transition-colors w-full"
+        >
+          {mostrarCompletude ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+          Completude do cadastro
+        </button>
+      )}
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -528,6 +597,7 @@ function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atlet
               <TableHead>Origem Auth</TableHead>
               <TableHead>Criado em</TableHead>
               <TableHead>Status</TableHead>
+              {type === 'atleta' && mostrarCompletude && <TableHead>Completude</TableHead>}
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -591,6 +661,11 @@ function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atlet
                     {p.status_conta === 'inativo' ? 'Inativo' : 'Ativo'}
                   </Badge>
                 </TableCell>
+                {type === 'atleta' && mostrarCompletude && (
+                  <TableCell>
+                    <CompletudeCell completude={completudePorPerfil?.get(p.id)} />
+                  </TableCell>
+                )}
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
                     {type === 'atleta' && (
