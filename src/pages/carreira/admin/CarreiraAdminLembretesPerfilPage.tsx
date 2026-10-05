@@ -224,8 +224,122 @@ function TemplateCard({ template }: { template: LembreteTemplate }) {
   );
 }
 
+interface LembretePerfilAtletaTemplate {
+  id: string;
+  tipo: 'sem_experiencia' | 'sem_jornada';
+  dias_apos_criacao: number;
+  ativo: boolean;
+  assunto: string;
+  titulo: string;
+  corpo: string;
+  cta_texto: string;
+}
+
+function useLembretesPerfilAtletaTemplates() {
+  return useQuery({
+    queryKey: ['carreira-admin-lembretes-perfil-atleta-templates'],
+    queryFn: async (): Promise<LembretePerfilAtletaTemplate[]> => {
+      const { data, error } = await (supabase as any)
+        .from('carreira_lembretes_perfil_atleta_templates')
+        .select('*')
+        .order('tipo', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 0,
+    refetchOnMount: true,
+  });
+}
+
+function useSalvarTemplatePerfilAtleta() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (t: LembretePerfilAtletaTemplate) => {
+      const { error } = await (supabase as any)
+        .from('carreira_lembretes_perfil_atleta_templates')
+        .update({
+          dias_apos_criacao: t.dias_apos_criacao,
+          ativo: t.ativo,
+          assunto: t.assunto,
+          titulo: t.titulo,
+          corpo: t.corpo,
+          cta_texto: t.cta_texto,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', t.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['carreira-admin-lembretes-perfil-atleta-templates'] });
+      toast.success('Lembrete atualizado');
+    },
+    onError: (e: any) => toast.error('Erro: ' + e.message),
+  });
+}
+
+const TIPO_LABEL: Record<string, string> = {
+  sem_experiencia: 'Sem Experiência (clube/escolinha)',
+  sem_jornada: 'Sem Jornada (nenhum jogo)',
+};
+
+function TemplatePerfilAtletaCard({ template }: { template: LembretePerfilAtletaTemplate }) {
+  const [form, setForm] = useState(template);
+  const salvar = useSalvarTemplatePerfilAtleta();
+
+  useEffect(() => { setForm(template); }, [template]);
+
+  const alterado = JSON.stringify(form) !== JSON.stringify(template);
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Mail className="w-4 h-4 text-muted-foreground" />
+          {TIPO_LABEL[form.tipo] || form.tipo}
+          <Badge variant="outline" className="text-xs font-normal">{form.dias_apos_criacao} dia(s) após o perfil criado</Badge>
+        </CardTitle>
+        <div className="flex items-center gap-2">
+          <Label htmlFor={`ativo-pa-${form.id}`} className="text-xs text-muted-foreground cursor-pointer">Ativo</Label>
+          <Switch id={`ativo-pa-${form.id}`} checked={form.ativo} onCheckedChange={(v) => setForm({ ...form, ativo: v })} />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>Dias após o perfil criado</Label>
+            <Input type="number" min={0} value={form.dias_apos_criacao} onChange={(e) => setForm({ ...form, dias_apos_criacao: Number(e.target.value) })} />
+          </div>
+          <div>
+            <Label>Texto do botão</Label>
+            <Input value={form.cta_texto} onChange={(e) => setForm({ ...form, cta_texto: e.target.value })} />
+          </div>
+        </div>
+        <div>
+          <Label>Assunto do email</Label>
+          <Input value={form.assunto} onChange={(e) => setForm({ ...form, assunto: e.target.value })} />
+        </div>
+        <div>
+          <Label>Título (dentro do email)</Label>
+          <Input value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
+        </div>
+        <div>
+          <Label>Corpo</Label>
+          <Textarea rows={4} value={form.corpo} onChange={(e) => setForm({ ...form, corpo: e.target.value })} />
+        </div>
+        <div className="flex justify-end">
+          <Button size="sm" disabled={!alterado || salvar.isPending} onClick={() => salvar.mutate(form)}>
+            {salvar.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            Salvar
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function CarreiraAdminLembretesPerfilPage() {
   const { data: templates, isLoading } = useLembretesTemplates();
+  const { data: templatesPerfilAtleta, isLoading: isLoadingPerfilAtleta } = useLembretesPerfilAtletaTemplates();
 
   return (
     <CarreiraAdminLayout>
@@ -244,6 +358,23 @@ export default function CarreiraAdminLembretesPerfilPage() {
         ) : (
           <div className="space-y-4">
             {(templates || []).map((t) => <TemplateCard key={t.id} template={t} />)}
+          </div>
+        )}
+
+        <div>
+          <h1 className="text-2xl font-bold">Lembretes de Perfil de Atleta</h1>
+          <p className="text-muted-foreground text-sm">
+            Pra quem já tem perfil de atleta criado, mas não cadastrou Experiência (clube/escolinha) nem
+            Jornada Esportiva (nenhum jogo). Experiência sempre avisa primeiro -- Jornada só entra depois
+            que a Experiência já estiver preenchida. Cada tipo é enviado no máximo 1 vez por pessoa.
+          </p>
+        </div>
+
+        {isLoadingPerfilAtleta ? (
+          <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+        ) : (
+          <div className="space-y-4">
+            {(templatesPerfilAtleta || []).map((t) => <TemplatePerfilAtletaCard key={t.id} template={t} />)}
           </div>
         )}
 
