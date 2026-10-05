@@ -407,10 +407,15 @@ interface PerfilCompletude {
 function useCompletudePerfis(enabled: boolean) {
   return useQuery({
     queryKey: ['carreira-admin-perfil-completude'],
-    queryFn: async (): Promise<Map<string, PerfilCompletude>> => {
+    queryFn: async (): Promise<Record<string, PerfilCompletude>> => {
       const { data, error } = await (supabase as any).from('carreira_perfil_completude').select('*');
       if (error) throw error;
-      return new Map((data || []).map((c: PerfilCompletude) => [c.perfil_atleta_id, c]));
+      // Objeto simples (não Map) -- o cache de queries desse app é
+      // persistido em localStorage via JSON, e um Map vira "{}" sem
+      // métodos ao ser restaurado, quebrando qualquer .get() depois.
+      const porId: Record<string, PerfilCompletude> = {};
+      for (const c of (data || []) as PerfilCompletude[]) porId[c.perfil_atleta_id] = c;
+      return porId;
     },
     enabled,
     staleTime: 60_000,
@@ -756,7 +761,7 @@ function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atlet
                 </TableCell>
               </TableRow>
               {type === 'atleta' && expandidos.has(p.id) && (
-                <LinhaCompletudeExpandida completude={completudePorPerfil?.get(p.id)} colSpan={12} />
+                <LinhaCompletudeExpandida completude={completudePorPerfil?.[p.id]} colSpan={12} />
               )}
               </Fragment>
             ))}
