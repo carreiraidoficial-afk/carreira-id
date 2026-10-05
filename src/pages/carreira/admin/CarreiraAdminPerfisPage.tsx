@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Loader2, User, Eye, EyeOff, ExternalLink, Mail, Phone, Pencil, Trash2, MessageCircle, FlaskConical, X, Copy, UserX, Users, Wrench } from 'lucide-react';
+import { Search, Loader2, User, Eye, EyeOff, ExternalLink, Mail, Phone, Pencil, Trash2, MessageCircle, FlaskConical, X, Copy, UserX, Users, Wrench, BellOff, Bell } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
@@ -238,7 +238,7 @@ function useAdminCadastrosIncompletos(search: string) {
     queryKey: ['carreira-admin-cadastros-incompletos', search],
     queryFn: async () => {
       const [{ data: profiles, error: profilesError }, { data: atletas }, { data: redes }, { data: colaboradores }] = await Promise.all([
-        supabase.from('profiles').select('user_id, nome, email, telefone, provider, created_at').order('created_at', { ascending: false }).limit(500),
+        supabase.from('profiles').select('user_id, nome, email, telefone, provider, created_at, excluir_lembretes').order('created_at', { ascending: false }).limit(500),
         supabase.from('perfil_atleta').select('user_id'),
         supabase.from('perfis_rede').select('user_id'),
         supabase.from('perfil_atleta_colaboradores').select('user_id').eq('status', 'ativo'),
@@ -277,6 +277,18 @@ function CadastrosIncompletosTable({ pessoas }: { pessoas: any[] }) {
     navigator.clipboard.writeText(email).then(() => toast.success('Email copiado'));
   };
 
+  const toggleExcluirLembretes = useMutation({
+    mutationFn: async ({ user_id, excluir_lembretes }: { user_id: string; excluir_lembretes: boolean }) => {
+      const { error } = await supabase.from('profiles').update({ excluir_lembretes }).eq('user_id', user_id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['carreira-admin-cadastros-incompletos'] });
+      toast.success(vars.excluir_lembretes ? 'Não vai mais receber lembretes' : 'Volta a receber lembretes');
+    },
+    onError: (e: any) => toast.error('Erro: ' + e.message),
+  });
+
   const handleDelete = async () => {
     if (!deleting) return;
     setDeletingLoading(true);
@@ -314,6 +326,9 @@ function CadastrosIncompletosTable({ pessoas }: { pessoas: any[] }) {
                   <div className="flex items-center gap-2">
                     <Avatar className="w-8 h-8"><AvatarFallback><User className="w-3 h-3" /></AvatarFallback></Avatar>
                     <p className="font-medium text-sm">{p.nome || '—'}</p>
+                    {p.excluir_lembretes && (
+                      <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300">sem lembretes</Badge>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -332,6 +347,11 @@ function CadastrosIncompletosTable({ pessoas }: { pessoas: any[] }) {
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{format(new Date(p.created_at), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
                 <TableCell className="text-right">
+                  <Button variant="ghost" size="icon" className="h-8 w-8"
+                    onClick={() => toggleExcluirLembretes.mutate({ user_id: p.user_id, excluir_lembretes: !p.excluir_lembretes })}
+                    title={p.excluir_lembretes ? 'Não recebe lembretes -- clique pra voltar a receber' : 'Marcar pra não receber lembretes (ex: conta de teste)'}>
+                    {p.excluir_lembretes ? <BellOff className="w-4 h-4 text-amber-600" /> : <Bell className="w-4 h-4 text-muted-foreground" />}
+                  </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
                     onClick={() => setDeleting(p)} title="Excluir conta">
                     <Trash2 className="w-4 h-4" />

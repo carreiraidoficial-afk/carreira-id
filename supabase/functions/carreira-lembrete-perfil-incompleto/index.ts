@@ -33,7 +33,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("user_id, nome, email, created_at");
+      .select("user_id, nome, email, created_at, excluir_lembretes");
     if (profilesError) throw profilesError;
 
     const [{ data: atletas }, { data: redes }, { data: colaboradores }, { data: jaEnviados }, { data: catalogo }] = await Promise.all([
@@ -71,7 +71,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const perfilIncompleto = (profiles || []).filter((p: any) =>
-      !comPerfil.has(p.user_id) && !p.email?.toLowerCase().endsWith("@example.com")
+      !comPerfil.has(p.user_id) && !p.email?.toLowerCase().endsWith("@example.com") && !p.excluir_lembretes
     );
 
     let enviados = 0;
