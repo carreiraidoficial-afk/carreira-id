@@ -1092,6 +1092,8 @@ export default function CarreiraPerfilPage() {
                   bio={perfil.bio}
                   dados={(perfil.dados_perfil as Record<string, any> | null) || null}
                   accentColor={accentColor}
+                  logoUrl={perfil.foto_url}
+                  local={[perfil.cidade, perfil.estado].filter(Boolean).join(' - ')}
                 />
               </>
             )}
