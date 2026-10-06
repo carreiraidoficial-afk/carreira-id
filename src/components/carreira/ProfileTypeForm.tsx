@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { TelefoneInput } from '@/components/shared/TelefoneInput';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -204,6 +204,57 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
   const [estadoIntlId, setEstadoIntlId] = useState<number | undefined>();
   const [brasaoFile, setBrasaoFile] = useState<File | null>(null);
   const [brasaoPreview, setBrasaoPreview] = useState<string | null>(null);
+
+  // Rascunho local: quem sai, recarrega ou perde a conexão no meio do cadastro não perde o que digitou.
+  // Fica só neste aparelho; documento (CPF/CNPJ) e arquivos (fotos/logos) não entram no rascunho.
+  const chaveRascunho = `carreira_cadastro_rascunho_${userId}_${type}`;
+  const rascunhoPronto = useRef(false);
+
+  useEffect(() => {
+    try {
+      const bruto = localStorage.getItem(chaveRascunho);
+      if (bruto) {
+        const d = JSON.parse(bruto);
+        if (typeof d.nome === 'string' && d.nome) setNome(d.nome);
+        if (d.values && typeof d.values === 'object') setValues(d.values);
+        if (d.tipoDocumento === 'cpf' || d.tipoDocumento === 'cnpj') setTipoDocumento(d.tipoDocumento);
+        if (typeof d.telefoneWhatsapp === 'string') setTelefoneWhatsapp(d.telefoneWhatsapp);
+        if (typeof d.whatsappPublico === 'boolean') setWhatsappPublico(d.whatsappPublico);
+        if (typeof d.email === 'string') setEmail(d.email);
+        if (typeof d.dataNascimento === 'string') setDataNascimento(d.dataNascimento);
+        if (typeof d.cidade === 'string') setCidade(d.cidade);
+        if (typeof d.estado === 'string') setEstado(d.estado);
+        if (typeof d.pais === 'string') setPais(d.pais);
+        if (d.paisObj) setPaisObj(d.paisObj);
+        if (typeof d.estadoIntlId === 'number') setEstadoIntlId(d.estadoIntlId);
+        if (Array.isArray(d.unidades)) setUnidades(d.unidades);
+        toast.info('Recuperamos o que você já tinha preenchido. Confira e finalize o cadastro.');
+      }
+    } catch {
+      // localStorage indisponível ou rascunho corrompido: segue com o formulário vazio
+    }
+    rascunhoPronto.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!rascunhoPronto.current) return;
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(chaveRascunho, JSON.stringify({
+          nome, values, tipoDocumento, telefoneWhatsapp, whatsappPublico, email, dataNascimento,
+          cidade, estado, pais, paisObj, estadoIntlId,
+          unidades: unidades.map(({ nome: n, endereco, bairro, referencia, logo_url }) => ({
+            nome: n, endereco, bairro, referencia, logo_url: logo_url ?? null,
+          })),
+        }));
+      } catch {
+        // sem espaço ou bloqueado: o rascunho é só uma conveniência
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [chaveRascunho, nome, values, tipoDocumento, telefoneWhatsapp, whatsappPublico, email, dataNascimento,
+    cidade, estado, pais, paisObj, estadoIntlId, unidades]);
 
   const nomeRef = useRef<HTMLInputElement>(null);
   const documentoRef = useRef<HTMLInputElement>(null);
@@ -469,6 +520,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
       }
 
       toast.success('Perfil criado com sucesso!');
+      try { localStorage.removeItem(chaveRascunho); } catch { /* ignora */ }
       onComplete();
     } catch (err: any) {
       console.error('Erro ao criar perfil:', err);
