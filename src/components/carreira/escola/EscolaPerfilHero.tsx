@@ -1,7 +1,8 @@
 import { ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, School, Instagram, Globe, Phone, Users, Trophy, Building2, CalendarDays, ExternalLink } from 'lucide-react';
+import { MapPin, School, Instagram, Globe, Phone, Users, Trophy, Building2, CalendarDays } from 'lucide-react';
 import { lerLinksEscola } from '@/lib/links-escola';
+import { EscolaLinksBloco } from './EscolaLinksBloco';
 import { useComunidadeEscola } from '@/hooks/useCarreiraData';
 import { useTrofeusEscola } from '@/hooks/useSalaTrofeusEscola';
 
@@ -168,32 +169,7 @@ export function EscolaPerfilHero({ perfil, displayName, accentColor, isEscolaPar
         </div>
       </section>
 
-      {links.length > 0 && (
-        <section
-          className="rounded-xl bg-card p-4 sm:p-5"
-          style={{ border: `2px solid ${accentColor}50` }}
-        >
-          <h2 className="text-base font-semibold text-foreground mb-3">Matrículas e agendamento</h2>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {links.map((link, idx) => (
-              <a
-                key={`${link.url}-${idx}`}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                className={`inline-flex items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-opacity hover:opacity-90 ${
-                  idx === 0 ? 'text-white sm:col-span-2' : 'border bg-background text-foreground hover:bg-muted'
-                }`}
-                style={idx === 0 ? { backgroundColor: accentColor } : { borderColor: `${accentColor}50` }}
-              >
-                <span className="truncate">{link.titulo}</span>
-                <ExternalLink className="w-4 h-4 shrink-0 opacity-70" />
-              </a>
-            ))}
-          </div>
-          <p className="text-[10px] text-muted-foreground mt-2">Links externos informados pela escola.</p>
-        </section>
-      )}
+      <EscolaLinksBloco links={links} accentColor={accentColor} />
 
       {metricas.length > 0 && (
         <div

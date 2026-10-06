@@ -23,7 +23,11 @@ import { validateDocument, validatePhone as validatePhoneNumber, validateEmail a
 import { ColorPicker } from './ColorPicker';
 import { EscolaCompletudeCard } from './escola/EscolaCompletudeCard';
 import { LinksEscolaEditor } from './escola/LinksEscolaEditor';
-import { type LinkEscola, lerLinksEscola, normalizarUrl } from '@/lib/links-escola';
+import { type LinkEscola, TIPOS_LINK, lerLinksEscola, normalizarUrl } from '@/lib/links-escola';
+
+// Linha recém-adicionada e não preenchida (só o título sugerido do tipo) não conta como link.
+const linkEscolaVazio = (l: LinkEscola) =>
+  !l.url.trim() && (!l.titulo.trim() || l.titulo === TIPOS_LINK[l.tipo].tituloPadrao) && !l.descricao?.trim();
 
 // ── Dynamic field definitions per profile type (mirrors ProfileTypeForm) ──
 
@@ -369,8 +373,8 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
     // Links da escola: linha preenchida pela metade ou com endereço inválido trava o salvar.
     if (isDono) {
       for (const l of linksEscola) {
-        const temAlgo = l.titulo.trim() !== '' || l.url.trim() !== '';
-        if (temAlgo && (!l.titulo.trim() || !normalizarUrl(l.url))) {
+        if (linkEscolaVazio(l)) continue;
+        if (!l.titulo.trim() || !normalizarUrl(l.url)) {
           toast.error('Confira os links da escola: cada um precisa de título e de um endereço começando com https://');
           return;
         }
@@ -403,8 +407,13 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
 
       if (isDono) {
         newDados.links = linksEscola
-          .filter((l) => l.titulo.trim() && l.url.trim())
-          .map((l) => ({ titulo: l.titulo.trim(), url: normalizarUrl(l.url)! }));
+          .filter((l) => !linkEscolaVazio(l))
+          .map((l) => ({
+            titulo: l.titulo.trim(),
+            url: normalizarUrl(l.url)!,
+            tipo: l.tipo,
+            ...(l.descricao?.trim() ? { descricao: l.descricao.trim() } : {}),
+          }));
       }
 
       // Unidades for dono_escola -- a logo de cada unidade e so capturada
@@ -586,6 +595,14 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
               photoLabel={isDono ? 'Foto do Perfil (você ou a logo da escola)' : undefined}
               photoHelperText={isDono ? 'Você escolhe: sua própria foto ou a logo da escola — o que subir aqui aparece publicamente no perfil, no selo de Escola Parceira e na seção Escolas Parceiras da home.' : undefined}
             />
+
+            {/* Links da escola (acesso rápido) - only for dono_escola; logo após foto/capa pra ficar fácil de achar */}
+            {isDono && (
+              <div className="space-y-3 rounded-lg border border-border p-4">
+                <Label className="text-sm font-medium">Links de acesso rápido da escola</Label>
+                <LinksEscolaEditor links={linksEscola} onChange={setLinksEscola} />
+              </div>
+            )}
 
             {/* Color picker */}
             <ColorPicker value={corDestaque} onChange={setCorDestaque} />
@@ -827,14 +844,6 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
                 {unidades.length === 0 && (
                   <p className="text-xs text-muted-foreground italic text-center py-2">Nenhuma unidade adicionada</p>
                 )}
-              </div>
-            )}
-
-            {/* Links da escola - only for dono_escola */}
-            {isDono && (
-              <div className="space-y-3 rounded-lg border border-border p-4">
-                <Label className="text-sm font-medium">Links da escola</Label>
-                <LinksEscolaEditor links={linksEscola} onChange={setLinksEscola} />
               </div>
             )}
 
