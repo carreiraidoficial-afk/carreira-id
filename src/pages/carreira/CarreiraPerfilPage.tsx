@@ -567,7 +567,7 @@ export default function CarreiraPerfilPage() {
   const isDonoEscolaProfile = isRedeProfile && perfil.tipo === 'dono_escola';
   const ambienteAtual: 'atleta' | 'rede' = isRedeProfile ? 'rede' : 'atleta';
 
-  const NON_HISTORICO_TYPES = ['atleta_filho', 'pai_responsavel', 'influenciador', 'torcedor'];
+  const NON_HISTORICO_TYPES = ['atleta_filho', 'pai_responsavel', 'influenciador', 'torcedor', 'dono_escola'];
   const showHistorico = isRedeProfile && !NON_HISTORICO_TYPES.includes(perfil.tipo || '');
   const historicoProfissional: HistoricoProfissional[] = isRedeProfile
     ? ((perfil.dados_perfil as any)?.historico_profissional || [])
@@ -1051,7 +1051,7 @@ export default function CarreiraPerfilPage() {
                   requireAuth={requireAuth}
                   actions={(
                     <>
-                      {isOwner && (
+                      {isOwnerOuSuporte && (
                         <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => setEditDialogOpen(true)}
                           style={{ borderColor: `${accentColor}50`, color: accentColor }}>
                           <Pencil className="w-3.5 h-3.5" />Editar perfil
@@ -1084,7 +1084,7 @@ export default function CarreiraPerfilPage() {
                     </>
                   )}
                 />
-                {isOwner && (
+                {isOwnerOuSuporte && (
                   <EscolaCompletudeCard perfil={perfil as any} accentColor={accentColor} onEditar={() => setEditDialogOpen(true)} />
                 )}
                 <EscolaSobreCard
@@ -1589,7 +1589,7 @@ function FollowButton({ perfil, currentUserId, isOwner }: { perfil: any; current
   return (
     <Button size="sm" className="w-full text-xs h-8" variant={isFollowing ? 'outline' : 'default'}
       onClick={handleFollow} disabled={toggleFollow.isPending}
-      style={!isFollowing ? { backgroundColor: perfil.cor_destaque || undefined } : undefined}>
+      style={!isFollowing ? { backgroundColor: perfil.cor_destaque || perfil.dados_perfil?.cor_destaque || undefined } : undefined}>
       {isFollowing ? <><UserCheck className="w-3.5 h-3.5 mr-1" />Torcendo</> : <><UserPlus className="w-3.5 h-3.5 mr-1" />Torcer</>}
     </Button>
   );

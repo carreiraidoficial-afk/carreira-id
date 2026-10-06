@@ -151,13 +151,13 @@ export function EscolaPerfilHero({ perfil, displayName, accentColor, isEscolaPar
             <div className="flex flex-wrap items-center gap-4 mt-4 pt-3 border-t border-border text-xs">
               {instagram && (
                 <a href={`https://instagram.com/${instagram}`} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                  className="inline-flex items-center gap-1.5 hover:underline" style={{ color: accentColor }}>
                   <Instagram className="w-3.5 h-3.5" />@{instagram}
                 </a>
               )}
               {site && (
                 <a href={site.startsWith('http') ? site : `https://${site}`} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                  className="inline-flex items-center gap-1.5 hover:underline" style={{ color: accentColor }}>
                   <Globe className="w-3.5 h-3.5" />{site.replace(/^https?:\/\//, '')}
                 </a>
               )}
