@@ -531,8 +531,8 @@ function PercentualBadge({ percentual }: { percentual: number }) {
 
 function SecaoCompletude({ titulo, percentual, itens }: { titulo: string; percentual: number; itens: [string, boolean][] }) {
   return (
-    <div className="flex-1 min-w-[180px]">
-      <div className="flex items-center justify-between gap-2 mb-1.5">
+    <div className="w-[220px] shrink-0">
+      <div className="flex items-center gap-2 mb-1.5">
         <p className="text-xs font-semibold text-foreground">{titulo}</p>
         <PercentualBadge percentual={percentual} />
       </div>
