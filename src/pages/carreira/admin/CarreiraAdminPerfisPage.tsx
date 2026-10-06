@@ -418,7 +418,10 @@ function useCompletudePerfis(enabled: boolean) {
       return porId;
     },
     enabled,
-    staleTime: 60_000,
+    // Tela de admin -- evita reaproveitar cache velho (ex: o objeto vazio
+    // que ficou persistido no navegador por causa do bug do Map antigo).
+    staleTime: 0,
+    refetchOnMount: true,
   });
 }
 
