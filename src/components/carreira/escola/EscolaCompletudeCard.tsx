@@ -17,7 +17,7 @@ interface Props {
     dados_perfil?: Record<string, any> | null;
   };
   accentColor: string;
-  onEditar: () => void;
+  onEditar?: () => void;
 }
 
 const temItens = (v: unknown) => Array.isArray(v) && v.length > 0;
@@ -55,13 +55,15 @@ export function EscolaCompletudeCard({ perfil, accentColor, onEditar }: Props) {
             Perfil {percentual}% completo
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Só você vê isso. Quanto mais completo, mais profissional a página da escola aparece pros pais.
+            Só você vê isso, não aparece na página pública. Quanto mais completo, mais profissional a página da escola aparece pros pais.
           </p>
         </div>
-        <Button size="sm" variant="outline" className="shrink-0 text-xs h-8" onClick={onEditar}
-          style={{ borderColor: `${accentColor}50`, color: accentColor }}>
-          Editar perfil
-        </Button>
+        {onEditar && (
+          <Button size="sm" variant="outline" className="shrink-0 text-xs h-8" onClick={onEditar}
+            style={{ borderColor: `${accentColor}50`, color: accentColor }}>
+            Editar perfil
+          </Button>
+        )}
       </div>
 
       <Progress value={percentual} className="h-2 mb-4" />

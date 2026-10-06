@@ -21,7 +21,6 @@ import { SalaTrofeusEscola } from '@/components/carreira/SalaTrofeusEscola';
 import { ComunidadeEscolaSection } from '@/components/carreira/ComunidadeEscolaSection';
 import { EscolaPerfilHero } from '@/components/carreira/escola/EscolaPerfilHero';
 import { EscolaSobreCard } from '@/components/carreira/escola/EscolaSobreCard';
-import { EscolaCompletudeCard } from '@/components/carreira/escola/EscolaCompletudeCard';
 import { SalaTrofeusEscolaFormDialog } from '@/components/carreira/SalaTrofeusEscolaFormDialog';
 import { useCreateTrofeuEscola, useUpdateTrofeuEscola, useDeleteTrofeuEscola, type TrofeuEscola, type TrofeuEscolaInput } from '@/hooks/useSalaTrofeusEscola';
 import { EditPerfilDialog } from '@/components/carreira/EditPerfilDialog';
@@ -1084,9 +1083,6 @@ export default function CarreiraPerfilPage() {
                     </>
                   )}
                 />
-                {isOwnerOuSuporte && (
-                  <EscolaCompletudeCard perfil={perfil as any} accentColor={accentColor} onEditar={() => setEditDialogOpen(true)} />
-                )}
                 <EscolaSobreCard
                   nome={displayProfileName}
                   bio={perfil.bio}

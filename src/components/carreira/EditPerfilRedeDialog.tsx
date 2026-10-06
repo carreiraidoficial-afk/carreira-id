@@ -21,6 +21,7 @@ import { formatCPF } from '@/lib/cpf-validator';
 import { formatCNPJ } from '@/lib/cnpj-validator';
 import { validateDocument, validatePhone as validatePhoneNumber, validateEmail as validateEmailAddress, formatPhoneMask, SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
 import { ColorPicker } from './ColorPicker';
+import { EscolaCompletudeCard } from './escola/EscolaCompletudeCard';
 
 // ── Dynamic field definitions per profile type (mirrors ProfileTypeForm) ──
 
@@ -544,6 +545,13 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
         <DialogHeader>
           <DialogTitle>Editar Perfil e Conta</DialogTitle>
         </DialogHeader>
+
+        {isDono && perfil && (
+          <EscolaCompletudeCard
+            perfil={{ ...perfil, foto_url: photoUrl || null, banner_url: bannerUrl || null }}
+            accentColor={corDestaque}
+          />
+        )}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

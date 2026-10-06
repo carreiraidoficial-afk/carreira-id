@@ -72,7 +72,13 @@ export default function PerfilPage() {
           .eq('user_id', userId!)
           .order('created_at', { ascending: true })
           .limit(1);
-        if (atletasDoUser?.[0]?.slug) return { type: 'atleta_redirect' as const, slug: atletasDoUser[0].slug };
+        if (atletasDoUser?.[0]?.slug) return { type: 'slug_redirect' as const, slug: atletasDoUser[0].slug };
+      }
+
+      // Escola: a página pública é a do slug (com capa/métricas) -- esta aqui é
+      // o layout antigo e fica só pros outros tipos de perfil de rede.
+      if (redeData && (redeData as any).tipo === 'dono_escola' && (redeData as any).slug) {
+        return { type: 'slug_redirect' as const, slug: (redeData as any).slug as string };
       }
 
       if (redeData) return { type: 'rede' as const, data: redeData };
@@ -84,7 +90,7 @@ export default function PerfilPage() {
         .order('created_at', { ascending: true })
         .limit(1);
       if (atletaError) throw atletaError;
-      if (atletasData?.[0]?.slug) return { type: 'atleta_redirect' as const, slug: atletasData[0].slug };
+      if (atletasData?.[0]?.slug) return { type: 'slug_redirect' as const, slug: atletasData[0].slug };
 
       return null;
     },
@@ -94,12 +100,12 @@ export default function PerfilPage() {
   const { theme: tema, isDarkTheme } = useCarreiraTheme();
 
   useEffect(() => {
-    if (perfil?.type === 'atleta_redirect' && perfil.slug) {
+    if (perfil?.type === 'slug_redirect' && perfil.slug) {
       navigate(carreiraPath(`/${perfil.slug}`), { replace: true });
     }
   }, [perfil, navigate]);
 
-  if (isLoading || perfil?.type === 'atleta_redirect') {
+  if (isLoading || perfil?.type === 'slug_redirect') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background" data-theme={tema}>
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
