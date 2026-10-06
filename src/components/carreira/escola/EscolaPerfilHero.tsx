@@ -169,7 +169,7 @@ export function EscolaPerfilHero({ perfil, displayName, accentColor, isEscolaPar
         </div>
       </section>
 
-      <EscolaLinksBloco links={links} accentColor={accentColor} />
+      <EscolaLinksBloco links={links} accentColor={accentColor} modalidades={modalidades} />
 
       {metricas.length > 0 && (
         <div
