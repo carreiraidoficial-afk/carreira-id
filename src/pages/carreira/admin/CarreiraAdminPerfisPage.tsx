@@ -1,4 +1,5 @@
 import { useState, Fragment } from 'react';
+import { telefoneParaWhatsapp } from '@/lib/form-validators';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -680,7 +681,7 @@ function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atlet
                     {p.email && <div className="flex items-center gap-1 text-muted-foreground"><Mail className="w-3 h-3 shrink-0" /><span className="truncate max-w-[180px]">{p.email}</span></div>}
                     {p.telefone_whatsapp && (
                       <a
-                        href={`https://wa.me/55${p.telefone_whatsapp.replace(/\D/g, '')}`}
+                        href={`https://wa.me/${telefoneParaWhatsapp(p.telefone_whatsapp)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1 text-emerald-600 hover:underline w-fit"

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { TelefoneInput } from '@/components/shared/TelefoneInput';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { UfCidadeSelect } from '@/components/shared/UfCidadeSelect';
@@ -9,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2, Upload, Shield, Lock, CheckCircle } from 'lucide-react';
 import { validateCPF, formatCPF } from '@/lib/cpf-validator';
-import { validatePhone, SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
+import { validatePhone, limparTelefone, formatPhoneInput, SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
 import { trackOnboardingFunil } from '@/lib/onboardingFunil';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 
@@ -66,12 +67,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
   const [showSuccess, setShowSuccess] = useState(false);
   const [cupomAplicado, setCupomAplicado] = useState<{ diasTrial: number; cupomId: string } | undefined>();
 
-  const formatPhone = (value: string) => {
-    const d = value.replace(/\D/g, '').slice(0, 11);
-    if (d.length <= 2) return d;
-    if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-  };
+  const formatPhone = formatPhoneInput;
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -98,7 +94,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
     const cleanDocInput = cpf.replace(/\D/g, '');
     let cleanDoc: string | null = null;
 
-    const cleanPhoneInput = telefoneWhatsapp.replace(/\D/g, '');
+    const cleanPhoneInput = limparTelefone(telefoneWhatsapp);
     let cleanPhone: string | null = null;
 
     // Validate CPF if provided
@@ -113,7 +109,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
     // Validate WhatsApp if provided
     if (cleanPhoneInput.length > 0) {
       if (!validatePhone(cleanPhoneInput)) {
-        toast.error('Número de WhatsApp inválido. Use um número real com DDD (ex: 21 99999-9999).');
+        toast.error('Número de WhatsApp inválido. Confira o número e o país selecionado.');
         return;
       }
       cleanPhone = cleanPhoneInput;
@@ -369,12 +365,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
           </div>
           <div className="space-y-2">
             <Label>WhatsApp do Responsável</Label>
-            <Input
-              value={telefoneWhatsapp}
-              onChange={(e) => setTelefoneWhatsapp(formatPhone(e.target.value))}
-              placeholder="(11) 99999-9999"
-              maxLength={15}
-            />
+            <TelefoneInput value={telefoneWhatsapp} onChange={setTelefoneWhatsapp} />
           </div>
         </div>
 

@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { TelefoneInput } from '@/components/shared/TelefoneInput';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,7 @@ import { ArrowLeft, Loader2, Upload, Lock, Plus, Trash2 } from 'lucide-react';
 import type { ProfileType } from './ProfileTypeSelector';
 import { validateCPF, formatCPF, cleanCPF } from '@/lib/cpf-validator';
 import { validateCNPJ, formatCNPJ } from '@/lib/cnpj-validator';
-import { validatePhone as validatePhoneNumber, validateEmail as validateEmailAddress, validateDocument, SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
+import { validatePhone as validatePhoneNumber, validateEmail as validateEmailAddress, validateDocument, limparTelefone, formatPhoneInput, SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
 import { UfCidadeSelect } from '@/components/shared/UfCidadeSelect';
 import { trackOnboardingFunil } from '@/lib/onboardingFunil';
 
@@ -273,12 +274,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
     reader.readAsDataURL(file);
   };
 
-  const formatPhone = (value: string) => {
-    const d = value.replace(/\D/g, '').slice(0, 11);
-    if (d.length <= 2) return d;
-    if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-  };
+  const formatPhone = formatPhoneInput;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -302,14 +298,14 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
     }
 
     // Validate WhatsApp
-    const cleanPhone = telefoneWhatsapp.replace(/\D/g, '');
+    const cleanPhone = limparTelefone(telefoneWhatsapp);
     if (!cleanPhone) {
       toast.error('WhatsApp é obrigatório');
       scrollToError(telefoneRef.current);
       return;
     }
     if (!validatePhoneNumber(cleanPhone)) {
-      toast.error('Número de WhatsApp inválido. Use um número real com DDD (ex: 21 99999-9999).');
+      toast.error('Número de WhatsApp inválido. Confira o número e o país selecionado.');
       scrollToError(telefoneRef.current);
       return;
     }
@@ -566,13 +562,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
 
           <div className="space-y-2">
             <Label>WhatsApp *</Label>
-            <Input
-              ref={telefoneRef}
-              value={telefoneWhatsapp}
-              onChange={(e) => setTelefoneWhatsapp(formatPhone(e.target.value))}
-              placeholder="(11) 99999-9999"
-              maxLength={15}
-            />
+            <TelefoneInput ref={telefoneRef} value={telefoneWhatsapp} onChange={setTelefoneWhatsapp} />
           </div>
 
           <div className="flex items-center gap-2">

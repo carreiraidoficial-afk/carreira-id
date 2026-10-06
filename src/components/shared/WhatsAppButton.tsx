@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { telefoneParaWhatsapp } from '@/lib/form-validators';
 import { MessageCircle } from 'lucide-react';
 
 interface WhatsAppButtonProps {
@@ -19,9 +20,7 @@ const WhatsAppButton = ({
   if (!telefone) return null;
 
   const openWhatsApp = () => {
-    const phone = telefone.replace(/\D/g, '');
-    const formattedPhone = phone.startsWith('55') ? phone : `55${phone}`;
-    window.open(`https://wa.me/${formattedPhone}`, '_blank');
+    window.open(`https://wa.me/${telefoneParaWhatsapp(telefone)}`, '_blank');
   };
 
   return (

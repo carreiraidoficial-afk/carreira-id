@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { telefoneParaWhatsapp } from '@/lib/form-validators';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsFollowing, useToggleFollow, useEscolinhasCarreira, usePostsRede } from '@/hooks/useCarreiraData';
@@ -645,9 +646,7 @@ export default function CarreiraPerfilPage() {
   const whatsappDigits = isRedeProfile
     ? String(perfil.telefone_whatsapp || '').replace(/\D/g, '')
     : '';
-  const whatsappIntl = whatsappDigits
-    ? (whatsappDigits.startsWith('55') ? whatsappDigits : `55${whatsappDigits}`)
-    : '';
+  const whatsappIntl = whatsappDigits ? telefoneParaWhatsapp(perfil.telefone_whatsapp) : '';
 
   const formatWhatsAppDisplay = (digits: string) => {
     if (!digits) return '';

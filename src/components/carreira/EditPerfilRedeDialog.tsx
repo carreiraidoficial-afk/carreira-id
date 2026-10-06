@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { TelefoneInput } from '@/components/shared/TelefoneInput';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -19,7 +20,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCPF } from '@/lib/cpf-validator';
 import { formatCNPJ } from '@/lib/cnpj-validator';
-import { validateDocument, validatePhone as validatePhoneNumber, validateEmail as validateEmailAddress, formatPhoneMask, SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
+import { validateDocument, validatePhone as validatePhoneNumber, validateEmail as validateEmailAddress, formatPhoneMask, limparTelefone, formatPhoneInput, SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
 import { ColorPicker } from './ColorPicker';
 import { EscolaCompletudeCard } from './escola/EscolaCompletudeCard';
 import { LinksEscolaEditor } from './escola/LinksEscolaEditor';
@@ -160,12 +161,7 @@ interface EditPerfilRedeDialogProps {
   perfil: any;
 }
 
-const formatPhone = (value: string) => {
-  const d = value.replace(/\D/g, '').slice(0, 11);
-  if (d.length <= 2) return d;
-  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-};
+const formatPhone = formatPhoneInput;
 
 const formatDoc = (value: string, tipo: 'cpf' | 'cnpj') => {
   return tipo === 'cnpj' ? formatCNPJ(value) : formatCPF(value);
@@ -359,7 +355,7 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
       }
     }
     // Validate phone if provided
-    const cleanPhone = (data.telefone_whatsapp || '').replace(/\D/g, '');
+    const cleanPhone = limparTelefone(data.telefone_whatsapp || '');
     if (cleanPhone && !validatePhoneNumber(cleanPhone)) {
       toast.error('Número de WhatsApp inválido. Use um número real com DDD.');
       return;
@@ -679,12 +675,7 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
                   <FormItem>
                     <FormLabel className="flex items-center gap-1.5"><Phone className="w-4 h-4" /> WhatsApp</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="(11) 99999-9999"
-                        value={field.value || ''}
-                        onChange={(e) => field.onChange(formatPhone(e.target.value))}
-                        maxLength={15}
-                      />
+                      <TelefoneInput value={field.value || ''} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

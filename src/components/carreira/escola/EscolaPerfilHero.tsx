@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { telefoneParaWhatsapp } from '@/lib/form-validators';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, School, Instagram, Globe, Phone, Users, Trophy, Building2, CalendarDays } from 'lucide-react';
 import { lerLinksEscola } from '@/lib/links-escola';
@@ -46,7 +47,7 @@ export function EscolaPerfilHero({ perfil, displayName, accentColor, isEscolaPar
   const instagram = String(perfil.instagram || dados.arroba || '').replace(/^@+/, '').trim();
   const site = String(perfil.site || dados.site || '').trim();
   const digitos = formatarSoDigitos(perfil.telefone_whatsapp);
-  const whatsappIntl = digitos ? (digitos.startsWith('55') ? digitos : `55${digitos}`) : '';
+  const whatsappIntl = digitos ? telefoneParaWhatsapp(perfil.telefone_whatsapp) : '';
   const temContato = !!(perfil.whatsapp_publico && whatsappIntl);
 
   const { data: comunidade = [] } = useComunidadeEscola(perfil.user_id);

@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { telefoneParaWhatsapp } from '@/lib/form-validators';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -123,8 +124,7 @@ function getSuggestionBadge(person: { source?: 'atleta' | 'rede'; tipo?: string 
  * projeto. */
 function MensagemButton({ whatsappPublico, telefoneWhatsapp }: { whatsappPublico?: boolean; telefoneWhatsapp?: string | null }) {
   if (!whatsappPublico || !telefoneWhatsapp) return null;
-  const digits = String(telefoneWhatsapp).replace(/\D/g, '');
-  const intl = digits.startsWith('55') ? digits : `55${digits}`;
+  const intl = telefoneParaWhatsapp(telefoneWhatsapp);
   return (
     <a href={`https://wa.me/${intl}`} target="_blank" rel="noopener noreferrer">
       <Button size="sm" variant="outline" className="h-8 text-xs gap-1">

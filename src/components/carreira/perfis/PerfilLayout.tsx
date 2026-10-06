@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { telefoneParaWhatsapp } from '@/lib/form-validators';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -56,7 +57,7 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
   const siteUrl = (perfil.site || perfil.dados_perfil?.site || perfil.dados_perfil?.portfolio || '').trim();
   const instagramHandle = (perfil.instagram || perfil.dados_perfil?.arroba || '').replace(/^@+/, '').trim();
   const whatsappDigits = String(perfil.telefone_whatsapp || '').replace(/\D/g, '');
-  const whatsappIntl = whatsappDigits ? (whatsappDigits.startsWith('55') ? whatsappDigits : `55${whatsappDigits}`) : '';
+  const whatsappIntl = whatsappDigits ? telefoneParaWhatsapp(perfil.telefone_whatsapp) : '';
 
   const formatWhatsApp = (digits: string) => {
     if (!digits) return '';
