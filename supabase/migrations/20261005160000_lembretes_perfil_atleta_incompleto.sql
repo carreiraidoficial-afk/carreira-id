@@ -30,7 +30,7 @@ INSERT INTO public.carreira_lembretes_perfil_atleta_templates (tipo, dias_apos_c
   'sem_experiencia', 5,
   'Onde o seu atleta já jogou ou treinou? ⚽',
   'Registre a trajetória esportiva dele',
-  'Seu perfil no Carreira ID já está criado, mas ainda falta contar onde a jornada começou. Cadastre as escolinhas ou clubes por onde seu atleta já passou -- isso ajuda a montar um histórico completo, visível pra quem acompanha a carreira dele.',
+  'O perfil do seu atleta no Carreira ID já está criado, mas ainda falta contar onde a jornada dele começou. Cadastre as escolinhas ou clubes por onde ele já passou -- isso ajuda a montar um histórico completo, visível pra quem acompanha a carreira dele.',
   'Cadastrar experiência'
 ),
 (

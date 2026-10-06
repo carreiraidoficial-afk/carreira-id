@@ -199,6 +199,11 @@ export function TitularesDaBaseSection() {
       if (error) throw error;
       return (data || []) as unknown as Titular[];
     },
+    // Página de marketing: quem já visitou antes não pode ficar preso num
+    // cache velho quando o admin adiciona um titular novo (ver mesmo
+    // problema corrigido em CarreiraAdminPerfisPage).
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   if (titulares.length === 0) return null;
