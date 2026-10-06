@@ -242,6 +242,11 @@ function useProfileBySlug(slug: string) {
 
     },
     enabled: !!slug,
+    // Perfil público tem que refletir edições (links, fotos, dados) assim que abre: o padrão do app
+    // (cache de 24h, sem refetch ao montar) deixava visitantes e o próprio dono vendo a versão antiga.
+    // O cache continua aparecendo na hora; a versão nova entra por cima quando chega.
+    staleTime: 0,
+    refetchOnMount: true,
   });
 }
 

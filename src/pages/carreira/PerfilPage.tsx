@@ -95,6 +95,10 @@ export default function PerfilPage() {
       return null;
     },
     enabled: !!userId,
+    // Sem isso o cache persistido (24h) segurava a resposta antiga e o redirecionamento de escola
+    // pra URL nova (slug_redirect) não acontecia pra quem já tinha aberto o perfil antes.
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const { theme: tema, isDarkTheme } = useCarreiraTheme();
