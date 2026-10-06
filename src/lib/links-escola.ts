@@ -90,16 +90,32 @@ export function ehTipoLink(valor: unknown): valor is TipoLink {
   return typeof valor === 'string' && valor in TIPOS_LINK;
 }
 
+const REDIRECIONADORES = ['l.instagram.com', 'l.facebook.com', 'lm.facebook.com'];
+const PARAMS_RASTREIO = ['fbclid', 'igshid', 'gclid', 'mc_cid', 'mc_eid'];
+
 /** Aceita só http/https. "wa.me/55..." (sem esquema) vira https://wa.me/55...;
- * qualquer outro esquema (javascript:, data:, etc.) é rejeitado. */
-export function normalizarUrl(bruta: string): string | null {
+ * qualquer outro esquema (javascript:, data:, etc.) é rejeitado.
+ * Links copiados do Instagram/Facebook (l.instagram.com/?u=...) são desembrulhados e
+ * parâmetros de rastreio (utm_*, fbclid...) são removidos -- o link do redirecionador
+ * expira e carrega rastreamento. */
+export function normalizarUrl(bruta: string, nivel = 0): string | null {
   const texto = (bruta || '').trim();
-  if (!texto) return null;
+  if (!texto || nivel > 2) return null;
   const comEsquema = /^[a-z][a-z0-9+.-]*:/i.test(texto) ? texto : `https://${texto}`;
   try {
     const url = new URL(comEsquema);
     if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
     if (!url.hostname.includes('.')) return null;
+
+    if (REDIRECIONADORES.includes(url.hostname.toLowerCase())) {
+      const alvo = url.searchParams.get('u');
+      if (alvo) return normalizarUrl(alvo, nivel + 1);
+    }
+
+    for (const chave of [...url.searchParams.keys()]) {
+      const minuscula = chave.toLowerCase();
+      if (minuscula.startsWith('utm_') || PARAMS_RASTREIO.includes(minuscula)) url.searchParams.delete(chave);
+    }
     return url.toString();
   } catch {
     return null;

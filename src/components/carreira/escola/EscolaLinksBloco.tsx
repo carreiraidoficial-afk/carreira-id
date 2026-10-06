@@ -59,6 +59,7 @@ export function EscolaLinksBloco({ links, accentColor }: Props) {
           const descricao = link.descricao || tipo.descricaoPadrao;
           // Com 3 links, o primeiro ocupa a linha inteira em telas médias.
           const ocupaLinha = n === 3 && destaque;
+          const unico = n === 1;
 
           return (
             <a
@@ -66,9 +67,9 @@ export function EscolaLinksBloco({ links, accentColor }: Props) {
               href={link.url}
               target="_blank"
               rel="noopener noreferrer nofollow"
-              className={`group relative overflow-hidden rounded-xl p-3 sm:p-4 flex items-center gap-3 sm:flex-col sm:items-stretch sm:gap-2 transition-transform hover:-translate-y-0.5 sm:min-h-[150px] ${
-                ocupaLinha ? 'sm:col-span-2' : ''
-              } ${destaque ? 'text-white' : 'bg-background text-foreground border'}`}
+              className={`group relative overflow-hidden rounded-xl p-3 sm:p-4 flex items-center gap-3 transition-transform hover:-translate-y-0.5 ${
+                unico ? 'sm:gap-4' : 'sm:flex-col sm:items-stretch sm:gap-2 sm:min-h-[150px]'
+              } ${ocupaLinha ? 'sm:col-span-2' : ''} ${destaque ? 'text-white' : 'bg-background text-foreground border'}`}
               style={
                 destaque
                   ? { background: `linear-gradient(135deg, ${accentColor}, ${accentColor}cc 60%, #0f172a)` }
@@ -79,19 +80,19 @@ export function EscolaLinksBloco({ links, accentColor }: Props) {
                 aria-hidden
                 className="absolute -right-3 -bottom-3 w-24 h-24 opacity-[0.08] pointer-events-none"
               />
-              <div className="shrink-0 sm:flex sm:items-start sm:justify-between sm:gap-2">
+              <div className={`shrink-0 ${unico ? '' : 'sm:flex sm:items-start sm:justify-between sm:gap-2'}`}>
                 <div
                   className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
                   style={destaque ? { backgroundColor: 'rgba(255,255,255,0.18)' } : { backgroundColor: `${accentColor}18`, color: accentColor }}
                 >
                   <Icone className="w-5 h-5" />
                 </div>
-                <ExternalLink className="hidden sm:block w-4 h-4 opacity-60 shrink-0" />
+                {!unico && <ExternalLink className="hidden sm:block w-4 h-4 opacity-60 shrink-0" />}
               </div>
               <ExternalLink className="sm:hidden absolute top-3 right-3 w-4 h-4 opacity-60" />
 
               {/* No celular: coluna ao lado do ícone. Do sm pra cima, vira filho direto do card. */}
-              <div className="flex flex-1 min-w-0 flex-col gap-2 pr-6 sm:pr-0 sm:contents">
+              <div className={`flex flex-1 min-w-0 flex-col gap-2 pr-6 ${unico ? 'sm:pr-8' : 'sm:pr-0 sm:contents'}`}>
                 <div className="min-w-0">
                   <h3 className="font-semibold leading-snug line-clamp-2">{link.titulo}</h3>
                   {descricao && (
@@ -101,15 +102,28 @@ export function EscolaLinksBloco({ links, accentColor }: Props) {
                   )}
                 </div>
                 <span
-                  className={`sm:mt-auto inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${
-                    destaque ? 'bg-white text-slate-900' : 'text-white'
-                  }`}
-                  style={destaque ? undefined : { backgroundColor: accentColor }}
+                  className={`${unico ? 'sm:hidden' : 'sm:mt-auto'} inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold`}
+                  style={
+                    destaque
+                      ? { backgroundColor: '#ffffff', color: '#0f172a' }
+                      : { backgroundColor: accentColor, color: '#ffffff' }
+                  }
                 >
                   {tipo.cta}
                   <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                 </span>
               </div>
+
+              {/* Link único (sm+): botão fica à direita, na mesma linha do texto */}
+              {unico && (
+                <span
+                  className="hidden sm:inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold"
+                  style={{ backgroundColor: '#ffffff', color: '#0f172a' }}
+                >
+                  {tipo.cta}
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                </span>
+              )}
             </a>
           );
         })}
