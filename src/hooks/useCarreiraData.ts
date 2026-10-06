@@ -750,6 +750,7 @@ export interface ComunidadeAtleta {
   foto_url: string | null;
   slug: string;
   modalidade: string | null;
+  categoria: string | null;
 }
 
 /** Atletas com conexão aceita com esta escola (perfil dono_escola) --
@@ -776,14 +777,17 @@ export function useComunidadeEscola(escolaUserId: string | undefined) {
 
       const { data: atletas, error: atletasError } = await supabase
         .from('perfil_atleta')
-        .select('id, nome, foto_url, slug, modalidade')
+        .select('id, nome, foto_url, slug, modalidade, categoria')
         .in('id', atletaIds)
         .eq('is_public', true);
       if (atletasError) throw atletasError;
 
-      return (atletas || []) as ComunidadeAtleta[];
+      return ((atletas || []) as ComunidadeAtleta[]).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
     },
     enabled: !!escolaUserId,
+    // Atleta novo conectado tem que aparecer ao abrir a página (o padrão do app segura cache por 24h).
+    staleTime: 0,
+    refetchOnMount: true,
   });
 }
 

@@ -1196,7 +1196,7 @@ export default function CarreiraPerfilPage() {
             {/* Nossos atletas — perfil_atleta público com conexão aceita com a
                 escola, visível pra qualquer visitante. */}
             {isDonoEscolaProfile && (
-              <ComunidadeEscolaSection escolaUserId={perfil.user_id} accentColor={accentColor} />
+              <ComunidadeEscolaSection escolaUserId={perfil.user_id} nomeEscola={displayProfileName} accentColor={accentColor} />
             )}
 
             {/* Sala de Troféus — perfil dono_escola, histórico institucional próprio */}
