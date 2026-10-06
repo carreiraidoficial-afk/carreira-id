@@ -875,7 +875,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
                 <Input
                   value={unidade.referencia}
                   onChange={(e) => updateUnidade(idx, 'referencia', e.target.value)}
-                  placeholder="Referência (ex: Próximo ao Maracanã)"
+                  placeholder="Referência / local no mapa (ex: Praça Central)"
                   maxLength={200}
                 />
                 <div className="flex items-center gap-2 pt-1">

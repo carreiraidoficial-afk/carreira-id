@@ -60,9 +60,13 @@ export function EscolaSobreCard({ nome, bio, dados, accentColor, logoUrl, local 
         {unidades.map((u, i) => {
           const rotulo = String(u.nome || u.bairro);
           const enderecoUnidade = String(u.endereco || '').trim();
-          const consultaMapa = enderecoUnidade
-            ? [enderecoUnidade, u.bairro, local].filter(Boolean).join(', ')
-            : '';
+          // Se a unidade tem "referência" (ex.: uma praça), o mapa procura por ela; senão, pelo endereço.
+          const referencia = String(u.referencia || '').trim();
+          const consultaMapa = referencia
+            ? [referencia, u.bairro, local].filter(Boolean).join(', ')
+            : enderecoUnidade
+              ? [enderecoUnidade, u.bairro, local].filter(Boolean).join(', ')
+              : '';
           const conteudo = (
             <>
               <div
