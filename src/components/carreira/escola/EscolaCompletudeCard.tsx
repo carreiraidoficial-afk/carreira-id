@@ -36,6 +36,7 @@ export function EscolaCompletudeCard({ perfil, accentColor, onEditar }: Props) {
     { rotulo: 'Modalidades', ok: temItens(dados.modalidades) },
     { rotulo: 'Categorias', ok: temItens(dados.categorias) },
     { rotulo: 'Unidades', ok: temItens(dados.unidades) },
+    { rotulo: 'Links de matrícula/agendamento', ok: temItens(dados.links) },
     { rotulo: 'Instagram ou site', ok: !!(perfil.instagram || dados.arroba || perfil.site || dados.site) },
     { rotulo: 'Ano de fundação', ok: Number(dados.ano_fundacao) > 1900 },
     { rotulo: 'Conquistas', ok: trofeus.length > 0, dica: 'Adicione na Sala de Troféus abaixo' },

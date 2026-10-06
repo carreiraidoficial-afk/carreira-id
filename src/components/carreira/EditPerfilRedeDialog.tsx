@@ -22,6 +22,8 @@ import { formatCNPJ } from '@/lib/cnpj-validator';
 import { validateDocument, validatePhone as validatePhoneNumber, validateEmail as validateEmailAddress, formatPhoneMask, SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
 import { ColorPicker } from './ColorPicker';
 import { EscolaCompletudeCard } from './escola/EscolaCompletudeCard';
+import { LinksEscolaEditor } from './escola/LinksEscolaEditor';
+import { type LinkEscola, lerLinksEscola, normalizarUrl } from '@/lib/links-escola';
 
 // ── Dynamic field definitions per profile type (mirrors ProfileTypeForm) ──
 
@@ -198,6 +200,8 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
 
   // Unidades (filiais) for dono_escola
   const [unidades, setUnidades] = useState<Unidade[]>([]);
+  // Links da escola (matrícula, planos, aula experimental...) for dono_escola
+  const [linksEscola, setLinksEscola] = useState<LinkEscola[]>([]);
 
   const isTorcedor = perfil?.tipo === 'torcedor';
   const isDono = perfil?.tipo === 'dono_escola';
@@ -259,6 +263,7 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
       setUnidades(Array.isArray(d.unidades)
         ? d.unidades.map((u: Unidade) => ({ ...u, logoPreview: u.logo_url || null }))
         : []);
+      setLinksEscola(lerLinksEscola(d));
       loadDadosValues(d);
 
       // Load account data
@@ -361,6 +366,17 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
       return;
     }
 
+    // Links da escola: linha preenchida pela metade ou com endereço inválido trava o salvar.
+    if (isDono) {
+      for (const l of linksEscola) {
+        const temAlgo = l.titulo.trim() !== '' || l.url.trim() !== '';
+        if (temAlgo && (!l.titulo.trim() || !normalizarUrl(l.url))) {
+          toast.error('Confira os links da escola: cada um precisa de título e de um endereço começando com https://');
+          return;
+        }
+      }
+    }
+
     setSaving(true);
     try {
 
@@ -383,6 +399,12 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
       if (isTorcedor) {
         newDados.time_torcida = data.time_torcida || null;
         newDados.brasao_url = brasaoUrl || null;
+      }
+
+      if (isDono) {
+        newDados.links = linksEscola
+          .filter((l) => l.titulo.trim() && l.url.trim())
+          .map((l) => ({ titulo: l.titulo.trim(), url: normalizarUrl(l.url)! }));
       }
 
       // Unidades for dono_escola -- a logo de cada unidade e so capturada
@@ -805,6 +827,14 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
                 {unidades.length === 0 && (
                   <p className="text-xs text-muted-foreground italic text-center py-2">Nenhuma unidade adicionada</p>
                 )}
+              </div>
+            )}
+
+            {/* Links da escola - only for dono_escola */}
+            {isDono && (
+              <div className="space-y-3 rounded-lg border border-border p-4">
+                <Label className="text-sm font-medium">Links da escola</Label>
+                <LinksEscolaEditor links={linksEscola} onChange={setLinksEscola} />
               </div>
             )}
 
