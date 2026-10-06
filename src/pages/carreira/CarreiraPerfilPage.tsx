@@ -19,6 +19,9 @@ import { HistoricoProfissionalSection, type HistoricoProfissional } from '@/comp
 import { HistoricoProfissionalFormDialog } from '@/components/carreira/HistoricoProfissionalFormDialog';
 import { SalaTrofeusEscola } from '@/components/carreira/SalaTrofeusEscola';
 import { ComunidadeEscolaSection } from '@/components/carreira/ComunidadeEscolaSection';
+import { EscolaPerfilHero } from '@/components/carreira/escola/EscolaPerfilHero';
+import { EscolaSobreCard } from '@/components/carreira/escola/EscolaSobreCard';
+import { EscolaCompletudeCard } from '@/components/carreira/escola/EscolaCompletudeCard';
 import { SalaTrofeusEscolaFormDialog } from '@/components/carreira/SalaTrofeusEscolaFormDialog';
 import { useCreateTrofeuEscola, useUpdateTrofeuEscola, useDeleteTrofeuEscola, type TrofeuEscola, type TrofeuEscolaInput } from '@/hooks/useSalaTrofeusEscola';
 import { EditPerfilDialog } from '@/components/carreira/EditPerfilDialog';
@@ -803,10 +806,10 @@ export default function CarreiraPerfilPage() {
 
       {/* Main Content — 3 columns on desktop */}
       <main className="container max-w-6xl px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_280px] gap-6">
-          
-          {/* Left Sidebar — Athlete Card */}
-          <aside className="hidden lg:block space-y-4">
+        <div className={isDonoEscolaProfile ? 'grid grid-cols-1 gap-6' : 'grid grid-cols-1 lg:grid-cols-[260px_1fr_280px] gap-6'}>
+
+          {/* Left Sidebar — Athlete Card (escola usa o hero no topo da coluna central) */}
+          <aside className={isDonoEscolaProfile ? 'hidden' : 'hidden lg:block space-y-4'}>
             <Card className="text-center overflow-hidden" style={{ borderColor: `${accentColor}50`, borderWidth: 2 }}>
               {/* Banner */}
               {perfil.banner_url && (
@@ -1036,6 +1039,62 @@ export default function CarreiraPerfilPage() {
 
           {/* Center — Profile Header (mobile only) + Timeline */}
           <div className="space-y-4">
+            {/* Perfil de escola: hero com capa + métricas + Sobre (substitui o card lateral e o PerfilLayout mobile) */}
+            {isDonoEscolaProfile && (
+              <>
+                <EscolaPerfilHero
+                  perfil={perfil as any}
+                  displayName={displayProfileName}
+                  accentColor={accentColor}
+                  isEscolaParceira={isEscolaParceira}
+                  isAnonymous={isAnonymous}
+                  requireAuth={requireAuth}
+                  actions={(
+                    <>
+                      {isOwner && (
+                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => setEditDialogOpen(true)}
+                          style={{ borderColor: `${accentColor}50`, color: accentColor }}>
+                          <Pencil className="w-3.5 h-3.5" />Editar perfil
+                        </Button>
+                      )}
+                      {isAnonymous && !isOwner && (
+                        <>
+                          <Button size="sm" className="h-8 text-xs" style={{ backgroundColor: accentColor }} onClick={() => requireAuth('connect')}>
+                            <UserPlus className="w-3.5 h-3.5 mr-1" />Conectar
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-8 text-xs" style={{ borderColor: `${accentColor}50`, color: accentColor }} onClick={() => requireAuth('follow')}>
+                            <UserPlus className="w-3.5 h-3.5 mr-1" />Torcer
+                          </Button>
+                        </>
+                      )}
+                      {!isOwner && currentUserId && (
+                        <ConectarButton
+                          targetUserId={perfil.user_id}
+                          currentUserId={currentUserId}
+                          accentColor={accentColor}
+                          isDono
+                          unidades={unidadesPerfil}
+                          sourcePerfilAtletaId={meuPerfilAtivo?.id}
+                        />
+                      )}
+                      {!isAnonymous && (
+                        <FollowButton perfil={perfil} currentUserId={currentUserId} isOwner={isOwner} />
+                      )}
+                      <ShareButton slug={perfil.slug} nome={displayProfileName} accentColor={accentColor} ownerUserId={perfil.user_id} />
+                    </>
+                  )}
+                />
+                {isOwner && (
+                  <EscolaCompletudeCard perfil={perfil as any} accentColor={accentColor} onEditar={() => setEditDialogOpen(true)} />
+                )}
+                <EscolaSobreCard
+                  nome={displayProfileName}
+                  bio={perfil.bio}
+                  dados={(perfil.dados_perfil as Record<string, any> | null) || null}
+                  accentColor={accentColor}
+                />
+              </>
+            )}
             {/* Tutorial auto-show for profile owners */}
             {isOwner && <TutorialAutoShow tipoPerfil={perfil.tipo || (perfil.type === 'atleta' ? 'atleta_filho' : undefined)} />}
             {/* Migration banner for pai_responsavel profiles */}
@@ -1086,7 +1145,7 @@ export default function CarreiraPerfilPage() {
                 <PerfilHeader perfil={perfil as any} isOwner={isOwner} viewerPerfilAtletaId={meuPerfilAtivo?.id} />
               </div>
             )}
-            {perfil.type === 'rede' && (
+            {perfil.type === 'rede' && !isDonoEscolaProfile && (
               <div className="lg:hidden">
                 <PerfilLayout
                   perfil={{
@@ -1111,8 +1170,8 @@ export default function CarreiraPerfilPage() {
                 />
               </div>
             )}
-            {/* Dados Específicos do perfil rede */}
-            {perfil.type === 'rede' && (
+            {/* Dados Específicos do perfil rede (escola já tem o bloco "Sobre" no topo) */}
+            {perfil.type === 'rede' && !isDonoEscolaProfile && (
               <DadosEspecificos
                 tipo={perfil.tipo as any}
                 dados={perfil.dados_perfil as Record<string, any> | null}
@@ -1132,6 +1191,12 @@ export default function CarreiraPerfilPage() {
               />
             )}
 
+            {/* Nossos atletas — perfil_atleta público com conexão aceita com a
+                escola, visível pra qualquer visitante. */}
+            {isDonoEscolaProfile && (
+              <ComunidadeEscolaSection escolaUserId={perfil.user_id} accentColor={accentColor} />
+            )}
+
             {/* Sala de Troféus — perfil dono_escola, histórico institucional próprio */}
             {isDonoEscolaProfile && (
               <SalaTrofeusEscola
@@ -1143,12 +1208,6 @@ export default function CarreiraPerfilPage() {
                 onEdit={(item) => { setEditingTrofeuEscola(item); setTrofeuEscolaDialogOpen(true); }}
                 onDelete={handleDeleteTrofeuEscola}
               />
-            )}
-
-            {/* Comunidade da Escola — alunos (perfil_atleta) com conexão
-                aceita com a escola, pública pra qualquer visitante. */}
-            {isDonoEscolaProfile && (
-              <ComunidadeEscolaSection escolaUserId={perfil.user_id} accentColor={accentColor} />
             )}
 
             {/* Descobrir Atletas — scouting profiles on desktop */}
@@ -1176,7 +1235,7 @@ export default function CarreiraPerfilPage() {
             )}
 
             {isOwner && pendingRequests && pendingRequests.length > 0 && (
-              <div className="lg:hidden">
+              <div className={isDonoEscolaProfile ? '' : 'lg:hidden'}>
                 <Card className="p-4" style={{ borderColor: `${accentColor}50`, borderWidth: 2 }}>
                    <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: accentColor }} />
@@ -1221,7 +1280,7 @@ export default function CarreiraPerfilPage() {
           </div>
 
           {/* Right Sidebar — Pending Requests + Suggestions + Connections */}
-          <aside className="hidden lg:block space-y-4">
+          <aside className={isDonoEscolaProfile ? 'hidden' : 'hidden lg:block space-y-4'}>
             {perfil.type === 'atleta' && topRanking.length > 0 && (
               <Card className="p-4" style={{ borderColor: `${accentColor}50`, borderWidth: 2 }}>
                 <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">

@@ -57,6 +57,7 @@ function getDynamicFields(tipo: string): DynFieldDef[] {
         { key: 'nome_escola', label: 'Nome da Escolinha / Clube', type: 'text' },
         { key: 'endereco', label: 'Endereço da Sede', type: 'text' },
         { key: 'localizacao', label: 'Localização (Cidade, Estado)', type: 'text' },
+        { key: 'ano_fundacao', label: 'Ano de fundação (ex: 2017)', type: 'text' },
         { key: 'modalidades', label: 'Modalidades Oferecidas', type: 'multiselect', options: MODALIDADES_ESCOLA },
         { key: 'categorias', label: 'Categorias Atendidas', type: 'multiselect', options: CATEGORIAS },
         { key: 'site', label: 'Site', type: 'text' },
@@ -168,6 +169,7 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
   const { user, refreshUser } = useAuth();
   const [saving, setSaving] = useState(false);
   const [photoUrl, setPhotoUrl] = useState(perfil?.foto_url || '');
+  const [bannerUrl, setBannerUrl] = useState(perfil?.banner_url || '');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [corDestaque, setCorDestaque] = useState((perfil?.dados_perfil as any)?.cor_destaque || '#3b82f6');
   const [disponivelTrabalho, setDisponivelTrabalho] = useState<boolean>(!!(perfil?.dados_perfil as any)?.disponivel_trabalho);
@@ -249,6 +251,7 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
         time_torcida: d.time_torcida || '',
       });
       setPhotoUrl(perfil.foto_url || '');
+      setBannerUrl(perfil.banner_url || '');
       setCorDestaque(d.cor_destaque || '#3b82f6');
       setDisponivelTrabalho(!!d.disponivel_trabalho);
       setBrasaoUrl(d.brasao_url || '');
@@ -416,6 +419,7 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
           cpf_cnpj: cleanDoc || null,
           tipo_documento: data.tipo_documento || 'cpf',
           foto_url: photoUrl || null,
+          ...(isDono ? { banner_url: bannerUrl || null } : {}),
           dados_perfil: newDados,
         } as any)
         .eq('id', perfil.id);
@@ -545,10 +549,10 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <ProfilePhotoUpload
               currentPhotoUrl={photoUrl}
-              currentBannerUrl=""
+              currentBannerUrl={bannerUrl}
               onPhotoChange={setPhotoUrl}
-              onBannerChange={() => {}}
-              showBanner={false}
+              onBannerChange={setBannerUrl}
+              showBanner={isDono}
               photoLabel={isDono ? 'Foto do Perfil (você ou a logo da escola)' : undefined}
               photoHelperText={isDono ? 'Você escolhe: sua própria foto ou a logo da escola — o que subir aqui aparece publicamente no perfil, no selo de Escola Parceira e na seção Escolas Parceiras da home.' : undefined}
             />
