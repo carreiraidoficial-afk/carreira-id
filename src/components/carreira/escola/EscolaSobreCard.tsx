@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import { normalizarUrl } from '@/lib/links-escola';
 import { Card } from '@/components/ui/card';
 import { Info, Trophy, Users, MapPin, Building2, ChevronRight, Sun, Volleyball, Waves, Dribbble } from 'lucide-react';
 
@@ -67,6 +68,10 @@ export function EscolaSobreCard({ nome, bio, dados, accentColor, logoUrl, local 
             : enderecoUnidade
               ? [enderecoUnidade, u.bairro, local].filter(Boolean).join(', ')
               : '';
+          // Link do Google Maps colado pela escola vence qualquer busca montada por nós.
+          const linkMapa = typeof u.link_mapa === 'string' ? normalizarUrl(u.link_mapa) : null;
+          const hrefMapa = linkMapa
+            || (consultaMapa ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(consultaMapa)}` : '');
           const conteudo = (
             <>
               <div
@@ -89,15 +94,15 @@ export function EscolaSobreCard({ nome, bio, dados, accentColor, logoUrl, local 
                   </p>
                 )}
               </div>
-              {consultaMapa && <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />}
+              {hrefMapa && <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />}
             </>
           );
           const classes = 'flex items-center gap-3 rounded-xl border p-3 transition-colors';
           const estilo = { borderColor: `${accentColor}40`, backgroundColor: `${accentColor}0d` };
-          return consultaMapa ? (
+          return hrefMapa ? (
             <a
               key={`${rotulo}-${i}`}
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(consultaMapa)}`}
+              href={hrefMapa}
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`Ver ${rotulo} no mapa`}

@@ -149,6 +149,8 @@ interface Unidade {
   endereco: string;
   bairro: string;
   referencia: string;
+  /** Link do Google Maps da unidade (opcional); tem prioridade sobre referência/endereço no mapa. */
+  link_mapa?: string;
   logo_url?: string | null;
   // Campos so-de-formulario -- viram logo_url apos upload no submit.
   logoFile?: File | null;
@@ -366,6 +368,12 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
       return;
     }
 
+    // Link do Google Maps das unidades: se preenchido, precisa ser um endereço válido.
+    if (isDono && unidades.some((u) => u.link_mapa?.trim() && !normalizarUrl(u.link_mapa))) {
+      toast.error('Confira o link do Google Maps das unidades: precisa ser um endereço começando com https://');
+      return;
+    }
+
     // Links da escola: linha preenchida pela metade ou com endereço inválido trava o salvar.
     if (isDono) {
       for (const l of linksEscola) {
@@ -431,7 +439,8 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
               logoUrl = urlData.publicUrl;
             }
           }
-          return { nome: u.nome, endereco: u.endereco, bairro: u.bairro, referencia: u.referencia, logo_url: logoUrl };
+          const linkMapa = u.link_mapa?.trim() ? normalizarUrl(u.link_mapa) : null;
+          return { nome: u.nome, endereco: u.endereco, bairro: u.bairro, referencia: u.referencia, ...(linkMapa ? { link_mapa: linkMapa } : {}), logo_url: logoUrl };
         }));
       }
 
@@ -815,6 +824,10 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
                     <Input value={unidade.endereco || ''} onChange={(e) => updateUnidade(idx, 'endereco', e.target.value)} placeholder="Endereço (ex: Rua das Flores, 123)" maxLength={200} />
                     <Input value={unidade.bairro} onChange={(e) => updateUnidade(idx, 'bairro', e.target.value)} placeholder="Bairro" maxLength={100} />
                     <Input value={unidade.referencia} onChange={(e) => updateUnidade(idx, 'referencia', e.target.value)} placeholder="Referência / local no mapa (ex: Praça Central)" maxLength={200} />
+                    <Input value={unidade.link_mapa || ''} onChange={(e) => updateUnidade(idx, 'link_mapa', e.target.value)} placeholder="Link do Google Maps (opcional)" inputMode="url" maxLength={500} />
+                    {!!unidade.link_mapa?.trim() && !normalizarUrl(unidade.link_mapa) && (
+                      <p className="text-[11px] text-destructive">Link inválido. Cole o endereço completo, começando com https://</p>
+                    )}
                     <div className="flex items-center gap-2 pt-1">
                       {unidade.logoPreview ? (
                         <img src={unidade.logoPreview} alt="Logo da unidade" className="w-10 h-10 rounded object-cover border border-border" />

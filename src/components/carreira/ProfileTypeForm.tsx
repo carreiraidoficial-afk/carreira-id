@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { normalizarUrl } from '@/lib/links-escola';
 import { TelefoneInput } from '@/components/shared/TelefoneInput';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -170,6 +171,7 @@ interface Unidade {
   endereco: string;
   bairro: string;
   referencia: string;
+  link_mapa?: string;
   logo_url?: string | null;
   // Campos so-de-formulario, nunca persistidos direto -- viram logo_url
   // apos upload no submit.
@@ -244,8 +246,8 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
         localStorage.setItem(chaveRascunho, JSON.stringify({
           nome, values, tipoDocumento, telefoneWhatsapp, whatsappPublico, email, dataNascimento,
           cidade, estado, pais, paisObj, estadoIntlId,
-          unidades: unidades.map(({ nome: n, endereco, bairro, referencia, logo_url }) => ({
-            nome: n, endereco, bairro, referencia, logo_url: logo_url ?? null,
+          unidades: unidades.map(({ nome: n, endereco, bairro, referencia, link_mapa, logo_url }) => ({
+            nome: n, endereco, bairro, referencia, link_mapa, logo_url: logo_url ?? null,
           })),
         }));
       } catch {
@@ -380,6 +382,12 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
       return;
     }
 
+    // Link do Google Maps das unidades: se preenchido, precisa ser um endereço válido.
+    if (unidades.some((u) => u.link_mapa?.trim() && !normalizarUrl(u.link_mapa))) {
+      toast.error('Confira o link do Google Maps das unidades: precisa ser um endereço começando com https://');
+      return;
+    }
+
     // Validate required fields
     for (const field of fields) {
       if (field.required && !field.isProfileField) {
@@ -464,7 +472,8 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
                 logoUrl = urlData.publicUrl;
               }
             }
-            return { nome: u.nome, endereco: u.endereco, bairro: u.bairro, referencia: u.referencia, logo_url: logoUrl };
+            const linkMapa = u.link_mapa?.trim() ? normalizarUrl(u.link_mapa) : null;
+            return { nome: u.nome, endereco: u.endereco, bairro: u.bairro, referencia: u.referencia, ...(linkMapa ? { link_mapa: linkMapa } : {}), logo_url: logoUrl };
           }));
           dadosPerfil.unidades = unidadesComLogo;
         }
@@ -878,6 +887,16 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
                   placeholder="Referência / local no mapa (ex: Praça Central)"
                   maxLength={200}
                 />
+                <Input
+                  value={unidade.link_mapa || ''}
+                  onChange={(e) => updateUnidade(idx, 'link_mapa', e.target.value)}
+                  placeholder="Link do Google Maps (opcional)"
+                  inputMode="url"
+                  maxLength={500}
+                />
+                {!!unidade.link_mapa?.trim() && !normalizarUrl(unidade.link_mapa) && (
+                  <p className="text-[11px] text-destructive">Link inválido. Cole o endereço completo, começando com https://</p>
+                )}
                 <div className="flex items-center gap-2 pt-1">
                   {unidade.logoPreview ? (
                     <img src={unidade.logoPreview} alt="Logo da unidade" className="w-10 h-10 rounded object-cover border border-border" />
