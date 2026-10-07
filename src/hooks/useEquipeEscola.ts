@@ -6,6 +6,8 @@ export interface MembroEquipe {
   nome: string;
   foto_url: string | null;
   funcao: string;
+  /** Segundo título opcional (ex.: "Diretor(a)" + "Professor(a) de Quadra"). */
+  funcao_secundaria: string | null;
   /** Slug do perfil da pessoa, quando o membro é vinculado a um perfil do Carreira ID. */
   slug: string | null;
   ordem: number;
@@ -23,7 +25,7 @@ export function useEquipeEscola(escolaPerfilId: string | undefined) {
       if (!escolaPerfilId) return [];
       const { data, error } = await supabase
         .from('escola_equipe')
-        .select('id, membro_perfil_id, nome, foto_url, funcao, ordem')
+        .select('id, membro_perfil_id, nome, foto_url, funcao, funcao_secundaria, ordem')
         .eq('escola_perfil_id', escolaPerfilId)
         .eq('status', 'aceita');
       if (error) throw error;
@@ -46,12 +48,14 @@ export function useEquipeEscola(escolaPerfilId: string | undefined) {
           nome,
           foto_url: perfil?.foto_url || l.foto_url || null,
           funcao: l.funcao,
+          funcao_secundaria: l.funcao_secundaria || null,
           slug: perfil?.slug || null,
           ordem: l.ordem ?? 0,
         });
       }
+      const lideranca = (m: MembroEquipe) => ehLideranca(`${m.funcao} ${m.funcao_secundaria ?? ''}`);
       return membros.sort((a, b) =>
-        Number(ehLideranca(b.funcao)) - Number(ehLideranca(a.funcao)) || a.ordem - b.ordem || a.nome.localeCompare(b.nome, 'pt-BR'));
+        Number(lideranca(b)) - Number(lideranca(a)) || a.ordem - b.ordem || a.nome.localeCompare(b.nome, 'pt-BR'));
     },
     enabled: !!escolaPerfilId,
     // Edição da equipe tem que aparecer ao abrir (o padrão do app segura cache por 24h).

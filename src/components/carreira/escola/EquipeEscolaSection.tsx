@@ -53,7 +53,7 @@ export function EquipeEscolaSection({ escolaPerfilId, accentColor, podeGerenciar
 
   const abrirNovo = () => { setEmEdicao(null); setDialogAberto(true); };
   const abrirEdicao = (m: MembroEquipe) => {
-    setEmEdicao({ id: m.id, nome: m.nome, foto_url: m.foto_url, funcao: m.funcao });
+    setEmEdicao({ id: m.id, nome: m.nome, foto_url: m.foto_url, funcao: m.funcao, funcao_secundaria: m.funcao_secundaria });
     setDialogAberto(true);
   };
 
@@ -130,6 +130,7 @@ export function EquipeEscolaSection({ escolaPerfilId, accentColor, podeGerenciar
                   <div className="min-w-0">
                     <p className="truncate text-xs font-semibold text-foreground">{m.nome}</p>
                     <p className="truncate text-[11px] text-muted-foreground">{m.funcao}</p>
+                    {m.funcao_secundaria && <p className="truncate text-[11px] text-muted-foreground">{m.funcao_secundaria}</p>}
                   </div>
                 </div>
               </>

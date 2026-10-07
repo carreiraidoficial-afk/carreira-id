@@ -74,7 +74,7 @@ export function EquipeEscolaEditor({ escolaPerfilId }: Props) {
               )}
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-foreground">{m.nome}</p>
-                <p className="truncate text-xs text-muted-foreground">{m.funcao}</p>
+                <p className="truncate text-xs text-muted-foreground">{m.funcao_secundaria ? `${m.funcao} · ${m.funcao_secundaria}` : m.funcao}</p>
               </div>
               <Button
                 type="button"
@@ -82,7 +82,7 @@ export function EquipeEscolaEditor({ escolaPerfilId }: Props) {
                 size="sm"
                 className="h-8 w-8 p-0"
                 aria-label={`Editar ${m.nome}`}
-                onClick={() => { setEmEdicao({ id: m.id, nome: m.nome, foto_url: m.foto_url, funcao: m.funcao }); setDialogAberto(true); }}
+                onClick={() => { setEmEdicao({ id: m.id, nome: m.nome, foto_url: m.foto_url, funcao: m.funcao, funcao_secundaria: m.funcao_secundaria }); setDialogAberto(true); }}
               >
                 <Pencil className="h-3.5 w-3.5" />
               </Button>

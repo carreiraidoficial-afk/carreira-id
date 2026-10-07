@@ -28,6 +28,7 @@ export interface MembroEmEdicao {
   nome: string;
   foto_url: string | null;
   funcao: string;
+  funcao_secundaria?: string | null;
 }
 
 interface Props {
@@ -44,6 +45,7 @@ export function EquipeMembroDialog({ open, onOpenChange, escolaPerfilId, editand
   const inputFoto = useRef<HTMLInputElement>(null);
   const [nome, setNome] = useState('');
   const [funcao, setFuncao] = useState('');
+  const [funcao2, setFuncao2] = useState('');
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -52,6 +54,7 @@ export function EquipeMembroDialog({ open, onOpenChange, escolaPerfilId, editand
     if (!open) return;
     setNome(editando?.nome ?? '');
     setFuncao(editando?.funcao ?? '');
+    setFuncao2(editando?.funcao_secundaria ?? '');
     setArquivo(null);
     setPreview(editando?.foto_url ?? null);
   }, [open, editando]);
@@ -75,6 +78,9 @@ export function EquipeMembroDialog({ open, onOpenChange, escolaPerfilId, editand
     const funcaoLimpa = funcao.trim();
     if (nomeLimpo.length < 2) return toast.error('Informe o nome da pessoa.');
     if (funcaoLimpa.length < 2) return toast.error('Informe a função (ex.: Técnico(a) de Quadra).');
+    const funcao2Limpa = funcao2.trim();
+    if (funcao2Limpa && funcao2Limpa.length < 2) return toast.error('O segundo título precisa ter pelo menos 2 letras.');
+    if (funcao2Limpa && funcao2Limpa.toLowerCase() === funcaoLimpa.toLowerCase()) return toast.error('Os dois títulos são iguais. Deixe o segundo vazio ou troque.');
     if (!arquivo && !preview) return toast.error('A foto é obrigatória.');
     if (!user?.id) return toast.error('Você precisa estar logado.');
 
@@ -94,7 +100,7 @@ export function EquipeMembroDialog({ open, onOpenChange, escolaPerfilId, editand
       if (editando) {
         const { data, error } = await supabase
           .from('escola_equipe')
-          .update({ nome: nomeLimpo, funcao: funcaoLimpa, foto_url: fotoUrl, updated_at: new Date().toISOString() })
+          .update({ nome: nomeLimpo, funcao: funcaoLimpa, funcao_secundaria: funcao2Limpa || null, foto_url: fotoUrl, updated_at: new Date().toISOString() })
           .eq('id', editando.id)
           .select('id');
         if (error || !data || data.length === 0) throw error ?? new Error('nada atualizado');
@@ -103,6 +109,7 @@ export function EquipeMembroDialog({ open, onOpenChange, escolaPerfilId, editand
           escola_perfil_id: escolaPerfilId,
           nome: nomeLimpo,
           funcao: funcaoLimpa,
+          funcao_secundaria: funcao2Limpa || null,
           foto_url: fotoUrl,
           origem: 'manual',
           status: 'aceita',
@@ -157,7 +164,7 @@ export function EquipeMembroDialog({ open, onOpenChange, escolaPerfilId, editand
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="equipe-funcao">Função *</Label>
+            <Label htmlFor="equipe-funcao">Título principal *</Label>
             <Input id="equipe-funcao" value={funcao} maxLength={60} onChange={(e) => setFuncao(e.target.value)} placeholder="Ex.: Técnica de Quadra" />
             <Select value="" onValueChange={setFuncao}>
               <SelectTrigger className="h-9 text-xs" aria-label="Escolher função da lista">
@@ -167,6 +174,20 @@ export function EquipeMembroDialog({ open, onOpenChange, escolaPerfilId, editand
                 {FUNCOES_EQUIPE.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="equipe-funcao-2">Segundo título (opcional)</Label>
+            <Input id="equipe-funcao-2" value={funcao2} maxLength={60} onChange={(e) => setFuncao2(e.target.value)} placeholder="Ex.: Professor de Quadra" />
+            <Select value="" onValueChange={setFuncao2}>
+              <SelectTrigger className="h-9 text-xs" aria-label="Escolher segundo título da lista">
+                <SelectValue placeholder="Ou escolha da lista e ajuste o texto" />
+              </SelectTrigger>
+              <SelectContent>
+                {FUNCOES_EQUIPE.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">Para quem tem duas funções, como Diretor(a) e Professor(a) de Quadra.</p>
           </div>
         </div>
 
