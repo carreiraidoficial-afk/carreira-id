@@ -69,6 +69,8 @@ export default function CarreiraCadastroPage() {
   const refParam = searchParams.get('ref') as 'torcedor' | 'atleta' | 'rede' | null;
   const refConviteCodigo = searchParams.get('c');
   const refAtletaSlug = searchParams.get('a');
+  const refEscolaSlug = searchParams.get('escola');
+  const refUnidade = searchParams.get('unidade');
   // Cadastro intencional de mais um perfil pra quem já tem conta -- mais um
   // atleta (irmãos, botão "Adicionar outro atleta") ou um 2º tipo de perfil
   // na mesma conta (botão "Adicionar outro tipo de perfil" nas Configurações).
@@ -114,9 +116,11 @@ export default function CarreiraCadastroPage() {
         ref: refParam,
         conviteCodigo: refConviteCodigo || undefined,
         atletaSlug: refAtletaSlug || undefined,
+        escolaSlug: refEscolaSlug || undefined,
+        unidade: refUnidade || undefined,
       });
     }
-  }, [refParam, refConviteCodigo, refAtletaSlug]);
+  }, [refParam, refConviteCodigo, refAtletaSlug, refEscolaSlug, refUnidade]);
 
   // Auto-seleciona tipo quando vem de ?ref=torcedor ou ?ref=atleta -- pula a
   // tela de escolha de perfil pra quem já entrou por um link dedicado (ex:

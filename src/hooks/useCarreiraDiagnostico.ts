@@ -173,7 +173,7 @@ export function useCarreiraDiagnostico() {
         supabase.from('perfis_rede').select('id', { count: 'exact', head: true }),
         supabase.from('posts_atleta').select('id', { count: 'exact', head: true }),
         supabase.from('posts_atleta').select('id', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString()),
-        supabase.from('rede_conexoes').select('id', { count: 'exact', head: true }).eq('status', 'aceito'),
+        supabase.from('rede_conexoes').select('id', { count: 'exact', head: true }).in('status', ['aceita', 'aceito']),
         supabase.from('rede_conexoes').select('id', { count: 'exact', head: true }).eq('status', 'pendente'),
         supabase.from('atleta_follows').select('id', { count: 'exact', head: true }),
         supabase.from('post_likes').select('id', { count: 'exact', head: true }),

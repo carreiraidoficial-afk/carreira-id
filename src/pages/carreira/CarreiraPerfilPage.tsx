@@ -1,4 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { EscolaConvidarAlunos } from '@/components/carreira/escola/EscolaConvidarAlunos';
+import { EscolaConviteAluno } from '@/components/carreira/escola/EscolaConviteAluno';
 import { telefoneParaWhatsapp } from '@/lib/form-validators';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -1195,8 +1197,28 @@ export default function CarreiraPerfilPage() {
 
             {/* Nossos atletas — perfil_atleta público com conexão aceita com a
                 escola, visível pra qualquer visitante. */}
+            {isDonoEscolaProfile && isOwner && (
+              <EscolaConvidarAlunos
+                perfilId={perfil.id}
+                nomeEscola={displayProfileName}
+                conviteCodigo={(perfil as any).convite_codigo ?? null}
+                accentColor={accentColor}
+              />
+            )}
+
             {isDonoEscolaProfile && (
               <ComunidadeEscolaSection escolaUserId={perfil.user_id} nomeEscola={displayProfileName} accentColor={accentColor} />
+            )}
+
+            {isDonoEscolaProfile && isAnonymous && perfil.slug && (
+              <EscolaConviteAluno
+                nomeEscola={displayProfileName}
+                slug={perfil.slug}
+                unidades={(Array.isArray((perfil.dados_perfil as any)?.unidades) ? (perfil.dados_perfil as any).unidades : [])
+                  .map((u: any) => String(u?.nome || '').trim())
+                  .filter(Boolean)}
+                accentColor={accentColor}
+              />
             )}
 
             {/* Sala de Troféus — perfil dono_escola, histórico institucional próprio */}
