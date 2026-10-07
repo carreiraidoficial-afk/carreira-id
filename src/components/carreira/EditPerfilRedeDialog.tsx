@@ -10,6 +10,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EquipeEscolaEditor } from '@/components/carreira/escola/EquipeEscolaEditor';
+import { UfCidadeSelect } from '@/components/shared/UfCidadeSelect';
+import { CountrySelect, GetCountries } from 'react-country-state-city';
+import 'react-country-state-city/dist/react-country-state-city.css';
+import { GEO_DATA_BASE_URL } from '@/lib/geoData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -231,6 +235,16 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
   // Links da escola (matrícula, planos, aula experimental...) for dono_escola
   const [linksEscola, setLinksEscola] = useState<LinkEscola[]>([]);
   // Currículo do profissional (vai pra dados_perfil junto com o resto, em "Salvar Alterações")
+  // Dono da conta = dono do PERFIL editado. Em Modo Suporte quem está logado é o admin, e os dados da conta
+  // (e-mail, telefone) têm que ser os do dono do perfil, nunca os do admin.
+  const donoId: string | undefined = perfil?.user_id;
+  const ehMinhaConta = !!user && !!donoId && user.id === donoId;
+  const [contaCarregada, setContaCarregada] = useState(false);
+  // Localização (cidade, estado, país) do perfil
+  const [paisLoc, setPaisLoc] = useState('Brasil');
+  const [paisObj, setPaisObj] = useState<any>(null);
+  const [estadoLoc, setEstadoLoc] = useState('');
+  const [cidadeLoc, setCidadeLoc] = useState('');
   const [tituloProf, setTituloProf] = useState('');
   const [sobreMimProf, setSobreMimProf] = useState('');
   const [linkedinProf, setLinkedinProf] = useState('');
@@ -320,18 +334,33 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
       setConquistasProf(lerConquistas(d));
       loadDadosValues(d);
 
-      // Load account data
-      if (user) {
+      // Localização do perfil (perfis_rede.cidade / estado / pais)
+      const paisSalvo = String(perfil.pais || 'Brasil');
+      setPaisLoc(paisSalvo);
+      setEstadoLoc(String(perfil.estado || ''));
+      setCidadeLoc(String(perfil.cidade || ''));
+      setPaisObj(null);
+      GetCountries(GEO_DATA_BASE_URL).then((lista: any[]) => {
+        const achado = (lista || []).find((c) => (paisSalvo === 'Brasil' ? c.iso2 === 'BR' : c.name === paisSalvo));
+        setPaisObj(achado || null);
+      }).catch(() => { /* sem a lista, o seletor só abre sem país pré-escolhido */ });
+
+      // Dados da conta: do DONO do perfil (em Modo Suporte, não do admin logado)
+      setContaCarregada(false);
+      setContaEmail('');
+      setContaTelefone('');
+      if (user && perfil.user_id) {
         setLoadingConta(true);
         supabase
           .from('profiles')
           .select('email, telefone')
-          .eq('user_id', user.id)
-          .single()
+          .eq('user_id', perfil.user_id)
+          .maybeSingle()
           .then(({ data: profileData }) => {
             if (profileData) {
               setContaEmail(profileData.email || '');
               setContaTelefone(profileData.telefone || '');
+              setContaCarregada(true);
             }
             setLoadingConta(false);
           });
@@ -561,6 +590,7 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
           whatsapp_publico: data.whatsapp_publico || false,
           telefone_whatsapp: cleanPhone || null,
           cpf_cnpj: cleanDoc || null,
+          ...(isTorcedor ? {} : { cidade: cidadeLoc.trim() || null, estado: estadoLoc.trim() || null, pais: paisLoc || 'Brasil' }),
           tipo_documento: data.tipo_documento || 'cpf',
           foto_url: photoUrl || null,
           ...(isDono ? { banner_url: bannerUrl || null } : {}),
@@ -570,20 +600,22 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
 
       if (error) throw error;
 
-      // Update account data (profiles table)
-      if (user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            nome: data.nome.trim(),
-            telefone: contaTelefone.trim() || null,
-          })
-          .eq('user_id', user.id);
+      // Atualiza a conta (tabela profiles) do DONO do perfil. Antes gravava na conta de quem estava logado:
+      // em Modo Suporte isso sobrescrevia o nome e o telefone do próprio admin com os do perfil editado.
+      if (user && donoId) {
+        // O nome da pessoa só acompanha o nome do perfil em perfil de pessoa (escola tem nome próprio, e o
+        // profiles.nome é o do responsável). O telefone só é gravado se foi carregado: sem isso, um carregamento
+        // que falhou apagaria o telefone real.
+        const atualizacao: Record<string, unknown> = {};
+        if (perfil?.tipo !== 'dono_escola') atualizacao.nome = data.nome.trim();
+        if (contaCarregada) atualizacao.telefone = contaTelefone.trim() || null;
+        if (Object.keys(atualizacao).length > 0) {
+          const { error: profileError } = await supabase.from('profiles').update(atualizacao as any).eq('user_id', donoId);
+          if (profileError) console.error('Erro ao atualizar profile:', profileError);
+        }
 
-        if (profileError) console.error('Erro ao atualizar profile:', profileError);
-
-        // Update email if changed
-        if (contaEmail.trim() && contaEmail.trim() !== user.email) {
+        // O e-mail é de login: só o próprio dono troca (nunca o admin, que trocaria o login dele mesmo).
+        if (ehMinhaConta && contaEmail.trim() && contaEmail.trim() !== user.email) {
           const { error: emailError } = await supabase.auth.updateUser({ email: contaEmail.trim() });
           if (emailError) {
             toast.error('Erro ao atualizar email: ' + emailError.message);
@@ -592,7 +624,7 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
           }
         }
 
-        await refreshUser();
+        if (ehMinhaConta) await refreshUser();
       }
 
       toast.success('Perfil atualizado!');
@@ -834,6 +866,49 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
               </>
             )}
 
+            {/* Localização: cidade, estado e país do perfil (aparece na página pública) */}
+            {!isTorcedor && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-foreground">Localização</p>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">País</Label>
+                  <CountrySelect
+                    key={paisObj?.id ?? 'sem-pais'}
+                    defaultValue={paisObj || undefined}
+                    placeHolder={paisLoc === 'Brasil' ? 'Brazil' : paisLoc}
+                    containerClassName="w-full"
+                    inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                    src={GEO_DATA_BASE_URL}
+                    onChange={(c: any) => {
+                      const novoPais = c?.iso2 === 'BR' ? 'Brasil' : (c?.name || 'Brasil');
+                      setPaisObj(c);
+                      // O seletor também dispara onChange ao montar com o país já salvo: só zera estado e cidade
+                      // quando o país realmente mudou (senão a cidade salva some ao abrir o editor).
+                      if (novoPais !== paisLoc) {
+                        setPaisLoc(novoPais);
+                        setEstadoLoc('');
+                        setCidadeLoc('');
+                      }
+                    }}
+                  />
+                </div>
+                {paisLoc === 'Brasil' ? (
+                  <UfCidadeSelect
+                    estado={estadoLoc}
+                    cidade={cidadeLoc}
+                    onEstadoChange={setEstadoLoc}
+                    onCidadeChange={setCidadeLoc}
+                    className="grid grid-cols-2 gap-3"
+                  />
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input value={estadoLoc} onChange={(e) => setEstadoLoc(e.target.value)} placeholder="Estado / Região" maxLength={80} />
+                    <Input value={cidadeLoc} onChange={(e) => setCidadeLoc(e.target.value)} placeholder="Cidade" maxLength={80} />
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Contact & Social - show for all but simplified for torcedor */}
             {!isTorcedor && (
               <div className="space-y-3">
@@ -935,8 +1010,11 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
                   value={contaEmail}
                   onChange={(e) => setContaEmail(e.target.value)}
                   placeholder="seu@email.com"
-                  disabled={loadingConta}
+                  disabled={loadingConta || !ehMinhaConta}
                 />
+                {!ehMinhaConta && (
+                  <p className="text-[11px] text-muted-foreground">Conta de outra pessoa: o e-mail de login só o próprio dono altera.</p>
+                )}
               </div>
 
               <div className="space-y-2">

@@ -2,6 +2,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ESTADOS, ESTADO_LABELS } from '@/constants/esportes';
 import { useCidadesPorEstado } from '@/hooks/useCidadesPorEstado';
 import { Loader2 } from 'lucide-react';
+import { useRef } from 'react';
 
 interface UfCidadeSelectProps {
   estado: string;
@@ -23,10 +24,15 @@ export function UfCidadeSelect({
 }: UfCidadeSelectProps) {
   const { data: cidades, isLoading: loadingCidades } = useCidadesPorEstado(estado);
 
+  // Valor MAIS RECENTE do estado: ao abrir um perfil já salvo, o estado chega depois da primeira renderização e o
+  // Select pode avisar "mudou pra RJ" com o closure antigo (estado ''), o que zerava a cidade salva.
+  const estadoAtual = useRef(estado);
+  estadoAtual.current = estado;
   const handleEstadoChange = (uf: string) => {
+    if (!uf) return;
     onEstadoChange(uf);
     // Clear cidade when UF changes
-    if (uf !== estado) {
+    if (uf !== estadoAtual.current) {
       onCidadeChange('');
     }
   };
@@ -50,7 +56,8 @@ export function UfCidadeSelect({
       </div>
       <div className="space-y-2">
         <label className="text-sm font-medium">Cidade</label>
-        <Select value={cidade} onValueChange={onCidadeChange} disabled={!estado}>
+        {/* Ignora o aviso "vazio": enquanto as cidades carregam, o Select reseta o valor salvo e avisaria ''. */}
+        <Select value={cidade} onValueChange={(v) => { if (v) onCidadeChange(v); }} disabled={!estado}>
           <SelectTrigger>
             <SelectValue placeholder={loadingCidades ? 'Carregando...' : 'Selecione'} />
             {loadingCidades && <Loader2 className="w-3 h-3 animate-spin ml-1" />}
