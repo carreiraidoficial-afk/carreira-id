@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { copiarTelefoneParaConta } from '@/lib/telefone-conta';
 import { normalizarUrl } from '@/lib/links-escola';
 import { TelefoneInput } from '@/components/shared/TelefoneInput';
 import { supabase } from '@/integrations/supabase/client';
@@ -529,6 +530,8 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
         }
       }
 
+      // O WhatsApp informado também vira telefone da conta, se a conta ainda não tem um (as telas do admin usam esse campo).
+      await copiarTelefoneParaConta(userId, cleanPhone);
       toast.success('Perfil criado com sucesso!');
       try { localStorage.removeItem(chaveRascunho); } catch { /* ignora */ }
       onComplete();

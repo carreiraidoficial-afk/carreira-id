@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { copiarTelefoneParaConta } from '@/lib/telefone-conta';
 import { TelefoneInput } from '@/components/shared/TelefoneInput';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -241,6 +242,8 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
         }
       }
 
+      // O WhatsApp do responsável também vira telefone da conta, se a conta ainda não tem um.
+      await copiarTelefoneParaConta(userId, cleanPhone);
       toast.success('Perfil do atleta criado com sucesso!');
 
       // E-mail de boas-vindas pro responsável -- não bloqueia nem falha o

@@ -453,6 +453,12 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
       toast.error('Número de WhatsApp inválido. Use um número real com DDD.');
       return;
     }
+    // Telefone da conta: se preenchido, tem que ser um número válido (do Brasil ou com código do país).
+    if (contaTelefone.trim() && !validatePhoneNumber(limparTelefone(contaTelefone))) {
+      setAba('conta');
+      toast.error('Telefone da conta inválido. Confira o número e o país selecionado.');
+      return;
+    }
     // Validate email if changed
     if (contaEmail.trim() && !validateEmailAddress(contaEmail.trim())) {
       setAba('conta');
@@ -1003,13 +1009,17 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
 
               <div className="space-y-2">
                 <Label className="flex items-center gap-1.5 text-sm"><Phone className="w-4 h-4" /> Telefone da conta</Label>
-                <Input
-                  value={contaTelefone}
-                  onChange={(e) => setContaTelefone(formatPhone(e.target.value))}
-                  placeholder="(11) 99999-9999"
-                  maxLength={15}
-                  disabled={loadingConta}
-                />
+                <TelefoneInput value={contaTelefone} onChange={setContaTelefone} disabled={loadingConta} />
+                {/* Conta sem telefone e perfil com WhatsApp: oferece copiar (não preenche sozinho: pode ser outro número de propósito). */}
+                {!loadingConta && !contaTelefone.trim() && !!form.watch('telefone_whatsapp') && (
+                  <button
+                    type="button"
+                    onClick={() => setContaTelefone(form.getValues('telefone_whatsapp') || '')}
+                    className="text-[11px] text-primary hover:underline"
+                  >
+                    Usar o mesmo número do WhatsApp do perfil
+                  </button>
+                )}
               </div>
 
               {canUseCnpj && (

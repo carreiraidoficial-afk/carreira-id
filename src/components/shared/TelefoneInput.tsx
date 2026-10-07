@@ -54,11 +54,12 @@ interface Props {
   value: string;
   onChange: (valor: string) => void;
   id?: string;
+  disabled?: boolean;
 }
 
 /** Telefone com seletor de país. Brasil mantém a máscara de sempre; outros países guardam
  * "+" + código + número, formato que a validação e o link do WhatsApp já entendem. */
-export const TelefoneInput = forwardRef<HTMLInputElement, Props>(({ value, onChange, id }, ref) => {
+export const TelefoneInput = forwardRef<HTMLInputElement, Props>(({ value, onChange, id, disabled }, ref) => {
   const [pais, setPais] = useState<Pais>(() => paisDoValor(value));
 
   // Valor trocado de fora (ex.: dialog de edição carregando o perfil): reacerta o país.
@@ -103,7 +104,7 @@ export const TelefoneInput = forwardRef<HTMLInputElement, Props>(({ value, onCha
 
   return (
     <div className="flex gap-2">
-      <Select value={pais.codigo} onValueChange={trocarPais}>
+      <Select value={pais.codigo} onValueChange={trocarPais} disabled={disabled}>
         <SelectTrigger className="w-[130px] shrink-0" aria-label="País do telefone">
           <SelectValue>{pais.codigo === 'OUTRO' ? 'Outro (+)' : `${pais.codigo} +${pais.ddi}`}</SelectValue>
         </SelectTrigger>
@@ -118,6 +119,7 @@ export const TelefoneInput = forwardRef<HTMLInputElement, Props>(({ value, onCha
       <Input
         id={id}
         ref={ref}
+        disabled={disabled}
         type="tel"
         inputMode="tel"
         value={exibicao}
