@@ -8,7 +8,6 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Card } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Users, User, ChevronRight, ExternalLink, UserMinus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
@@ -96,7 +95,7 @@ export function ComunidadeEscolaSection({ escolaUserId, nomeEscola, accentColor 
         )}
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {visiveis.map((atleta) => (
           <div key={atleta.id} className="relative flex">
           {podeGerenciar && (
@@ -116,20 +115,21 @@ export function ComunidadeEscolaSection({ escolaUserId, nomeEscola, accentColor 
             className="group flex w-full flex-col rounded-xl border overflow-hidden transition-colors hover:brightness-110"
             style={{ borderColor: `${accentColor}40`, backgroundColor: `${accentColor}0d` }}
           >
-            <div className="flex flex-col items-center gap-2 p-4 pb-3">
-              <Avatar className="w-20 h-20" style={{ outline: `2px solid ${accentColor}`, outlineOffset: 2 }}>
-                {atleta.foto_url ? (
-                  <AvatarImage src={atleta.foto_url} alt="" className="object-cover object-top" />
-                ) : null}
-                <AvatarFallback style={{ backgroundColor: `${accentColor}15`, color: accentColor }}>
-                  <User className="w-7 h-7" />
-                </AvatarFallback>
-              </Avatar>
-              <p className="mt-1 text-sm font-semibold text-foreground text-center truncate w-full">
+            <div className="aspect-[4/3] w-full overflow-hidden bg-muted">
+              {atleta.foto_url ? (
+                <img src={atleta.foto_url} alt="" loading="lazy" className="h-full w-full object-cover object-top" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center" style={{ color: accentColor }}>
+                  <User className="w-8 h-8" />
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col gap-1.5 px-2.5 py-2">
+              <p className="text-sm font-semibold text-foreground truncate w-full">
                 {nomeAbreviado(atleta.nome)}
               </p>
               {(atleta.categoria || atleta.modalidade) && (
-                <div className="flex flex-wrap justify-center gap-1.5">
+                <div className="flex flex-wrap gap-1.5">
                   {atleta.categoria && (
                     <span
                       className="rounded-full border px-2.5 py-0.5 text-[11px] font-medium text-foreground"
@@ -150,7 +150,7 @@ export function ComunidadeEscolaSection({ escolaUserId, nomeEscola, accentColor 
               )}
             </div>
             <div
-              className="mt-auto flex items-center justify-between gap-2 border-t px-4 py-2.5 text-xs font-medium text-foreground"
+              className="mt-auto flex items-center justify-between gap-2 border-t px-2.5 py-2 text-xs font-medium text-foreground"
               style={{ borderColor: `${accentColor}30` }}
             >
               <span className="inline-flex items-center gap-1.5">
