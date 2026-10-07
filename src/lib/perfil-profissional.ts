@@ -27,6 +27,20 @@ export function tituloProfissional(tipo: string, dados: Record<string, any> | nu
   return rotuloBase;
 }
 
+/** Bio curta, no estilo Instagram (cartão lateral). O texto longo vai em "Sobre mim". */
+export const MAX_BIO_PROFISSIONAL = 160;
+/** "Sobre mim" completo, no estilo da seção "Sobre" do LinkedIn. */
+export const MAX_SOBRE_MIM = 2000;
+
+/** Texto do cartão "Sobre mim": o campo próprio; ou, em perfil antigo cuja bio era longa, a própria bio
+ * (assim nada some). Bio curta sem "Sobre mim" não gera cartão: já aparece inteira no cartão lateral. */
+export function textoSobreMim(bio: string | null | undefined, dados: Record<string, any> | null | undefined): string {
+  const proprio = String(dados?.sobre_mim || '').trim();
+  if (proprio) return proprio;
+  const b = String(bio || '').trim();
+  return b.length > MAX_BIO_PROFISSIONAL ? b : '';
+}
+
 /** Texto corrido vira lista: uma linha por item, sem os "•" ou "-" digitados à mão. */
 export function linhasDeTexto(texto: unknown): string[] {
   if (typeof texto !== 'string') return [];

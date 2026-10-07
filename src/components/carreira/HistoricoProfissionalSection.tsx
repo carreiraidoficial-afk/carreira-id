@@ -31,13 +31,15 @@ interface Props {
 
 /** "2004", "2012 – 2014" ou "2017 – Atual" (só anos, como num currículo). */
 function formatPeriodoAnos(inicio: string, fim: string | null, atual: boolean) {
-  const a = inicio.split('-')[0];
+  const a = (inicio || '').split('-')[0];
+  if (!a) return atual ? 'Atual' : '';
   if (atual) return `${a} – Atual`;
   const b = fim ? fim.split('-')[0] : '';
   return b && b !== a ? `${a} – ${b}` : a;
 }
 
 function formatPeriod(inicio: string, fim: string | null, atual: boolean) {
+  if (!inicio) return atual ? 'Atual' : '';
   const startParts = inicio.split('-');
   const startDate = new Date(parseInt(startParts[0]), parseInt(startParts[1] || '1') - 1);
   const startStr = format(startDate, "MMM yyyy", { locale: ptBR });
@@ -94,9 +96,11 @@ export function HistoricoProfissionalSection({ historico, isOwner, podeExcluir, 
                         <>
                           <div className="flex items-start justify-between gap-2">
                             <h4 className="font-medium text-sm break-words">{item.cargo}</h4>
-                            <span className="shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] text-muted-foreground" style={{ borderColor: `${accentColor}40` }}>
-                              {formatPeriodoAnos(item.data_inicio, item.data_fim, item.atual)}
-                            </span>
+                            {formatPeriodoAnos(item.data_inicio, item.data_fim, item.atual) && (
+                              <span className="shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] text-muted-foreground" style={{ borderColor: `${accentColor}40` }}>
+                                {formatPeriodoAnos(item.data_inicio, item.data_fim, item.atual)}
+                              </span>
+                            )}
                           </div>
                           {item.instituicao && <p className="text-sm text-muted-foreground break-words">{item.instituicao}</p>}
                         </>

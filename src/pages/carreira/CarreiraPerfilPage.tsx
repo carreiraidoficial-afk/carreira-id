@@ -1,6 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { SobreMimCard } from '@/components/carreira/perfis/SobreMimCard';
-import { ehProfissionalEquipe, normalizarLinkedin, tituloProfissional } from '@/lib/perfil-profissional';
+import { ehProfissionalEquipe, normalizarLinkedin, textoSobreMim, tituloProfissional } from '@/lib/perfil-profissional';
 import { ConquistasProfissionalCard, IdiomasProfissionalCard } from '@/components/carreira/perfis/CurriculoProfissional';
 import { formatarTelefoneExibicao } from '@/lib/form-validators';
 import { EquipeEscolaSection } from '@/components/carreira/escola/EquipeEscolaSection';
@@ -1206,7 +1206,7 @@ export default function CarreiraPerfilPage() {
             )}
             {/* Dados Específicos do perfil rede (escola já tem o bloco "Sobre" no topo) */}
             {perfil.type === 'rede' && ehProfissionalEquipe(perfil.tipo) && (
-              <SobreMimCard bio={perfil.bio} accentColor={accentColor} />
+              <SobreMimCard bio={textoSobreMim(perfil.bio, perfil.dados_perfil as Record<string, any> | null)} accentColor={accentColor} />
             )}
             {perfil.type === 'rede' && !isDonoEscolaProfile && (
               <DadosEspecificos

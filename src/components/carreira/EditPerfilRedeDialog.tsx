@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { CurriculoEditor } from '@/components/carreira/perfis/CurriculoEditor';
 import {
   ehProfissionalEquipe, lerCertificacoes, lerConquistas, lerIdiomas, normalizarLinkedin,
-  MAX_CERTIFICACOES, MAX_CONQUISTAS, MAX_IDIOMAS, type Certificacao, type Conquista, type IdiomaNivel,
+  MAX_BIO_PROFISSIONAL, MAX_SOBRE_MIM, MAX_CERTIFICACOES, MAX_CONQUISTAS, MAX_IDIOMAS, type Certificacao, type Conquista, type IdiomaNivel,
 } from '@/lib/perfil-profissional';
 import { TelefoneInput } from '@/components/shared/TelefoneInput';
 import { useForm } from 'react-hook-form';
@@ -232,6 +232,7 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
   const [linksEscola, setLinksEscola] = useState<LinkEscola[]>([]);
   // Currículo do profissional (vai pra dados_perfil junto com o resto, em "Salvar Alterações")
   const [tituloProf, setTituloProf] = useState('');
+  const [sobreMimProf, setSobreMimProf] = useState('');
   const [linkedinProf, setLinkedinProf] = useState('');
   const [certificacoesProf, setCertificacoesProf] = useState<Certificacao[]>([]);
   const [idiomasProf, setIdiomasProf] = useState<IdiomaNivel[]>([]);
@@ -307,6 +308,12 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
         : []);
       setLinksEscola(lerLinksEscola(d));
       setTituloProf(String(d.titulo_profissional || ''));
+      // Bio antiga e longa: o texto completo vai para "Sobre mim" (nada se perde) e a Bio fica para resumir.
+      const bioAntiga = String(perfil.bio || '');
+      setSobreMimProf(
+        d.sobre_mim ? String(d.sobre_mim)
+          : (ehProf && bioAntiga.length > MAX_BIO_PROFISSIONAL ? bioAntiga.slice(0, MAX_SOBRE_MIM) : ''),
+      );
       setLinkedinProf(String(d.linkedin || ''));
       setCertificacoesProf(lerCertificacoes(d));
       setIdiomasProf(lerIdiomas(d));
@@ -392,6 +399,15 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
   };
 
   // Erro de validação num campo de aba escondida seria silencioso: abre a aba certa.
+  // Campos de texto antigos (certificações e experiência) saem do editor quando a lista estruturada que os
+  // substitui existe: senão haveria dois lugares para o mesmo dado. O texto antigo continua guardado.
+  const temHistoricoEstruturado = Array.isArray(dados.historico_profissional) && dados.historico_profissional.length > 0;
+  const textoSubstituido = (chave: string) =>
+    ehProf && (
+      (['certificacoes', 'licencas', 'formacao'].includes(chave) && certificacoesProf.length > 0) ||
+      (['experiencia', 'historico'].includes(chave) && temHistoricoEstruturado)
+    );
+
   const onInvalid = (erros: Record<string, unknown>) => {
     const chaves = Object.keys(erros);
     setAba(chaves.some((k) => k === 'cpf_cnpj' || k === 'tipo_documento') ? 'conta' : 'escola');
@@ -442,6 +458,13 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
       }
     }
 
+    // Bio curta do profissional: o texto longo mora em "Sobre mim".
+    if (ehProf && (data.bio || '').length > MAX_BIO_PROFISSIONAL) {
+      setAba('escola');
+      toast.error(`A bio aceita até ${MAX_BIO_PROFISSIONAL} caracteres. Resuma e deixe o texto longo em "Sobre mim".`);
+      return;
+    }
+
     // LinkedIn do profissional: se preenchido, precisa ser um endereço do LinkedIn.
     if (ehProf && normalizarLinkedin(linkedinProf) === null) {
       setAba('escola');
@@ -474,6 +497,7 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
           else newDados[chave] = valor;
         };
         definir('titulo_profissional', tituloProf.trim().slice(0, 80));
+        definir('sobre_mim', sobreMimProf.trim().slice(0, MAX_SOBRE_MIM));
         definir('linkedin', normalizarLinkedin(linkedinProf) || '');
         definir('certificacoes_lista', certificacoesProf
           .map((c) => ({ titulo: c.titulo.trim().slice(0, 100), instituicao: c.instituicao.trim().slice(0, 100), status: c.status }))
@@ -727,14 +751,6 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
               </FormItem>
             )} />
 
-            <FormField control={form.control} name="bio" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Bio</FormLabel>
-                <FormControl><Textarea placeholder="Fale sobre você..." rows={3} {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-
             {ehProf && (
               <div className="space-y-1.5">
                 <Label>Título profissional</Label>
@@ -744,9 +760,47 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
                   onChange={(e) => setTituloProf(e.target.value)}
                   placeholder="Ex.: Professor de Vôlei de Praia"
                 />
-                <p className="text-xs text-muted-foreground">Aparece sob o seu nome. Em branco, o app monta um título pelo tipo e modalidade.</p>
+                <p className="text-xs text-muted-foreground">Aparece sob o seu nome, como o título do LinkedIn. Em branco, o app monta um pelo tipo e modalidade.</p>
               </div>
             )}
+
+            <FormField control={form.control} name="bio" render={({ field }) => (
+              <FormItem>
+                <FormLabel>{ehProf ? 'Bio (curta, como no Instagram)' : 'Bio'}</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder={ehProf ? 'Ex.: Mais de 30 anos como treinador de vôlei de praia no Brasil e no exterior.' : 'Fale sobre você...'}
+                    rows={ehProf ? 2 : 3}
+                    {...field}
+                  />
+                </FormControl>
+                {ehProf && (
+                  <p className={`text-xs ${(field.value || '').length > MAX_BIO_PROFISSIONAL ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {(field.value || '').length > MAX_BIO_PROFISSIONAL
+                      ? `Sua bio tem ${(field.value || '').length} caracteres (máximo ${MAX_BIO_PROFISSIONAL}). O texto completo foi copiado para "Sobre mim": resuma aqui.`
+                      : `${(field.value || '').length}/${MAX_BIO_PROFISSIONAL} · Uma ou duas linhas que resumem quem você é. O texto longo vai em "Sobre mim".`}
+                  </p>
+                )}
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {ehProf && (
+              <div className="space-y-1.5">
+                <Label>Sobre mim</Label>
+                <Textarea
+                  value={sobreMimProf}
+                  maxLength={MAX_SOBRE_MIM}
+                  rows={6}
+                  onChange={(e) => setSobreMimProf(e.target.value)}
+                  placeholder="Conte sua trajetória com mais detalhe: formação, experiências, filosofia de trabalho..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  {sobreMimProf.length}/{MAX_SOBRE_MIM} · Aparece no cartão "Sobre mim" da sua página, como a seção "Sobre" do LinkedIn.
+                </p>
+              </div>
+            )}
+
 
             {/* Torcedor-specific: time and brasão */}
             {isTorcedor && (
@@ -935,7 +989,7 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
               <div className="space-y-3">
                 <Separator />
                 <p className="text-sm font-medium text-foreground">Informações do perfil</p>
-                {dynamicFields.map(renderDynField)}
+                {dynamicFields.filter((f) => !textoSubstituido(f.key)).map(renderDynField)}
               </div>
             )}
 
