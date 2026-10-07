@@ -50,8 +50,8 @@ export function ComunidadeEscolaSection({ escolaUserId, nomeEscola, accentColor 
       .delete()
       .eq('status', 'aceita')
       .or(
-        `and(solicitante_id.eq.${escolaUserId},destinatario_perfil_atleta_id.eq.${atletaId}),` +
-        `and(destinatario_id.eq.${escolaUserId},solicitante_perfil_atleta_id.eq.${atletaId})`,
+        `and(solicitante_id.eq.${escolaUserId},solicitante_perfil_atleta_id.is.null,destinatario_perfil_atleta_id.eq.${atletaId}),` +
+        `and(destinatario_id.eq.${escolaUserId},destinatario_perfil_atleta_id.is.null,solicitante_perfil_atleta_id.eq.${atletaId})`,
       )
       .select('id');
     setDesvinculando(false);

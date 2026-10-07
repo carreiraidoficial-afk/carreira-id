@@ -768,10 +768,16 @@ export function useComunidadeEscola(escolaUserId: string | undefined) {
         .or(`solicitante_id.eq.${escolaUserId},destinatario_id.eq.${escolaUserId}`);
       if (error) throw error;
 
-      // Só conta conexões vindas de um perfil_atleta (exclui outros perfis
-      // de rede que também podem "conectar" com a escola).
+      // Só conta vínculo atleta → escola: o lado da escola NÃO tem perfil_atleta e o outro lado tem. A conta que
+      // é dona da escola também pode ser dona de atletas (filhos), e as conexões atleta↔atleta deles têm o
+      // user_id da escola de um lado: sem esse filtro, os contatos dos filhos viravam "alunos" da escola.
       const atletaIds = (conexoes || [])
-        .map((row) => (row.solicitante_id === escolaUserId ? row.destinatario_perfil_atleta_id : row.solicitante_perfil_atleta_id))
+        .map((row) => {
+          const escolaEhSolicitante = row.solicitante_id === escolaUserId;
+          const ladoEscola = escolaEhSolicitante ? row.solicitante_perfil_atleta_id : row.destinatario_perfil_atleta_id;
+          const ladoAtleta = escolaEhSolicitante ? row.destinatario_perfil_atleta_id : row.solicitante_perfil_atleta_id;
+          return ladoEscola ? null : ladoAtleta;
+        })
         .filter((id): id is string => !!id);
       if (atletaIds.length === 0) return [];
 
