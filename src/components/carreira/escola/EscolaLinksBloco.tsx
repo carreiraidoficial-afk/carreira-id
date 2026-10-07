@@ -74,7 +74,7 @@ export function EscolaLinksBloco({ links, accentColor, modalidades = [] }: Props
               rel="noopener noreferrer nofollow"
               className={`group relative overflow-hidden rounded-xl p-3 sm:p-4 flex items-center gap-3 transition-transform hover:-translate-y-0.5 ${
                 unico ? 'sm:gap-4' : 'sm:flex-col sm:items-stretch sm:gap-2 sm:min-h-[150px]'
-              } ${ocupaLinha ? 'sm:col-span-2' : ''} ${escuro ? 'text-white' : 'bg-background text-foreground border'}`}
+              } ${ocupaLinha ? 'sm:col-span-2' : ''} ${escuro && fundo ? '[text-shadow:0_1px_4px_rgba(0,0,0,0.65)]' : ''} ${escuro ? 'text-white' : 'bg-background text-foreground border'}`}
               style={
                 escuro
                   ? { background: `linear-gradient(135deg, ${accentColor}, ${accentColor}cc 60%, #0f172a)` }
@@ -92,15 +92,15 @@ export function EscolaLinksBloco({ links, accentColor, modalidades = [] }: Props
                   <div
                     aria-hidden
                     className="absolute inset-0 sm:hidden"
-                    style={{ background: `linear-gradient(90deg, ${accentColor}f2, ${accentColor}b8)` }}
+                    style={{ background: `linear-gradient(90deg, ${accentColor}d9, ${accentColor}80)` }}
                   />
                   <div
                     aria-hidden
                     className="absolute inset-0 hidden sm:block"
                     style={{
                       background: unico
-                        ? `linear-gradient(90deg, ${accentColor}f2 0%, ${accentColor}d9 38%, ${accentColor}40 68%, ${accentColor}00 100%)`
-                        : `linear-gradient(180deg, ${accentColor}59 0%, ${accentColor}d9 55%, ${accentColor}f2 100%)`,
+                        ? `linear-gradient(90deg, ${accentColor}e6 0%, ${accentColor}b3 38%, ${accentColor}26 68%, ${accentColor}00 100%)`
+                        : `linear-gradient(180deg, ${accentColor}00 0%, ${accentColor}33 22%, ${accentColor}a6 50%, ${accentColor}d9 78%, ${accentColor}e6 100%)`,
                     }}
                   />
                 </>
