@@ -1,4 +1,8 @@
 import { useState } from 'react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -190,15 +194,22 @@ export function ConectarButton({ targetUserId, currentUserId, accentColor = '#3b
     setLoading(false);
   };
 
+  const [confirmarDesconectar, setConfirmarDesconectar] = useState(false);
   const handleDesconectar = async () => {
     if (!conexao) return;
     setLoading(true);
-    await supabase
+    const { data, error } = await supabase
       .from('rede_conexoes')
       .delete()
-      .eq('id', conexao.id);
-    toast.info('Conexão desfeita');
-    invalidate();
+      .eq('id', conexao.id)
+      .select('id');
+    if (error || !data || data.length === 0) {
+      toast.error('Não foi possível desconectar. Tente novamente.');
+    } else {
+      toast.info('Conexão desfeita');
+      invalidate();
+    }
+    setConfirmarDesconectar(false);
     setLoading(false);
   };
 
@@ -285,7 +296,8 @@ export function ConectarButton({ targetUserId, currentUserId, accentColor = '#3b
 
   if (conexao.status === 'aceita') {
     return (
-      <Button size="sm" variant="secondary" onClick={handleDesconectar} className="group">
+      <>
+      <Button size="sm" variant="secondary" onClick={() => setConfirmarDesconectar(true)} className="group">
         <Check className="w-4 h-4 mr-1 group-hover:hidden" />
         <UserMinus className="w-4 h-4 mr-1 hidden group-hover:inline" />
         <span className="group-hover:hidden">
@@ -296,6 +308,26 @@ export function ConectarButton({ targetUserId, currentUserId, accentColor = '#3b
         </span>
         <span className="hidden group-hover:inline">Desconectar</span>
       </Button>
+      <AlertDialog open={confirmarDesconectar} onOpenChange={setConfirmarDesconectar}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desconectar?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A conexão é desfeita dos dois lados. Os perfis continuam existindo, e vocês podem se conectar de novo depois.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDesconectar(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Desconectar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      </>
     );
   }
 

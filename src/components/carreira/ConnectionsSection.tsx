@@ -1,10 +1,14 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { telefoneParaWhatsapp } from '@/lib/form-validators';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, UserPlus, Check, X, Users, MapPin, Search, Heart, Inbox, MessageCircle, Zap, Briefcase, Link2 } from 'lucide-react';
+import { Loader2, UserPlus, Check, X, Users, MapPin, Search, Heart, Inbox, MessageCircle, Zap, Briefcase, Link2, UserMinus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -138,6 +142,8 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
   const navigate = useNavigate();
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [paraDesconectar, setParaDesconectar] = useState<{ conexaoId: string; nome: string } | null>(null);
+  const [desconectando, setDesconectando] = useState(false);
 
   const isOwnProfile = userId === currentUserId;
   const { data: searchResults, isLoading: searchLoading } = useSearchParaConectar(searchQuery, currentUserId);
@@ -147,7 +153,7 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
     queryFn: async () => {
       const { data, error } = await supabase
         .from('rede_conexoes')
-        .select('solicitante_id, destinatario_id, unidade_nome, solicitante_perfil_atleta_id, destinatario_perfil_atleta_id')
+        .select('id, solicitante_id, destinatario_id, unidade_nome, solicitante_perfil_atleta_id, destinatario_perfil_atleta_id')
         .or(`solicitante_id.eq.${userId},destinatario_id.eq.${userId}`)
         .eq('status', 'aceita');
       if (error) throw error;
@@ -155,6 +161,7 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
       const connectionDetails = propria.map(c => {
         const souSolicitante = c.solicitante_id === userId;
         return {
+          conexaoId: c.id as string,
           connectedUserId: souSolicitante ? c.destinatario_id : c.solicitante_id,
           // Perfil ESPECÍFICO do outro lado, quando conhecido -- essencial
           // quando esse user_id tem mais de um perfil_atleta (irmãos), senão
@@ -186,7 +193,7 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
           || redeByUser.get(cd.connectedUserId)
           || atletaByUserFallback.get(cd.connectedUserId);
         if (!profile) return null;
-        return { ...profile, unidade_nome: cd.unidade_nome };
+        return { ...profile, unidade_nome: cd.unidade_nome, conexaoId: cd.conexaoId };
       }).filter(Boolean);
     },
   });
@@ -365,6 +372,27 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
     if (error) toast.error('Erro ao aceitar');
     else { toast.success('Conexão aceita!'); invalidateConnections(); }
     setRespondingId(null);
+  };
+
+  // Qualquer perfil pode desfazer uma conexão aceita (atleta que saiu da escola, ex-aluno, etc.).
+  // O .select('id') existe porque RLS que bloqueia devolve 0 linhas sem erro.
+  const handleDesconectar = async () => {
+    if (!paraDesconectar) return;
+    setDesconectando(true);
+    const { data, error } = await supabase
+      .from('rede_conexoes')
+      .delete()
+      .eq('id', paraDesconectar.conexaoId)
+      .select('id');
+    setDesconectando(false);
+    if (error || !data || data.length === 0) {
+      toast.error('Não foi possível desconectar. Tente novamente.');
+      return;
+    }
+    toast.success('Conexão desfeita');
+    setParaDesconectar(null);
+    invalidateConnections();
+    queryClient.invalidateQueries({ queryKey: ['comunidade-escola'] });
   };
 
   const handleReject = async (connectionId: string) => {
@@ -657,7 +685,24 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
                     cidade={person.cidade}
                     estado={person.estado}
                     onClick={() => navigate(carreiraPath(`/perfil/${person.user_id}`))}
-                    action={<MensagemButton whatsappPublico={person.whatsapp_publico} telefoneWhatsapp={person.telefone_whatsapp} />}
+                    action={(
+                      <div className="flex items-center gap-1.5">
+                        <MensagemButton whatsappPublico={person.whatsapp_publico} telefoneWhatsapp={person.telefone_whatsapp} />
+                        {isOwnProfile && person.conexaoId && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                            title="Desconectar"
+                            aria-label={`Desconectar de ${person.nome}`}
+                            onClick={() => setParaDesconectar({ conexaoId: person.conexaoId, nome: person.nome })}
+                          >
+                            <UserMinus className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   />
                 ))}
               </div>
@@ -670,6 +715,27 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
           </div>
         </>
       )}
+
+      <AlertDialog open={!!paraDesconectar} onOpenChange={(aberto) => { if (!aberto && !desconectando) setParaDesconectar(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desconectar de {paraDesconectar?.nome}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A conexão é desfeita dos dois lados. Os perfis continuam existindo, e vocês podem se conectar de novo depois.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={desconectando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={desconectando}
+              onClick={(e) => { e.preventDefault(); handleDesconectar(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {desconectando ? 'Desconectando…' : 'Desconectar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

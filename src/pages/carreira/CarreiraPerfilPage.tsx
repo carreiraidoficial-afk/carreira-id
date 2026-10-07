@@ -1219,7 +1219,7 @@ export default function CarreiraPerfilPage() {
             )}
 
             {isDonoEscolaProfile && (
-              <ComunidadeEscolaSection escolaUserId={perfil.user_id} nomeEscola={displayProfileName} accentColor={accentColor} />
+              <ComunidadeEscolaSection escolaUserId={perfil.user_id} nomeEscola={displayProfileName} accentColor={accentColor} podeGerenciar={isOwnerOuSuporte} />
             )}
 
             {isDonoEscolaProfile && isAnonymous && perfil.slug && (
