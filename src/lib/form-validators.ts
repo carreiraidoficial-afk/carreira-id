@@ -70,6 +70,18 @@ export function formatPhoneInput(value: string): string {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
+/** Texto de exibição do telefone guardado: brasileiro com máscara, internacional como "+<dígitos>". */
+export function formatarTelefoneExibicao(telefone: string | null | undefined): string {
+  const bruto = String(telefone || '').trim();
+  const digitos = bruto.replace(/\D/g, '');
+  if (!digitos) return '';
+  if (bruto.startsWith('+')) return `+${digitos}`;
+  const nacional = digitos.length > 11 && digitos.startsWith('55') ? digitos.slice(2) : digitos;
+  if (nacional.length <= 2) return nacional;
+  if (nacional.length <= 7) return `(${nacional.slice(0, 2)}) ${nacional.slice(2)}`;
+  return `(${nacional.slice(0, 2)}) ${nacional.slice(2, 7)}-${nacional.slice(7, 11)}`;
+}
+
 /** Dígitos prontos pro wa.me: internacional ("+") vai como está; brasileiro ganha o 55. */
 export function telefoneParaWhatsapp(telefone: string | null | undefined): string {
   const bruto = String(telefone || '');

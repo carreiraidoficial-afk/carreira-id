@@ -1,4 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { SobreMimCard } from '@/components/carreira/perfis/SobreMimCard';
+import { ehProfissionalEquipe, tituloProfissional } from '@/lib/perfil-profissional';
+import { formatarTelefoneExibicao } from '@/lib/form-validators';
 import { EquipeEscolaSection } from '@/components/carreira/escola/EquipeEscolaSection';
 import { lerSuporteAlvo, definirSuporteAlvo, limparSuporteAlvo } from '@/hooks/useSuporteAlvo';
 import { EscolaConvidarAlunos } from '@/components/carreira/escola/EscolaConvidarAlunos';
@@ -6,7 +9,7 @@ import { EscolaConviteAluno } from '@/components/carreira/escola/EscolaConviteAl
 import { telefoneParaWhatsapp } from '@/lib/form-validators';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useIsFollowing, useToggleFollow, useEscolinhasCarreira, usePostsRede } from '@/hooks/useCarreiraData';
+import { useIsFollowing, useToggleFollow, useEscolinhasCarreira, usePostsRede, useComunidadeEscola } from '@/hooks/useCarreiraData';
 
 import { PerfilHeader } from '@/components/carreira/PerfilHeader';
 import { CarreiraTimeline } from '@/components/carreira/CarreiraTimeline';
@@ -549,6 +552,11 @@ export default function CarreiraPerfilPage() {
     enabled: isDonoEscolaForBadge,
   });
 
+  // Atletas entre as conexões do profissional (mesma regra de "Nossos atletas" da escola). Hook antes dos retornos.
+  const { data: atletasConectados = [] } = useComunidadeEscola(
+    perfil?.type === 'rede' && ehProfissionalEquipe(perfil.tipo) ? perfil.user_id : undefined,
+  );
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background" data-theme={carreiraTheme}>
@@ -667,14 +675,6 @@ export default function CarreiraPerfilPage() {
     ? String(perfil.telefone_whatsapp || '').replace(/\D/g, '')
     : '';
   const whatsappIntl = whatsappDigits ? telefoneParaWhatsapp(perfil.telefone_whatsapp) : '';
-
-  const formatWhatsAppDisplay = (digits: string) => {
-    if (!digits) return '';
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-    if (digits.length <= 11) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-    return `+${digits.slice(0, 2)} (${digits.slice(2, 4)}) ${digits.slice(4, 9)}-${digits.slice(9, 13)}`;
-  };
 
   const sidebarCategoria = criancaSidebar?.data_nascimento
     ? (() => { const age = new Date().getFullYear() - new Date(criancaSidebar.data_nascimento).getFullYear(); return `Sub ${age}`; })()
@@ -878,7 +878,11 @@ export default function CarreiraPerfilPage() {
 
               {/* Type label (rede only) */}
               {isRedeProfile && perfil.tipo && (
-                <p className="text-xs text-muted-foreground mt-1">{TYPE_LABELS[perfil.tipo] || perfil.tipo}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {ehProfissionalEquipe(perfil.tipo)
+                    ? tituloProfissional(perfil.tipo, perfil.dados_perfil as Record<string, any> | null, TYPE_LABELS[perfil.tipo] || perfil.tipo)
+                    : (TYPE_LABELS[perfil.tipo] || perfil.tipo)}
+                </p>
               )}
 
               {/* Selo Escola Parceira — dono_escola com cupom ativo vinculado */}
@@ -952,7 +956,7 @@ export default function CarreiraPerfilPage() {
                       className="flex items-center gap-1.5 text-primary hover:underline"
                     >
                       <Phone className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span>{formatWhatsAppDisplay(whatsappDigits)}</span>
+                      <span>{formatarTelefoneExibicao(perfil.telefone_whatsapp)}</span>
                     </a>
                   )}
                 </div>
@@ -975,6 +979,11 @@ export default function CarreiraPerfilPage() {
                   <span className="font-semibold text-foreground">{perfil.followers_count || 0}</span> torcedores
                 </div>
                 <ConexoesCount userId={perfil.user_id} perfilAtletaId={perfil.type === 'atleta' ? perfil.id : undefined} />
+                {isRedeProfile && ehProfissionalEquipe(perfil.tipo) && (
+                  <div className="text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground">{atletasConectados.length}</span> {atletasConectados.length === 1 ? 'atleta' : 'atletas'}
+                  </div>
+                )}
               </div>
 
               {/* Actions */}
@@ -1188,10 +1197,16 @@ export default function CarreiraPerfilPage() {
               </div>
             )}
             {/* Dados Específicos do perfil rede (escola já tem o bloco "Sobre" no topo) */}
+            {perfil.type === 'rede' && ehProfissionalEquipe(perfil.tipo) && (
+              <SobreMimCard bio={perfil.bio} accentColor={accentColor} />
+            )}
             {perfil.type === 'rede' && !isDonoEscolaProfile && (
               <DadosEspecificos
                 tipo={perfil.tipo as any}
                 dados={perfil.dados_perfil as Record<string, any> | null}
+                accentColor={accentColor}
+                localizacao={[perfil.cidade, perfil.estado].filter(Boolean).join(', ')}
+                ocultarExperienciaTexto={historicoProfissional.length > 0}
               />
             )}
 

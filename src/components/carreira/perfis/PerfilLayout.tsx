@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
-import { telefoneParaWhatsapp } from '@/lib/form-validators';
+import { telefoneParaWhatsapp, formatarTelefoneExibicao } from '@/lib/form-validators';
+import { ehProfissionalEquipe, tituloProfissional } from '@/lib/perfil-profissional';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -59,14 +60,6 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
   const whatsappDigits = String(perfil.telefone_whatsapp || '').replace(/\D/g, '');
   const whatsappIntl = whatsappDigits ? telefoneParaWhatsapp(perfil.telefone_whatsapp) : '';
 
-  const formatWhatsApp = (digits: string) => {
-    if (!digits) return '';
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-    if (digits.length <= 11) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-    return `+${digits.slice(0, 2)} (${digits.slice(2, 4)}) ${digits.slice(4, 9)}-${digits.slice(9, 13)}`;
-  };
-
   const hasLinks = !!(instagramHandle || siteUrl || (perfil.whatsapp_publico && whatsappIntl));
 
   return (
@@ -96,7 +89,7 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
             </h1>
             <div className="flex flex-wrap items-center gap-1.5 mt-1 justify-center">
               <Badge variant="outline" className={config.color}>
-                {config.icon} {config.label}
+                {config.icon} {ehProfissionalEquipe(perfil.tipo) ? tituloProfissional(perfil.tipo, perfil.dados_perfil, config.label) : config.label}
               </Badge>
               {perfil.dados_perfil?.disponivel_trabalho && (
                 <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 gap-1">
@@ -191,7 +184,7 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
                     className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline w-fit"
                   >
                     <Phone className="w-4 h-4 flex-shrink-0" />
-                    {formatWhatsApp(whatsappDigits)}
+                    {formatarTelefoneExibicao(perfil.telefone_whatsapp)}
                   </a>
                 )}
               </div>

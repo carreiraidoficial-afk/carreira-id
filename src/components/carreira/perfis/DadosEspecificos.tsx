@@ -1,4 +1,7 @@
 import { Card } from '@/components/ui/card';
+import type { LucideIcon } from 'lucide-react';
+import { Award, Briefcase, Building2, FileText, MapPin, Star, Trophy } from 'lucide-react';
+import { ehProfissionalEquipe, especialidadeVisivel, linhasDeTexto } from '@/lib/perfil-profissional';
 import type { ProfileType } from '../ProfileTypeSelector';
 
 const LINK_FIELDS = new Set(['site', 'portfolio', 'site_whatsapp', 'contato', 'arroba']);
@@ -11,6 +14,149 @@ function isLinkField(key: string, val: any): boolean {
 interface Props {
   tipo: ProfileType;
   dados: Record<string, any> | null;
+  accentColor?: string;
+  /** "Cidade, UF" do perfil: entra como item "Localização" nos perfis de profissional. */
+  localizacao?: string;
+  /** Quando o Histórico Profissional estruturado já tem itens, o texto corrido de experiência sai (evita duplicar). */
+  ocultarExperienciaTexto?: boolean;
+}
+
+interface ConfigProfissional {
+  escalares: { key: string; label: string; Icone: LucideIcon }[];
+  listas: { key: string; label: string }[];
+  certKeys: string[];
+  certTitulo: string;
+  expKey: string;
+}
+
+const CONFIG_PROFISSIONAL: Record<string, ConfigProfissional> = {
+  professor: {
+    escalares: [
+      { key: 'especialidade', label: 'Especialidade', Icone: Star },
+      { key: 'modalidade', label: 'Modalidade', Icone: Trophy },
+    ],
+    listas: [{ key: 'categorias', label: 'Categorias que atua' }],
+    certKeys: ['certificacoes'],
+    certTitulo: 'Certificações',
+    expKey: 'experiencia',
+  },
+  tecnico: {
+    escalares: [{ key: 'clube_atual', label: 'Clube / Organização', Icone: Building2 }],
+    listas: [
+      { key: 'categorias', label: 'Categorias de interesse' },
+      { key: 'posicoes', label: 'Posições que observa' },
+    ],
+    certKeys: ['licencas'],
+    certTitulo: 'Licenças e certificações',
+    expKey: 'historico',
+  },
+  preparador_fisico: {
+    escalares: [
+      { key: 'especialidade', label: 'Especialidade', Icone: Star },
+      { key: 'cref', label: 'CREF', Icone: FileText },
+    ],
+    listas: [{ key: 'areas_atuacao', label: 'Áreas de atuação' }],
+    certKeys: ['formacao', 'certificacoes'],
+    certTitulo: 'Formação e certificações',
+    expKey: 'experiencia',
+  },
+};
+
+/** Professor, técnico e preparador físico: informações em grade, certificações e experiência em lista. */
+function InformacoesProfissionaisEquipe({ tipo, dados, accentColor = '#3b82f6', localizacao, ocultarExperienciaTexto }: {
+  tipo: string; dados: Record<string, any>; accentColor?: string; localizacao?: string; ocultarExperienciaTexto?: boolean;
+}) {
+  const cfg = CONFIG_PROFISSIONAL[tipo];
+  const escalares = cfg.escalares
+    .map((f) => ({ ...f, valor: f.key === 'especialidade' ? especialidadeVisivel(dados) : String(dados[f.key] || '').trim() }))
+    .filter((f) => f.valor);
+  if (localizacao) escalares.push({ key: 'localizacao', label: 'Localização', Icone: MapPin, valor: localizacao });
+  const listas = cfg.listas
+    .map((l) => ({ ...l, itens: (Array.isArray(dados[l.key]) ? dados[l.key] : []).filter(Boolean) as string[] }))
+    .filter((l) => l.itens.length > 0);
+  const certificacoes = cfg.certKeys.flatMap((k) => linhasDeTexto(dados[k]));
+  const experiencia = ocultarExperienciaTexto ? [] : linhasDeTexto(dados[cfg.expKey]);
+
+  if (escalares.length === 0 && listas.length === 0 && certificacoes.length === 0 && experiencia.length === 0) return null;
+
+  const tile = { backgroundColor: `${accentColor}18`, color: accentColor };
+
+  return (
+    <>
+      {(escalares.length > 0 || listas.length > 0) && (
+        <Card className="p-5">
+          <h2 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+            <Briefcase className="w-4 h-4" style={{ color: accentColor }} />
+            Informações Profissionais
+          </h2>
+          {escalares.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {escalares.map(({ key, label, Icone, valor }) => (
+                <div key={key} className="flex items-start gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={tile}>
+                    <Icone className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] text-muted-foreground">{label}</p>
+                    <p className="text-sm font-medium text-foreground break-words">{valor}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {listas.map((l) => (
+            <div key={l.key} className={`flex flex-wrap items-center gap-2 ${escalares.length > 0 ? 'mt-4 pt-4 border-t border-border' : ''}`}>
+              <span className="text-[11px] text-muted-foreground mr-1">{l.label}</span>
+              {l.itens.map((item) => (
+                <span key={item} className="px-2.5 py-0.5 text-xs rounded-full border text-foreground" style={{ borderColor: `${accentColor}40` }}>
+                  {item}
+                </span>
+              ))}
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {certificacoes.length > 0 && (
+        <Card className="p-5">
+          <h2 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Award className="w-4 h-4" style={{ color: accentColor }} />
+            {cfg.certTitulo}
+          </h2>
+          <ul className="space-y-2">
+            {certificacoes.map((linha, i) => (
+              <li key={`${linha}-${i}`} className="flex items-start gap-3 text-sm text-foreground">
+                <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0" style={tile}>
+                  <FileText className="w-3.5 h-3.5" />
+                </div>
+                <span className="pt-0.5 break-words">{linha}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {experiencia.length > 0 && (
+        <Card className="p-5">
+          <h2 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Briefcase className="w-4 h-4" style={{ color: accentColor }} />
+            Experiência Profissional
+          </h2>
+          <ol className="relative ml-1.5 space-y-3 border-l border-border pl-5">
+            {experiencia.map((linha, i) => (
+              <li key={`${linha}-${i}`} className="relative text-sm text-foreground break-words">
+                <span
+                  className="absolute -left-[26px] top-1.5 h-2 w-2 rounded-full"
+                  style={{ backgroundColor: accentColor }}
+                />
+                {linha}
+              </li>
+            ))}
+          </ol>
+        </Card>
+      )}
+    </>
+  );
 }
 
 interface FieldDisplay {
@@ -96,8 +242,14 @@ const FIELDS_BY_TYPE: Record<ProfileType, FieldDisplay[]> = {
   ],
 };
 
-export function DadosEspecificos({ tipo, dados }: Props) {
+export function DadosEspecificos({ tipo, dados, accentColor, localizacao, ocultarExperienciaTexto }: Props) {
   if (!dados) return null;
+
+  if (ehProfissionalEquipe(tipo)) {
+    return (
+      <InformacoesProfissionaisEquipe tipo={tipo} dados={dados} accentColor={accentColor} localizacao={localizacao} ocultarExperienciaTexto={ocultarExperienciaTexto} />
+    );
+  }
 
   const fields = FIELDS_BY_TYPE[tipo] || [];
   const hasData = fields.some((f) => {
