@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { EquipeEscolaSection } from '@/components/carreira/escola/EquipeEscolaSection';
 import { lerSuporteAlvo, definirSuporteAlvo, limparSuporteAlvo } from '@/hooks/useSuporteAlvo';
 import { EscolaConvidarAlunos } from '@/components/carreira/escola/EscolaConvidarAlunos';
 import { EscolaConviteAluno } from '@/components/carreira/escola/EscolaConviteAluno';
@@ -1220,6 +1221,10 @@ export default function CarreiraPerfilPage() {
 
             {isDonoEscolaProfile && (
               <ComunidadeEscolaSection escolaUserId={perfil.user_id} nomeEscola={displayProfileName} accentColor={accentColor} podeGerenciar={isOwnerOuSuporte} />
+            )}
+
+            {isDonoEscolaProfile && (
+              <EquipeEscolaSection escolaPerfilId={perfil.id} accentColor={accentColor} podeGerenciar={isOwnerOuSuporte} />
             )}
 
             {isDonoEscolaProfile && isAnonymous && perfil.slug && (
