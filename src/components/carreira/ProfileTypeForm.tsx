@@ -37,7 +37,7 @@ interface FieldDef {
   isProfileField?: boolean; // goes to perfis_rede columns directly
 }
 
-import { CATEGORIAS, MODALIDADES_ESCOLA, MODALIDADES_PROFISSIONAL } from '@/constants/esportes';
+import { CATEGORIAS, MODALIDADES_ESCOLA, MODALIDADES_PROFISSIONAL, opcoesCampoSelect, opcoesEspecialidadeProfessor } from '@/constants/esportes';
 import { CountrySelect, StateSelect } from 'react-country-state-city';
 import 'react-country-state-city/dist/react-country-state-city.css';
 import { GeoCitySelect } from '@/components/shared/GeoCitySelect';
@@ -53,7 +53,7 @@ function getFields(type: ProfileType): FieldDef[] {
   switch (type) {
     case 'professor':
       return [
-        { key: 'especialidade', label: 'Especialidade', type: 'select', required: true, options: ['Preparação Física', 'Técnico de Futebol', 'Goleiros', 'Tático', 'Coordenação Motora', 'Outro'] },
+        { key: 'especialidade', label: 'Especialidade', type: 'select', required: true, options: opcoesEspecialidadeProfessor() },
         { key: 'modalidade', label: 'Modalidade Principal', type: 'select', required: true, options: MODALIDADES_PROFISSIONAL },
         { key: 'categorias', label: 'Categorias que trabalha', type: 'multiselect', required: true, options: CATEGORIAS },
         { key: 'certificacoes', label: 'Certificações / Cursos', type: 'textarea', placeholder: 'Liste suas certificações...' },
@@ -804,7 +804,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
                     <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {field.options?.map((opt) => (
+                    {opcoesCampoSelect(type, field.key, field.options, values).map((opt) => (
                       <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                     ))}
                   </SelectContent>

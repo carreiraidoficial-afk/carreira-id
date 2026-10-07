@@ -9,19 +9,50 @@ export const MODALIDADES = [
 ];
 
 /** Modalidades offered specifically for escola profiles (dono_escola) */
-export const MODALIDADES_ESCOLA = [
-  'Futebol', 'Futsal', 'Society', 'Beach Soccer',
+/** Lista única de modalidades: escola e profissional usam a mesma, para um professor poder escolher
+ * qualquer esporte que uma escola possa oferecer (antes a lista do profissional tinha só 8). */
+const MODALIDADES_BASE = [
+  'Futebol', 'Futsal', 'Society', 'Beach Soccer', 'Futevôlei',
   'Vôlei de Quadra', 'Vôlei de Areia',
   'Basquete', 'Handebol', 'Natação',
-  'Atletismo', 'Judô', 'Jiu-Jitsu', 'Tênis', 'Outro',
+  'Atletismo', 'Ginástica', 'Judô', 'Jiu-Jitsu', 'Tênis', 'Beach Tennis', 'Outro',
 ];
+export const MODALIDADES_ESCOLA = MODALIDADES_BASE;
 
 /** Modalidades for professor / técnico selects */
-export const MODALIDADES_PROFISSIONAL = [
-  'Futebol', 'Futsal', 'Society', 'Beach Soccer',
-  'Vôlei de Quadra', 'Vôlei de Areia',
-  'Basquete', 'Outro',
-];
+export const MODALIDADES_PROFISSIONAL = MODALIDADES_BASE;
+
+/** Esportes em que existe a função de treinador de goleiros. */
+const MODALIDADES_COM_GOLEIRO = ['Futebol', 'Futsal', 'Society', 'Beach Soccer', 'Handebol'];
+
+/** Especialidades do professor/treinador. Neutras quanto ao esporte (a modalidade é outro campo);
+ * "Goleiros" só aparece nos esportes que têm goleiro (ou enquanto a modalidade não foi escolhida). */
+export function opcoesEspecialidadeProfessor(modalidade?: string, atual?: string): string[] {
+  const lista = [
+    'Técnico / Treinador principal',
+    'Auxiliar técnico',
+    'Coordenação técnica',
+    'Iniciação esportiva (base)',
+    'Preparação Física',
+    'Tático / Análise de desempenho',
+    'Coordenação Motora',
+  ];
+  if (!modalidade || MODALIDADES_COM_GOLEIRO.includes(modalidade)) lista.push('Goleiros');
+  lista.push('Outro');
+  // valor antigo já salvo (ex.: "Técnico de Futebol") continua selecionável, em vez de sumir do campo
+  if (atual && !lista.includes(atual)) lista.splice(lista.length - 1, 0, atual);
+  return lista;
+}
+
+/** Opções de um campo select: a do professor depende da modalidade; os demais usam a lista fixa. */
+export function opcoesCampoSelect(
+  tipo: string | null | undefined, chave: string, base: string[] | undefined, valores: Record<string, unknown>,
+): string[] {
+  if (tipo === 'professor' && chave === 'especialidade') {
+    return opcoesEspecialidadeProfessor(valores.modalidade as string | undefined, valores.especialidade as string | undefined);
+  }
+  return base ?? [];
+}
 
 /** Posições de perfil por modalidade (usadas em "Posição principal/secundária" do atleta) */
 export const POSICOES_FUTEBOL = ['Goleiro', 'Zagueiro', 'Lateral', 'Volante', 'Meia', 'Atacante'];

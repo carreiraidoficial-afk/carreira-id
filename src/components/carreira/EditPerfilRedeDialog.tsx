@@ -45,14 +45,14 @@ interface DynFieldDef {
   options?: string[];
 }
 
-import { CATEGORIAS, MODALIDADES_ESCOLA, MODALIDADES_PROFISSIONAL } from '@/constants/esportes';
+import { CATEGORIAS, MODALIDADES_ESCOLA, MODALIDADES_PROFISSIONAL, opcoesCampoSelect, opcoesEspecialidadeProfessor } from '@/constants/esportes';
 const POSICOES = ['Goleiro', 'Zagueiro', 'Lateral', 'Volante', 'Meia', 'Atacante'];
 
 function getDynamicFields(tipo: string): DynFieldDef[] {
   switch (tipo) {
     case 'professor':
       return [
-        { key: 'especialidade', label: 'Especialidade', type: 'select', options: ['Preparação Física', 'Técnico de Futebol', 'Goleiros', 'Tático', 'Coordenação Motora', 'Outro'] },
+        { key: 'especialidade', label: 'Especialidade', type: 'select', options: opcoesEspecialidadeProfessor() },
         { key: 'modalidade', label: 'Modalidade Principal', type: 'select', options: MODALIDADES_PROFISSIONAL },
         { key: 'categorias', label: 'Categorias que trabalha', type: 'multiselect', options: CATEGORIAS },
         { key: 'certificacoes', label: 'Certificações / Cursos', type: 'textarea' },
@@ -623,7 +623,7 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
           <Select value={(val as string) || ''} onValueChange={(v) => setDynValue(field.key, v)}>
             <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
             <SelectContent>
-              {field.options.map((opt) => (
+              {opcoesCampoSelect(perfil?.tipo, field.key, field.options, dadosValues).map((opt) => (
                 <SelectItem key={opt} value={opt}>{opt}</SelectItem>
               ))}
             </SelectContent>
