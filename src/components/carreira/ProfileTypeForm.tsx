@@ -38,7 +38,8 @@ interface FieldDef {
 }
 
 import { CATEGORIAS, MODALIDADES_ESCOLA, MODALIDADES_PROFISSIONAL, opcoesCampoSelect, opcoesEspecialidadeProfessor } from '@/constants/esportes';
-import { CountrySelect, StateSelect } from 'react-country-state-city';
+import { StateSelect } from 'react-country-state-city';
+import { PaisSelect } from '@/components/shared/PaisSelect';
 import 'react-country-state-city/dist/react-country-state-city.css';
 import { GeoCitySelect } from '@/components/shared/GeoCitySelect';
 import { GEO_DATA_BASE_URL } from '@/lib/geoData';
@@ -664,15 +665,11 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
 
         <div className="space-y-2">
           <Label>País</Label>
-          <CountrySelect
-            defaultValue="Brazil"
-            placeHolder="Selecione o país"
-            containerClassName="w-full"
-            inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-            src={GEO_DATA_BASE_URL}
-            onChange={(c: any) => {
+          <PaisSelect
+            value={pais}
+            onChange={(c) => {
               setPaisObj(c);
-              setPais(c?.iso2 === 'BR' ? 'Brasil' : (c?.name || 'Brasil'));
+              setPais(c.nomePt);
               setEstado(''); setCidade(''); setEstadoIntlId(undefined);
             }}
           />

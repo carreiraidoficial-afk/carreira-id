@@ -11,9 +11,7 @@ import * as z from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EquipeEscolaEditor } from '@/components/carreira/escola/EquipeEscolaEditor';
 import { UfCidadeSelect } from '@/components/shared/UfCidadeSelect';
-import { CountrySelect, GetCountries } from 'react-country-state-city';
-import 'react-country-state-city/dist/react-country-state-city.css';
-import { GEO_DATA_BASE_URL } from '@/lib/geoData';
+import { PaisSelect } from '@/components/shared/PaisSelect';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -242,7 +240,6 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
   const [contaCarregada, setContaCarregada] = useState(false);
   // Localização (cidade, estado, país) do perfil
   const [paisLoc, setPaisLoc] = useState('Brasil');
-  const [paisObj, setPaisObj] = useState<any>(null);
   const [estadoLoc, setEstadoLoc] = useState('');
   const [cidadeLoc, setCidadeLoc] = useState('');
   const [tituloProf, setTituloProf] = useState('');
@@ -339,11 +336,6 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
       setPaisLoc(paisSalvo);
       setEstadoLoc(String(perfil.estado || ''));
       setCidadeLoc(String(perfil.cidade || ''));
-      setPaisObj(null);
-      GetCountries(GEO_DATA_BASE_URL).then((lista: any[]) => {
-        const achado = (lista || []).find((c) => (paisSalvo === 'Brasil' ? c.iso2 === 'BR' : c.name === paisSalvo));
-        setPaisObj(achado || null);
-      }).catch(() => { /* sem a lista, o seletor só abre sem país pré-escolhido */ });
 
       // Dados da conta: do DONO do perfil (em Modo Suporte, não do admin logado)
       setContaCarregada(false);
@@ -872,20 +864,12 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
                 <p className="text-sm font-medium text-foreground">Localização</p>
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">País</Label>
-                  <CountrySelect
-                    key={paisObj?.id ?? 'sem-pais'}
-                    defaultValue={paisObj || undefined}
-                    placeHolder={paisLoc === 'Brasil' ? 'Brazil' : paisLoc}
-                    containerClassName="w-full"
-                    inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                    src={GEO_DATA_BASE_URL}
-                    onChange={(c: any) => {
-                      const novoPais = c?.iso2 === 'BR' ? 'Brasil' : (c?.name || 'Brasil');
-                      setPaisObj(c);
-                      // O seletor também dispara onChange ao montar com o país já salvo: só zera estado e cidade
-                      // quando o país realmente mudou (senão a cidade salva some ao abrir o editor).
-                      if (novoPais !== paisLoc) {
-                        setPaisLoc(novoPais);
+                  <PaisSelect
+                    value={paisLoc}
+                    onChange={(c) => {
+                      // Só zera estado e cidade quando o país realmente mudou.
+                      if (c.nomePt !== paisLoc) {
+                        setPaisLoc(c.nomePt);
                         setEstadoLoc('');
                         setCidadeLoc('');
                       }

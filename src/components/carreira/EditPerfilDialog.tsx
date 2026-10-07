@@ -61,7 +61,8 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 import { MODALIDADES, ESTADOS, POSICOES_FUTEBOL, POSICOES_VOLEI, POSICOES_BASQUETE, isModalidadeVolei, isModalidadeBasquete } from '@/constants/esportes';
-import { CountrySelect, StateSelect } from 'react-country-state-city';
+import { StateSelect } from 'react-country-state-city';
+import { PaisSelect } from '@/components/shared/PaisSelect';
 import 'react-country-state-city/dist/react-country-state-city.css';
 import { GeoCitySelect } from '@/components/shared/GeoCitySelect';
 import { GEO_DATA_BASE_URL } from '@/lib/geoData';
@@ -372,16 +373,15 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
             <FormField control={form.control} name="pais" render={({ field }) => (
               <FormItem>
                 <FormLabel>País</FormLabel>
-                <CountrySelect
-                  defaultValue={field.value === 'Brasil' || !field.value ? 'Brazil' : field.value}
-                  placeHolder="Selecione o país"
-                  containerClassName="w-full"
-                  inputClassName="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                  src={GEO_DATA_BASE_URL}
-                  onChange={(c: any) => {
+                <PaisSelect
+                  value={field.value || 'Brasil'}
+                  onChange={(c) => {
                     setPaisObj(c);
-                    field.onChange(c?.iso2 === 'BR' ? 'Brasil' : (c?.name || 'Brasil'));
-                    form.setValue('estado', ''); form.setValue('cidade', ''); setEstadoIntlId(undefined);
+                    // só zera estado e cidade quando o país realmente mudou
+                    if (c.nomePt !== (field.value || 'Brasil')) {
+                      field.onChange(c.nomePt);
+                      form.setValue('estado', ''); form.setValue('cidade', ''); setEstadoIntlId(undefined);
+                    }
                   }}
                 />
                 <FormMessage />
