@@ -25,3 +25,8 @@ supabase/.temp
 *.njsproj
 *.sln
 *.sw?
+
+# Podcasts do blog ficam no Supabase Storage (bucket blog-podcasts), nunca no repositorio:
+# cada deploy da Vercel carregaria ~190 MB e estoura o armazenamento gratuito.
+public/blog/**/*.m4a
+public/blog/**/*.mp3
