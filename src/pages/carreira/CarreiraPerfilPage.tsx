@@ -1,7 +1,9 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { formatarLocalizacao } from '@/lib/localizacao';
 import { SobreMimCard } from '@/components/carreira/perfis/SobreMimCard';
-import { ehProfissionalEquipe, normalizarLinkedin, textoSobreMim, tituloProfissional } from '@/lib/perfil-profissional';
+import { AbasPerfilProfissional, ABAS_PROFISSIONAL_VALIDAS, type AbaProfissionalId } from '@/components/carreira/perfis/AbasPerfilProfissional';
+import { GaleriaProfissional } from '@/components/carreira/perfis/GaleriaProfissional';
+import { ehProfissionalEquipe, lerConquistas, normalizarLinkedin, textoSobreMim, tituloProfissional } from '@/lib/perfil-profissional';
 import { ConquistasProfissionalCard, IdiomasProfissionalCard } from '@/components/carreira/perfis/CurriculoProfissional';
 import { formatarTelefoneExibicao } from '@/lib/form-validators';
 import { EquipeEscolaSection } from '@/components/carreira/escola/EquipeEscolaSection';
@@ -327,7 +329,7 @@ export default function CarreiraPerfilPage() {
   const { theme: carreiraTheme, isDarkTheme, setDarkTheme } = useCarreiraTheme();
   const isOwner = !!(currentUserId && perfil && currentUserId === perfil.user_id);
   const { user: authUser } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   // Modo Suporte -- admin edita um perfil pontualmente, sem virar
   // colaborador permanente (não grava nada no banco, some ao sair da
   // página). Só decide o que MOSTRAR: a trava real é o RLS no servidor,
@@ -559,6 +561,11 @@ export default function CarreiraPerfilPage() {
     perfil?.type === 'rede' && ehProfissionalEquipe(perfil.tipo) ? perfil.user_id : undefined,
   );
 
+  // Galeria do profissional vem das imagens das publicações (mesma query da aba Publicações). Hook antes dos retornos.
+  const { data: postsProfissional } = usePostsRede(
+    perfil?.type === 'rede' && ehProfissionalEquipe(perfil.tipo) ? perfil.id : undefined,
+  );
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background" data-theme={carreiraTheme}>
@@ -602,6 +609,42 @@ export default function CarreiraPerfilPage() {
   const historicoProfissional: HistoricoProfissional[] = isRedeProfile
     ? ((perfil.dados_perfil as any)?.historico_profissional || [])
     : [];
+
+  // Profissional (professor, técnico, preparador): seções em abas, ?aba= na URL para compartilhar/voltar direto.
+  const profissionalComAbas = isRedeProfile && ehProfissionalEquipe(perfil.tipo);
+  const dadosPerfilProf = (perfil.dados_perfil || null) as Record<string, any> | null;
+  const temConquistas = lerConquistas(dadosPerfilProf).length > 0;
+  const abaPedida = searchParams.get('aba') || 'visao';
+  const abaProfissional = (ABAS_PROFISSIONAL_VALIDAS.includes(abaPedida) ? abaPedida : 'visao') as AbaProfissionalId;
+  const trocarAbaProfissional = (aba: AbaProfissionalId) => {
+    const novo = new URLSearchParams(searchParams);
+    if (aba === 'visao') novo.delete('aba'); else novo.set('aba', aba);
+    setSearchParams(novo, { replace: true });
+  };
+  const sobreMimNode = <SobreMimCard bio={textoSobreMim(perfil.bio, dadosPerfilProf)} accentColor={accentColor} />;
+  const dadosNode = (
+    <DadosEspecificos
+      tipo={perfil.tipo as any}
+      dados={dadosPerfilProf}
+      accentColor={accentColor}
+      localizacao={formatarLocalizacao(perfil.cidade, perfil.estado, (perfil as any).pais)}
+      ocultarExperienciaTexto={historicoProfissional.length > 0}
+    />
+  );
+  const historicoNode = showHistorico ? (
+    <HistoricoProfissionalSection
+      historico={historicoProfissional}
+      isOwner={isOwnerOuSuporte}
+      podeExcluir={isOwner}
+      accentColor={accentColor}
+      estiloCurriculo
+      onAdd={() => { setEditingHistorico(null); setHistoricoDialogOpen(true); }}
+      onEdit={(item) => { setEditingHistorico(item); setHistoricoDialogOpen(true); }}
+      onDelete={(id) => handleDeleteHistorico(id)}
+    />
+  ) : null;
+  const conquistasNode = <ConquistasProfissionalCard dados={dadosPerfilProf} accentColor={accentColor} />;
+  const idiomasNode = <IdiomasProfissionalCard dados={dadosPerfilProf} accentColor={accentColor} />;
 
   const handleSaveHistorico = async (item: HistoricoProfissional) => {
     if (!isRedeProfile) return;
@@ -1208,6 +1251,27 @@ export default function CarreiraPerfilPage() {
                 />
               </div>
             )}
+            {profissionalComAbas ? (
+              <AbasPerfilProfissional
+                aba={abaProfissional}
+                onAba={trocarAbaProfissional}
+                accentColor={accentColor}
+                visiveis={{
+                  historico: showHistorico && (historicoProfissional.length > 0 || isOwnerOuSuporte),
+                  conquistas: temConquistas || isOwnerOuSuporte,
+                  galeria: true,
+                }}
+                conteudos={{
+                  visao: <>{sobreMimNode}{dadosNode}{historicoNode}{conquistasNode}{idiomasNode}</>,
+                  informacoes: <>{dadosNode}{idiomasNode}</>,
+                  historico: historicoNode,
+                  conquistas: conquistasNode,
+                  galeria: <GaleriaProfissional posts={postsProfissional} accentColor={accentColor} podeGerenciar={isOwnerOuSuporte} />,
+                  publicacoes: <RedeTimelineInline perfilId={perfil.id} isOwner={isOwner} perfilNome={perfil.nome} perfilFoto={perfil.foto_url} accentColor={accentColor} />,
+                }}
+              />
+            ) : (
+              <>
             {/* Dados Específicos do perfil rede (escola já tem o bloco "Sobre" no topo) */}
             {perfil.type === 'rede' && ehProfissionalEquipe(perfil.tipo) && (
               <SobreMimCard bio={textoSobreMim(perfil.bio, perfil.dados_perfil as Record<string, any> | null)} accentColor={accentColor} />
@@ -1241,6 +1305,8 @@ export default function CarreiraPerfilPage() {
               <>
                 <ConquistasProfissionalCard dados={perfil.dados_perfil as Record<string, any> | null} accentColor={accentColor} />
                 <IdiomasProfissionalCard dados={perfil.dados_perfil as Record<string, any> | null} accentColor={accentColor} />
+              </>
+            )}
               </>
             )}
 
@@ -1351,7 +1417,7 @@ export default function CarreiraPerfilPage() {
 
             {perfil.type === 'atleta' ? (
               <CarreiraTimeline perfil={perfil as any} isOwner={canManageTimeline} podeExcluir={isOwner} />
-            ) : (
+            ) : profissionalComAbas ? null : (
               <RedeTimelineInline perfilId={perfil.id} isOwner={isOwner} perfilNome={perfil.nome} perfilFoto={perfil.foto_url} accentColor={accentColor} />
             )}
           </div>
