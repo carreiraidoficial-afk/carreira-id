@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { formatarLocalizacao } from '@/lib/localizacao';
 import { telefoneParaWhatsapp } from '@/lib/form-validators';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, School, Instagram, Globe, Phone, Users, Trophy, Building2, CalendarDays } from 'lucide-react';
@@ -14,6 +15,7 @@ interface PerfilEscola {
   foto_url: string | null;
   banner_url?: string | null;
   cidade?: string | null;
+  pais?: string | null;
   estado?: string | null;
   instagram?: string | null;
   site?: string | null;
@@ -66,7 +68,7 @@ export function EscolaPerfilHero({ perfil, displayName, accentColor, isEscolaPar
     { icon: CalendarDays, valor: anosAtuacao, rotulo: anosAtuacao === 1 ? 'Ano de atuação' : 'Anos de atuação' },
   ].filter((m) => m.valor > 0);
 
-  const local = [perfil.cidade, perfil.estado].filter(Boolean).join(' - ');
+  const local = formatarLocalizacao(perfil.cidade, perfil.estado, perfil.pais, ' - ');
 
   return (
     <div className="space-y-4">

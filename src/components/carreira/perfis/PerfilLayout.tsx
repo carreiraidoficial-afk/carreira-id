@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { formatarLocalizacao } from '@/lib/localizacao';
 import { telefoneParaWhatsapp, formatarTelefoneExibicao } from '@/lib/form-validators';
 import { ehProfissionalEquipe, normalizarLinkedin, tituloProfissional } from '@/lib/perfil-profissional';
 import { Card } from '@/components/ui/card';
@@ -6,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConectarButton } from '../ConectarButton';
 import { ConexoesCount } from '../ConexoesCount';
-import { Instagram, Globe, Linkedin, Phone, Settings } from 'lucide-react';
+import { Instagram, Globe, Linkedin, MapPin, Phone, Settings } from 'lucide-react';
 import type { ProfileType } from '../ProfileTypeSelector';
 
 const TYPE_CONFIG: Record<ProfileType, { label: string; icon: string; color: string }> = {
@@ -36,6 +37,9 @@ interface PerfilData {
   site?: string | null;
   telefone_whatsapp?: string | null;
   whatsapp_publico?: boolean;
+  cidade?: string | null;
+  estado?: string | null;
+  pais?: string | null;
 }
 
 interface Props {
@@ -103,6 +107,14 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
                 </Badge>
               )}
             </div>
+
+            {/* Localização (cidade, estado e país fora do Brasil) */}
+            {perfil.tipo !== 'torcedor' && formatarLocalizacao(perfil.cidade, perfil.estado, perfil.pais) && (
+              <p className="mt-1.5 flex items-center justify-center gap-1 text-xs text-muted-foreground">
+                <MapPin className="w-3 h-3" />
+                {formatarLocalizacao(perfil.cidade, perfil.estado, perfil.pais)}
+              </p>
+            )}
 
             {/* Modalidades tags for dono_escola */}
             {perfil.tipo === 'dono_escola' && Array.isArray(perfil.dados_perfil?.modalidades) && perfil.dados_perfil.modalidades.length > 0 && (

@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { formatarLocalizacao } from '@/lib/localizacao';
 import { SobreMimCard } from '@/components/carreira/perfis/SobreMimCard';
 import { ehProfissionalEquipe, normalizarLinkedin, textoSobreMim, tituloProfissional } from '@/lib/perfil-profissional';
 import { ConquistasProfissionalCard, IdiomasProfissionalCard } from '@/components/carreira/perfis/CurriculoProfissional';
@@ -913,10 +914,10 @@ export default function CarreiraPerfilPage() {
               )}
 
               {/* Location */}
-              {(perfil.cidade || perfil.estado) && (
+              {formatarLocalizacao(perfil.cidade, perfil.estado, (perfil as any).pais) && (
                 <div className="flex items-center justify-center gap-1 text-[11px] text-muted-foreground mt-2">
                   <MapPin className="w-3 h-3" />
-                  <span>{[perfil.cidade, perfil.estado, (perfil as any).pais && (perfil as any).pais !== 'Brasil' ? (perfil as any).pais : null].filter(Boolean).join(', ')}</span>
+                  <span>{formatarLocalizacao(perfil.cidade, perfil.estado, (perfil as any).pais)}</span>
                 </div>
               )}
 
@@ -1194,6 +1195,9 @@ export default function CarreiraPerfilPage() {
                     site: perfil.site || null,
                     telefone_whatsapp: perfil.telefone_whatsapp || null,
                     whatsapp_publico: perfil.whatsapp_publico ?? false,
+                    cidade: perfil.cidade || null,
+                    estado: perfil.estado || null,
+                    pais: (perfil as any).pais || null,
                   }}
                   isOwnProfile={isOwner}
                   currentUserId={currentUserId}
@@ -1213,7 +1217,7 @@ export default function CarreiraPerfilPage() {
                 tipo={perfil.tipo as any}
                 dados={perfil.dados_perfil as Record<string, any> | null}
                 accentColor={accentColor}
-                localizacao={[perfil.cidade, perfil.estado].filter(Boolean).join(', ')}
+                localizacao={formatarLocalizacao(perfil.cidade, perfil.estado, (perfil as any).pais)}
                 ocultarExperienciaTexto={historicoProfissional.length > 0}
               />
             )}

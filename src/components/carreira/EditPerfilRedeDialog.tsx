@@ -896,6 +896,9 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
                     <Input value={cidadeLoc} onChange={(e) => setCidadeLoc(e.target.value)} placeholder="Cidade" maxLength={80} />
                   </div>
                 )}
+                <p className="text-[11px] text-muted-foreground">
+                  Aparece na página pública do perfil{paisLoc !== 'Brasil' && !cidadeLoc.trim() && !estadoLoc.trim() ? ' (sem cidade, mostra só o país)' : ''}.
+                </p>
               </div>
             )}
 
