@@ -1,4 +1,5 @@
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useSuporteAlvo } from '@/hooks/useSuporteAlvo';
 import { Home, Users, User, LogOut, Gamepad2, Search, Bell, CalendarDays, Shield, ClipboardList } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -17,8 +18,11 @@ interface CarreiraBottomNavProps {
 const SCOUTING_TYPES = ['tecnico', 'scout', 'agente_clube', 'escola_esportes', 'empresario'];
 const PENEIRA_TYPES = ['tecnico', 'scout', 'agente_clube', 'dono_escola'];
 
-export function CarreiraBottomNav({ currentUserId, profileSlug }: CarreiraBottomNavProps) {
+export function CarreiraBottomNav({ currentUserId, profileSlug: profileSlugProp }: CarreiraBottomNavProps) {
   const navigate = useNavigate();
+  // Modo Suporte: "Meu Perfil" é o perfil da conta que o admin está operando.
+  const suporte = useSuporteAlvo();
+  const profileSlug = suporte.ativo && suporte.alvo?.slug ? suporte.alvo.slug : profileSlugProp;
   const location = useLocation();
   const { unreadCount: unreadComunicados } = useUnreadCarreiraComunicados();
 

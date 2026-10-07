@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useSuporteAlvo } from '@/hooks/useSuporteAlvo';
 import { useQuery } from '@tanstack/react-query';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ConnectionsSection } from '@/components/carreira/ConnectionsSection';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
 import { NotificacoesBell } from '@/components/carreira/NotificacoesBell';
-import { Loader2, Users, Heart } from 'lucide-react';
+import { Loader2, Users, Heart, Wrench } from 'lucide-react';
 import logoCarreira from '@/assets/logo-carreira-id-dark.png';
 import conexoesBannerBg from '@/assets/torcida-pais-bg.jpg';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
@@ -87,7 +88,10 @@ function useConexoesTotal(userId: string | null, perfilAtletaId?: string | null)
 }
 
 export default function CarreiraConexoesPage() {
-  const { sessionUserId: currentUserId, loading } = useCarreiraSession();
+  const { sessionUserId, loading } = useCarreiraSession();
+  // Modo Suporte: tudo nesta tela passa a ser da conta-alvo, não do admin logado.
+  const suporte = useSuporteAlvo();
+  const currentUserId = suporte.ativo && suporte.alvo ? suporte.alvo.userId : sessionUserId;
   const navigate = useNavigate();
   const [mySlugRede, setMySlugRede] = useState<string | null>(null);
   const { theme } = useCarreiraTheme();
@@ -122,6 +126,24 @@ export default function CarreiraConexoesPage() {
 
   return (
     <div className="min-h-screen bg-background lg:pt-14" data-theme={theme}>
+      {suporte.ativo && suporte.alvo && (
+        <div className="container max-w-2xl px-4 pt-3">
+          <div className="flex items-center gap-2.5 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+            <Wrench className="w-4 h-4 shrink-0 text-amber-600" />
+            <p className="flex-1 text-foreground">
+              <strong>Modo Suporte</strong> — conexões de <strong>{suporte.alvo.nome}</strong>.
+            </p>
+            {suporte.alvo.slug && (
+              <Link to={carreiraPath(`/${suporte.alvo.slug}`)} className="text-xs font-medium underline shrink-0 text-amber-700">
+                Perfil
+              </Link>
+            )}
+            <button onClick={suporte.sair} className="text-xs font-medium underline shrink-0 text-amber-700">
+              Sair
+            </button>
+          </div>
+        </div>
+      )}
       <header className="relative overflow-hidden">
         <img src={conexoesBannerBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${accentColor}cc, #0a0f18e6)` }} />

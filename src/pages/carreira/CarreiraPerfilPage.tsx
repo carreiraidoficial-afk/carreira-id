@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { lerSuporteAlvo, definirSuporteAlvo, limparSuporteAlvo } from '@/hooks/useSuporteAlvo';
 import { EscolaConvidarAlunos } from '@/components/carreira/escola/EscolaConvidarAlunos';
 import { EscolaConviteAluno } from '@/components/carreira/escola/EscolaConviteAluno';
 import { telefoneParaWhatsapp } from '@/lib/form-validators';
@@ -325,8 +326,17 @@ export default function CarreiraPerfilPage() {
   // colaborador permanente (não grava nada no banco, some ao sair da
   // página). Só decide o que MOSTRAR: a trava real é o RLS no servidor,
   // que também exige has_role admin nas tabelas cobertas por isso.
-  const suporteAtivo = authUser?.role === 'admin' && searchParams.get('suporte') === '1';
+  // Vale pela URL (?suporte=1) ou, depois, enquanto a aba lembrar desta conta (Conexões, Meu Perfil...).
+  const suporteAlvoSalvo = lerSuporteAlvo();
+  const suporteAtivo = authUser?.role === 'admin' && (
+    searchParams.get('suporte') === '1' || (!!perfil && suporteAlvoSalvo?.userId === perfil.user_id)
+  );
   const isOwnerOuSuporte = isOwner || suporteAtivo;
+  useEffect(() => {
+    if (authUser?.role === 'admin' && searchParams.get('suporte') === '1' && perfil?.user_id) {
+      definirSuporteAlvo({ userId: perfil.user_id, slug: perfil.slug ?? null, nome: perfil.nome ?? 'esta conta' });
+    }
+  }, [authUser?.role, searchParams, perfil?.user_id, perfil?.slug, perfil?.nome]);
   const isAnonymous = !currentUserId;
   const { trackProfileView, requireAuth } = useAnonymousGate();
   const [mySlug, setMySlug] = useState<string | null>(null);
@@ -799,10 +809,10 @@ export default function CarreiraPerfilPage() {
           <div className="flex items-center gap-2.5 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
             <Wrench className="w-4 h-4 shrink-0 text-amber-600" />
             <p className="flex-1 text-foreground">
-              <strong>Modo Suporte</strong> — editando como admin, sem poder apagar nada.
+              <strong>Modo Suporte</strong> — você está operando como esta conta (Conexões e Meu Perfil seguem nela até você sair).
             </p>
             <button
-              onClick={() => navigate(carreiraPath(`/${perfil.slug}`), { replace: true })}
+              onClick={() => { limparSuporteAlvo(); navigate(carreiraPath(`/${perfil.slug}`), { replace: true }); }}
               className="text-xs font-medium underline shrink-0 text-amber-700"
             >
               Sair
