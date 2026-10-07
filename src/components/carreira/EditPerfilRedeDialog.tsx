@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { EquipeEscolaEditor } from '@/components/carreira/escola/EquipeEscolaEditor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -165,6 +166,21 @@ interface EditPerfilRedeDialogProps {
 
 const formatPhone = formatPhoneInput;
 
+type AbaId = 'escola' | 'links' | 'equipe' | 'conta';
+const ABAS: { id: AbaId; rotulo: string }[] = [
+  { id: 'escola', rotulo: 'Escola' },
+  { id: 'links', rotulo: 'Links e unidades' },
+  { id: 'equipe', rotulo: 'Equipe' },
+  { id: 'conta', rotulo: 'Conta' },
+];
+
+/** Só a escola usa abas. As abas escondem os campos mas não os desmontam: o formulário continua
+ * um só e "Salvar Alterações" grava tudo de uma vez. Nos outros tipos de perfil tudo aparece como antes. */
+function Aba({ id, atual, ativo, children }: { id: AbaId; atual: AbaId; ativo: boolean; children: React.ReactNode }) {
+  if (!ativo) return <>{children}</>;
+  return <div hidden={atual !== id} className="space-y-4">{children}</div>;
+}
+
 const formatDoc = (value: string, tipo: 'cpf' | 'cnpj') => {
   return tipo === 'cnpj' ? formatCNPJ(value) : formatCPF(value);
 };
@@ -207,6 +223,11 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
 
   const isTorcedor = perfil?.tipo === 'torcedor';
   const isDono = perfil?.tipo === 'dono_escola';
+  const usaAbas = isDono;
+  const [aba, setAba] = useState<AbaId>('escola');
+  useEffect(() => {
+    if (open) setAba('escola');
+  }, [open]);
   const tipo = perfil?.tipo || '';
 
   const dados = (perfil?.dados_perfil || {}) as Record<string, any>;
@@ -346,12 +367,20 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
     }
   };
 
+  // Erro de validação num campo de aba escondida seria silencioso: abre a aba certa.
+  const onInvalid = (erros: Record<string, unknown>) => {
+    const chaves = Object.keys(erros);
+    setAba(chaves.some((k) => k === 'cpf_cnpj' || k === 'tipo_documento') ? 'conta' : 'escola');
+    toast.error('Confira os campos destacados.');
+  };
+
   const onSubmit = async (data: FormData) => {
     // Validate document if provided
     const cleanDoc = (data.cpf_cnpj || '').replace(/\D/g, '');
     if (cleanDoc) {
       const docTipo = (data.tipo_documento || 'cpf') as 'cpf' | 'cnpj';
       if (!validateDocument(cleanDoc, docTipo)) {
+        setAba('conta');
         toast.error(`${docTipo === 'cnpj' ? 'CNPJ' : 'CPF'} inválido. Verifique os números digitados.`);
         return;
       }
@@ -359,17 +388,20 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
     // Validate phone if provided
     const cleanPhone = limparTelefone(data.telefone_whatsapp || '');
     if (cleanPhone && !validatePhoneNumber(cleanPhone)) {
+      setAba('escola');
       toast.error('Número de WhatsApp inválido. Use um número real com DDD.');
       return;
     }
     // Validate email if changed
     if (contaEmail.trim() && !validateEmailAddress(contaEmail.trim())) {
+      setAba('conta');
       toast.error('Email inválido. Verifique o endereço digitado.');
       return;
     }
 
     // Link do Google Maps das unidades: se preenchido, precisa ser um endereço válido.
     if (isDono && unidades.some((u) => u.link_mapa?.trim() && !normalizarUrl(u.link_mapa))) {
+      setAba('links');
       toast.error('Confira o link do Google Maps das unidades: precisa ser um endereço começando com https://');
       return;
     }
@@ -379,6 +411,7 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
       for (const l of linksEscola) {
         if (linkEscolaVazio(l)) continue;
         if (!l.titulo.trim() || !normalizarUrl(l.url)) {
+          setAba('links');
           toast.error('Confira os links da escola: cada um precisa de título e de um endereço começando com https://');
           return;
         }
@@ -582,7 +615,26 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
           <DialogTitle>Editar Perfil e Conta</DialogTitle>
         </DialogHeader>
 
-        {isDono && perfil && (
+        {usaAbas && (
+          <div role="tablist" aria-label="Seções do perfil da escola" className="grid grid-cols-4 gap-1 rounded-lg bg-muted p-1">
+            {ABAS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={aba === t.id}
+                onClick={() => setAba(t.id)}
+                className={`rounded-md px-1.5 py-1.5 text-xs font-medium transition-colors ${
+                  aba === t.id ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {t.rotulo}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {isDono && perfil && aba === 'escola' && (
           <EscolaCompletudeCard
             perfil={{ ...perfil, foto_url: photoUrl || null, banner_url: bannerUrl || null }}
             accentColor={corDestaque}
@@ -590,7 +642,8 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
         )}
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-4">
+            <Aba id="escola" atual={aba} ativo={usaAbas}>
             <ProfilePhotoUpload
               currentPhotoUrl={photoUrl}
               currentBannerUrl={bannerUrl}
@@ -600,15 +653,19 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
               photoLabel={isDono ? 'Foto do Perfil (você ou a logo da escola)' : undefined}
               photoHelperText={isDono ? 'Você escolhe: sua própria foto ou a logo da escola — o que subir aqui aparece publicamente no perfil, no selo de Escola Parceira e na seção Escolas Parceiras da home.' : undefined}
             />
+            </Aba>
 
-            {/* Links da escola (acesso rápido) - only for dono_escola; logo após foto/capa pra ficar fácil de achar */}
+            <Aba id="links" atual={aba} ativo={usaAbas}>
+            {/* Links da escola (acesso rápido) - only for dono_escola */}
             {isDono && (
               <div className="space-y-3 rounded-lg border border-border p-4">
                 <Label className="text-sm font-medium">Links de acesso rápido da escola</Label>
                 <LinksEscolaEditor links={linksEscola} onChange={setLinksEscola} />
               </div>
             )}
+            </Aba>
 
+            <Aba id="escola" atual={aba} ativo={usaAbas}>
             {/* Color picker */}
             <ColorPicker value={corDestaque} onChange={setCorDestaque} />
 
@@ -729,6 +786,9 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
               </div>
             )}
 
+            </Aba>
+
+            <Aba id="conta" atual={aba} ativo={usaAbas}>
             {/* Dados Privados */}
             <div className="rounded-lg border border-border p-4 space-y-3 bg-muted/30">
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -789,6 +849,9 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
               )} />
             </div>
 
+            </Aba>
+
+            <Aba id="escola" atual={aba} ativo={usaAbas}>
             {/* ── Dynamic profile-type-specific fields ── */}
             {dynamicFields.length > 0 && (
               <div className="space-y-3">
@@ -798,6 +861,9 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
               </div>
             )}
 
+            </Aba>
+
+            <Aba id="links" atual={aba} ativo={usaAbas}>
             {/* Unidades (filiais) - only for dono_escola */}
             {isDono && (
               <div className="space-y-3 rounded-lg border border-border p-4">
@@ -851,13 +917,20 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
               </div>
             )}
 
-            <div className="flex gap-2 justify-end pt-4">
+            </Aba>
+
+            <Aba id="equipe" atual={aba} ativo={usaAbas}>
+            {isDono && perfil?.id && <EquipeEscolaEditor escolaPerfilId={perfil.id} />}
+            </Aba>
+
+            <div className={usaAbas ? 'sticky bottom-0 z-10 -mx-6 -mb-6 flex justify-end gap-2 border-t bg-background px-6 pb-6 pt-3' : 'flex gap-2 justify-end pt-4'}>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
               <Button type="submit" disabled={saving}>
                 {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvando...</> : 'Salvar Alterações'}
               </Button>
             </div>
 
+            <Aba id="conta" atual={aba} ativo={usaAbas}>
             <Separator className="my-4" />
             <div className="pt-2">
               <Button
@@ -870,6 +943,7 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
                 Apagar minha conta
               </Button>
             </div>
+            </Aba>
           </form>
         </Form>
 
