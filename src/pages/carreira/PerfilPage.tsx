@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { ehProfissionalEquipe } from '@/lib/perfil-profissional';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -14,10 +15,6 @@ import { PeneirasSection } from '@/components/carreira/PeneirasSection';
 
 import { MigrarPerfilBanner } from '@/components/carreira/MigrarPerfilBanner';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
-// Carregado sob demanda: só o dono do perfil vê esse formulário, mas ele
-// carrega heic2any (~1,3MB) -- import estático fazia todo visitante baixar
-// essa biblioteca à toa.
-const CreatePostForm = lazy(() => import('@/components/carreira/CreatePostForm').then(m => ({ default: m.CreatePostForm })));
 import { PostCard } from '@/components/carreira/PostCard';
 import { DescobrirAtletasSection } from '@/components/carreira/DescobrirAtletasSection';
 import { usePostsRede } from '@/hooks/useCarreiraData';
@@ -30,6 +27,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
+
+// Carregado sob demanda: só o dono do perfil vê esse formulário, mas ele
+// carrega heic2any (~1,3MB) -- import estático fazia todo visitante baixar
+// essa biblioteca à toa.
+const CreatePostForm = lazy(() => import('@/components/carreira/CreatePostForm').then(m => ({ default: m.CreatePostForm })));
 
 export default function PerfilPage() {
   const { userId } = useParams<{ userId: string }>();
@@ -78,6 +80,13 @@ export default function PerfilPage() {
       // Escola: a página pública é a do slug (com capa/métricas) -- esta aqui é
       // o layout antigo e fica só pros outros tipos de perfil de rede.
       if (redeData && (redeData as any).tipo === 'dono_escola' && (redeData as any).slug) {
+        return { type: 'slug_redirect' as const, slug: (redeData as any).slug as string };
+      }
+
+      // Professor, técnico e preparador físico também têm a página nova no slug (Sobre mim, currículo,
+      // conquistas, idiomas). Quem chegava por /perfil/<id> (lista de Conexões, Explorar, posts...) via esta
+      // tela antiga, sem nada disso.
+      if (redeData && ehProfissionalEquipe((redeData as any).tipo) && (redeData as any).slug) {
         return { type: 'slug_redirect' as const, slug: (redeData as any).slug as string };
       }
 
