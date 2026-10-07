@@ -436,14 +436,16 @@ export default function CarreiraPerfilPage() {
   // Pending connection requests (only for own profile) -- filtra pelo
   // perfil_atleta do perfil sendo visto agora, não pela conta inteira, pra
   // não misturar solicitações endereçadas a um irmão com as do outro.
+  // No Modo Suporte (admin), vale o dono do perfil visto -- não quem está logado.
+  const donoDasSolicitacoes = isOwner ? currentUserId : (suporteAtivo ? perfil?.user_id : null);
   const { data: pendingRequests } = useQuery({
-    queryKey: ['pending-connection-requests-sidebar', currentUserId, perfil?.id],
+    queryKey: ['pending-connection-requests-sidebar', donoDasSolicitacoes, perfil?.id],
     queryFn: async () => {
-      if (!currentUserId || !isOwner) return [];
+      if (!donoDasSolicitacoes || !(isOwner || suporteAtivo)) return [];
       const { data, error } = await supabase
         .from('rede_conexoes')
         .select('id, solicitante_id, destinatario_perfil_atleta_id, solicitante_perfil_atleta_id')
-        .eq('destinatario_id', currentUserId)
+        .eq('destinatario_id', donoDasSolicitacoes)
         .eq('status', 'pendente');
       if (error) throw error;
       const minhas = (data || []).filter((r) => !r.destinatario_perfil_atleta_id || r.destinatario_perfil_atleta_id === perfil?.id);
@@ -465,7 +467,7 @@ export default function CarreiraPerfilPage() {
         return { ...profile, connectionId: r.id };
       }).filter(Boolean);
     },
-    enabled: !!currentUserId && isOwner,
+    enabled: !!donoDasSolicitacoes && (isOwner || suporteAtivo),
   });
 
 
@@ -1197,7 +1199,7 @@ export default function CarreiraPerfilPage() {
 
             {/* Nossos atletas — perfil_atleta público com conexão aceita com a
                 escola, visível pra qualquer visitante. */}
-            {isDonoEscolaProfile && isOwner && (
+            {isDonoEscolaProfile && isOwnerOuSuporte && (
               <EscolaConvidarAlunos
                 perfilId={perfil.id}
                 nomeEscola={displayProfileName}
@@ -1258,7 +1260,7 @@ export default function CarreiraPerfilPage() {
               />
             )}
 
-            {isOwner && pendingRequests && pendingRequests.length > 0 && (
+            {isOwnerOuSuporte && pendingRequests && pendingRequests.length > 0 && (
               <div className={isDonoEscolaProfile ? '' : 'lg:hidden'}>
                 <Card className="p-4" style={{ borderColor: `${accentColor}50`, borderWidth: 2 }}>
                    <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -1358,7 +1360,7 @@ export default function CarreiraPerfilPage() {
             )}
 
             {/* Pending connection requests (own profile only) */}
-            {isOwner && pendingRequests && pendingRequests.length > 0 && (
+            {isOwnerOuSuporte && pendingRequests && pendingRequests.length > 0 && (
               <Card className="p-4" style={{ borderColor: `${accentColor}50`, borderWidth: 2 }}>
                 <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: accentColor }} />
