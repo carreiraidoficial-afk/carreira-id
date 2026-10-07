@@ -1,12 +1,12 @@
 import { ReactNode } from 'react';
 import { telefoneParaWhatsapp, formatarTelefoneExibicao } from '@/lib/form-validators';
-import { ehProfissionalEquipe, tituloProfissional } from '@/lib/perfil-profissional';
+import { ehProfissionalEquipe, normalizarLinkedin, tituloProfissional } from '@/lib/perfil-profissional';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConectarButton } from '../ConectarButton';
 import { ConexoesCount } from '../ConexoesCount';
-import { Instagram, Globe, Phone, Settings } from 'lucide-react';
+import { Instagram, Globe, Linkedin, Phone, Settings } from 'lucide-react';
 import type { ProfileType } from '../ProfileTypeSelector';
 
 const TYPE_CONFIG: Record<ProfileType, { label: string; icon: string; color: string }> = {
@@ -60,7 +60,8 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
   const whatsappDigits = String(perfil.telefone_whatsapp || '').replace(/\D/g, '');
   const whatsappIntl = whatsappDigits ? telefoneParaWhatsapp(perfil.telefone_whatsapp) : '';
 
-  const hasLinks = !!(instagramHandle || siteUrl || (perfil.whatsapp_publico && whatsappIntl));
+  const linkedinUrl = normalizarLinkedin(String(perfil.dados_perfil?.linkedin || '')) || '';
+  const hasLinks = !!(instagramHandle || siteUrl || linkedinUrl || (perfil.whatsapp_publico && whatsappIntl));
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -174,6 +175,13 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
                   >
                     <Globe className="w-4 h-4 flex-shrink-0" />
                     {siteUrl.replace(/^https?:\/\//, '')}
+                  </a>
+                )}
+                {linkedinUrl && (
+                  <a href={linkedinUrl} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline w-fit">
+                    <Linkedin className="w-4 h-4 flex-shrink-0" />
+                    LinkedIn
                   </a>
                 )}
                 {perfil.whatsapp_publico && whatsappIntl && (

@@ -25,6 +25,16 @@ interface Props {
   onEdit?: (item: HistoricoProfissional) => void;
   onDelete?: (id: string) => void;
   accentColor?: string;
+  /** Profissional (professor/técnico/preparador): cargo em destaque e período só em anos. */
+  estiloCurriculo?: boolean;
+}
+
+/** "2004", "2012 – 2014" ou "2017 – Atual" (só anos, como num currículo). */
+function formatPeriodoAnos(inicio: string, fim: string | null, atual: boolean) {
+  const a = inicio.split('-')[0];
+  if (atual) return `${a} – Atual`;
+  const b = fim ? fim.split('-')[0] : '';
+  return b && b !== a ? `${a} – ${b}` : a;
 }
 
 function formatPeriod(inicio: string, fim: string | null, atual: boolean) {
@@ -41,7 +51,7 @@ function formatPeriod(inicio: string, fim: string | null, atual: boolean) {
   return startStr;
 }
 
-export function HistoricoProfissionalSection({ historico, isOwner, podeExcluir, onAdd, onEdit, onDelete, accentColor = '#3b82f6' }: Props) {
+export function HistoricoProfissionalSection({ historico, isOwner, podeExcluir, onAdd, onEdit, onDelete, accentColor = '#3b82f6', estiloCurriculo = false }: Props) {
   const podeMesmoExcluir = podeExcluir ?? isOwner;
   if (historico.length === 0 && !isOwner) return null;
 
@@ -80,15 +90,29 @@ export function HistoricoProfissionalSection({ historico, isOwner, podeExcluir, 
                 <div className="p-3 rounded-lg hover:bg-muted/30 transition-colors group">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm">{item.instituicao}</h4>
-                      <p className="text-sm text-muted-foreground">{item.cargo}</p>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                        <Calendar className="w-3 h-3" />
-                        {formatPeriod(item.data_inicio, item.data_fim, item.atual)}
-                        {item.atual && (
-                          <Badge variant="secondary" className="text-[10px] ml-1 px-1.5 py-0">Atual</Badge>
-                        )}
-                      </div>
+                      {estiloCurriculo ? (
+                        <>
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="font-medium text-sm break-words">{item.cargo}</h4>
+                            <span className="shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] text-muted-foreground" style={{ borderColor: `${accentColor}40` }}>
+                              {formatPeriodoAnos(item.data_inicio, item.data_fim, item.atual)}
+                            </span>
+                          </div>
+                          {item.instituicao && <p className="text-sm text-muted-foreground break-words">{item.instituicao}</p>}
+                        </>
+                      ) : (
+                        <>
+                          <h4 className="font-medium text-sm">{item.instituicao}</h4>
+                          <p className="text-sm text-muted-foreground">{item.cargo}</p>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                            <Calendar className="w-3 h-3" />
+                            {formatPeriod(item.data_inicio, item.data_fim, item.atual)}
+                            {item.atual && (
+                              <Badge variant="secondary" className="text-[10px] ml-1 px-1.5 py-0">Atual</Badge>
+                            )}
+                          </div>
+                        </>
+                      )}
                       {item.observacoes && (
                         <p className="text-xs text-muted-foreground mt-1.5 whitespace-pre-line">{item.observacoes}</p>
                       )}

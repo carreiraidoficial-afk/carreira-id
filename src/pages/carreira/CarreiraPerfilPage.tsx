@@ -1,6 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { SobreMimCard } from '@/components/carreira/perfis/SobreMimCard';
-import { ehProfissionalEquipe, tituloProfissional } from '@/lib/perfil-profissional';
+import { ehProfissionalEquipe, normalizarLinkedin, tituloProfissional } from '@/lib/perfil-profissional';
+import { ConquistasProfissionalCard, IdiomasProfissionalCard } from '@/components/carreira/perfis/CurriculoProfissional';
 import { formatarTelefoneExibicao } from '@/lib/form-validators';
 import { EquipeEscolaSection } from '@/components/carreira/escola/EquipeEscolaSection';
 import { lerSuporteAlvo, definirSuporteAlvo, limparSuporteAlvo } from '@/hooks/useSuporteAlvo';
@@ -52,7 +53,7 @@ import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Loader2, ArrowLeft, UserX, MapPin, Trophy, Share2, User, UserPlus, UserCheck, Users, Copy, Check, Search, School, X, LogOut, Pencil, Instagram, Globe, Phone, Zap, Settings, Info, Wrench, ChevronDown } from 'lucide-react';
+import { Loader2, ArrowLeft, UserX, MapPin, Trophy, Share2, User, UserPlus, UserCheck, Users, Copy, Check, Search, School, X, LogOut, Pencil, Instagram, Globe, Phone, Zap, Settings, Info, Wrench, ChevronDown, Linkedin } from 'lucide-react';
 import { useSEO } from '@/hooks/useSEO';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -668,6 +669,7 @@ export default function CarreiraPerfilPage() {
   const instagramHandle = isRedeProfile
     ? (perfil.instagram || perfil.dados_perfil?.arroba || '').replace(/^@+/, '').trim()
     : '';
+  const linkedinUrl = isRedeProfile ? (normalizarLinkedin(String((perfil.dados_perfil as any)?.linkedin || '')) || '') : '';
   const siteUrl = isRedeProfile
     ? (perfil.site || perfil.dados_perfil?.site || perfil.dados_perfil?.portfolio || '').trim()
     : '';
@@ -924,7 +926,7 @@ export default function CarreiraPerfilPage() {
               )}
 
               {/* Contact links for network profiles */}
-              {!isAnonymous && isRedeProfile && (instagramHandle || siteUrl || (perfil.whatsapp_publico && whatsappDigits)) && (
+              {!isAnonymous && isRedeProfile && (instagramHandle || siteUrl || linkedinUrl || (perfil.whatsapp_publico && whatsappDigits)) && (
                 <div className="mt-3 flex flex-col gap-1.5 text-xs border-t border-border pt-3">
                   {instagramHandle && (
                     <a
@@ -948,6 +950,12 @@ export default function CarreiraPerfilPage() {
                       <span className="truncate">{siteUrl.replace(/^https?:\/\//, '')}</span>
                     </a>
                   )}
+                  {linkedinUrl && (
+                    <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-primary hover:underline">
+                      <Linkedin className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span className="truncate">LinkedIn</span>
+                    </a>
+                  )}
                   {perfil.whatsapp_publico && whatsappIntl && (
                     <a
                       href={`https://wa.me/${whatsappIntl}`}
@@ -962,7 +970,7 @@ export default function CarreiraPerfilPage() {
                 </div>
               )}
 
-              {isAnonymous && isRedeProfile && (instagramHandle || siteUrl || (perfil.whatsapp_publico && whatsappDigits)) && (
+              {isAnonymous && isRedeProfile && (instagramHandle || siteUrl || linkedinUrl || (perfil.whatsapp_publico && whatsappDigits)) && (
                 <div className="mt-3 border-t border-border pt-3">
                   <button
                     onClick={() => requireAuth('contact')}
@@ -1217,10 +1225,19 @@ export default function CarreiraPerfilPage() {
                 isOwner={isOwnerOuSuporte}
                 podeExcluir={isOwner}
                 accentColor={accentColor}
+                estiloCurriculo={ehProfissionalEquipe(perfil.tipo)}
                 onAdd={() => { setEditingHistorico(null); setHistoricoDialogOpen(true); }}
                 onEdit={(item) => { setEditingHistorico(item); setHistoricoDialogOpen(true); }}
                 onDelete={handleDeleteHistorico}
               />
+            )}
+
+            {/* Conquistas e idiomas — currículo do profissional (professor, técnico, preparador) */}
+            {perfil.type === 'rede' && ehProfissionalEquipe(perfil.tipo) && (
+              <>
+                <ConquistasProfissionalCard dados={perfil.dados_perfil as Record<string, any> | null} accentColor={accentColor} />
+                <IdiomasProfissionalCard dados={perfil.dados_perfil as Record<string, any> | null} accentColor={accentColor} />
+              </>
             )}
 
             {/* Nossos atletas — perfil_atleta público com conexão aceita com a

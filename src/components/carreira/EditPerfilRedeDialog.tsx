@@ -1,4 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { CurriculoEditor } from '@/components/carreira/perfis/CurriculoEditor';
+import {
+  ehProfissionalEquipe, lerCertificacoes, lerConquistas, lerIdiomas, normalizarLinkedin,
+  MAX_CERTIFICACOES, MAX_CONQUISTAS, MAX_IDIOMAS, type Certificacao, type Conquista, type IdiomaNivel,
+} from '@/lib/perfil-profissional';
 import { TelefoneInput } from '@/components/shared/TelefoneInput';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Instagram, Trash2, Globe, Phone, Mail, Plus, Lock, Upload } from 'lucide-react';
+import { Loader2, Instagram, Trash2, Globe, Phone, Mail, Plus, Lock, Upload, Linkedin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -166,11 +171,16 @@ interface EditPerfilRedeDialogProps {
 
 const formatPhone = formatPhoneInput;
 
-type AbaId = 'escola' | 'links' | 'equipe' | 'conta';
-const ABAS: { id: AbaId; rotulo: string }[] = [
+type AbaId = 'escola' | 'links' | 'equipe' | 'curriculo' | 'conta';
+const ABAS_ESCOLA: { id: AbaId; rotulo: string }[] = [
   { id: 'escola', rotulo: 'Escola' },
   { id: 'links', rotulo: 'Links e unidades' },
   { id: 'equipe', rotulo: 'Equipe' },
+  { id: 'conta', rotulo: 'Conta' },
+];
+const ABAS_PROFISSIONAL: { id: AbaId; rotulo: string }[] = [
+  { id: 'escola', rotulo: 'Perfil' },
+  { id: 'curriculo', rotulo: 'Currículo' },
   { id: 'conta', rotulo: 'Conta' },
 ];
 
@@ -220,10 +230,19 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
   const [unidades, setUnidades] = useState<Unidade[]>([]);
   // Links da escola (matrícula, planos, aula experimental...) for dono_escola
   const [linksEscola, setLinksEscola] = useState<LinkEscola[]>([]);
+  // Currículo do profissional (vai pra dados_perfil junto com o resto, em "Salvar Alterações")
+  const [tituloProf, setTituloProf] = useState('');
+  const [linkedinProf, setLinkedinProf] = useState('');
+  const [certificacoesProf, setCertificacoesProf] = useState<Certificacao[]>([]);
+  const [idiomasProf, setIdiomasProf] = useState<IdiomaNivel[]>([]);
+  const [conquistasProf, setConquistasProf] = useState<Conquista[]>([]);
 
   const isTorcedor = perfil?.tipo === 'torcedor';
   const isDono = perfil?.tipo === 'dono_escola';
-  const usaAbas = isDono;
+  // Escola e profissional (professor/técnico/preparador) usam abas; os demais tipos seguem em coluna única.
+  const ehProf = ehProfissionalEquipe(perfil?.tipo);
+  const usaAbas = isDono || ehProf;
+  const abasDisponiveis = isDono ? ABAS_ESCOLA : ABAS_PROFISSIONAL;
   const [aba, setAba] = useState<AbaId>('escola');
   useEffect(() => {
     if (open) setAba('escola');
@@ -287,6 +306,11 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
         ? d.unidades.map((u: Unidade) => ({ ...u, logoPreview: u.logo_url || null }))
         : []);
       setLinksEscola(lerLinksEscola(d));
+      setTituloProf(String(d.titulo_profissional || ''));
+      setLinkedinProf(String(d.linkedin || ''));
+      setCertificacoesProf(lerCertificacoes(d));
+      setIdiomasProf(lerIdiomas(d));
+      setConquistasProf(lerConquistas(d));
       loadDadosValues(d);
 
       // Load account data
@@ -418,6 +442,13 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
       }
     }
 
+    // LinkedIn do profissional: se preenchido, precisa ser um endereço do LinkedIn.
+    if (ehProf && normalizarLinkedin(linkedinProf) === null) {
+      setAba('escola');
+      toast.error('Confira o link do LinkedIn: use o endereço do seu perfil (linkedin.com/in/...).');
+      return;
+    }
+
     setSaving(true);
     try {
 
@@ -434,6 +465,25 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
         if (val !== undefined) {
           newDados[field.key] = val;
         }
+      }
+
+      // Currículo do profissional: valor vazio apaga a chave (em vez de gravar lista/texto vazio).
+      if (ehProf) {
+        const definir = (chave: string, valor: string | unknown[]) => {
+          if (typeof valor === 'string' ? valor === '' : valor.length === 0) delete newDados[chave];
+          else newDados[chave] = valor;
+        };
+        definir('titulo_profissional', tituloProf.trim().slice(0, 80));
+        definir('linkedin', normalizarLinkedin(linkedinProf) || '');
+        definir('certificacoes_lista', certificacoesProf
+          .map((c) => ({ titulo: c.titulo.trim().slice(0, 100), instituicao: c.instituicao.trim().slice(0, 100), status: c.status }))
+          .filter((c) => c.titulo).slice(0, MAX_CERTIFICACOES));
+        definir('idiomas', idiomasProf
+          .map((i) => ({ idioma: i.idioma.trim().slice(0, 30), nivel: i.nivel }))
+          .filter((i) => i.idioma).slice(0, MAX_IDIOMAS));
+        definir('conquistas', conquistasProf
+          .map((c) => ({ titulo: c.titulo.trim().slice(0, 100), descricao: c.descricao.trim().slice(0, 120), ano: /^\d{4}$/.test(c.ano) ? c.ano : '', tipo: c.tipo }))
+          .filter((c) => c.titulo).slice(0, MAX_CONQUISTAS));
       }
 
       // Torcedor-specific fields
@@ -616,8 +666,8 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
         </DialogHeader>
 
         {usaAbas && (
-          <div role="tablist" aria-label="Seções do perfil da escola" className="grid grid-cols-4 gap-1 rounded-lg bg-muted p-1">
-            {ABAS.map((t) => (
+          <div role="tablist" aria-label="Seções do perfil" className={`grid gap-1 rounded-lg bg-muted p-1 ${abasDisponiveis.length === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
+            {abasDisponiveis.map((t) => (
               <button
                 key={t.id}
                 type="button"
@@ -685,6 +735,19 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
               </FormItem>
             )} />
 
+            {ehProf && (
+              <div className="space-y-1.5">
+                <Label>Título profissional</Label>
+                <Input
+                  value={tituloProf}
+                  maxLength={80}
+                  onChange={(e) => setTituloProf(e.target.value)}
+                  placeholder="Ex.: Professor de Vôlei de Praia"
+                />
+                <p className="text-xs text-muted-foreground">Aparece sob o seu nome. Em branco, o app monta um título pelo tipo e modalidade.</p>
+              </div>
+            )}
+
             {/* Torcedor-specific: time and brasão */}
             {isTorcedor && (
               <>
@@ -736,6 +799,21 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
                     <FormMessage />
                   </FormItem>
                 )} />
+
+                {ehProf && (
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1.5 text-sm font-medium"><Linkedin className="w-4 h-4" /> LinkedIn</Label>
+                    <Input
+                      value={linkedinProf}
+                      onChange={(e) => setLinkedinProf(e.target.value)}
+                      placeholder="linkedin.com/in/seu-perfil"
+                      inputMode="url"
+                    />
+                    {linkedinProf.trim() && normalizarLinkedin(linkedinProf) === null && (
+                      <p className="text-[11px] text-destructive">Use o endereço do seu perfil no LinkedIn (linkedin.com/in/...).</p>
+                    )}
+                  </div>
+                )}
 
                 <FormField control={form.control} name="telefone_whatsapp" render={({ field }) => (
                   <FormItem>
@@ -921,6 +999,19 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
 
             <Aba id="equipe" atual={aba} ativo={usaAbas}>
             {isDono && perfil?.id && <EquipeEscolaEditor escolaPerfilId={perfil.id} />}
+            </Aba>
+
+            <Aba id="curriculo" atual={aba} ativo={usaAbas}>
+            {ehProf && (
+              <CurriculoEditor
+                certificacoes={certificacoesProf}
+                onCertificacoes={setCertificacoesProf}
+                idiomas={idiomasProf}
+                onIdiomas={setIdiomasProf}
+                conquistas={conquistasProf}
+                onConquistas={setConquistasProf}
+              />
+            )}
             </Aba>
 
             <div className={usaAbas ? 'sticky bottom-0 z-10 -mx-6 -mb-6 flex justify-end gap-2 border-t bg-background px-6 pb-6 pt-3' : 'flex gap-2 justify-end pt-4'}>

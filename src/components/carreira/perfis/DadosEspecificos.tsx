@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card';
 import type { LucideIcon } from 'lucide-react';
 import { Award, Briefcase, Building2, FileText, MapPin, Star, Trophy } from 'lucide-react';
-import { ehProfissionalEquipe, especialidadeVisivel, linhasDeTexto } from '@/lib/perfil-profissional';
+import { ehProfissionalEquipe, especialidadeVisivel, lerCertificacoes, linhasDeTexto } from '@/lib/perfil-profissional';
 import type { ProfileType } from '../ProfileTypeSelector';
 
 const LINK_FIELDS = new Set(['site', 'portfolio', 'site_whatsapp', 'contato', 'arroba']);
@@ -74,10 +74,16 @@ function InformacoesProfissionaisEquipe({ tipo, dados, accentColor = '#3b82f6', 
   const listas = cfg.listas
     .map((l) => ({ ...l, itens: (Array.isArray(dados[l.key]) ? dados[l.key] : []).filter(Boolean) as string[] }))
     .filter((l) => l.itens.length > 0);
-  const certificacoes = cfg.certKeys.flatMap((k) => linhasDeTexto(dados[k]));
+  const certificacoesTexto = cfg.certKeys.flatMap((k) => linhasDeTexto(dados[k]));
+  // Lista estruturada (aba Currículo) vence o texto corrido antigo.
+  const estruturadas = lerCertificacoes(dados);
+  const itensCert: { titulo: string; instituicao: string; status: string | null }[] =
+    estruturadas.length > 0
+      ? estruturadas
+      : certificacoesTexto.map((titulo) => ({ titulo, instituicao: '', status: null }));
   const experiencia = ocultarExperienciaTexto ? [] : linhasDeTexto(dados[cfg.expKey]);
 
-  if (escalares.length === 0 && listas.length === 0 && certificacoes.length === 0 && experiencia.length === 0) return null;
+  if (escalares.length === 0 && listas.length === 0 && itensCert.length === 0 && experiencia.length === 0) return null;
 
   const tile = { backgroundColor: `${accentColor}18`, color: accentColor };
 
@@ -117,19 +123,32 @@ function InformacoesProfissionaisEquipe({ tipo, dados, accentColor = '#3b82f6', 
         </Card>
       )}
 
-      {certificacoes.length > 0 && (
+      {itensCert.length > 0 && (
         <Card className="p-5">
           <h2 className="font-semibold text-foreground mb-3 flex items-center gap-2">
             <Award className="w-4 h-4" style={{ color: accentColor }} />
             {cfg.certTitulo}
           </h2>
           <ul className="space-y-2">
-            {certificacoes.map((linha, i) => (
-              <li key={`${linha}-${i}`} className="flex items-start gap-3 text-sm text-foreground">
+            {itensCert.map((c, i) => (
+              <li key={`${c.titulo}-${i}`} className="flex items-start gap-3 text-sm text-foreground">
                 <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0" style={tile}>
                   <FileText className="w-3.5 h-3.5" />
                 </div>
-                <span className="pt-0.5 break-words">{linha}</span>
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <p className="break-words">{c.titulo}</p>
+                  {c.instituicao && <p className="text-xs text-muted-foreground break-words">{c.instituicao}</p>}
+                </div>
+                {c.status && (
+                  <span
+                    className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium"
+                    style={c.status === 'andamento'
+                      ? { backgroundColor: '#f59e0b22', color: '#d97706' }
+                      : { backgroundColor: '#10b98122', color: '#059669' }}
+                  >
+                    {c.status === 'andamento' ? 'Em andamento' : 'Concluído'}
+                  </span>
+                )}
               </li>
             ))}
           </ul>
