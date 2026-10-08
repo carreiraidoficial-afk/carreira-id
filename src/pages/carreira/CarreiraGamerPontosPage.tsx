@@ -9,6 +9,7 @@ import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
 import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
+import { useLigaVisivel } from '@/hooks/useLigaVisivel';
 
 export default function CarreiraGamerPontosPage() {
   const { sessionUserId: currentUserId, loading: sessionLoading } = useCarreiraSession();
@@ -19,8 +20,9 @@ export default function CarreiraGamerPontosPage() {
   // criança "ativa" do seletor em vez de sempre pegar a mais antiga.
   const { perfilAtivo } = useCriancaAtiva(currentUserId);
   const accentColor = perfilAtivo?.cor_destaque || '#3b82f6';
+  const { liberada: ligaLiberada, carregando: ligaCarregando } = useLigaVisivel();
 
-  if (sessionLoading) {
+  if (sessionLoading || ligaCarregando) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background" data-theme={carreiraTheme}>
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -30,6 +32,10 @@ export default function CarreiraGamerPontosPage() {
 
   if (!currentUserId) {
     return <Navigate to={carreiraPath('/cadastro')} replace />;
+  }
+
+  if (!ligaLiberada) {
+    return <Navigate to={carreiraPath('/feed')} replace />;
   }
 
   return (
@@ -66,7 +72,7 @@ export default function CarreiraGamerPontosPage() {
         </Card>
       </main>
 
-      <CarreiraBottomNav currentUserId={currentUserId} profileSlug={perfilData?.slug || null} />
+      <CarreiraBottomNav currentUserId={currentUserId} profileSlug={perfilAtivo?.slug || null} />
     </div>
   );
 }

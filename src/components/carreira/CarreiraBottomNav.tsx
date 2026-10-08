@@ -1,4 +1,5 @@
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useLigaVisivel } from '@/hooks/useLigaVisivel';
 import { useSuporteAlvo } from '@/hooks/useSuporteAlvo';
 import { Home, Users, User, LogOut, Gamepad2, Search, Bell, CalendarDays, Shield, ClipboardList } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -87,6 +88,7 @@ export function CarreiraBottomNav({ currentUserId, profileSlug: profileSlugProp 
     staleTime: Infinity,
   });
 
+  const { liberada: ligaLiberada } = useLigaVisivel();
   const isScoutingProfile = perfilRede ? SCOUTING_TYPES.includes(perfilRede.tipo) : false;
   const isPeneiraCreator = perfilRede ? PENEIRA_TYPES.includes(perfilRede.tipo) : false;
 
@@ -180,7 +182,7 @@ export function CarreiraBottomNav({ currentUserId, profileSlug: profileSlugProp 
         active: location.pathname === descobrirPath,
         badge: 0,
       }
-    : temPerfilAtleta === false
+    : temPerfilAtleta === false || !ligaLiberada
       ? null
       : {
           icon: Gamepad2,

@@ -18,7 +18,9 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { NivelConfig, PontosTipoConfig, DesafioConvite } from '@/hooks/useGamificacaoData';
 import { getLevelTitle } from '@/hooks/useGamificacaoData';
-import { Send } from 'lucide-react';
+import { useLigaVisivel } from '@/hooks/useLigaVisivel';
+import { Send, Eye, EyeOff } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface GamificacaoStats {
   total_usuarios: number;
@@ -185,6 +187,8 @@ export default function CarreiraAdminGamificacaoPage() {
             <h1 className="text-3xl font-bold tracking-tight">Gamificação</h1>
             <p className="text-muted-foreground">Sistema de pontos, níveis, desafios e conquistas</p>
           </div>
+          <div className="flex flex-wrap items-center gap-2">
+          <LigaVisibilidade />
           <Dialog>
             <DialogTrigger asChild>
               <Button className="bg-orange-500 hover:bg-orange-600">
@@ -201,6 +205,7 @@ export default function CarreiraAdminGamificacaoPage() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         {/* Stats */}
@@ -571,6 +576,68 @@ function DesafiosManager({ desafios, onSave }: { desafios: DesafioConvite[]; onS
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// ===================== Visibilidade da Liga =====================
+/** Liga ligada/desligada para os atletas. Desligada: some do menu, das telas e do perfil (os pontos continuam
+ * sendo acumulados em silêncio). O admin sempre vê. */
+function LigaVisibilidade() {
+  const queryClient = useQueryClient();
+  const { publicada, carregando } = useLigaVisivel();
+  const [confirmando, setConfirmando] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+
+  const alterar = async () => {
+    setSalvando(true);
+    const novo = !publicada;
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data, error } = await supabase
+      .from('carreira_config' as any)
+      .upsert({ chave: 'liga_visivel', valor: novo, updated_at: new Date().toISOString(), updated_by: user?.id ?? null } as any)
+      .select('chave');
+    setSalvando(false);
+    // RLS que bloqueia devolve 0 linhas sem erro: sem checar, o aviso mentiria.
+    if (error || !data || data.length === 0) {
+      toast.error('Não foi possível alterar a visibilidade da Liga.');
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ['carreira-config', 'liga_visivel'] });
+    toast.success(novo ? 'Liga publicada: os atletas já podem ver.' : 'Liga oculta para os atletas.');
+    setConfirmando(false);
+  };
+
+  return (
+    <>
+      <div className="flex items-center gap-2 rounded-lg border px-3 py-1.5">
+        {publicada ? <Eye className="w-4 h-4 text-green-600" /> : <EyeOff className="w-4 h-4 text-muted-foreground" />}
+        <div className="leading-tight">
+          <p className="text-xs font-medium">Liga {carregando ? '…' : publicada ? 'visível' : 'oculta'} para os atletas</p>
+          <p className="text-[10px] text-muted-foreground">Você sempre vê, para testar</p>
+        </div>
+        <Button size="sm" variant={publicada ? 'outline' : 'default'} disabled={carregando} onClick={() => setConfirmando(true)} className="ml-1 h-8">
+          {publicada ? 'Ocultar' : 'Publicar Liga'}
+        </Button>
+      </div>
+      <AlertDialog open={confirmando} onOpenChange={setConfirmando}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{publicada ? 'Ocultar a Liga?' : 'Publicar a Liga?'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {publicada
+                ? 'A Liga some do menu, das telas e do perfil dos atletas. Os pontos continuam sendo acumulados.'
+                : 'A aba Liga, o ranking e o card de pontos passam a aparecer para todos os atletas, com os pontos que já acumularam.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={salvando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction disabled={salvando} onClick={(e) => { e.preventDefault(); alterar(); }}>
+              {salvando ? 'Salvando…' : publicada ? 'Ocultar' : 'Publicar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 

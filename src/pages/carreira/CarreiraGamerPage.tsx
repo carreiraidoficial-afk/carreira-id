@@ -19,6 +19,7 @@ import { useCarreiraSession } from '@/hooks/useCarreiraSession';
 import { useCarreiraPlano } from '@/hooks/useCarreiraPlano';
 import { FeatureGate } from '@/components/carreira/FeatureGate';
 import { useCriancaAtiva, slugDoDono } from '@/hooks/useCriancaAtiva';
+import { useLigaVisivel } from '@/hooks/useLigaVisivel';
 
 export default function CarreiraGamerPage() {
   const { sessionUserId: currentUserId, loading: sessionLoading } = useCarreiraSession();
@@ -54,11 +55,12 @@ export default function CarreiraGamerPage() {
 
   const accentColor = perfilAtivo?.cor_destaque || '#3b82f6';
   const mySlug = meuSlugProprio || perfilRede?.slug || null;
+  const { liberada: ligaLiberada, carregando: ligaCarregando } = useLigaVisivel();
   const { data: ranking } = useCarreiraRanking();
   const { plano, temAcesso } = useCarreiraPlano(perfilAtivo?.crianca_id || null);
   const { data: niveis } = useNiveisConfig();
 
-  if (sessionLoading) {
+  if (sessionLoading || ligaCarregando) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background" data-theme={carreiraTheme}>
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -68,6 +70,11 @@ export default function CarreiraGamerPage() {
 
   if (!currentUserId) {
     return <Navigate to={carreiraPath('/cadastro')} replace />;
+  }
+
+  // Liga ainda não lançada (o admin publica em Admin → Gamificação).
+  if (!ligaLiberada) {
+    return <Navigate to={mySlug ? carreiraPath(`/${mySlug}`) : carreiraPath('/feed')} replace />;
   }
 
   if (temPerfilAtleta === false) {

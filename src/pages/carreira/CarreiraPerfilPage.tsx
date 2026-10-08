@@ -65,6 +65,7 @@ import { toast } from 'sonner';
 import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { useCarreiraRanking } from '@/hooks/useCarreiraRanking';
+import { useLigaVisivel } from '@/hooks/useLigaVisivel';
 import { useAnonymousGate } from '@/hooks/useAnonymousGate';
 import { useCriancaAtiva, useColaboradorInfo, useMeusAmbientes, salvarUltimoAmbiente } from '@/hooks/useCriancaAtiva';
 import { LockedSection } from '@/components/carreira/AnonymousFeedCTA';
@@ -403,6 +404,7 @@ export default function CarreiraPerfilPage() {
   const { data: connections } = useConnectionsList(perfil?.user_id);
   const { data: escolinhas } = useEscolinhasCarreira(perfil?.type === 'atleta' ? perfil?.crianca_id : undefined);
   const { data: ligaRanking } = useCarreiraRanking(20);
+  const { liberada: ligaLiberada } = useLigaVisivel();
 
   // Track profile view (like LinkedIn) — only for non-owner visits on atleta profiles
   useEffect(() => {
@@ -1118,7 +1120,7 @@ export default function CarreiraPerfilPage() {
 
 
             {/* Gamificação — desktop only, athletes only (not scouts/técnicos) */}
-            {isOwner && perfil.type === 'atleta' && (
+            {ligaLiberada && isOwner && perfil.type === 'atleta' && (
               <GamificacaoHeroCard accentColor={accentColor} />
             )}
 
@@ -1432,7 +1434,7 @@ export default function CarreiraPerfilPage() {
 
           {/* Right Sidebar — Pending Requests + Suggestions + Connections */}
           <aside className={isDonoEscolaProfile ? 'hidden' : 'hidden lg:block space-y-4'}>
-            {perfil.type === 'atleta' && topRanking.length > 0 && (
+            {ligaLiberada && perfil.type === 'atleta' && topRanking.length > 0 && (
               <Card className="p-4" style={{ borderColor: `${accentColor}50`, borderWidth: 2 }}>
                 <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                   <Trophy className="w-4 h-4" style={{ color: accentColor }} />

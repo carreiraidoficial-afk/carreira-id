@@ -718,7 +718,7 @@ export function CarreiraLandingV2() {
         </div>
       </section>
 
-      {/* ═══ Competição & Ranking ═══ */}
+      {/* ═══ Liga (em breve) ═══ */}
       <section className="relative py-20 overflow-hidden">
         <div className="absolute inset-0">
           <img src={torcidaPaisBg} alt="" className="w-full h-full object-cover" loading="lazy" width={1920} height={1024} />
@@ -729,7 +729,7 @@ export function CarreiraLandingV2() {
             <div className="flex justify-center order-2 md:order-1">
               <img
                 src={mockupRanking}
-                alt="Ranking de atletas no Carreira ID"
+                alt="Prévia da Liga do Esporte de Base no Carreira ID"
                 className="w-full max-w-[280px] md:max-w-[320px] drop-shadow-2xl rounded-3xl"
                 loading="lazy"
                 width={512}
@@ -737,21 +737,21 @@ export function CarreiraLandingV2() {
               />
             </div>
             <div className="order-1 md:order-2">
-              <SectionBadge>Competição</SectionBadge>
+              <SectionBadge>Em breve</SectionBadge>
               <h2 className="mt-6 text-3xl sm:text-4xl md:text-5xl font-extrabold">
-                Jogue, convide e <span className="text-orange-400">suba no ranking</span>.
+                A <span className="text-orange-400">Liga do Esporte de Base</span> chega ao Carreira ID.
               </h2>
               <p className="mt-6 text-gray-400 text-lg leading-relaxed">
-                No Carreira ID, cada ação conta. Complete seu perfil, registre atividades e convide amigos e familiares para fazerem parte da sua <strong className="text-white">torcida</strong>.
+                Estamos preparando um jeito divertido de acompanhar a sua evolução: cada passo da sua trajetória no Carreira ID vai render pontos e conquistas. Não é um campeonato: é um reconhecimento pelo seu engajamento e pela sua história.
               </p>
               <p className="mt-4 text-gray-400 text-base leading-relaxed">
-                Aumente sua autoridade e reputação trazendo novos membros para a plataforma — técnicos, professores, treinadores e atletas profissionais. Quanto mais engajado, mais alto você chega no ranking.
+                Complete seu perfil, registre sua jornada e traga a sua <strong className="text-white">torcida</strong>. Quem entrar agora já começa acumulando.
               </p>
               <div className="space-y-3 mt-8">
                 {[
-                  { icon: Trophy, label: 'Ranking nacional entre atletas', color: 'text-amber-400' },
+                  { icon: Trophy, label: 'Pontos e conquistas pela sua evolução', color: 'text-amber-400' },
                   { icon: Users, label: 'Convide amigos e familiares como torcida', color: 'text-emerald-400' },
-                  { icon: Star, label: 'Ganhe XP e badges por cada conquista', color: 'text-orange-400' },
+                  { icon: Star, label: 'Níveis que mostram a sua jornada', color: 'text-orange-400' },
                   { icon: TrendingUp, label: 'Atraia técnicos e profissionais para sua rede', color: 'text-blue-400' },
                 ].map((f) => (
                   <div key={f.label} className="flex items-center gap-3 bg-[#1a2332] border border-[#2a3a4e] rounded-xl p-4">
@@ -766,7 +766,7 @@ export function CarreiraLandingV2() {
                 to={cadastroLink}
                 className="mt-8 inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-7 py-3.5 rounded-xl text-base transition"
               >
-                Entrar na Competição <ArrowRight className="w-5 h-5" />
+                Criar meu perfil <ArrowRight className="w-5 h-5" />
               </Link>
             </div>
           </div>
@@ -801,7 +801,7 @@ export function CarreiraLandingV2() {
                   'Conexões na plataforma',
                   'Perfil visível para scouts e clubes',
                   'Participação na comunidade',
-                  'Liga de Conexões do Atleta',
+                  'Liga do Esporte de Base (em breve)',
                 ].map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
                     <CheckCircle2 className="w-4 h-4 text-gray-500 shrink-0 mt-0.5" /> {f}
@@ -950,16 +950,16 @@ export function CarreiraLandingV2() {
                 a: 'O responsável legal cria e gerencia o perfil do atleta menor de idade. Ele define o que pode ou não ser exibido publicamente, garantindo total controle parental sobre as informações.',
               },
               {
-                q: 'O que é a Liga e como funciona o ranking?',
-                a: 'A Liga é o sistema de gamificação do Carreira ID. Cada ação que você realiza — como completar o perfil, fazer publicações, registrar atividades e convidar amigos — gera pontos de XP. Quanto mais pontos, mais alto você sobe no ranking nacional entre atletas.',
+                q: 'O que é a Liga?',
+                a: 'A Liga é a área de pontos, níveis e conquistas do Carreira ID, que vamos lançar em breve. Ela reconhece o seu engajamento (perfil completo, publicações, jornada e convites), sem ser um campeonato. Quem já está no app acumula pontos desde já.',
               },
               {
-                q: 'Como ganho pontos e XP na Liga?',
-                a: 'Você ganha XP ao completar ações como: preencher seu perfil, publicar posts, adicionar experiências esportivas, conectar-se a outros atletas e convidar amigos e familiares para a plataforma. Cada ação tem um valor de pontos diferente, que pode ser consultado na Tabela de Pontos.',
+                q: 'Como ganho pontos na Liga?',
+                a: 'Você ganha pontos ao completar o perfil, publicar, registrar experiências, conectar-se a outras pessoas e convidar amigos e familiares. Quando a Liga for lançada, você verá tudo o que já acumulou.',
               },
               {
-                q: 'O que são os níveis da Liga (Cria, Promessa, Craque...)?',
-                a: 'São faixas de progressão baseadas no seu XP acumulado. Você começa como "Cria" e vai subindo — Promessa, Fera, Brabo, Craque e outros níveis mais acima — conforme acumula pontos. Cada nível traz reconhecimento e visibilidade no ranking.',
+                q: 'O que são os níveis da Liga?',
+                a: 'São faixas de progressão, como Cria, Promessa e Craque, baseadas nos seus pontos. Você sobe de nível conforme participa.',
               },
               {
                 q: 'O que é a integração com o Atleta ID?',
