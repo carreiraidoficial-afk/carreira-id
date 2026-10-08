@@ -51,6 +51,7 @@ import { PeneirasSection } from '@/components/carreira/PeneirasSection';
 
 import { DescobrirAtletasSection } from '@/components/carreira/DescobrirAtletasSection';
 import { CompartilharPerfilDialog } from '@/components/carreira/CompartilharPerfilDialog';
+import { CompartilharLinkDialog } from '@/components/carreira/CompartilharLinkDialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -605,6 +606,13 @@ export default function CarreiraPerfilPage() {
   const ambienteAtual: 'atleta' | 'rede' = isRedeProfile ? 'rede' : 'atleta';
 
   const NON_HISTORICO_TYPES = ['atleta_filho', 'pai_responsavel', 'influenciador', 'torcedor', 'dono_escola'];
+  // Compartilhar: perfil de rede (menos torcedor e responsável de atleta) convida como profissional, com mensagens próprias.
+  const compartilhaComoProfissional = isRedeProfile && !['torcedor', 'pai_responsavel'].includes(perfil.tipo || '');
+  const funcaoCompartilhar = compartilhaComoProfissional
+    ? (ehProfissionalEquipe(perfil.tipo)
+        ? tituloProfissional(perfil.tipo, perfil.dados_perfil as Record<string, any> | null, TYPE_LABELS[perfil.tipo] || perfil.tipo)
+        : (TYPE_LABELS[perfil.tipo] || perfil.tipo))
+    : undefined;
   const showHistorico = isRedeProfile && !NON_HISTORICO_TYPES.includes(perfil.tipo || '');
   const historicoProfissional: HistoricoProfissional[] = isRedeProfile
     ? ((perfil.dados_perfil as any)?.historico_profissional || [])
@@ -1075,7 +1083,7 @@ export default function CarreiraPerfilPage() {
                 {!isAnonymous && (
                   <FollowButton perfil={perfil} currentUserId={currentUserId} isOwner={isOwner} />
                 )}
-                <ShareButton slug={perfil.slug} nome={displayProfileName} accentColor={accentColor} ownerUserId={perfil.user_id} />
+                <ShareButton slug={perfil.slug} nome={displayProfileName} accentColor={accentColor} ownerUserId={perfil.user_id} profissional={compartilhaComoProfissional} funcao={funcaoCompartilhar} ehDono={isOwnerOuSuporte} />
               </div>
               </div>
             </Card>
@@ -1159,7 +1167,7 @@ export default function CarreiraPerfilPage() {
                       {!isAnonymous && (
                         <FollowButton perfil={perfil} currentUserId={currentUserId} isOwner={isOwner} />
                       )}
-                      <ShareButton slug={perfil.slug} nome={displayProfileName} accentColor={accentColor} ownerUserId={perfil.user_id} />
+                      <ShareButton slug={perfil.slug} nome={displayProfileName} accentColor={accentColor} ownerUserId={perfil.user_id} profissional={compartilhaComoProfissional} funcao={funcaoCompartilhar} ehDono={isOwnerOuSuporte} />
                     </>
                   )}
                 />
@@ -1738,7 +1746,7 @@ function FollowButton({ perfil, currentUserId, isOwner }: { perfil: any; current
   );
 }
 
-function ShareButton({ slug, nome, accentColor, ownerUserId }: { slug: string; nome: string; accentColor?: string; ownerUserId: string }) {
+function ShareButton({ slug, nome, accentColor, ownerUserId, profissional, funcao, ehDono }: { slug: string; nome: string; accentColor?: string; ownerUserId: string; profissional?: boolean; funcao?: string; ehDono?: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -1746,14 +1754,20 @@ function ShareButton({ slug, nome, accentColor, ownerUserId }: { slug: string; n
         style={accentColor ? { borderColor: `${accentColor}50`, color: accentColor } : undefined}>
         <Share2 className="w-3.5 h-3.5 mr-1" />Compartilhar
       </Button>
-      <CompartilharPerfilDialog
-        open={open}
-        onOpenChange={setOpen}
-        ownerUserId={ownerUserId}
-        atletaNome={nome}
-        atletaSlug={slug}
-        accentColor={accentColor}
-      />
+      {ehDono ? (
+        <CompartilharPerfilDialog
+          open={open}
+          onOpenChange={setOpen}
+          ownerUserId={ownerUserId}
+          atletaNome={nome}
+          atletaSlug={slug}
+          accentColor={accentColor}
+          profissional={profissional}
+          funcao={funcao}
+        />
+      ) : (
+        <CompartilharLinkDialog open={open} onOpenChange={setOpen} nome={nome} slug={slug} />
+      )}
     </>
   );
 }

@@ -113,6 +113,63 @@ export const TEMPLATES_REDE: Template[] = [
   },
 ];
 
-export function aplicarTemplate(template: string, nome: string, link: string): string {
-  return template.replace(/\{nome\}/g, nome).replace(/\{link\}/g, link);
+/** Mensagens de quem é PROFISSIONAL (professor, técnico, preparador, escola, scout...) convidando outras pessoas.
+ * {eu} = "Nome, função" (a função some se não houver). */
+export const TEMPLATES_PROFISSIONAL_COLEGAS: Template[] = [
+  {
+    id: 'direto',
+    label: 'Direto',
+    hint: 'Pra colegas de profissão',
+    body:
+      'Oi! Aqui é {eu}. 👋\n' +
+      'Estou no Carreira ID, a rede do esporte de base: perfil profissional, histórico e conexão com atletas e outros profissionais.\n' +
+      'Cria o seu perfil por esse link e já ficamos conectados:\n{link}',
+  },
+  {
+    id: 'curto',
+    label: 'Curto',
+    hint: 'Pra mandar rápido',
+    body: 'Aqui é {eu}. Entra no Carreira ID e já ficamos conectados: {link}',
+  },
+  {
+    id: 'formal',
+    label: 'Formal',
+    hint: 'Pra quem ainda não conhece',
+    body:
+      'Olá! Tudo bem?\n\n' +
+      'Sou {eu}. Estou usando o Carreira ID, uma plataforma que reúne profissionais do esporte de base ' +
+      '(professores, técnicos, preparadores, scouts, escolas) e acompanha a trajetória de jovens atletas.\n\n' +
+      'Seria um prazer ter você na rede. O cadastro é rápido e, ao criar seu perfil por este link, já ficamos conectados:\n\n{link}',
+  },
+];
+
+export const TEMPLATES_PROFISSIONAL_ATLETAS: Template[] = [
+  {
+    id: 'pais',
+    label: 'Pais e responsáveis',
+    hint: 'Pra famílias dos meus atletas',
+    body:
+      'Olá! Aqui é {eu}.\n\n' +
+      'No Carreira ID cada atleta tem um perfil com jogos, evolução e conquistas, e eu acompanho de perto por lá.\n' +
+      'Crie o perfil do(a) seu(sua) filho(a) por este link e fique conectado(a) comigo:\n\n{link}',
+  },
+  {
+    id: 'atleta',
+    label: 'Atleta',
+    hint: 'Direto pro atleta',
+    body:
+      'Fala! Aqui é {eu}. 👊\n' +
+      'Cria seu perfil de atleta no Carreira ID por esse link, registra seus jogos e sua evolução, e já ficamos conectados:\n{link}',
+  },
+  {
+    id: 'curto',
+    label: 'Curto',
+    hint: 'Mensagem rápida',
+    body: 'Aqui é {eu}. Cria o perfil do atleta no Carreira ID e já fica conectado comigo: {link}',
+  },
+];
+
+export function aplicarTemplate(template: string, nome: string, link: string, funcao?: string): string {
+  const eu = funcao ? `${nome}, ${funcao}` : nome;
+  return template.replace(/\{eu\}/g, eu).replace(/\{nome\}/g, nome).replace(/\{link\}/g, link);
 }

@@ -13,6 +13,8 @@ import {
   TEMPLATES_ATLETA_CRIANCA,
   TEMPLATES_ATLETA_PAI,
   TEMPLATES_REDE,
+  TEMPLATES_PROFISSIONAL_COLEGAS,
+  TEMPLATES_PROFISSIONAL_ATLETAS,
   aplicarTemplate,
   type Template,
 } from './templates-compartilhar';
@@ -27,6 +29,10 @@ interface Props {
   /** Slug do atleta — entra na URL como ?a= */
   atletaSlug: string;
   accentColor?: string;
+  /** Perfil profissional (professor, técnico, escola, scout...): mensagens e links próprios, sem os de atleta/torcida. */
+  profissional?: boolean;
+  /** Função mostrada na mensagem ("Professor de Vôlei de Areia"). */
+  funcao?: string;
 }
 
 type TabKey = 'torcedor' | 'atleta' | 'rede';
@@ -38,8 +44,11 @@ export function CompartilharPerfilDialog({
   atletaNome,
   atletaSlug,
   accentColor,
+  profissional = false,
+  funcao,
 }: Props) {
-  const [tab, setTab] = useState<TabKey>('torcedor');
+  // Profissional: "rede" = convidar colegas; "atleta" = convidar atletas/alunos e famílias.
+  const [tab, setTab] = useState<TabKey>(profissional ? 'rede' : 'torcedor');
   const [conviteCodigo, setConviteCodigo] = useState<string | null>(null);
   const [templateId, setTemplateId] = useState<string>('direto');
   const [tomAtleta, setTomAtleta] = useState<'crianca' | 'pai'>('crianca');
@@ -65,10 +74,11 @@ export function CompartilharPerfilDialog({
 
   // Templates do tab atual
   const templates: Template[] = useMemo(() => {
+    if (profissional) return tab === 'atleta' ? TEMPLATES_PROFISSIONAL_ATLETAS : TEMPLATES_PROFISSIONAL_COLEGAS;
     if (tab === 'torcedor') return TEMPLATES_TORCEDOR;
     if (tab === 'atleta') return tomAtleta === 'crianca' ? TEMPLATES_ATLETA_CRIANCA : TEMPLATES_ATLETA_PAI;
     return TEMPLATES_REDE;
-  }, [tab, tomAtleta]);
+  }, [tab, tomAtleta, profissional]);
 
   // Default template ao mudar tab
   useEffect(() => {
@@ -80,16 +90,18 @@ export function CompartilharPerfilDialog({
     const params = new URLSearchParams();
     params.set('ref', tab);
     if (conviteCodigo) params.set('c', conviteCodigo);
-    if (atletaSlug) params.set('a', atletaSlug);
+    // ?a= é o slug de um ATLETA a seguir; perfil profissional não tem atleta, e com ele o cadastro deixa de
+    // conectar o convidado ao convidante.
+    if (atletaSlug && !profissional) params.set('a', atletaSlug);
     return `${window.location.origin}${carreiraPath('/cadastro')}?${params.toString()}`;
-  }, [tab, conviteCodigo, atletaSlug]);
+  }, [tab, conviteCodigo, atletaSlug, profissional]);
 
   // Aplicar template ao mudar template/link/nome
   useEffect(() => {
     const t = templates.find((x) => x.id === templateId);
     if (!t) return;
-    setMensagemEditada(aplicarTemplate(t.body, atletaNome || 'eu', link));
-  }, [templateId, templates, atletaNome, link]);
+    setMensagemEditada(aplicarTemplate(t.body, atletaNome || 'eu', link, profissional ? funcao : undefined));
+  }, [templateId, templates, atletaNome, link, profissional, funcao]);
 
   const enviar = (canal: 'whatsapp' | 'email' | 'copy') => {
     const texto = mensagemEditada;
@@ -126,18 +138,20 @@ export function CompartilharPerfilDialog({
               <DialogTitle>Compartilhar perfil</DialogTitle>
               <DialogDescription>Escolha quem você quer convidar e a mensagem.</DialogDescription>
             </DialogHeader>
-            <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="torcedor" className="text-xs gap-1">
-              <Users className="w-3.5 h-3.5" style={tab === 'torcedor' ? tabIconStyle : undefined} />
-              Torcedores
-            </TabsTrigger>
+            <TabsList className={`grid w-full ${profissional ? 'grid-cols-2' : 'grid-cols-3'}`}>
+            {!profissional && (
+              <TabsTrigger value="torcedor" className="text-xs gap-1">
+                <Users className="w-3.5 h-3.5" style={tab === 'torcedor' ? tabIconStyle : undefined} />
+                Torcedores
+              </TabsTrigger>
+            )}
             <TabsTrigger value="atleta" className="text-xs gap-1">
               <Trophy className="w-3.5 h-3.5" style={tab === 'atleta' ? tabIconStyle : undefined} />
-              Atletas
+              {profissional ? 'Atletas e alunos' : 'Atletas'}
             </TabsTrigger>
             <TabsTrigger value="rede" className="text-xs gap-1">
               <Network className="w-3.5 h-3.5" style={tab === 'rede' ? tabIconStyle : undefined} />
-              Rede
+              {profissional ? 'Colegas' : 'Rede'}
             </TabsTrigger>
             </TabsList>
           </div>
@@ -145,12 +159,22 @@ export function CompartilharPerfilDialog({
           {/* Content */}
           <div className="px-4 py-3 sm:px-6 sm:py-3">
           <div className="mb-3">
-            {tab === 'torcedor' && (
+            {profissional && tab === 'atleta' && (
+              <p className="text-xs text-muted-foreground">
+                Convide atletas, alunos e as famílias deles. Quem criar o perfil por este link já fica conectado a você.
+              </p>
+            )}
+            {profissional && tab === 'rede' && (
+              <p className="text-xs text-muted-foreground">
+                Convide outros profissionais do esporte. Quem se cadastrar por este link já fica conectado a você.
+              </p>
+            )}
+            {!profissional && tab === 'torcedor' && (
               <p className="text-xs text-muted-foreground">
                 Convide avó, tio, primo ou amigos pra torcer pelo {atletaNome || 'atleta'}.
               </p>
             )}
-            {tab === 'atleta' && (
+            {!profissional && tab === 'atleta' && (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">Convide outros atletas pra plataforma.</p>
                 <div className="flex gap-1.5">
@@ -177,7 +201,7 @@ export function CompartilharPerfilDialog({
                 </div>
               </div>
             )}
-            {tab === 'rede' && (
+            {!profissional && tab === 'rede' && (
               <p className="text-xs text-muted-foreground">
                 Convide técnicos, scouts e professores. Eles escolhem o tipo de perfil ao se cadastrar.
               </p>
@@ -244,10 +268,12 @@ export function CompartilharPerfilDialog({
               </Button>
             </div>
 
-            <p className="text-[10px] text-muted-foreground leading-relaxed mt-2">
-              Dica: peça para um(a) responsável enviar a mensagem pelo WhatsApp dele(a) — assim a pessoa
-              recebe de um número conhecido.
-            </p>
+            {!profissional && (
+              <p className="text-[10px] text-muted-foreground leading-relaxed mt-2">
+                Dica: peça para um(a) responsável enviar a mensagem pelo WhatsApp dele(a) — assim a pessoa
+                recebe de um número conhecido.
+              </p>
+            )}
           </div>
         </Tabs>
       </DialogContent>
