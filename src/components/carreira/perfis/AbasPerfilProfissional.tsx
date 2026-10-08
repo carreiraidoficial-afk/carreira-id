@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-export type AbaProfissionalId = 'visao' | 'informacoes' | 'historico' | 'conquistas' | 'galeria' | 'publicacoes';
+export type AbaProfissionalId = 'visao' | 'informacoes' | 'historico' | 'conquistas' | 'galeria';
 
 const ABAS: { id: AbaProfissionalId; rotulo: string }[] = [
   { id: 'visao', rotulo: 'Visão geral' },
@@ -8,7 +8,6 @@ const ABAS: { id: AbaProfissionalId; rotulo: string }[] = [
   { id: 'historico', rotulo: 'Histórico' },
   { id: 'conquistas', rotulo: 'Conquistas' },
   { id: 'galeria', rotulo: 'Galeria' },
-  { id: 'publicacoes', rotulo: 'Publicações' },
 ];
 
 export const ABAS_PROFISSIONAL_VALIDAS = ABAS.map((a) => a.id) as string[];
@@ -22,7 +21,7 @@ interface Props {
   conteudos: Record<AbaProfissionalId, ReactNode>;
 }
 
-/** Abas do perfil de profissional (Visão geral, Informações, Histórico, Conquistas, Galeria, Publicações).
+/** Abas do perfil de profissional (Visão geral, Informações, Histórico, Conquistas, Galeria).
  * Aba sem conteúdo só aparece para o dono; se a aba pedida na URL não está visível, cai na Visão geral. */
 export function AbasPerfilProfissional({ aba, onAba, accentColor, visiveis, conteudos }: Props) {
   const abasVisiveis = ABAS.filter((a) => (a.id === 'historico' || a.id === 'conquistas' || a.id === 'galeria' ? visiveis[a.id] : true));

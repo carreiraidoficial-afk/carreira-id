@@ -25,7 +25,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, FileText, Building2, BarChart3, Dumbbell, Swords, Medal, Plus, Pencil, Trash2, Save, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Loader2, FileText, Building2, BarChart3, Dumbbell, Swords, Medal, Plus, Pencil, Trash2, Save, ChevronRight, ChevronLeft, Star } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { carreiraPath } from '@/hooks/useCarreiraBasePath';
+import { VisaoGeralAtleta } from './VisaoGeralAtleta';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -51,8 +54,9 @@ interface CarreiraTimelineProps {
   /** 'tabs' (default) é o comportamento de sempre -- pills + publicações
    * sempre visíveis embaixo. 'grid' é a página dedicada de Currículo: vira
    * uma grade de cards grandes (Publicações incluída como card), sem nada
-   * visível até a pessoa clicar em um. */
-  layout?: 'tabs' | 'grid';
+   * visível até a pessoa clicar em um. 'perfil' é o perfil público do atleta: seletor de abas com Visão Geral
+   * (aberta por padrão) e sem publicações, que vivem só no Feed. */
+  layout?: 'tabs' | 'grid' | 'perfil';
 }
 
 const GRID_TABS = [
@@ -96,7 +100,7 @@ const CARREIRA_TABS = [
 ];
 
 export function CarreiraTimeline({ perfil, isOwner = false, podeExcluir = isOwner, layout = 'tabs' }: CarreiraTimelineProps) {
-  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string | null>(layout === 'perfil' ? 'visao' : null);
   const [atividadeFormOpen, setAtividadeFormOpen] = useState(false);
   const [experienciaFormOpen, setExperienciaFormOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<AtividadeExterna | null>(null);
@@ -148,6 +152,11 @@ export function CarreiraTimeline({ perfil, isOwner = false, podeExcluir = isOwne
   }, [editingCampeonato, editingJogo, jornada.data.amistosos, jornada.data.campeonatos]);
 
   const handleTabClick = (value: string) => {
+    // No perfil sempre há uma aba aberta (a Visão Geral é o ponto de partida); nos outros layouts clicar de novo fecha.
+    if (layout === 'perfil') {
+      setActiveTab(value);
+      return;
+    }
     setActiveTab(prev => prev === value ? null : value);
   };
 
@@ -446,7 +455,59 @@ export function CarreiraTimeline({ perfil, isOwner = false, podeExcluir = isOwne
 
   return (
     <div className="space-y-4">
-      {layout === 'grid' ? (
+      {layout === 'perfil' ? (
+        isPlatformProfile ? (
+          <div className="rounded-xl border p-6 text-center" style={{ borderColor: `${accentColor}40` }}>
+            <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" style={{ color: accentColor }} />
+            <p className="text-sm text-muted-foreground">As novidades ficam no Feed.</p>
+            <Link to={carreiraPath('/feed')} className="mt-2 inline-block text-sm font-semibold hover:underline" style={{ color: accentColor }}>
+              Ir para o Feed
+            </Link>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {[{ value: 'visao', label: 'Visão Geral', icon: Star }, ...INSTITUTIONAL_TABS].map(({ value, label, icon: Icon }, i, lista) => {
+                const isActive = activeTab === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => handleTabClick(value)}
+                    aria-pressed={isActive}
+                    className={`flex items-center justify-center gap-1.5 rounded-xl border-2 px-3 py-2.5 text-xs font-semibold transition-all duration-200 ${value === 'visao' ? 'col-span-2 sm:col-span-3' : (lista.length - 1) % 2 === 1 && i === lista.length - 1 ? 'col-span-2 sm:col-span-1' : ''}`}
+                    style={{
+                      backgroundColor: isActive ? accentColor : `${accentColor}15`,
+                      color: isActive ? '#fff' : accentColor,
+                      borderColor: accentColor,
+                    }}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {activeTab === 'visao' ? (
+              <VisaoGeralAtleta
+                perfil={perfil}
+                experiencias={experiencias}
+                accentColor={accentColor}
+                isOwner={isOwner}
+                onVerExperiencias={() => setActiveTab('experiencia')}
+              />
+            ) : activeTab ? (
+              <div
+                className="rounded-xl bg-card p-4 animate-in fade-in-0 slide-in-from-top-2 duration-200"
+                style={{ border: `2px solid ${accentColor}50` }}
+              >
+                {renderTabContent()}
+              </div>
+            ) : null}
+          </>
+        )
+      ) : layout === 'grid' ? (
         !isPlatformProfile && (
           activeTab ? (
             <div className="animate-in fade-in-0 slide-in-from-top-2 duration-200">

@@ -303,6 +303,7 @@ export default function CarreiraExplorarPage() {
   const { data: connectionIds = [] } = useMyConnections(sessionUserId, meuPerfil?.id);
   const { data: connectionsCount = 0 } = useConnectionsCount(sessionUserId, meuPerfil?.id);
   const { data: posts, isLoading: postsLoading } = useFeedPosts(connectionIds, sessionUserId);
+  const queryClient = useQueryClient();
   const [abaFeed, setAbaFeed] = useState<'todos' | 'meus'>('todos');
   const { data: meusPosts, isLoading: meusPostsLoading } = useMeusPosts(sessionUserId);
   const { data: suggestions } = useSuggestions(sessionUserId, meuPerfil?.id);
@@ -348,7 +349,6 @@ export default function CarreiraExplorarPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const queryClient = useQueryClient();
   const handleConnect = async (targetUserId: string) => {
     if (!sessionUserId) return;
     setConnectingId(targetUserId);

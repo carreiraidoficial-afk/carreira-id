@@ -40,7 +40,7 @@ export function GaleriaProfissional({ posts, accentColor = '#3b82f6', podeGerenc
         <Images className="mx-auto mb-2 h-10 w-10 opacity-40" style={{ color: accentColor }} />
         <p className="text-sm text-muted-foreground">Nenhuma foto na galeria ainda.</p>
         {podeGerenciar && (
-          <p className="mt-1 text-xs text-muted-foreground">As imagens das suas publicações aparecem aqui. Publique com foto na aba Publicações.</p>
+          <p className="mt-1 text-xs text-muted-foreground">As imagens das suas publicações aparecem aqui. Publique com foto no Feed.</p>
         )}
       </Card>
     );

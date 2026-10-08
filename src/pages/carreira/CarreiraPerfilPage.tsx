@@ -1277,7 +1277,6 @@ export default function CarreiraPerfilPage() {
                   historico: historicoNode,
                   conquistas: conquistasNode,
                   galeria: <GaleriaProfissional posts={postsProfissional} accentColor={accentColor} podeGerenciar={isOwnerOuSuporte} />,
-                  publicacoes: <RedeTimelineInline perfilId={perfil.id} isOwner={isOwner} perfilNome={perfil.nome} perfilFoto={perfil.foto_url} accentColor={accentColor} />,
                 }}
               />
             ) : (
@@ -1426,10 +1425,8 @@ export default function CarreiraPerfilPage() {
             )}
 
             {perfil.type === 'atleta' ? (
-              <CarreiraTimeline perfil={perfil as any} isOwner={canManageTimeline} podeExcluir={isOwner} />
-            ) : profissionalComAbas ? null : (
-              <RedeTimelineInline perfilId={perfil.id} isOwner={isOwner} perfilNome={perfil.nome} perfilFoto={perfil.foto_url} accentColor={accentColor} />
-            )}
+              <CarreiraTimeline perfil={perfil as any} isOwner={canManageTimeline} podeExcluir={isOwner} layout="perfil" />
+            ) : null}
           </div>
 
           {/* Right Sidebar — Pending Requests + Suggestions + Connections */}
@@ -1771,27 +1768,6 @@ function ShareButton({ slug, nome, accentColor, ownerUserId, profissional, funca
         <CompartilharLinkDialog open={open} onOpenChange={setOpen} nome={nome} slug={slug} />
       )}
     </>
-  );
-}
-
-function RedeTimelineInline({ perfilId, isOwner, perfilNome, perfilFoto, accentColor }: { perfilId: string; isOwner: boolean; perfilNome: string; perfilFoto: string | null; accentColor?: string }) {
-  const { data: posts, isLoading } = usePostsRede(perfilId);
-
-  return (
-    <div className="space-y-4">
-      {isOwner && (
-        <Suspense fallback={null}>
-          <CreatePostForm perfilRedeId={perfilId} perfilRedeNome={perfilNome} perfilRedeFoto={perfilFoto} accentColor={accentColor} />
-        </Suspense>
-      )}
-      {isLoading && <div className="text-center py-4"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>}
-      {posts?.map((post) => (
-        <PostCard key={post.id} post={post} accentColor={accentColor} />
-      ))}
-      {!isLoading && (!posts || posts.length === 0) && !isOwner && (
-        <p className="text-center text-sm text-muted-foreground py-6">Nenhuma publicação ainda.</p>
-      )}
-    </div>
   );
 }
 
