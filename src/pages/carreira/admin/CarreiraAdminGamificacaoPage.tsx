@@ -592,7 +592,7 @@ function ConvitesManager() {
           // Get inviter info from perfis_rede
           const { data: inviter } = await supabase
             .from('perfis_rede')
-            .select('nome, tipo, slug, foto_url')
+            .select('nome, tipo, slug, foto_url, user_id')
             .eq('id', c.convidante_perfil_id)
             .maybeSingle();
 
@@ -627,8 +627,22 @@ function ConvitesManager() {
             }
           }
 
+          // A pessoa que se cadastrou pelo convite já entra conectada (status aceita) com quem convidou.
+          let conexaoAceita = false;
+          if (inviter?.user_id && c.convidado_user_id) {
+            const { data: con } = await supabase
+              .from('rede_conexoes')
+              .select('id')
+              .eq('status', 'aceita')
+              .eq('solicitante_id', c.convidado_user_id)
+              .eq('destinatario_id', inviter.user_id)
+              .limit(1);
+            conexaoAceita = (con || []).length > 0;
+          }
+
           return {
             ...c,
+            conexao_aceita: conexaoAceita,
             inviter_nome: inviter?.nome || 'Desconhecido',
             inviter_tipo: inviter?.tipo || '',
             inviter_slug: inviter?.slug || null,
@@ -651,6 +665,19 @@ function ConvitesManager() {
     return acc;
   }, {});
 
+  // Ranking de quem mais traz gente: cadastros feitos pelo convite e conexões já aceitas.
+  const rankingConvidantes = (Object.entries(byInviter) as [string, any[]][])
+    .map(([id, lista]) => ({
+      id,
+      nome: lista[0].inviter_nome as string,
+      tipo: lista[0].inviter_tipo as string,
+      slug: lista[0].inviter_slug as string | null,
+      cadastros: lista.length,
+      conexoes: lista.filter((c: any) => c.conexao_aceita).length,
+      ultimo: lista.reduce((m: string, c: any) => (c.created_at > m ? c.created_at : m), lista[0].created_at) as string,
+    }))
+    .sort((a, b) => b.cadastros - a.cadastros || b.conexoes - a.conexoes);
+
   if (isLoading) {
     return (
       <Card>
@@ -662,6 +689,50 @@ function ConvitesManager() {
   }
 
   return (
+    <div className="space-y-4">
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Crown className="w-5 h-5 text-yellow-600" /> Ranking de convites
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground mb-4">
+          Quem mais traz gente para o Carreira ID. Perfis profissionais não pontuam na Liga, mas aparecem aqui.
+        </p>
+        {rankingConvidantes.length === 0 ? (
+          <p className="text-muted-foreground text-sm text-center py-6">Nenhum cadastro por convite ainda.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10">#</TableHead>
+                <TableHead>Convidante</TableHead>
+                <TableHead className="text-center">Cadastros</TableHead>
+                <TableHead className="text-center">Conexões aceitas</TableHead>
+                <TableHead>Último</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rankingConvidantes.map((r, i) => (
+                <TableRow key={r.id}>
+                  <TableCell className="text-sm text-muted-foreground">{i + 1}</TableCell>
+                  <TableCell>
+                    <span className="font-medium text-sm">{r.nome}</span>
+                    <span className="text-xs text-muted-foreground ml-1">({r.tipo})</span>
+                  </TableCell>
+                  <TableCell className="text-center font-semibold">{r.cadastros}</TableCell>
+                  <TableCell className="text-center">{r.conexoes}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {format(new Date(r.ultimo), 'dd/MM/yyyy', { locale: ptBR })}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
@@ -684,6 +755,7 @@ function ConvitesManager() {
                 <TableHead>Data</TableHead>
                 <TableHead>Convidado</TableHead>
                 <TableHead>Tipo</TableHead>
+                <TableHead className="text-center">Conexão</TableHead>
                 <TableHead className="text-center">Pontos</TableHead>
               </TableRow>
             </TableHeader>
@@ -710,6 +782,13 @@ function ConvitesManager() {
                     )}
                   </TableCell>
                   <TableCell className="text-center">
+                    {c.conexao_aceita ? (
+                      <Badge variant="secondary" className="bg-green-500/20 text-green-600">Aceita</Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
                     {c.pontos_concedidos ? (
                       <Badge variant="secondary" className="bg-orange-500/20 text-orange-600">
                         +{c.pontos_concedidos}
@@ -725,6 +804,7 @@ function ConvitesManager() {
         )}
       </CardContent>
     </Card>
+    </div>
   );
 }
 

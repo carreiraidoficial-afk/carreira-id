@@ -170,7 +170,8 @@ export function CarreiraBottomNav({ currentUserId, profileSlug: profileSlugProp 
     },
   ];
 
-  // Conditionally show Liga OR Descobrir based on profile type
+  // Conditionally show Liga OR Descobrir based on profile type.
+  // A Liga é só de atletas: conta sem perfil de atleta (qualquer perfil profissional) não vê a aba.
   const middleItem = isScoutingProfile
     ? {
         icon: Search,
@@ -179,17 +180,19 @@ export function CarreiraBottomNav({ currentUserId, profileSlug: profileSlugProp 
         active: location.pathname === descobrirPath,
         badge: 0,
       }
-    : {
-        icon: Gamepad2,
-        label: 'Liga',
-        onClick: () => navigate(ligaPath, { replace: true }),
-        active:
-          location.pathname === ligaPath ||
-          location.pathname.startsWith(`${ligaPath}/`) ||
-          location.pathname === ligaAliasPath ||
-          location.pathname.startsWith(`${ligaAliasPath}/`),
-        badge: 0,
-      };
+    : temPerfilAtleta === false
+      ? null
+      : {
+          icon: Gamepad2,
+          label: 'Liga',
+          onClick: () => navigate(ligaPath, { replace: true }),
+          active:
+            location.pathname === ligaPath ||
+            location.pathname.startsWith(`${ligaPath}/`) ||
+            location.pathname === ligaAliasPath ||
+            location.pathname.startsWith(`${ligaAliasPath}/`),
+          badge: 0,
+        };
 
   const adminPath = carreiraPath('/admin');
 
@@ -203,7 +206,7 @@ export function CarreiraBottomNav({ currentUserId, profileSlug: profileSlugProp 
       active: location.pathname === eventosPath,
       badge: 0,
     }] : []),
-    middleItem,
+    ...(middleItem ? [middleItem] : []),
     ...(temPerfilAtleta ? [{
       icon: ClipboardList,
       label: 'Currículo',

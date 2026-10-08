@@ -164,18 +164,26 @@ interface Titular {
   papel: string;
   foto_url: string;
   foto_posicao: string;
+  perfil_slug: string | null;
 }
 
 function TitularCard({ titular }: { titular: Titular }) {
+  const foto = (
+    <img
+      src={titular.foto_url}
+      alt={titular.nome}
+      className="w-full h-72 object-cover"
+      style={{ objectPosition: `center ${titular.foto_posicao || 'center'}` }}
+      loading="lazy"
+    />
+  );
   return (
     <div className="w-64 shrink-0 rounded-2xl bg-[#1a2332] border border-[#2a3a4e] overflow-hidden">
-      <img
-        src={titular.foto_url}
-        alt={titular.nome}
-        className="w-full h-72 object-cover"
-        style={{ objectPosition: `center ${titular.foto_posicao || 'center'}` }}
-        loading="lazy"
-      />
+      {titular.perfil_slug ? (
+        <Link to={carreiraPath(`/${titular.perfil_slug}`)} aria-label={`Ver o perfil de ${titular.nome}`} className="block transition-opacity hover:opacity-90">
+          {foto}
+        </Link>
+      ) : foto}
       <div className="p-4">
         <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-orange-400 bg-orange-500/10 border border-orange-500/30 rounded-full px-2 py-0.5 mb-2">
           🏆 Titular da Base
@@ -193,7 +201,7 @@ export function TitularesDaBaseSection() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('carreira_titulares_base' as any)
-        .select('id, nome, papel, foto_url, foto_posicao')
+        .select('id, nome, papel, foto_url, foto_posicao, perfil_slug')
         .eq('ativo', true)
         .order('ordem');
       if (error) throw error;

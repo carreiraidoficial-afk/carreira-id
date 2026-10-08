@@ -20,6 +20,7 @@ interface Titular {
   papel: string;
   foto_url: string;
   foto_posicao: string;
+  perfil_slug: string | null;
   ordem: number;
   ativo: boolean;
   created_at: string;
@@ -51,6 +52,7 @@ export default function CarreiraAdminTitularesPage() {
   const [papel, setPapel] = useState('');
   const [fotoUrl, setFotoUrl] = useState('');
   const [fotoPosicao, setFotoPosicao] = useState('center');
+  const [perfilSlug, setPerfilSlug] = useState('');
 
   const { data: titulares = [], isLoading } = useQuery({
     queryKey: ['admin-titulares-base'],
@@ -83,14 +85,14 @@ export default function CarreiraAdminTitularesPage() {
       if (editing) {
         const { error } = await supabase
           .from('carreira_titulares_base' as any)
-          .update({ nome, papel, foto_url: fotoUrl, foto_posicao: fotoPosicao })
+          .update({ nome, papel, foto_url: fotoUrl, foto_posicao: fotoPosicao, perfil_slug: perfilSlug.trim() || null })
           .eq('id', editing.id);
         if (error) throw error;
       } else {
         const maxOrdem = titulares.length ? Math.max(...titulares.map(t => t.ordem)) + 1 : 0;
         const { error } = await supabase
           .from('carreira_titulares_base' as any)
-          .insert({ nome, papel, foto_url: fotoUrl, foto_posicao: fotoPosicao, ordem: maxOrdem, criado_por: user!.id });
+          .insert({ nome, papel, foto_url: fotoUrl, foto_posicao: fotoPosicao, perfil_slug: perfilSlug.trim() || null, ordem: maxOrdem, criado_por: user!.id });
         if (error) throw error;
       }
     },
@@ -145,6 +147,7 @@ export default function CarreiraAdminTitularesPage() {
     setPapel('');
     setFotoUrl('');
     setFotoPosicao('center');
+    setPerfilSlug('');
     setDialogOpen(true);
   }
 
@@ -154,6 +157,7 @@ export default function CarreiraAdminTitularesPage() {
     setPapel(t.papel);
     setFotoUrl(t.foto_url);
     setFotoPosicao(t.foto_posicao || 'center');
+    setPerfilSlug(t.perfil_slug || '');
     setDialogOpen(true);
   }
 
@@ -281,6 +285,11 @@ export default function CarreiraAdminTitularesPage() {
             <div>
               <Label>Papel / Título</Label>
               <Input value={papel} onChange={e => setPapel(e.target.value)} placeholder="Ex: Técnico de Futebol de Base" />
+            </div>
+            <div>
+              <Label>Perfil público (opcional)</Label>
+              <Input value={perfilSlug} onChange={e => setPerfilSlug(e.target.value.replace(/^.*carreiraid\.com\.br\//i, '').replace(/[\s/]/g, ''))} placeholder="Ex: marco-antonio-stanzani" />
+              <p className="text-xs text-muted-foreground mt-1">Se preenchido, a foto vira link para o perfil na landing. Cole só o final do endereço (ou o link inteiro).</p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={closeDialog}>Cancelar</Button>

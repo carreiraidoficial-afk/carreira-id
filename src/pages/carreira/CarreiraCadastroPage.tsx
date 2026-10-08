@@ -27,7 +27,7 @@ import { PushNotificationPopup } from '@/components/shared/PushNotificationPopup
 import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { trackCompleteRegistration, trackProfileCreated, trackInitiateCheckout, trackSubscribe, pushDataLayer } from '@/lib/fbPixel';
 import { trackOnboardingFunil } from '@/lib/onboardingFunil';
-import { salvarPendingRef, lerPendingRef, processarConviteRef } from '@/lib/processar-convite-ref';
+import { salvarPendingRef, lerPendingRef, processarConviteRef, salvarConviteDireto, lerConviteDireto, limparConviteDireto } from '@/lib/processar-convite-ref';
 import { TERMOS_VERSAO } from '@/lib/termosVersao';
 import { resolverSlugPosLogin } from '@/hooks/useCriancaAtiva';
 
@@ -65,7 +65,9 @@ async function ensureTermosAceite(userId: string, metodo: 'checkbox_explicito' |
 export default function CarreiraCadastroPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const inviteCode = searchParams.get('convite');
+  const conviteNaUrl = searchParams.get('convite');
+  // Sem o parâmetro na URL (e-mail de confirmação aberto em outra aba), usa o código guardado no cadastro.
+  const inviteCode = conviteNaUrl || lerConviteDireto();
   const refParam = searchParams.get('ref') as 'torcedor' | 'atleta' | 'rede' | null;
   const refConviteCodigo = searchParams.get('c');
   const refAtletaSlug = searchParams.get('a');
@@ -108,6 +110,10 @@ export default function CarreiraCadastroPage() {
   const [recuperarEnviado, setRecuperarEnviado] = useState(false);
   const [recuperarError, setRecuperarError] = useState<string | null>(null);
   const { isInstalled: pwaInstalled } = usePwaInstall();
+
+  useEffect(() => {
+    if (conviteNaUrl) salvarConviteDireto(conviteNaUrl);
+  }, [conviteNaUrl]);
 
   // Persist ?ref params so they survive OAuth redirect / email confirmation
   useEffect(() => {
@@ -409,6 +415,7 @@ export default function CarreiraCadastroPage() {
     if (userId) {
       // Processa convite/auto-follow vindos de ?ref&c&a (não bloqueia o fluxo)
       processarConviteRef(userId).catch(() => { /* silencioso */ });
+      limparConviteDireto();
 
       // Decide pelo tipo que acabou de ser submetido (`selectedType`), não
       // por "qual tabela tem alguma linha" -- uma conta que já tinha um

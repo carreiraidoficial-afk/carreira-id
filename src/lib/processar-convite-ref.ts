@@ -32,8 +32,9 @@ export function salvarPendingRef(data: PendingRef) {
   } catch {
     // ignore
   }
-  // Só o vínculo com escola precisa sobreviver a outra aba (confirmação de e-mail).
-  if (data.escolaSlug) {
+  // Vínculo com escola e convite de alguém precisam sobreviver a outra aba (o e-mail de confirmação costuma abrir
+  // em aba nova ou no celular, onde o sessionStorage está vazio).
+  if (data.escolaSlug || data.conviteCodigo) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...data, salvoEm: Date.now() }));
     } catch {
@@ -65,6 +66,38 @@ function lerPendingRefComEspelho(): PendingRef | null {
     return dados as PendingRef;
   } catch {
     return null;
+  }
+}
+
+/** Convite pelo link `?convite=CODIGO`: o código vai pra outra aba/aparelho quando a pessoa confirma o e-mail, e a
+ * URL de confirmação não leva o parâmetro. Guarda por 24h pra o cadastro ainda registrar o convite. */
+const CONVITE_DIRETO_KEY = 'carreira_convite_direto';
+
+export function salvarConviteDireto(codigo: string) {
+  try {
+    localStorage.setItem(CONVITE_DIRETO_KEY, JSON.stringify({ codigo, salvoEm: Date.now() }));
+  } catch {
+    // ignore
+  }
+}
+
+export function lerConviteDireto(): string | null {
+  try {
+    const raw = localStorage.getItem(CONVITE_DIRETO_KEY);
+    if (!raw) return null;
+    const dados = JSON.parse(raw);
+    if (!dados?.codigo || !dados?.salvoEm || Date.now() - dados.salvoEm > VALIDADE_ESPELHO_MS) return null;
+    return String(dados.codigo);
+  } catch {
+    return null;
+  }
+}
+
+export function limparConviteDireto() {
+  try {
+    localStorage.removeItem(CONVITE_DIRETO_KEY);
+  } catch {
+    // ignore
   }
 }
 

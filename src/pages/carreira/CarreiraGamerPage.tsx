@@ -42,6 +42,16 @@ export default function CarreiraGamerPage() {
     enabled: !!currentUserId && !meuSlugProprio,
   });
 
+  // A Liga é só de atletas: conta sem perfil de atleta não participa (nem vê a tela).
+  const { data: temPerfilAtleta } = useQuery({
+    queryKey: ['liga-tem-perfil-atleta', currentUserId],
+    queryFn: async () => {
+      const { count } = await supabase.from('perfil_atleta').select('id', { count: 'exact', head: true }).eq('user_id', currentUserId!);
+      return (count || 0) > 0;
+    },
+    enabled: !!currentUserId,
+  });
+
   const accentColor = perfilAtivo?.cor_destaque || '#3b82f6';
   const mySlug = meuSlugProprio || perfilRede?.slug || null;
   const { data: ranking } = useCarreiraRanking();
@@ -58,6 +68,10 @@ export default function CarreiraGamerPage() {
 
   if (!currentUserId) {
     return <Navigate to={carreiraPath('/cadastro')} replace />;
+  }
+
+  if (temPerfilAtleta === false) {
+    return <Navigate to={mySlug ? carreiraPath(`/${mySlug}`) : carreiraPath('/feed')} replace />;
   }
 
   const MEDAL_COLORS = ['#ffd700', '#c0c0c0', '#cd7f32'];
