@@ -50,12 +50,14 @@ interface CreatePostFormProps {
   perfilRedeNome?: string;
   perfilRedeFoto?: string | null;
   accentColor?: string;
+  /** Chamado depois que o post foi publicado (ex.: fechar a janela do Feed). */
+  onPublicado?: () => void;
 }
 
 // Professional profile types that don't need subscriptions
 const PROFESSIONAL_TYPES = ['tecnico', 'scout', 'agente_clube', 'dono_escola', 'empresario', 'jogador_profissional', 'professor'];
 
-export function CreatePostForm({ perfil, perfilRedeId, perfilRedeNome, perfilRedeFoto, accentColor }: CreatePostFormProps) {
+export function CreatePostForm({ perfil, perfilRedeId, perfilRedeNome, perfilRedeFoto, accentColor, onPublicado }: CreatePostFormProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const createPost = useCreatePostAtleta();
@@ -309,6 +311,7 @@ export function CreatePostForm({ perfil, perfilRedeId, perfilRedeNome, perfilRed
         postData.autor_id = perfil.id;
       }
       await createPost.mutateAsync(postData);
+      onPublicado?.();
 
       // Reset form
       setTitulo('');

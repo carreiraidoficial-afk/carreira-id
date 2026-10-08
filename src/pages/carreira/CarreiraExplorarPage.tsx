@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { PostAtleta } from '@/hooks/useCarreiraData';
 import { PostCard } from '@/components/carreira/PostCard';
+import { FeedComposer, type AutorPublicacao } from '@/components/carreira/FeedComposer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -169,6 +170,31 @@ function useFeedPosts(connectionIds: string[], userId?: string | null) {
   });
 }
 
+/** Tudo que a própria pessoa publicou (por qualquer perfil dela), para editar e apagar. A chave começa igual à do
+ * feed geral, então publicar, editar e apagar já atualizam as duas listas. */
+function useMeusPosts(userId?: string | null) {
+  return useQuery({
+    queryKey: ['feed-posts-connections', 'meus', userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('posts_atleta')
+        .select(`*, perfil:perfil_atleta(*), perfil_rede:perfis_rede(*)`)
+        .eq('criado_por', userId!)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return (data || []).map((p: any) => ({
+        ...p,
+        perfil: Array.isArray(p.perfil) ? p.perfil[0] : p.perfil,
+        perfil_rede: Array.isArray(p.perfil_rede) ? p.perfil_rede[0] : p.perfil_rede,
+      })) as PostAtleta[];
+    },
+    enabled: !!userId,
+    staleTime: 0,
+    refetchOnMount: true,
+  });
+}
+
 function useSuggestions(userId?: string | null, perfilAtletaId?: string | null) {
   return useQuery({
     queryKey: ['connection-suggestions', userId, perfilAtletaId],
@@ -277,6 +303,8 @@ export default function CarreiraExplorarPage() {
   const { data: connectionIds = [] } = useMyConnections(sessionUserId, meuPerfil?.id);
   const { data: connectionsCount = 0 } = useConnectionsCount(sessionUserId, meuPerfil?.id);
   const { data: posts, isLoading: postsLoading } = useFeedPosts(connectionIds, sessionUserId);
+  const [abaFeed, setAbaFeed] = useState<'todos' | 'meus'>('todos');
+  const { data: meusPosts, isLoading: meusPostsLoading } = useMeusPosts(sessionUserId);
   const { data: suggestions } = useSuggestions(sessionUserId, meuPerfil?.id);
   const { data: connectionsList } = useConnectionsList(sessionUserId, meuPerfil?.id);
   const [copied, setCopied] = useState(false);
@@ -340,6 +368,30 @@ export default function CarreiraExplorarPage() {
     }
     setConnectingId(null);
   };
+
+  // Perfis pelos quais esta conta pode publicar: o atleta ativo e/ou o perfil profissional (o "responsável" fantasma não conta).
+  const autoresPublicacao: AutorPublicacao[] = [
+    meuPerfil && {
+      chave: `atleta-${meuPerfil.id}`,
+      nome: meuPerfil.nome,
+      foto: meuPerfil.foto_url,
+      rotulo: 'Atleta',
+      corDestaque: (meuPerfil as any).cor_destaque,
+      perfilAtleta: meuPerfil,
+    },
+    meuPerfilRede && meuPerfilRede.tipo !== 'pai_responsavel' && {
+      chave: `rede-${meuPerfilRede.id}`,
+      nome: meuPerfilRede.nome,
+      foto: meuPerfilRede.foto_url,
+      rotulo: TYPE_LABELS[meuPerfilRede.tipo] || 'Perfil',
+      corDestaque: null,
+      perfilRedeId: meuPerfilRede.id,
+    },
+  ].filter(Boolean) as AutorPublicacao[];
+
+  const verMeusPosts = !isAnonymous && abaFeed === 'meus';
+  const postsExibidos = verMeusPosts ? meusPosts : posts;
+  const carregandoPosts = verMeusPosts ? meusPostsLoading : postsLoading;
 
   const profileName = meuPerfilRede?.nome || meuPerfil?.nome || 'Usuário';
   const profilePhoto = meuPerfilRede?.foto_url || meuPerfil?.foto_url;
@@ -563,22 +615,43 @@ export default function CarreiraExplorarPage() {
           </aside>
 
           {/* Center — Feed */}
-          <div>
-            {postsLoading ? (
+          <div className="space-y-4">
+            {!isAnonymous && autoresPublicacao.length > 0 && <FeedComposer autores={autoresPublicacao} />}
+
+            {!isAnonymous && hasProfile && (
+              <div className="flex gap-1.5">
+                {([['todos', 'Todos'], ['meus', 'Meus posts']] as const).map(([valor, rotulo]) => (
+                  <button
+                    key={valor}
+                    type="button"
+                    onClick={() => setAbaFeed(valor)}
+                    className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
+                      abaFeed === valor ? 'bg-primary text-primary-foreground border-primary' : 'text-muted-foreground hover:bg-muted/50'
+                    }`}
+                  >
+                    {rotulo}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {carregandoPosts ? (
               <div className="flex justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
-            ) : !posts?.length ? (
+            ) : !postsExibidos?.length ? (
               <Card className="text-center py-16 px-4">
                 <Rss className="w-12 h-12 mx-auto opacity-30 mb-3" />
-                <p className="font-medium text-foreground">Nenhuma publicação ainda</p>
+                <p className="font-medium text-foreground">{verMeusPosts ? 'Você ainda não publicou' : 'Nenhuma publicação ainda'}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Conecte-se com mais pessoas para ver publicações no seu feed.
+                  {verMeusPosts
+                    ? 'Use a barra no topo para compartilhar seu primeiro momento.'
+                    : 'Conecte-se com mais pessoas para ver publicações no seu feed.'}
                 </p>
               </Card>
             ) : (
               <div className="space-y-4">
-                {(isAnonymous ? posts.slice(0, FEED_ANON_POST_LIMIT) : posts).map((post) => (
+                {(isAnonymous ? postsExibidos.slice(0, FEED_ANON_POST_LIMIT) : postsExibidos).map((post) => (
                   <AnonAwarePostCard
                     key={post.id}
                     post={post}
@@ -587,7 +660,7 @@ export default function CarreiraExplorarPage() {
                     onAction={requireAuth}
                   />
                 ))}
-                {isAnonymous && posts.length >= FEED_ANON_POST_LIMIT && (
+                {isAnonymous && postsExibidos.length >= FEED_ANON_POST_LIMIT && (
                   <AnonymousFeedCTA />
                 )}
               </div>
