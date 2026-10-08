@@ -2,8 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Camera, Loader2, MapPin, Share2, Trophy, User, Pencil, Instagram, UserPlus, UserCheck, ShieldCheck, Footprints, Crown, Settings, MoreHorizontal, Quote, Users, Swords, Clock } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Camera, Loader2, MapPin, Share2, Trophy, User, Pencil, Instagram, UserPlus, UserCheck, ShieldCheck, Footprints, Crown, Quote, Users, Swords, Clock } from 'lucide-react';
 import { useCarreiraStats } from '@/hooks/useCarreiraJornadaData';
 import { PerfilAtleta, useUpdatePerfilAtleta, uploadProfilePhoto, useIsFollowing, useToggleFollow } from '@/hooks/useCarreiraData';
 import { useCarreiraExperiencias } from '@/hooks/useCarreiraExperienciasData';
@@ -191,9 +190,10 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
             className="absolute inset-0"
             style={perfil.banner_url
               ? { backgroundImage: `url(${perfil.banner_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-              : { background: `linear-gradient(135deg, ${cor} 0%, ${cor}66 45%, #0b1220 100%)` }}
+              : { background: `linear-gradient(145deg, ${cor} 0%, color-mix(in srgb, ${cor} 55%, #05080f) 55%, color-mix(in srgb, ${cor} 18%, #05080f) 100%)` }}
           />
-          <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/45 to-card" />
+          {/* Véu escuro fixo: o texto do topo é sempre branco, no tema claro e no escuro, com qualquer cor de destaque */}
+          <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/35 to-black/65" />
 
           {/* Ações no topo */}
           <div className="absolute right-3 top-3 z-10 flex gap-2">
@@ -205,37 +205,16 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
             >
               <Share2 className="h-4 w-4" />
             </button>
-            {isOwner && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="Mais opções"
-                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-black/45 text-white backdrop-blur hover:bg-black/60"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
-                    <Pencil className="mr-2 h-4 w-4" /> Editar perfil
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setConfigDialogOpen(true)}>
-                    <Settings className="mr-2 h-4 w-4" /> Configurações
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
           </div>
 
-          <div className="relative flex items-end gap-4 px-4 pb-4 pt-16">
+          <div className="relative flex items-start gap-3.5 px-4 pb-4 pt-4">
             {/* Foto (estilo figurinha) */}
             <div className="relative shrink-0">
               {perfil.foto_url ? (
                 <img
                   src={perfil.foto_url}
                   alt={perfil.nome}
-                  className="aspect-[3/4] w-32 rounded-xl object-cover object-top shadow-xl ring-2"
+                  className="aspect-[3/4] w-28 rounded-xl object-cover object-top shadow-xl ring-2"
                   style={{ ['--tw-ring-color' as any]: cor }}
                 />
               ) : (
@@ -263,34 +242,36 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
             </div>
 
             {/* Nome e identificação */}
-            <div className="min-w-0 flex-1 pb-1">
+            <div className="min-w-0 flex-1">
+              {/* Espaço do botão de compartilhar: só as primeiras linhas desviam dele, o resto usa a largura toda */}
+              <span aria-hidden className="float-right h-9 w-9" />
               {temAcesso('selo_elite') && (
                 <span className="mb-1.5 inline-flex w-fit items-center gap-1 rounded-md bg-violet-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
                   <Crown className="h-3 w-3" /> Elite
                 </span>
               )}
-              <h1 className="break-words text-2xl font-extrabold leading-tight text-foreground" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
+              <h1 className="break-words text-xl font-extrabold leading-tight text-white sm:text-2xl" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.55)' }}>
                 {perfil.nome}
               </h1>
               {categoriaDisplay && (
-                <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                  <ShieldCheck className="h-4 w-4 shrink-0" style={{ color: cor }} />
+                <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-white">
+                  <ShieldCheck className="h-4 w-4 shrink-0 text-white" />
                   Atleta {categoriaDisplay}
                 </p>
               )}
               {perfil.crianca_id && (
-                <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">Perfil administrado pelo responsável</p>
+                <p className="mt-0.5 text-[11px] leading-snug text-white/75">Perfil administrado pelo responsável</p>
               )}
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {atletaStatusInfo && (
-                  <Badge variant="outline" className="gap-1 bg-background/40 text-[11px] font-semibold backdrop-blur" style={{ borderColor: cor, color: cor }}>
+                  <Badge variant="outline" className="gap-1 border-white/50 bg-black/30 text-[11px] font-semibold text-white backdrop-blur">
                     <ShieldCheck className="h-3 w-3" />
                     {atletaStatusInfo.label}
                     {atletaStatusInfo.clubName && ` • ${atletaStatusInfo.clubName}`}
                   </Badge>
                 )}
                 {modalidades.map((mod, idx) => (
-                  <Badge key={idx} variant="secondary" className="gap-1 bg-background/40 text-[11px] backdrop-blur" style={{ color: cor, borderColor: `${cor}40` }}>
+                  <Badge key={idx} variant="secondary" className="gap-1 border-white/20 bg-white/15 text-[11px] text-white backdrop-blur">
                     <Trophy className="h-3 w-3" />{mod}
                   </Badge>
                 ))}
@@ -299,26 +280,32 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
           </div>
         </div>
 
-        <CardContent className="space-y-3 p-3 pt-0">
+        <CardContent className="space-y-3 p-3">
           {/* Posição e pé, cidade, Instagram */}
           {faixaInfo.length > 0 && (
-            <div className="flex divide-x divide-border rounded-xl border bg-muted/20">
-              {faixaInfo.map((it) => {
+            <div className="grid grid-cols-2 overflow-hidden rounded-xl border bg-muted/20">
+              {faixaInfo.map((it, i) => {
+                // Com 3 itens, a posição ocupa a linha de cima; os outros dois dividem a de baixo.
+                const larguraTotal = faixaInfo.length === 3 ? i === 0 : faixaInfo.length === 1;
                 const conteudo = (
-                  <div className="flex min-w-0 items-center gap-2 px-3 py-2.5">
+                  <div className="flex items-center gap-2 px-3 py-2.5">
                     {it.icone}
                     <div className="min-w-0 leading-tight">
-                      <p className="truncate text-xs font-semibold text-foreground">{it.titulo}</p>
-                      {it.sub && <p className="truncate text-[11px] text-muted-foreground">{it.sub}</p>}
+                      <p className="break-words text-xs font-semibold text-foreground">{it.titulo}</p>
+                      {it.sub && <p className="text-[11px] text-muted-foreground">{it.sub}</p>}
                     </div>
                   </div>
                 );
+                // Divisórias: com 3 itens, a posição fica em cima e os outros dois embaixo, separados por uma linha vertical.
+                const n = faixaInfo.length;
+                const divisoria = n === 3 ? (i === 1 ? 'border-t' : i === 2 ? 'border-t border-l' : '') : n === 2 && i === 1 ? 'border-l' : '';
+                const classes = `min-w-0 ${larguraTotal ? 'col-span-2' : ''} ${divisoria}`;
                 return it.href ? (
-                  <a key={it.chave} href={it.href} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 hover:bg-muted/40">
+                  <a key={it.chave} href={it.href} target="_blank" rel="noopener noreferrer" className={`${classes} hover:bg-muted/40`}>
                     {conteudo}
                   </a>
                 ) : (
-                  <div key={it.chave} className="min-w-0 flex-1">{conteudo}</div>
+                  <div key={it.chave} className={classes}>{conteudo}</div>
                 );
               })}
             </div>
