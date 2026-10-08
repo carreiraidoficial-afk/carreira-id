@@ -8,7 +8,7 @@ interface Props {
   perfilAtletaId?: string | null;
 }
 
-export function ConexoesCount({ userId, perfilAtletaId }: Props) {
+export function useConexoesCount(userId: string, perfilAtletaId?: string | null) {
   const { data: count } = useQuery({
     queryKey: ['conexoes-count', userId, perfilAtletaId],
     queryFn: async () => {
@@ -25,10 +25,15 @@ export function ConexoesCount({ userId, perfilAtletaId }: Props) {
       return minhas.length;
     },
   });
+  return count ?? 0;
+}
+
+export function ConexoesCount({ userId, perfilAtletaId }: Props) {
+  const count = useConexoesCount(userId, perfilAtletaId);
 
   return (
     <span className="text-xs text-muted-foreground">
-      <strong className="text-foreground">{count ?? 0}</strong> conexões
+      <strong className="text-foreground">{count}</strong> conexões
     </span>
   );
 }
