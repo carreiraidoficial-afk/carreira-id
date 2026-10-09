@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { parseDataLocal } from '@/lib/datas';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
@@ -95,7 +96,7 @@ export function useCarreiraCampeonatoTrofeus(criancaId: string | null | undefine
           categoriaIdade: c.categoria || undefined,
           nomeTime: c.nome_time || undefined,
           data,
-          ano: data ? new Date(data).getFullYear() : new Date().getFullYear(),
+          ano: data ? parseDataLocal(data).getFullYear() : new Date().getFullYear(),
           fonte: 'campeonato',
           colocacao: c.posicao_final,
           emoji: meta.emoji,
@@ -115,7 +116,7 @@ export function useCarreiraCampeonatoTrofeus(criancaId: string | null | undefine
           categoriaIdade: camp?.categoria || undefined,
           nomeTime: camp?.nome_time || undefined,
           data,
-          ano: data ? new Date(data).getFullYear() : new Date().getFullYear(),
+          ano: data ? parseDataLocal(data).getFullYear() : new Date().getFullYear(),
           fonte: 'campeonato_premiacao',
           emoji: meta.emoji,
         });
@@ -163,7 +164,7 @@ export function SalaTrofeusAtleta({
         titulo: p.evento?.nome || meta.label,
         colocacaoLabel: meta.label,
         data,
-        ano: data ? new Date(data).getFullYear() : new Date().getFullYear(),
+        ano: data ? parseDataLocal(data).getFullYear() : new Date().getFullYear(),
         fonte: 'evento_premiacao',
         emoji: meta.emoji,
       });
@@ -187,7 +188,7 @@ export function SalaTrofeusAtleta({
     });
 
     // Sort by data desc
-    return all.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
+    return all.sort((a, b) => parseDataLocal(b.data).getTime() - parseDataLocal(a.data).getTime());
   }, [campTrofeus, premiacoesEvt, conquistas, accentColor]);
 
   if (isLoading) {
@@ -286,7 +287,7 @@ function TrofeuRow({ item, accentColor }: { item: TrofeuItem; accentColor: strin
       : accentColor;
 
   const formattedDate = item.data
-    ? format(new Date(item.data), "dd 'de' MMM", { locale: ptBR })
+    ? format(parseDataLocal(item.data), "dd 'de' MMM", { locale: ptBR })
     : '';
 
   const Icone = item.categoria === 'coletivo' ? Trophy : Medal;

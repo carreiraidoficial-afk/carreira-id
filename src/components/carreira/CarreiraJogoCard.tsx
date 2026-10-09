@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { parseDataLocal } from '@/lib/datas';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Pencil, Trash2, X, Loader2, MoreVertical, ChevronDown, Shield } from 'lucide-react';
@@ -128,7 +129,7 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
   })();
 
   const dataFmt = (() => {
-    try { return format(new Date(j.data_jogo), "dd 'de' MMM yyyy", { locale: ptBR }); }
+    try { return format(parseDataLocal(j.data_jogo), "dd 'de' MMM yyyy", { locale: ptBR }); }
     catch { return j.data_jogo; }
   })();
 

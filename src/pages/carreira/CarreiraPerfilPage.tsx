@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { parseDataLocal } from '@/lib/datas';
 import { formatarLocalizacao } from '@/lib/localizacao';
 import { SobreMimCard } from '@/components/carreira/perfis/SobreMimCard';
 import { AbasPerfilProfissional, ABAS_PROFISSIONAL_VALIDAS, type AbaProfissionalId } from '@/components/carreira/perfis/AbasPerfilProfissional';
@@ -733,7 +734,7 @@ export default function CarreiraPerfilPage() {
   const whatsappIntl = whatsappDigits ? telefoneParaWhatsapp(perfil.telefone_whatsapp) : '';
 
   const sidebarCategoria = criancaSidebar?.data_nascimento
-    ? (() => { const age = new Date().getFullYear() - new Date(criancaSidebar.data_nascimento).getFullYear(); return `Sub ${age}`; })()
+    ? (() => { const age = new Date().getFullYear() - parseDataLocal(criancaSidebar.data_nascimento).getFullYear(); return `Sub ${age}`; })()
     : perfil.categoria;
   const rankingDoPerfil = perfil.type === 'atleta'
     ? ligaRanking?.find((entry) => entry.user_id === perfil.user_id)

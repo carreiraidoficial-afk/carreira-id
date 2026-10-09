@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { parseDataLocal } from '@/lib/datas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 function calcularCategoria(dataNascimento: string): string {
-  const birthYear = new Date(dataNascimento).getFullYear();
+  const birthYear = parseDataLocal(dataNascimento).getFullYear();
   const currentYear = new Date().getFullYear();
   const age = currentYear - birthYear;
   return `Sub ${age}`;

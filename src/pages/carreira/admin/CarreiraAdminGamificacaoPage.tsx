@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { parseDataLocal } from '@/lib/datas';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import CarreiraAdminLayout from '@/components/layout/CarreiraAdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -563,7 +564,7 @@ function DesafiosManager({ desafios, onSave }: { desafios: DesafioConvite[]; onS
                   <p className="text-xs text-muted-foreground">
                     Meta: {d.quantidade_meta} | Bônus: +{d.pontos_bonus} pts
                     {d.tipo_perfil_alvo.length > 0 && ` | Alvo: ${d.tipo_perfil_alvo.join(', ')}`}
-                    {d.data_fim && ` | Até ${format(new Date(d.data_fim), 'dd/MM/yyyy', { locale: ptBR })}`}
+                    {d.data_fim && ` | Até ${format(parseDataLocal(d.data_fim), 'dd/MM/yyyy', { locale: ptBR })}`}
                   </p>
                 </div>
                 <Switch checked={d.ativo} onCheckedChange={(v) => toggleDesafio(d.id, v)} />

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { parseDataLocal } from '@/lib/datas';
 import { Link } from 'react-router-dom';
 import { Building2, ChevronRight, Footprints, MapPin, PenSquare, Target, Trophy, User, UsersRound } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -18,7 +19,7 @@ interface Props {
 const PE_LABELS: Record<string, string> = { direito: 'Direito', esquerdo: 'Esquerdo', ambidestro: 'Ambidestro' };
 
 function anoDe(data: string | null | undefined): string {
-  return data ? String(new Date(data).getFullYear()) : '';
+  return data ? String(parseDataLocal(data).getFullYear()) : '';
 }
 
 /** Aba "Visão Geral" do atleta: resumo com as informações principais e os clubes por onde passou. */
@@ -34,7 +35,7 @@ export function VisaoGeralAtleta({ perfil, experiencias, accentColor, isOwner, o
   });
 
   const categoria = crianca?.data_nascimento
-    ? `Sub ${new Date().getFullYear() - new Date(crianca.data_nascimento).getFullYear()}`
+    ? `Sub ${new Date().getFullYear() - parseDataLocal(crianca.data_nascimento).getFullYear()}`
     : perfil.categoria;
   const modalidades: string[] = (perfil.modalidades?.length ? perfil.modalidades : [perfil.modalidade]).filter(Boolean);
   const posicao = perfil.posicao_principal

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { parseDataLocal } from '@/lib/datas';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -142,10 +143,10 @@ export function ExperienciaSection({
 
   const formatDateRange = (start?: string, end?: string | null, isActive?: boolean) => {
     if (!start) return '';
-    const startFormatted = format(new Date(start), "MMM yyyy", { locale: ptBR });
+    const startFormatted = format(parseDataLocal(start), "MMM yyyy", { locale: ptBR });
     if (isActive) return `${startFormatted} - Atual`;
     if (end) {
-      const endFormatted = format(new Date(end), "MMM yyyy", { locale: ptBR });
+      const endFormatted = format(parseDataLocal(end), "MMM yyyy", { locale: ptBR });
       return `${startFormatted} - ${endFormatted}`;
     }
     return startFormatted;

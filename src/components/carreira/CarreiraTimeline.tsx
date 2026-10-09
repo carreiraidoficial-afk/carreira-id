@@ -1,4 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
+import { parseDataLocal } from '@/lib/datas';
 import { PerfilAtleta, usePostsAtleta, useAtividadesPublicas, useEscolinhasCarreira } from '@/hooks/useCarreiraData';
 import { useCarreiraExperiencias, useDeleteCarreiraExperiencia, CarreiraExperiencia } from '@/hooks/useCarreiraExperienciasData';
 import { AtividadeExterna } from '@/hooks/useAtividadesExternasData';
@@ -181,9 +182,9 @@ export function CarreiraTimeline({ perfil, isOwner = false, podeExcluir = isOwne
   );
 
   const formatDateRange = (start: string, end?: string | null, isAtual?: boolean) => {
-    const startFormatted = format(new Date(start), "MMM yyyy", { locale: ptBR });
+    const startFormatted = format(parseDataLocal(start), "MMM yyyy", { locale: ptBR });
     if (isAtual) return `${startFormatted} - Atual`;
-    if (end) return `${startFormatted} - ${format(new Date(end), "MMM yyyy", { locale: ptBR })}`;
+    if (end) return `${startFormatted} - ${format(parseDataLocal(end), "MMM yyyy", { locale: ptBR })}`;
     return startFormatted;
   };
 
