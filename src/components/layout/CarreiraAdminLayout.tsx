@@ -23,6 +23,7 @@ const navItems = [
   { title: 'Cupons de Convite', url: '/carreira/admin/cupons', icon: Ticket },
   { title: 'Comunicados', url: '/carreira/admin/comunicados', icon: Megaphone },
   { title: 'Lembretes de Cadastro', url: '/carreira/admin/lembretes-perfil', icon: Mail },
+  { title: 'Emails enviados', url: '/carreira/admin/emails', icon: Mail },
   { title: 'Notificações Push', url: '/carreira/admin/push', icon: Bell },
   { title: 'Assinaturas', url: '/carreira/admin/assinaturas', icon: CreditCard },
   { title: 'Banco', url: '/carreira/admin/banco', icon: Landmark },

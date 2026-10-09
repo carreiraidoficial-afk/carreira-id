@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { dataLocalISO } from '@/lib/datas';
 import { parseDataLocal } from '@/lib/datas';
 import { formatarLocalizacao } from '@/lib/localizacao';
 import { SobreMimCard } from '@/components/carreira/perfis/SobreMimCard';
@@ -440,7 +441,7 @@ export default function CarreiraPerfilPage() {
         viewer_tipo: resolvedViewerTipo,
         viewer_nome: viewerNome,
         viewer_foto_url: viewerFoto,
-        viewed_date: new Date().toISOString().split('T')[0],
+        viewed_date: dataLocalISO(),
       }, { onConflict: 'perfil_atleta_id,viewer_user_id,viewed_date' });
     };
     trackView();

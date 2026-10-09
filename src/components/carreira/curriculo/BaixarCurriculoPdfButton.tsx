@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { parseDataLocal } from '@/lib/datas';
 import { useQuery } from '@tanstack/react-query';
 import { Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,7 @@ function useIdadeCrianca(criancaId: string | null | undefined) {
         .eq('id', criancaId!)
         .maybeSingle();
       if (!data?.data_nascimento) return null;
-      const nascimento = new Date(data.data_nascimento);
+      const nascimento = parseDataLocal(data.data_nascimento);
       const hoje = new Date();
       let idade = hoje.getFullYear() - nascimento.getFullYear();
       const aindaNaoFezAniversario =

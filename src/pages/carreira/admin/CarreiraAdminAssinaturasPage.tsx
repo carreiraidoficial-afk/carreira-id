@@ -1,4 +1,5 @@
 import { useState, Fragment } from 'react';
+import { dataLocalISO } from '@/lib/datas';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -625,7 +626,7 @@ function ConcederIsencaoDialog({ onClose, onSaved }: { onClose: () => void; onSa
         valor: 0,
         metodo_pagamento: 'isento',
         expira_em: null,
-        inicio_em: new Date().toISOString().split('T')[0],
+        inicio_em: dataLocalISO(),
         observacoes: observacoes || 'Isenção concedida pelo admin',
         // Isenção é individual e permanente -- nunca fica refém do
         // cancelamento dos irmãos numa Assinatura Família.

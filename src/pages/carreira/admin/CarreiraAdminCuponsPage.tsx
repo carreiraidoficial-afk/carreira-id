@@ -1,4 +1,5 @@
 import CarreiraAdminLayout from '@/components/layout/CarreiraAdminLayout';
+import { dataLocalISO } from '@/lib/datas';
 import { supabase } from '@/integrations/supabase/client';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -113,7 +114,7 @@ export default function CarreiraAdminCuponsPage() {
         codigo: codigo.trim().toUpperCase(),
         nome_titular: nomeTitular.trim(),
         dias_trial: parseInt(diasTrial, 10),
-        validade: validade ? new Date(validade).toISOString() : null,
+        validade: validade ? new Date(`${validade}T23:59:59`).toISOString() : null,  // vale até o fim do dia escolhido, no horário local
         perfil_rede_id: perfilRedeId === SEM_ESCOLA ? null : perfilRedeId,
       };
       if (editing) {
@@ -174,7 +175,7 @@ export default function CarreiraAdminCuponsPage() {
     setCodigo(c.codigo);
     setNomeTitular(c.nome_titular);
     setDiasTrial(String(c.dias_trial));
-    setValidade(c.validade ? c.validade.slice(0, 10) : '');
+    setValidade(c.validade ? dataLocalISO(new Date(c.validade)) : '');
     setPerfilRedeId(c.perfil_rede_id || SEM_ESCOLA);
     setDialogOpen(true);
   }

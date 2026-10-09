@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { dataLocalISO } from '@/lib/datas';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -476,7 +477,7 @@ export default function CarreiraCadastroPage() {
                 plano: 'premium',
                 status: 'trial',
                 valor: PRECO_PREMIUM,
-                expira_em: trialEnd.toISOString().split('T')[0],
+                expira_em: dataLocalISO(trialEnd),
                 metodo_pagamento: null,
                 inicio_em: new Date().toISOString(),
                 cupom_id: cupomAplicado?.cupomId || null,
