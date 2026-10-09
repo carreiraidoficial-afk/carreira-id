@@ -138,13 +138,18 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
   const isVolei = isModalidadeVolei((j as any).modalidade);
   const isLibero = isVolei && j.posicao_jogo === 'libero';
   const isBasquete = isModalidadeBasquete((j as any).modalidade);
+  const jogadorDeLinha = !isVolei && !isBasquete && j.posicao_jogo !== 'goleiro';
+  const destaque = !!j.destaque_jogo;
+  const temDesempenho = destaque || (jogadorDeLinha && (!!j.gols_marcados || !!j.assistencias));
 
   const isVideoUrl = (url: string) => /\.(mp4|mov|webm|m4v|avi|mkv)(\?|$)/i.test(url);
 
   return (
     <div
       className="relative p-3 rounded-lg"
-      style={{ backgroundColor: `${accentColor}08`, borderLeft: `3px solid ${accentColor}50` }}
+      style={destaque
+        ? { backgroundColor: 'rgba(245,158,11,0.07)', borderLeft: '4px solid #f59e0b', boxShadow: '0 0 0 1px rgba(245,158,11,0.35)' }
+        : { backgroundColor: `${accentColor}08`, borderLeft: `3px solid ${accentColor}50` }}
     >
       {isOwner && (onEdit || onDelete) && (
         <DropdownMenu>
@@ -202,6 +207,25 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
             <span className="text-[11px] sm:text-sm font-medium text-foreground text-center leading-tight line-clamp-2">{j.time_adversario}</span>
           </div>
         </div>
+        {temDesempenho && (
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
+            {destaque && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 px-3 py-1 text-xs font-bold text-black shadow-sm">
+                ⭐ Destaque do jogo
+              </span>
+            )}
+            {jogadorDeLinha && !!j.gols_marcados && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-500">
+                ⚽ {j.gols_marcados} {j.gols_marcados === 1 ? 'gol' : 'gols'}
+              </span>
+            )}
+            {jogadorDeLinha && !!j.assistencias && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/40 bg-sky-500/15 px-3 py-1 text-xs font-bold text-sky-400">
+                🎯 {j.assistencias} {j.assistencias === 1 ? 'assistência' : 'assistências'}
+              </span>
+            )}
+          </div>
+        )}
         <p className="text-xs text-muted-foreground mt-1.5 text-center">
           {dataFmt}{j.local ? ` • ${j.local}` : ''}
         </p>
@@ -246,12 +270,9 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
             </>
           ) : (
             <>
-              {!!j.gols_marcados && <Tag>⚽ {j.gols_marcados} gol(s) do atleta</Tag>}
               {!!j.gols_penalti && <Tag>🎯 {j.gols_penalti} de pênalti</Tag>}
-              {!!j.assistencias && <Tag>🎯 {j.assistencias} assist. do atleta</Tag>}
             </>
           )}
-          {!!j.destaque_jogo && <Tag>⭐ Destaque do jogo</Tag>}
           {!isVolei && j.teve_prorrogacao && <Tag>⏱️ Prorrogação</Tag>}
           {j.fase_campeonato && <Tag>{j.fase_campeonato}</Tag>}
         </div>

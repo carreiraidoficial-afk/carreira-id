@@ -2,6 +2,7 @@ import { Component, ErrorInfo, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
+import { ehErroDeArquivoDesatualizado, recarregarParaVersaoNova } from '@/lib/recarregar-apos-deploy';
 
 // Dedup em memoria -- evita inundar a tabela se o mesmo erro disparar em
 // loop (ex: um componente que remonta e crasha repetidamente).
@@ -43,6 +44,8 @@ export class CarreiraErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
+    // App atualizado com a aba aberta: não é bug da tela, só falta carregar a versão nova.
+    if (ehErroDeArquivoDesatualizado(error.message) && recarregarParaVersaoNova()) return;
     reportClientError(error.message, error.stack, info.componentStack || undefined);
   }
 
