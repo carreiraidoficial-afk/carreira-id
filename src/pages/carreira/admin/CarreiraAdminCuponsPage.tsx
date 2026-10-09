@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Ticket, Trash2, Pencil, Users, Handshake } from 'lucide-react';
+import { Plus, Ticket, Trash2, Pencil, Users, Handshake, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 const LIMITE_ESCOLAS_PARCEIRAS = 20;
@@ -44,6 +44,7 @@ export default function CarreiraAdminCuponsPage() {
   const [nomeTitular, setNomeTitular] = useState('');
   const [diasTrial, setDiasTrial] = useState('30');
   const [validade, setValidade] = useState('');
+  const [verUsosDe, setVerUsosDe] = useState<{ id: string; codigo: string } | null>(null);
   const [perfilRedeId, setPerfilRedeId] = useState<string>(SEM_ESCOLA);
 
   const { data: cupons = [], isLoading } = useQuery({
@@ -234,10 +235,16 @@ export default function CarreiraAdminCuponsPage() {
                       {c.validade && ` · válido até ${new Date(c.validade).toLocaleDateString('pt-BR')}`}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setVerUsosDe({ id: c.id, codigo: c.codigo })}
+                    className="flex shrink-0 items-center gap-1.5 rounded-md border px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted/60"
+                    title="Ver quem usou este cupom"
+                  >
                     <Users className="w-3.5 h-3.5" />
                     {c.usos}
-                  </div>
+                    <span className="hidden text-xs sm:inline">ver quem</span>
+                  </button>
                   <Switch checked={c.ativo} onCheckedChange={ativo => toggleMutation.mutate({ id: c.id, ativo })} />
                   <Button variant="ghost" size="icon" onClick={() => openEdit(c)}>
                     <Pencil className="w-4 h-4" />
@@ -253,6 +260,8 @@ export default function CarreiraAdminCuponsPage() {
           </Card>
         )}
       </div>
+
+      <UsosDoCupomDialog cupom={verUsosDe} onClose={() => setVerUsosDe(null)} />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
@@ -315,5 +324,92 @@ export default function CarreiraAdminCuponsPage() {
         </DialogContent>
       </Dialog>
     </CarreiraAdminLayout>
+  );
+}
+
+
+interface UsoCupom {
+  assinaturaId: string;
+  atleta: string | null;
+  slug: string | null;
+  responsavel: string | null;
+  email: string | null;
+  usadoEm: string;
+  status: string;
+}
+
+/** Quem se cadastrou usando o cupom: cada assinatura de teste criada com ele (atleta, responsável e data). */
+function UsosDoCupomDialog({ cupom, onClose }: { cupom: { id: string; codigo: string } | null; onClose: () => void }) {
+  const { data: usos = [], isLoading } = useQuery({
+    queryKey: ['admin-cupom-usos', cupom?.id],
+    enabled: !!cupom,
+    staleTime: 0,
+    refetchOnMount: true,
+    queryFn: async (): Promise<UsoCupom[]> => {
+      const db = supabase as any;
+      const { data: assinaturas, error } = await db
+        .from('carreira_assinaturas')
+        .select('id, user_id, crianca_id, inicio_em, status')
+        .eq('cupom_id', cupom!.id)
+        .order('inicio_em', { ascending: false });
+      if (error) throw error;
+      const lista = (assinaturas || []) as any[];
+      if (lista.length === 0) return [];
+      const userIds = [...new Set(lista.map((a) => a.user_id))];
+      const criancaIds = [...new Set(lista.map((a) => a.crianca_id).filter(Boolean))];
+      const [{ data: perfis }, { data: atletas }] = await Promise.all([
+        db.from('profiles').select('user_id, nome, email').in('user_id', userIds),
+        criancaIds.length
+          ? db.from('perfil_atleta').select('crianca_id, nome, slug').in('crianca_id', criancaIds)
+          : Promise.resolve({ data: [] }),
+      ]);
+      const porUser = new Map((perfis || []).map((p: any) => [p.user_id, p]));
+      const porCrianca = new Map((atletas || []).map((a: any) => [a.crianca_id, a]));
+      return lista.map((a) => ({
+        assinaturaId: a.id,
+        atleta: (porCrianca.get(a.crianca_id) as any)?.nome ?? null,
+        slug: (porCrianca.get(a.crianca_id) as any)?.slug ?? null,
+        responsavel: (porUser.get(a.user_id) as any)?.nome ?? null,
+        email: (porUser.get(a.user_id) as any)?.email ?? null,
+        usadoEm: a.inicio_em,
+        status: a.status,
+      }));
+    },
+  });
+
+  return (
+    <Dialog open={!!cupom} onOpenChange={(aberto) => { if (!aberto) onClose(); }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Quem usou o cupom {cupom?.codigo}</DialogTitle>
+        </DialogHeader>
+        {isLoading ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">Carregando...</p>
+        ) : usos.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">Ninguém usou este cupom ainda.</p>
+        ) : (
+          <div className="max-h-[60vh] space-y-2 overflow-y-auto">
+            {usos.map((u) => (
+              <div key={u.assinaturaId} className="rounded-lg border p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold">{u.atleta || 'Atleta sem perfil'}</p>
+                  {u.slug && (
+                    <a href={`/${u.slug}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                      Ver perfil <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {u.responsavel || 'Responsável'}{u.email ? ` · ${u.email}` : ''}
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {new Date(u.usadoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })} · {u.status}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
