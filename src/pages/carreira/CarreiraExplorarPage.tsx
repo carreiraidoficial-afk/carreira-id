@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { plataformaUserIds, conexaoComPlataforma, ehPerfilPlataforma } from '@/lib/perfil-plataforma';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -74,7 +75,8 @@ function useMyConnections(userId?: string | null, perfilAtletaId?: string | null
         .or(`solicitante_id.eq.${userId},destinatario_id.eq.${userId}`)
         .eq('status', 'aceita');
       if (error) throw error;
-      const minhas = (data || []).filter((c) => pertenceAoAtivo(c, userId, perfilAtletaId));
+      const plataforma = await plataformaUserIds();
+      const minhas = (data || []).filter((c) => pertenceAoAtivo(c, userId, perfilAtletaId) && !conexaoComPlataforma(c, userId, plataforma));
       return minhas.map(c => c.solicitante_id === userId ? c.destinatario_id : c.solicitante_id);
     },
     enabled: !!userId,
@@ -92,7 +94,8 @@ function useConnectionsCount(userId?: string | null, perfilAtletaId?: string | n
         .or(`solicitante_id.eq.${userId},destinatario_id.eq.${userId}`)
         .eq('status', 'aceita');
       if (error) throw error;
-      return (data || []).filter((c) => pertenceAoAtivo(c, userId, perfilAtletaId)).length;
+      const plataforma = await plataformaUserIds();
+      return (data || []).filter((c) => pertenceAoAtivo(c, userId, perfilAtletaId) && !conexaoComPlataforma(c, userId, plataforma)).length;
     },
     enabled: !!userId,
   });
@@ -109,7 +112,8 @@ function useConnectionsList(userId?: string | null, perfilAtletaId?: string | nu
         .or(`solicitante_id.eq.${userId},destinatario_id.eq.${userId}`)
         .eq('status', 'aceita');
       if (error) throw error;
-      const minhas = (data || []).filter((c) => pertenceAoAtivo(c, userId, perfilAtletaId));
+      const plataforma = await plataformaUserIds();
+      const minhas = (data || []).filter((c) => pertenceAoAtivo(c, userId, perfilAtletaId) && !conexaoComPlataforma(c, userId, plataforma));
       const detalhes = minhas.map((c) => {
         const souSolicitante = c.solicitante_id === userId;
         return {
@@ -222,7 +226,7 @@ function useSuggestions(userId?: string | null, perfilAtletaId?: string | null) 
         .limit(20);
 
       const redeProfiles = (redeData || []).filter(p => !connectedIds.has(p.user_id)).map(p => ({ ...p, source: 'rede' as const }));
-      const atletaProfiles = (atletaData || []).filter(p => !connectedIds.has(p.user_id)).map(p => ({ ...p, tipo: 'Atleta', source: 'atleta' as const }));
+      const atletaProfiles = (atletaData || []).filter(p => !connectedIds.has(p.user_id) && !ehPerfilPlataforma(p)).map(p => ({ ...p, tipo: 'Atleta', source: 'atleta' as const }));
 
       const seen = new Set<string>();
       const merged: any[] = [];
@@ -251,7 +255,8 @@ function useSearchPeopleExplorar(query: string) {
         .ilike('nome', searchTerm)
         .limit(10);
       // Collect user_ids already covered by athlete profiles to avoid duplicates
-      const atletaUserIds = new Set((atletaResults || []).map((a: any) => a.user_id));
+      const atletaResultsVisiveis = (atletaResults || []).filter((a: any) => !ehPerfilPlataforma(a));
+      const atletaUserIds = new Set(atletaResultsVisiveis.map((a: any) => a.user_id));
 
       // Fetch rede profiles by name match
       const { data: redeByName } = await supabase
@@ -283,7 +288,7 @@ function useSearchPeopleExplorar(query: string) {
 
       // Filter out rede profiles that already have an athlete profile
       const filteredRede = Array.from(redeMap.values()).filter((r: any) => !atletaUserIds.has(r.user_id)).slice(0, 10);
-      return { rede: filteredRede, atletas: atletaResults || [] };
+      return { rede: filteredRede, atletas: atletaResultsVisiveis };
     },
     enabled: query.length >= 2,
   });

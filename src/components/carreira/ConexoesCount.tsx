@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { plataformaUserIds, conexaoComPlataforma } from '@/lib/perfil-plataforma';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
@@ -17,10 +18,11 @@ export function useConexoesCount(userId: string, perfilAtletaId?: string | null)
         .select('solicitante_id, destinatario_id, solicitante_perfil_atleta_id, destinatario_perfil_atleta_id')
         .eq('status', 'aceita')
         .or(`solicitante_id.eq.${userId},destinatario_id.eq.${userId}`);
+      const plataforma = await plataformaUserIds();
       const minhas = (data || []).filter((row) => {
         const souSolicitante = row.solicitante_id === userId;
         const meuLado = souSolicitante ? row.solicitante_perfil_atleta_id : row.destinatario_perfil_atleta_id;
-        return !meuLado || meuLado === perfilAtletaId;
+        return (!meuLado || meuLado === perfilAtletaId) && !conexaoComPlataforma(row, userId, plataforma);
       });
       return minhas.length;
     },

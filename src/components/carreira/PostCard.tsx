@@ -68,7 +68,9 @@ export function PostCard({ post, showAuthor = true, accentColor }: PostCardProps
   const perfilRede = (post as any).perfil_rede;
   const authorName = perfilAtleta?.nome || perfilRede?.nome || 'Usuário';
   const authorPhoto = perfilAtleta?.foto_url || perfilRede?.foto_url || null;
-  const authorSubtitle = perfilAtleta
+  const authorSubtitle = perfilAtleta?.modalidade === 'Plataforma'
+    ? 'Conta oficial'
+    : perfilAtleta
     ? [perfilAtleta.modalidade, perfilAtleta.categoria, [perfilAtleta.cidade, perfilAtleta.estado].filter(Boolean).join(', ')].filter(Boolean).join(' • ')
     : perfilRede?.tipo ? perfilRede.tipo.charAt(0).toUpperCase() + perfilRede.tipo.slice(1).replace('_', ' ') : '';
   const authorLink = perfilAtleta?.slug

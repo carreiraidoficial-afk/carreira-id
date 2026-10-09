@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { plataformaUserIds, conexaoComPlataforma, ehPerfilPlataforma } from '@/lib/perfil-plataforma';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -34,7 +35,7 @@ function useSearchParaConectar(query: string, meuUserId: string | null) {
         .ilike('nome', termo)
         .limit(10);
       return [
-        ...(atletas || []).map((a) => ({ ...a, tipo: 'Atleta', source: 'atleta' as const })),
+        ...(atletas || []).filter((a) => !ehPerfilPlataforma(a)).map((a) => ({ ...a, tipo: 'Atleta', source: 'atleta' as const })),
         ...(rede || []).map((r) => ({ ...r, source: 'rede' as const })),
       ];
     },
@@ -157,7 +158,8 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
         .or(`solicitante_id.eq.${userId},destinatario_id.eq.${userId}`)
         .eq('status', 'aceita');
       if (error) throw error;
-      const propria = (data || []).filter((row) => pertenceAoAtivo(row, userId, perfilAtletaId));
+      const plataforma = await plataformaUserIds();
+      const propria = (data || []).filter((row) => pertenceAoAtivo(row, userId, perfilAtletaId) && !conexaoComPlataforma(row, userId, plataforma));
       const connectionDetails = propria.map(c => {
         const souSolicitante = c.solicitante_id === userId;
         return {
@@ -208,7 +210,8 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
         .eq('destinatario_id', userId)
         .eq('status', 'pendente');
       if (error) throw error;
-      const minhas = (data || []).filter((r) => !r.destinatario_perfil_atleta_id || r.destinatario_perfil_atleta_id === perfilAtletaId);
+      const plataformaPend = await plataformaUserIds();
+      const minhas = (data || []).filter((r) => (!r.destinatario_perfil_atleta_id || r.destinatario_perfil_atleta_id === perfilAtletaId) && !plataformaPend.has(r.solicitante_id));
       if (minhas.length === 0) return [];
       const senderIds = minhas.map(r => r.solicitante_id);
       const { data: redeProfiles2 } = await supabase
@@ -264,7 +267,7 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
         .eq('is_public', true)
         .limit(30);
       const redeProfiles = (redeData || []).filter(p => !connectedIds.has(p.user_id)).map(p => ({ ...p, source: 'rede' as const }));
-      const atletaProfiles = (atletaData || []).filter(p => !connectedIds.has(p.user_id)).map(p => ({ ...p, tipo: 'Atleta', source: 'atleta' as const }));
+      const atletaProfiles = (atletaData || []).filter(p => !connectedIds.has(p.user_id) && !ehPerfilPlataforma(p)).map(p => ({ ...p, tipo: 'Atleta', source: 'atleta' as const }));
       const suggestMap = new Map<string, any>();
       for (const p of redeProfiles) {
         suggestMap.set(p.user_id, p);

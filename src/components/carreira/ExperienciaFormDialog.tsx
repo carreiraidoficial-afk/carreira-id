@@ -371,11 +371,24 @@ export function ExperienciaFormDialog({ open, onOpenChange, criancaId, childName
                 <FormItem>
                   <FormLabel>Data de Fim</FormLabel>
                   <FormControl>
+                    {/* Com "Treina atualmente" marcado o campo fica travado; tocar nele desmarca e libera, em vez de parecer quebrado. */}
                     <div className="relative">
                       <Input type="date" {...field} disabled={isAtual || isSyncedEdit} />
+                      {/* Campo desabilitado não recebe clique: a camada por cima captura o toque e desmarca "Treina atualmente". */}
+                      {isAtual && !isSyncedEdit && (
+                        <button
+                          type="button"
+                          aria-label="Informar data de fim"
+                          className="absolute inset-0 z-10 cursor-pointer rounded-md"
+                          onClick={() => form.setValue('atual', false)}
+                        />
+                      )}
                       <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                     </div>
                   </FormControl>
+                  {isAtual && !isSyncedEdit && (
+                    <p className="text-[11px] text-muted-foreground">Toque aqui para informar o fim (desmarca "Treina atualmente").</p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )} />

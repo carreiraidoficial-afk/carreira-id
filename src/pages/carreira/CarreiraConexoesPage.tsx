@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { plataformaUserIds, conexaoComPlataforma } from '@/lib/perfil-plataforma';
 import { useSuporteAlvo } from '@/hooks/useSuporteAlvo';
 import { useQuery } from '@tanstack/react-query';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
@@ -76,10 +77,11 @@ function useConexoesTotal(userId: string | null, perfilAtletaId?: string | null)
         .select('solicitante_id, destinatario_id, solicitante_perfil_atleta_id, destinatario_perfil_atleta_id')
         .eq('status', 'aceita')
         .or(`solicitante_id.eq.${userId},destinatario_id.eq.${userId}`);
+      const plataforma = await plataformaUserIds();
       const minhas = (data || []).filter((row) => {
         const souSolicitante = row.solicitante_id === userId;
         const meuLado = souSolicitante ? row.solicitante_perfil_atleta_id : row.destinatario_perfil_atleta_id;
-        return !meuLado || meuLado === perfilAtletaId;
+        return (!meuLado || meuLado === perfilAtletaId) && !conexaoComPlataforma(row, userId!, plataforma);
       });
       return minhas.length;
     },
