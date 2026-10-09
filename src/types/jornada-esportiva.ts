@@ -105,6 +105,8 @@ export interface Jogo {
   placar_adversario?: number;
   gols_marcados?: number;
   assistencias?: number;
+  /** O atleta foi o destaque da partida (selo no cartao, estatistica e Sala de Trofeus). */
+  destaque_jogo?: boolean;
   posicao_jogo?: PosicaoJogo;
   time_atleta?: string | null;
   observacoes?: string;
@@ -249,6 +251,8 @@ export interface CreateJogoInput {
   placar_adversario?: number;
   gols_marcados?: number;
   assistencias?: number;
+  /** O atleta foi o destaque da partida (selo no cartao, estatistica e Sala de Trofeus). */
+  destaque_jogo?: boolean;
   posicao_jogo?: PosicaoJogo;
   time_atleta?: string | null;
   observacoes?: string;

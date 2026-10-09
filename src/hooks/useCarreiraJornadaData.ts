@@ -141,6 +141,7 @@ export function useCarreiraConquistas(criancaId: string | null | undefined) {
 
 export interface CarreiraStatsExtended extends CarreiraStats {
   totalAssistencias: number;
+  totalDestaques: number;
   totalVitorias: number;
   // Goleiro
   jogosComoGoleiro: number;
@@ -231,6 +232,7 @@ export function useCarreiraStats(
     totalPremiacoes: premiacoesFiltered.length + jTotalPremiacoes,
     totalConquistas: conquistasFiltered.length,
     totalAssistencias: jTotalAssist,
+    totalDestaques: jAllJogos.filter((j: any) => j.destaque_jogo).length,
     totalVitorias: jTotalVitorias,
     jogosComoGoleiro: jJogosGoleiro.length,
     totalDefesas: jTotalDefesas,

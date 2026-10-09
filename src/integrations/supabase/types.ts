@@ -779,6 +779,7 @@ export type Database = {
       carreira_jogos: {
         Row: {
           assistencias: number | null
+          destaque_jogo: boolean
           campeonato_id: string | null
           created_at: string
           criado_por: string
@@ -821,6 +822,7 @@ export type Database = {
         }
         Insert: {
           assistencias?: number | null
+          destaque_jogo?: boolean
           campeonato_id?: string | null
           created_at?: string
           criado_por: string
@@ -863,6 +865,7 @@ export type Database = {
         }
         Update: {
           assistencias?: number | null
+          destaque_jogo?: boolean
           campeonato_id?: string | null
           created_at?: string
           criado_por?: string

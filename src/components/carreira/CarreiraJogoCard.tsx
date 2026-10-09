@@ -251,6 +251,7 @@ export function CarreiraJogoCard({ jogo, isOwner, accentColor = '#3b82f6', onEdi
               {!!j.assistencias && <Tag>🎯 {j.assistencias} assist. do atleta</Tag>}
             </>
           )}
+          {!!j.destaque_jogo && <Tag>⭐ Destaque do jogo</Tag>}
           {!isVolei && j.teve_prorrogacao && <Tag>⏱️ Prorrogação</Tag>}
           {j.fase_campeonato && <Tag>{j.fase_campeonato}</Tag>}
         </div>

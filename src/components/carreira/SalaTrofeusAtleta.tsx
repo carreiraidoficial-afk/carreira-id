@@ -23,7 +23,9 @@ interface TrofeuItem {
   nomeTime?: string;
   data: string; // ISO
   ano: number;
-  fonte: 'campeonato' | 'conquista' | 'campeonato_premiacao' | 'evento_premiacao';
+  fonte: 'campeonato' | 'conquista' | 'campeonato_premiacao' | 'evento_premiacao' | 'jogo_destaque';
+  /** Só nos destaques de jogo: qual foi a partida ("vs PSG Barra · 2ª Rodada"). */
+  partida?: string;
   colocacao?: string;
   emoji: string;
 }
@@ -64,7 +66,7 @@ export function useCarreiraCampeonatoTrofeus(criancaId: string | null | undefine
     queryKey: ['sala-trofeus-campeonatos', criancaId],
     queryFn: async (): Promise<TrofeuItem[]> => {
       if (!criancaId) return [];
-      const [campRes, premRes] = await Promise.all([
+      const [campRes, premRes, destRes] = await Promise.all([
         (supabase as any)
           .from('carreira_campeonatos')
           .select('id, nome, organizador, data_inicio, data_final, posicao_final, categoria, nome_time')
@@ -73,9 +75,15 @@ export function useCarreiraCampeonatoTrofeus(criancaId: string | null | undefine
           .from('carreira_campeonato_premiacoes')
           .select('id, campeonato_id, tipo_premiacao, titulo, created_at')
           .eq('crianca_id', criancaId),
+        (supabase as any)
+          .from('carreira_jogos')
+          .select('id, campeonato_id, data_jogo, time_adversario, fase_campeonato, time_atleta')
+          .eq('crianca_id', criancaId)
+          .eq('destaque_jogo', true),
       ]);
       if (campRes.error) throw campRes.error;
       if (premRes.error) throw premRes.error;
+      if (destRes.error) throw destRes.error;
 
       const camps: any[] = campRes.data || [];
       const prems: any[] = premRes.data || [];
@@ -119,6 +127,24 @@ export function useCarreiraCampeonatoTrofeus(criancaId: string | null | undefine
           ano: data ? parseDataLocal(data).getFullYear() : new Date().getFullYear(),
           fonte: 'campeonato_premiacao',
           emoji: meta.emoji,
+        });
+      });
+
+      // Destaque do jogo: cada partida em que o atleta foi o destaque, com o adversário e a fase
+      ((destRes.data || []) as any[]).forEach((j) => {
+        const camp = campMap.get(j.campeonato_id);
+        items.push({
+          id: `jdest-${j.id}`,
+          categoria: 'individual',
+          titulo: camp?.nome || 'Amistoso',
+          colocacaoLabel: 'Destaque do jogo',
+          categoriaIdade: camp?.categoria || undefined,
+          nomeTime: j.time_atleta || camp?.nome_time || undefined,
+          partida: [`vs ${j.time_adversario}`, j.fase_campeonato].filter(Boolean).join(' · '),
+          data: j.data_jogo,
+          ano: parseDataLocal(j.data_jogo).getFullYear(),
+          fonte: 'jogo_destaque',
+          emoji: '⭐',
         });
       });
 
@@ -205,7 +231,7 @@ export function SalaTrofeusAtleta({
         <Trophy className="w-12 h-12 mx-auto mb-3 opacity-30" style={{ color: accentColor }} />
         <h3 className="text-base font-medium text-muted-foreground mb-1">Sala de Troféus vazia</h3>
         <p className="text-xs text-muted-foreground max-w-md mx-auto">
-          Conquistas coletivas (campeão, vice…) e reconhecimentos individuais (melhor jogador, artilheiro…) aparecem aqui automaticamente.
+          Conquistas coletivas (campeão, vice…) e destaques individuais (melhor jogador, artilheiro, destaque do jogo…) aparecem aqui automaticamente.
         </p>
       </Card>
     );
@@ -238,7 +264,7 @@ export function SalaTrofeusAtleta({
         <StatBox label="Total" value={stats.total} accentColor={accentColor} />
         <StatBox label="Títulos" value={stats.titulos} color="#f59e0b" />
         <StatBox label="Vices" value={stats.vices} color="#94a3b8" />
-        <StatBox label="Reconhecimentos" value={stats.individuais} color="#a855f7" />
+        <StatBox label="Destaques" value={stats.individuais} color="#a855f7" />
       </div>
 
       {/* Lista por ano */}
@@ -272,7 +298,7 @@ function StatBox({ label, value, accentColor, color }: { label: string; value: n
       style={{ borderColor: `${c}40`, backgroundColor: `${c}10` }}
     >
       <div className="text-2xl font-bold" style={{ color: c }}>{value}</div>
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="truncate text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
     </div>
   );
 }
@@ -310,6 +336,9 @@ function TrofeuRow({ item, accentColor }: { item: TrofeuItem; accentColor: strin
         )}
         {item.nomeTime && (
           <p className="text-xs text-muted-foreground truncate">{item.nomeTime}</p>
+        )}
+        {item.partida && (
+          <p className="text-xs text-muted-foreground truncate" title={item.partida}>{item.partida}</p>
         )}
         <div className="flex items-center gap-2 flex-wrap pt-0.5">
           <Badge

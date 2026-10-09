@@ -166,6 +166,7 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
   const [placarB, setPlacarB] = useState('');
   const [gols, setGols] = useState('');
   const [assist, setAssist] = useState('');
+  const [destaque, setDestaque] = useState(false);
   const [golsPenalti, setGolsPenalti] = useState('');
   const [fase, setFase] = useState('');
   const [obs, setObs] = useState('');
@@ -280,6 +281,7 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
       setPlacarB(editingJogo?.placar_adversario?.toString() ?? '');
       setGols(editingJogo?.gols_marcados?.toString() ?? '');
       setAssist(editingJogo?.assistencias?.toString() ?? '');
+      setDestaque(!!editingJogo?.destaque_jogo);
       setGolsPenalti(editingJogo?.gols_penalti?.toString() ?? '');
       setFase(editingJogo?.fase_campeonato || '');
       setObs(editingJogo?.observacoes || '');
@@ -392,6 +394,7 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
         placar_adversario: num(placarB),
         gols_marcados: !isVolei && !isBasquete && !isGoleiro ? num(gols) : undefined,
         assistencias: !isVolei && !isGoleiro ? num(assist) : undefined,
+        destaque_jogo: destaque,
         posicao_jogo: posicao === POSICAO_NONE ? undefined : (posicao as PosicaoJogo),
         fase_campeonato: fase.trim() || undefined,
         observacoes: obs.trim() || undefined,
@@ -611,6 +614,10 @@ export function JornadaJogoFormDialog({ open, onOpenChange, criancaId, campeonat
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch checked={destaque} onCheckedChange={setDestaque} id="destaque-jogo" />
+            <Label htmlFor="destaque-jogo" className="cursor-pointer">⭐ Foi o destaque do jogo?</Label>
           </div>
           {!isVolei && !isBasquete && posicao !== 'goleiro' && (
             <div className="grid grid-cols-2 gap-3">

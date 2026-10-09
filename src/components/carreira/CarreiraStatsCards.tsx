@@ -3,7 +3,7 @@ import { useCarreiraStats } from '@/hooks/useCarreiraJornadaData';
 import { useCarreiraPlano } from '@/hooks/useCarreiraPlano';
 import { FeatureGate } from './FeatureGate';
 import { Card } from '@/components/ui/card';
-import { Goal, Trophy, Medal, Swords, Target, Award, Shield, Timer, Hand } from 'lucide-react';
+import { Goal, Trophy, Medal, Swords, Target, Award, Shield, Timer, Hand, Star } from 'lucide-react';
 
 interface CarreiraStatsCardsProps {
   criancaId: string | null | undefined;
@@ -14,6 +14,7 @@ const statConfig = [
   { key: 'totalJogos', label: 'Jogos', icon: Swords },
   { key: 'totalGols', label: 'Gols', icon: Goal },
   { key: 'totalAssistencias', label: 'Assist.', icon: Target },
+  { key: 'totalDestaques', label: 'Destaques', icon: Star },
   { key: 'totalVitorias', label: 'Vitórias', icon: Award },
   { key: 'totalCampeonatos', label: 'Campeonatos', icon: Trophy },
   { key: 'totalPremiacoes', label: 'Premiações', icon: Medal },
@@ -34,7 +35,7 @@ export function CarreiraStatsCards({ criancaId, accentColor = '#3b82f6' }: Carre
   const hasAnyStats =
     stats.totalGols > 0 || stats.totalJogos > 0 ||
     stats.totalCampeonatos > 0 || stats.totalPremiacoes > 0 ||
-    stats.totalAssistencias > 0 || stats.totalVitorias > 0;
+    stats.totalAssistencias > 0 || stats.totalVitorias > 0 || stats.totalDestaques > 0;
 
   return (
     <div className="space-y-3">
@@ -65,7 +66,7 @@ export function CarreiraStatsCards({ criancaId, accentColor = '#3b82f6' }: Carre
         </div>
       ) : (
         <>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
           {statConfig.map(({ key, label, icon: Icon }) => {
             const value = stats[key];
             return (
