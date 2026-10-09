@@ -151,6 +151,8 @@ export function useCarreiraCampeonatoTrofeus(criancaId: string | null | undefine
       return items;
     },
     enabled: !!criancaId,
+    // Os pais e o suporte editam jogos e premiações: quem abre o perfil precisa ver o que mudou, não a cópia de ontem.
+    refetchOnMount: true,
   });
 }
 

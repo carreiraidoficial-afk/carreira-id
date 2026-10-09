@@ -35,6 +35,7 @@ export function useCarreiraExperiencias(criancaId?: string | null) {
       return data as CarreiraExperiencia[];
     },
     enabled: !!criancaId,
+    refetchOnMount: true,
   });
 }
 

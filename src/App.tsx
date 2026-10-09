@@ -78,7 +78,7 @@ registerCarreiraExperienciaMutationDefaults(queryClient);
 
 // Bump ao mudar o formato de dados de alguma query — invalida cache antigo
 // incompatível em vez de deixar a UI tentar renderizar um shape velho.
-const QUERY_CACHE_BUSTER = 'v1';
+const QUERY_CACHE_BUSTER = 'v2-2026-10-09-destaque-jogo';
 
 const LegacyAdminRedirect = () => {
   const location = useLocation();
