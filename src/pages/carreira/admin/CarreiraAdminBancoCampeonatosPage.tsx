@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Loader2, Search } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronLeft, ChevronRight, Loader2, MessageCircle, Search } from 'lucide-react';
 import CarreiraAdminLayout from '@/components/layout/CarreiraAdminLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 /**
  * Consulta do backup de campeonatos (schema campeonatos_backup, fechado para a API). Só leitura:
@@ -49,6 +51,15 @@ interface JogadorJogo {
   assistencias: number; destaque: number; defesas: number; amarelos: number; vermelhos: number;
 }
 interface EventoJogo { jogador_id: string; nome_completo: string; time: string | null; tipo: string; quantidade: number }
+
+interface ContatoTime {
+  id: string; nome_time: string; responsavel_nome: string | null; email: string | null; telefone: string | null;
+  cidade: string | null; estado: string | null; status_contato: string; contatado_em: string | null; observacao: string | null;
+  categorias: string | null; atletas: number; comissao: number;
+}
+const STATUS_CONTATO: Record<string, string> = {
+  nao_contatado: 'Não contatado', contatado: 'Contatado', respondeu: 'Respondeu', interessado: 'Interessado', sem_interesse: 'Sem interesse', parceiro: 'Parceiro',
+};
 
 const VINCULO: Record<string, string> = { nao_vinculado: 'Sem vínculo', em_analise: 'Em análise', vinculado: 'Vinculado', recusado: 'Recusado' };
 const TIPO: Record<string, string> = {
@@ -390,6 +401,82 @@ function TimesEJogos({ campeonatos }: { campeonatos: Campeonato[] | undefined })
   );
 }
 
+function ContatosTimes() {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({ queryKey: ['bk-contatos'], queryFn: () => rpc<ContatoTime[]>('backup_contatos') });
+  const [aberto, setAberto] = useState<ContatoTime | null>(null);
+  const [status, setStatus] = useState('nao_contatado');
+  const [obs, setObs] = useState('');
+  const salvar = useMutation({
+    mutationFn: () => rpc('backup_contato_atualizar', { p_id: aberto!.id, p_status: status, p_observacao: obs.trim() || null }),
+    onSuccess: () => { toast.success('Acompanhamento salvo'); qc.invalidateQueries({ queryKey: ['bk-contatos'] }); setAberto(null); },
+    onError: () => toast.error('Não consegui salvar'),
+  });
+  const abrir = (c: ContatoTime) => { setAberto(c); setStatus(c.status_contato); setObs(c.observacao ?? ''); };
+  const zap = (tel: string | null) => {
+    const d = (tel ?? '').replace(/\D/g, '');
+    return d ? `https://wa.me/${d.startsWith('55') ? d : `55${d}`}` : null;
+  };
+  if (isLoading) return <Carregando />;
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        Responsável cadastrado em cada time (em geral o técnico ou dono da equipe). Uso exclusivo para o Carreira ID oferecer o app. Clique numa linha para anotar o andamento.
+      </p>
+      <Card>
+        <CardContent className="overflow-x-auto pt-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Time</TableHead><TableHead>Responsável</TableHead><TableHead>Email</TableHead><TableHead>Telefone</TableHead>
+                <TableHead>Categorias</TableHead><TableHead className="text-right">Atletas</TableHead><TableHead>Situação</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(data || []).map((c) => (
+                <TableRow key={c.id} className="cursor-pointer" onClick={() => abrir(c)}>
+                  <TableCell className="font-medium">{c.nome_time}</TableCell>
+                  <TableCell>{c.responsavel_nome || '—'}</TableCell>
+                  <TableCell>{c.email || '—'}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {c.telefone || '—'}
+                    {zap(c.telefone) && (
+                      <a href={zap(c.telefone)!} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="ml-2 inline-flex align-middle text-green-600" aria-label="Abrir WhatsApp">
+                        <MessageCircle className="h-4 w-4" />
+                      </a>
+                    )}
+                  </TableCell>
+                  <TableCell>{c.categorias || '—'}</TableCell>
+                  <TableCell className="text-right">{c.atletas}</TableCell>
+                  <TableCell><Badge variant={c.status_contato === 'nao_contatado' ? 'outline' : 'default'}>{STATUS_CONTATO[c.status_contato]}</Badge></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      <Dialog open={!!aberto} onOpenChange={(o) => !o && setAberto(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{aberto?.nome_time}</DialogTitle>
+            <p className="text-sm text-muted-foreground">{aberto?.responsavel_nome} · {aberto?.email} · {aberto?.telefone}</p>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{Object.entries(STATUS_CONTATO).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
+            </Select>
+            <Textarea value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Anotações (quem falou, o que combinou...)" rows={4} />
+            <Button className="w-full" disabled={salvar.isPending} onClick={() => salvar.mutate()}>
+              {salvar.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 export default function CarreiraAdminBancoCampeonatosPage() {
   const { data: campeonatos } = useQuery({
     queryKey: ['bk-campeonatos'], queryFn: () => rpc<Campeonato[]>('backup_campeonatos'), staleTime: 60_000,
@@ -406,10 +493,12 @@ export default function CarreiraAdminBancoCampeonatosPage() {
             <TabsTrigger value="geral">Visão geral</TabsTrigger>
             <TabsTrigger value="jogadores">Atletas</TabsTrigger>
             <TabsTrigger value="times">Times e jogos</TabsTrigger>
+            <TabsTrigger value="contatos">Contatos dos times</TabsTrigger>
           </TabsList>
           <TabsContent value="geral"><VisaoGeral campeonatos={campeonatos} /></TabsContent>
           <TabsContent value="jogadores"><Jogadores campeonatos={campeonatos} /></TabsContent>
           <TabsContent value="times"><TimesEJogos campeonatos={campeonatos} /></TabsContent>
+          <TabsContent value="contatos"><ContatosTimes /></TabsContent>
         </Tabs>
       </div>
     </CarreiraAdminLayout>
