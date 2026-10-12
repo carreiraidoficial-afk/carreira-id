@@ -13,7 +13,7 @@ import {
 import { NavLink } from '@/components/NavLink';
 import logoCarreira from '@/assets/logo-carreira-id.webp';
 
-import { Settings2, Megaphone, GraduationCap, Stethoscope, Bell, Star, Ticket, Mail } from 'lucide-react';
+import { Settings2, Megaphone, GraduationCap, Stethoscope, Bell, Star, Ticket, Mail, Database } from 'lucide-react';
 
 const navItems = [
   { title: 'Dashboard', url: '/carreira/admin', icon: LayoutDashboard },
@@ -24,6 +24,7 @@ const navItems = [
   { title: 'Comunicados', url: '/carreira/admin/comunicados', icon: Megaphone },
   { title: 'Lembretes de Cadastro', url: '/carreira/admin/lembretes-perfil', icon: Mail },
   { title: 'Emails enviados', url: '/carreira/admin/emails', icon: Mail },
+  { title: 'Banco de campeonatos', url: '/carreira/admin/banco-campeonatos', icon: Database },
   { title: 'Notificações Push', url: '/carreira/admin/push', icon: Bell },
   { title: 'Assinaturas', url: '/carreira/admin/assinaturas', icon: CreditCard },
   { title: 'Banco', url: '/carreira/admin/banco', icon: Landmark },
