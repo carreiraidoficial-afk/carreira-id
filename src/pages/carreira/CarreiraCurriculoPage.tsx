@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { CarreiraPageHeader } from '@/components/carreira/CarreiraPageHeader';
 import { CarreiraThemeButton } from '@/components/carreira/CarreiraThemeToggle';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
@@ -18,6 +19,7 @@ import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
  * app (o link público do perfil continua mostrando tudo junto por enquanto).
  */
 export default function CarreiraCurriculoPage() {
+  const navigate = useNavigate();
   useSEO({ title: 'Currículo — Carreira ID', description: 'Jornada esportiva, estatísticas e premiações.', noindex: true });
   const { theme } = useCarreiraTheme();
   const { sessionUserId, loading: sessionLoading } = useCarreiraSession();
@@ -33,16 +35,7 @@ export default function CarreiraCurriculoPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20 lg:pt-14" data-theme={theme}>
-      <header className="sticky top-0 lg:top-14 z-50 bg-background/95 backdrop-blur border-b border-border">
-        <div className="container flex items-center gap-3 h-14 px-4 max-w-2xl">
-          <Link to={carreiraPath('/feed')} className="text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <CarreiraLogo />
-          <h1 className="font-bold text-foreground">Currículo</h1>
-          <CarreiraThemeButton className="ml-auto" />
-        </div>
-      </header>
+      <CarreiraPageHeader title="Currículo" onBack={() => navigate(carreiraPath('/feed'))} />
 
       <main className="container max-w-2xl px-4 py-4">
         {meuPerfil ? (

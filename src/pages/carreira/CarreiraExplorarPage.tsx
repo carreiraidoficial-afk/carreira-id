@@ -451,14 +451,7 @@ export default function CarreiraExplorarPage() {
               <>
                 <CarreiraThemeButton />
                 <NotificacoesBell />
-                <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => navigate(carreiraPath(`/perfil/${sessionUserId}`))}>
-                  <Users className="w-4 h-4 mr-1" />
-                  <span className="hidden sm:inline">Conexões</span>
-                  {connectionsCount > 0 && (
-                    <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-1.5">{connectionsCount}</span>
-                  )}
-                </Button>
-                <Button variant="outline" size="sm" className="h-8 text-xs" onClick={async () => {
+                <Button variant="outline" size="sm" className="hidden lg:inline-flex h-8 text-xs" onClick={async () => {
                   // Usa a criança ativa já resolvida (meuPerfil) em vez de
                   // reconsultar "o perfil mais recente" -- respeita a mesma
                   // seleção do seletor de irmãos. slugDoDono nunca retorna o

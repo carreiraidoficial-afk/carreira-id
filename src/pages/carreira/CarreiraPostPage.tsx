@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { CarreiraPageHeader } from '@/components/carreira/CarreiraPageHeader';
 import { CarreiraThemeButton } from '@/components/carreira/CarreiraThemeToggle';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Loader2, ArrowLeft } from 'lucide-react';
@@ -41,17 +42,7 @@ export default function CarreiraPostPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20 lg:pt-14">
-      <header className="sticky top-0 lg:top-14 z-30 bg-background/95 backdrop-blur border-b">
-        <div className="max-w-2xl mx-auto px-3 py-2 flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <Link to="/feed" className="flex items-center gap-2">
-            <CarreiraLogo />
-          </Link>
-          <CarreiraThemeButton className="ml-auto" />
-        </div>
-      </header>
+      <CarreiraPageHeader onBack={() => navigate(-1)} />
 
       <main className="max-w-2xl mx-auto px-3 py-4">
         {loading && (

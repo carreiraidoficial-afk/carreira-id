@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CarreiraPageHeader } from '@/components/carreira/CarreiraPageHeader';
 import { CarreiraThemeButton } from '@/components/carreira/CarreiraThemeToggle';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -69,25 +70,14 @@ export default function CarreiraEventosPage() {
 
   return (
     <div className="min-h-screen bg-background lg:pt-14" data-theme={theme}>
-      <header className="sticky top-0 lg:top-14 z-50 bg-background/95 backdrop-blur border-b border-border">
-        <div className="container flex items-center justify-between h-16 px-4">
-          <button
-            onClick={() => navigate(carreiraPath('/feed'))}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <CarreiraLogo />
-          </button>
-          <div className="flex items-center gap-1">
-            <CarreiraThemeButton />
-            {canCreate && perfilRede?.id && (
-              <Button size="sm" className="gap-1.5" onClick={() => setFormOpen(true)}>
-                <Plus className="w-4 h-4" /> Nova Peneira
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+      <CarreiraPageHeader
+        onBack={() => navigate(carreiraPath('/feed'))}
+        actions={canCreate && perfilRede?.id ? (
+          <Button size="sm" className="h-9 gap-1.5 px-2.5 sm:px-3" onClick={() => setFormOpen(true)} aria-label="Nova peneira">
+            <Plus className="w-4 h-4" /><span className="hidden sm:inline">Nova Peneira</span>
+          </Button>
+        ) : undefined}
+      />
 
       <main className="container max-w-lg px-4 py-6 pb-24">
         <div className="flex items-center gap-2 mb-6">

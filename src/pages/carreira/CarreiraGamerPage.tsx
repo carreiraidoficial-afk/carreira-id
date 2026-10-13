@@ -1,4 +1,5 @@
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { CarreiraPageHeader } from '@/components/carreira/CarreiraPageHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { GamificacaoHeroCard } from '@/components/carreira/GamificacaoHeroCard';
 import { ComoJogarButton } from '@/components/carreira/ComoJogarButton';
@@ -86,25 +87,13 @@ export default function CarreiraGamerPage() {
   return (
     <div className="min-h-screen bg-background lg:pt-14" data-theme={carreiraTheme}>
       <div className="h-[2px] w-full" style={{ backgroundColor: accentColor }} />
-      <header
-        className={`sticky top-0 lg:top-14 z-50 ${isDarkTheme ? 'bg-[hsl(0_0%_0%/0.97)]' : 'bg-background/95 backdrop-blur-sm'}`}
-        style={{ borderBottom: `2px solid ${accentColor}50` }}
-      >
-        <div className="container flex items-center h-14 px-4 max-w-2xl">
-          <Link to={carreiraPath('/feed')} className="flex items-center gap-2 shrink-0">
-            <CarreiraLogo />
-          </Link>
-          <h1 className="ml-4 text-lg font-semibold text-foreground">Liga</h1>
-          <div className="ml-auto flex items-center gap-2">
-            <ComoJogarButton variant="inline" accentColor={accentColor} />
-            <CarreiraThemeToggle
-              isDarkTheme={isDarkTheme}
-              onCheckedChange={setDarkTheme}
-              compact
-            />
-          </div>
-        </div>
-      </header>
+      <CarreiraPageHeader
+        title="Liga"
+        accentColor={accentColor}
+        solidDark
+        isDarkTheme={isDarkTheme}
+        actions={<ComoJogarButton variant="inline" accentColor={accentColor} />}
+      />
 
       <main className="container max-w-2xl px-4 py-6 pb-24 space-y-4">
         <TutorialAutoShow tipoPerfil="atleta_filho" />

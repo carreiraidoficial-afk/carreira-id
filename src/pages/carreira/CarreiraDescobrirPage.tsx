@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CarreiraPageHeader } from '@/components/carreira/CarreiraPageHeader';
 import { CarreiraThemeButton } from '@/components/carreira/CarreiraThemeToggle';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -37,16 +38,7 @@ export default function CarreiraDescobrirPage() {
   return (
     <div className="min-h-screen bg-background lg:pt-14" data-theme={theme}>
       <div className="h-1 w-full bg-[hsl(25_95%_55%)]" />
-      <header className="sticky top-0 lg:top-14 z-50 bg-background/95 backdrop-blur border-b border-border">
-        <div className="container flex items-center h-14 lg:h-16 px-4 max-w-6xl gap-3">
-          <button onClick={() => navigate(carreiraPath('/feed'))} className="flex items-center gap-2 text-muted-foreground hover:text-foreground shrink-0">
-            <ArrowLeft className="w-4 h-4" />
-            <CarreiraLogo />
-          </button>
-          <h1 className="text-sm font-semibold text-foreground">Descobrir Atletas</h1>
-          <CarreiraThemeButton className="ml-auto" />
-        </div>
-      </header>
+      <CarreiraPageHeader title="Descobrir Atletas" onBack={() => navigate(carreiraPath('/feed'))} maxWidth="max-w-6xl" />
 
       <main className="container max-w-2xl px-4 py-6 pb-24">
         <DescobrirAtletasSection />

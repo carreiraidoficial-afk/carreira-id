@@ -435,29 +435,31 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
 
   return (
     <div className="space-y-4">
-      {/* Abas */}
+      {/* Abas: controle segmentado, as quatro cabem na largura do celular */}
       {isOwnProfile && (
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+        <div className="grid grid-cols-4 gap-1 rounded-xl bg-muted p-1" role="tablist">
           {([
-            { value: 'todas' as const, label: 'Todas', icon: Users, count: connections?.length || 0 },
-            { value: 'torcedores' as const, label: 'Torcedores', icon: Heart, count: torcedores?.length || 0 },
-            { value: 'torcendo' as const, label: 'Torcendo', icon: Heart, count: torcendo?.length || 0 },
-            { value: 'solicitacoes' as const, label: 'Solicitações', icon: Inbox, count: pendingRequests?.length || 0 },
-          ]).map(({ value, label, icon: Icon, count }) => (
-            <button
-              key={value}
-              onClick={() => setActiveTab(value)}
-              className={`shrink-0 flex items-center gap-1.5 text-xs font-semibold rounded-full border px-3 py-1.5 transition-colors ${
-                activeTab === value
-                  ? 'bg-foreground text-background border-foreground'
-                  : 'border-border text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              {label}
-              {count > 0 && <span className="text-[10px] opacity-70">({count})</span>}
-            </button>
-          ))}
+            { value: 'todas' as const, label: 'Todas', count: connections?.length || 0 },
+            { value: 'torcedores' as const, label: 'Torcedores', count: torcedores?.length || 0 },
+            { value: 'torcendo' as const, label: 'Torcendo', count: torcendo?.length || 0 },
+            { value: 'solicitacoes' as const, label: 'Solicitações', count: pendingRequests?.length || 0 },
+          ]).map(({ value, label, count }) => {
+            const ativa = activeTab === value;
+            return (
+              <button
+                key={value}
+                role="tab"
+                aria-selected={ativa}
+                onClick={() => setActiveTab(value)}
+                className={`flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 transition-colors ${
+                  ativa ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <span className={`text-base font-bold leading-none ${value === 'solicitacoes' && count > 0 ? 'text-orange-500' : ''}`}>{count}</span>
+                <span className="w-full truncate text-center text-[11px] font-medium leading-tight">{label}</span>
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -467,10 +469,10 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar atletas ou pessoas na rede pra conectar..."
+              placeholder="Buscar atletas e pessoas"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="h-11 rounded-xl pl-10"
             />
           </div>
           {searchQuery.trim().length >= 2 && (
@@ -613,11 +615,11 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
                   </button>
                 )}
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className={mostrarTodasSugestoes ? 'grid grid-cols-2 gap-2' : '-mx-4 flex snap-x snap-mandatory scroll-pl-4 gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'}>
                 {(mostrarTodasSugestoes ? visiveis : visiveis.slice(0, SUGESTOES_PREVIEW)).map((person) => {
                   const badge = getSuggestionBadge(person);
                   return (
-                    <div key={person.id} className="relative bg-card border border-border rounded-xl p-2.5 text-center">
+                    <div key={person.id} className={`relative bg-card border border-border rounded-xl p-3 text-center ${mostrarTodasSugestoes ? '' : 'w-[9.5rem] shrink-0 snap-start'}`}>
                       <button
                         onClick={() => setSugestoesDispensadas((s) => new Set(s).add(person.id))}
                         className="absolute top-1 right-1 text-muted-foreground hover:text-foreground p-0.5"
@@ -643,7 +645,7 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
                           <badge.Icon className="w-2.5 h-2.5 text-white" />
                         </span>
                       </button>
-                      <p className="text-xs font-semibold mt-1.5 truncate">{person.nome}</p>
+                      <p className="mt-1.5 line-clamp-2 min-h-[2rem] text-xs font-semibold leading-tight">{person.nome}</p>
                       <p className="text-[10px] text-muted-foreground truncate">{TYPE_LABELS[person.tipo] || person.tipo}</p>
                       {(person.cidade || person.estado) && (
                         <p className="text-[9px] text-muted-foreground truncate flex items-center justify-center gap-0.5 mt-0.5">

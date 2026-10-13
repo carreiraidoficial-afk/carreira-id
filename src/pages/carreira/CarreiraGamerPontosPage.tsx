@@ -1,4 +1,5 @@
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { CarreiraPageHeader } from '@/components/carreira/CarreiraPageHeader';
 import { TabelaPontos } from '@/components/carreira/TabelaPontos';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
 import { CarreiraThemeToggle } from '@/components/carreira/CarreiraThemeToggle';
@@ -41,26 +42,13 @@ export default function CarreiraGamerPontosPage() {
   return (
     <div className="min-h-screen bg-background lg:pt-14" data-theme={carreiraTheme}>
       <div className="h-[2px] w-full" style={{ backgroundColor: accentColor }} />
-      <header
-        className={`sticky top-0 lg:top-14 z-50 ${isDarkTheme ? 'bg-[hsl(0_0%_0%/0.97)]' : 'bg-background/95 backdrop-blur-sm'}`}
-        style={{ borderBottom: `2px solid ${accentColor}50` }}
-      >
-        <div className="container flex items-center h-14 px-4 max-w-2xl">
-          <button onClick={() => navigate(carreiraPath('/liga'))} className="mr-2 p-1.5 rounded-lg hover:bg-muted/50 transition-colors">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <Link to={carreiraPath('/feed')} className="flex items-center gap-2 shrink-0">
-            <CarreiraLogo />
-          </Link>
-          <h1 className="ml-4 text-lg font-semibold text-foreground">Tabela de Pontos da Liga</h1>
-          <CarreiraThemeToggle
-            className="ml-auto"
-            isDarkTheme={isDarkTheme}
-            onCheckedChange={setDarkTheme}
-            compact
-          />
-        </div>
-      </header>
+      <CarreiraPageHeader
+        title="Tabela de Pontos da Liga"
+        onBack={() => navigate(carreiraPath('/liga'))}
+        accentColor={accentColor}
+        solidDark
+        isDarkTheme={isDarkTheme}
+      />
 
       <main className="container max-w-2xl px-4 py-6 pb-24">
         <Card className="p-4" style={{ borderColor: `${accentColor}50`, borderWidth: 2 }}>
