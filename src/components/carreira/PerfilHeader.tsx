@@ -3,7 +3,8 @@ import { parseDataLocal } from '@/lib/datas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Camera, Loader2, MapPin, Share2, Trophy, User, Pencil, Instagram, UserPlus, UserCheck, ShieldCheck, Footprints, Crown, Quote, Users, Swords, Clock } from 'lucide-react';
+import { Camera, Loader2, MapPin, Share2, Trophy, User, Pencil, Instagram, UserPlus, UserCheck, ShieldCheck, Footprints, Crown, Quote, Users, Swords, Clock, Flag } from 'lucide-react';
+import { DenunciarDialog } from './DenunciarDialog';
 import { useCarreiraStats } from '@/hooks/useCarreiraJornadaData';
 import { PerfilAtleta, useUpdatePerfilAtleta, uploadProfilePhoto, useIsFollowing, useToggleFollow } from '@/hooks/useCarreiraData';
 import { useCarreiraExperiencias } from '@/hooks/useCarreiraExperienciasData';
@@ -123,6 +124,7 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
   };
 
   const [shareOpen, setShareOpen] = useState(false);
+  const [denunciaAberta, setDenunciaAberta] = useState(false);
   const [bioExpandida, setBioExpandida] = useState(false);
   const [bioTruncada, setBioTruncada] = useState(false);
   const bioRef = useRef<HTMLParagraphElement>(null);
@@ -206,6 +208,16 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
             >
               <Share2 className="h-4 w-4" />
             </button>
+            {!isOwner && user && (
+              <button
+                type="button"
+                onClick={() => setDenunciaAberta(true)}
+                aria-label="Denunciar perfil"
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-black/45 text-white backdrop-blur hover:bg-black/60"
+              >
+                <Flag className="h-4 w-4" />
+              </button>
+            )}
           </div>
 
           <div className="relative flex items-start gap-3.5 px-4 pb-4 pt-4">
@@ -381,6 +393,7 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
         </CardContent>
       </Card>
 
+      {!isOwner && user && <DenunciarDialog open={denunciaAberta} onOpenChange={setDenunciaAberta} tipo="perfil_atleta" conteudoId={perfil.id} />}
       {isOwner && <EditPerfilDialog open={editDialogOpen} onOpenChange={setEditDialogOpen} perfil={perfil} />}
       {isOwner && <EditConfiguracoesDialog open={configDialogOpen} onOpenChange={setConfigDialogOpen} perfil={perfil} />}
       <CompartilharPerfilDialog

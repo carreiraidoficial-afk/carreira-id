@@ -11,7 +11,8 @@ export interface Peneira {
   data_evento: string;
   data_fim: string | null;
   local_nome: string;
-  local_endereco: string | null;
+  /** Só vem pela função peneira_privado (organizador, admin e quem confirmou o convite). */
+  local_endereco?: string | null;
   cidade: string | null;
   estado: string | null;
   modalidade: string;
@@ -19,15 +20,21 @@ export interface Peneira {
   posicoes: string[];
   vagas: number | null;
   requisitos: string | null;
-  contato_whatsapp: string | null;
-  contato_email: string | null;
+  contato_whatsapp?: string | null;
+  contato_email?: string | null;
   banner_url: string | null;
   status: string;
   alcance: string;
   filtro_status_federado: string | null;
+  aprovacao_status?: 'em_analise' | 'aprovada' | 'recusada';
+  aprovacao_nota?: string | null;
   created_at: string;
   criador_perfil_rede?: { nome: string; foto_url: string | null; tipo: string } | null;
 }
+
+/** Colunas da peneira que a API entrega. Endereço e contatos ficam de fora de propósito (ver peneira_privado). */
+export const PENEIRA_COLS =
+  'id, criador_id, criador_perfil_rede_id, titulo, descricao, data_evento, data_fim, local_nome, cidade, estado, modalidade, categorias, posicoes, vagas, requisitos, banner_url, status, alcance, filtro_status_federado, created_at, updated_at, aprovacao_status, aprovacao_nota';
 
 export interface PeneiraConvite {
   id: string;
@@ -55,7 +62,7 @@ export function useMinhasPeneiras(userId: string | null) {
       if (!userId) return [];
       const { data, error } = await supabase
         .from('peneiras')
-        .select('*, criador_perfil_rede:perfis_rede(nome, foto_url, tipo)')
+        .select(`${PENEIRA_COLS}, criador_perfil_rede:perfis_rede(nome, foto_url, tipo)`)
         .eq('criador_id', userId)
         .order('data_evento', { ascending: false });
       if (error) throw error;
@@ -75,7 +82,7 @@ export function usePeneirasAbertas() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('peneiras')
-        .select('*, criador_perfil_rede:perfis_rede(nome, foto_url, tipo)')
+        .select(`${PENEIRA_COLS}, criador_perfil_rede:perfis_rede(nome, foto_url, tipo)`)
         .eq('status', 'aberta')
         .gte('data_evento', new Date().toISOString())
         .order('data_evento', { ascending: true });
@@ -96,7 +103,7 @@ export function useMeusConvitesPeneira(userId: string | null) {
       if (!userId) return [];
       const { data, error } = await supabase
         .from('peneira_convites')
-        .select('*, peneira:peneiras(*, criador_perfil_rede:perfis_rede(nome, foto_url, tipo))')
+        .select(`*, peneira:peneiras(${PENEIRA_COLS}, criador_perfil_rede:perfis_rede(nome, foto_url, tipo))`)
         .eq('atleta_user_id', userId)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -141,7 +148,7 @@ export function useCreatePeneira() {
       const { data: result, error } = await supabase
         .from('peneiras')
         .insert(data as any)
-        .select()
+        .select(PENEIRA_COLS)
         .single();
       if (error) throw error;
       return result;
@@ -223,34 +230,40 @@ export function useSendConvitesPeneira() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ peneiraId, atletaIds }: { peneiraId: string; atletaIds: { perfil_id: string; user_id: string }[] }) => {
-      const rows = atletaIds.map((a) => ({
-        peneira_id: peneiraId,
-        atleta_perfil_id: a.perfil_id,
-        atleta_user_id: a.user_id,
-        status: 'pendente',
-      }));
-      const { error } = await supabase.from('peneira_convites').upsert(rows as any, { onConflict: 'peneira_id,atleta_perfil_id' });
+      // O servidor confere tudo: peneira aprovada, consentimento do responsável, categoria e limites.
+      const { data, error } = await (supabase as any).rpc('peneira_convidar', {
+        p_peneira: peneiraId,
+        p_perfis: atletaIds.map((a) => a.perfil_id),
+      });
       if (error) throw error;
+      const res = data as { convidados: number; ignorados: number; user_ids: string[] };
 
-      try {
-        const { data: peneira } = await supabase.from('peneiras').select('titulo').eq('id', peneiraId).maybeSingle();
-        await supabase.functions.invoke('send-carreira-push', {
-          body: {
-            user_ids: atletaIds.map((a) => a.user_id),
-            title: '🎯 Convite para Peneira',
-            body: peneira?.titulo ? `Você foi convidado para "${peneira.titulo}"` : 'Você recebeu um convite para uma peneira',
-            url: '/eventos',
-            tag: 'peneira_convite',
-            category: 'peneira_convite',
-          },
-        });
-      } catch { /* silent: notificacao e best-effort, nao deve travar o convite */ }
+      if (res.user_ids?.length) {
+        try {
+          const { data: peneira } = await supabase.from('peneiras').select('titulo').eq('id', peneiraId).maybeSingle();
+          await supabase.functions.invoke('send-carreira-push', {
+            body: {
+              user_ids: res.user_ids,
+              title: '🎯 Convite para Peneira',
+              body: peneira?.titulo ? `Você foi convidado para "${peneira.titulo}"` : 'Você recebeu um convite para uma peneira',
+              url: '/eventos',
+              tag: 'peneira_convite',
+              category: 'peneira_convite',
+            },
+          });
+        } catch { /* silent: notificacao e best-effort, nao deve travar o convite */ }
+      }
+      return res;
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['convites-peneira'] });
-      toast.success('Convites enviados!');
+      if (res.convidados > 0) {
+        toast.success(`${res.convidados} convite(s) enviado(s)!` + (res.ignorados > 0 ? ` ${res.ignorados} não puderam receber (sem autorização do responsável ou categoria diferente).` : ''));
+      } else {
+        toast.error('Nenhum convite enviado: os atletas escolhidos não ativaram convites, são de outra categoria ou já foram convidados.');
+      }
     },
-    onError: (e: any) => toast.error('Erro ao enviar convites: ' + e.message),
+    onError: (e: any) => toast.error(e?.message || 'Erro ao enviar convites'),
   });
 }
 
@@ -291,10 +304,11 @@ export function useSearchAtletasForPeneira(filters: {
   return useQuery({
     queryKey: ['search-atletas-peneira', filters],
     queryFn: async () => {
-      let query = supabase
+      let query = (supabase as any)
         .from('perfil_atleta')
         .select('id, user_id, nome, foto_url, categoria, posicao_principal, cidade, estado, modalidade, modalidades')
         .eq('is_public', true)
+        .eq('aceita_convites_peneira', true)
         .order('nome');
 
       if (filters.estado) query = query.eq('estado', filters.estado);
@@ -309,5 +323,51 @@ export function useSearchAtletasForPeneira(filters: {
     },
     enabled: filters.enabled !== false,
     staleTime: 30_000,
+  });
+}
+
+/** Endereço e contatos da peneira: só organizador, admin e quem confirmou o convite (senão volta null). */
+export function usePeneiraPrivado(peneiraId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ['peneira-privado', peneiraId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc('peneira_privado', { p_id: peneiraId });
+      if (error) throw error;
+      return (data || null) as { local_endereco: string | null; contato_whatsapp: string | null; contato_email: string | null } | null;
+    },
+    enabled: !!peneiraId && enabled,
+    refetchOnMount: true,
+  });
+}
+
+/** O responsável deixou este atleta receber convites de peneira? (padrão: não) */
+export function useAceitaConvitesPeneira(perfilAtletaId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['aceita-convites-peneira', perfilAtletaId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('perfil_atleta').select('aceita_convites_peneira' as any).eq('id', perfilAtletaId!).maybeSingle();
+      if (error) throw error;
+      return !!(data as any)?.aceita_convites_peneira;
+    },
+    enabled: !!perfilAtletaId,
+    refetchOnMount: true,
+  });
+}
+
+export function useSetAceitaConvitesPeneira(perfilAtletaId: string | null | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ativo: boolean) => {
+      const { error } = await supabase
+        .from('perfil_atleta')
+        .update({ aceita_convites_peneira: ativo, aceita_convites_peneira_em: ativo ? new Date().toISOString() : null } as any)
+        .eq('id', perfilAtletaId!);
+      if (error) throw error;
+    },
+    onSuccess: (_d, ativo) => {
+      queryClient.invalidateQueries({ queryKey: ['aceita-convites-peneira', perfilAtletaId] });
+      toast.success(ativo ? 'Convites para peneiras ativados' : 'Convites para peneiras desativados');
+    },
+    onError: () => toast.error('Não consegui salvar. Tente novamente.'),
   });
 }

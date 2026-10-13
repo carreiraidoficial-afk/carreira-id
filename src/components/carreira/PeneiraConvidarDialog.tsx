@@ -83,6 +83,10 @@ export function PeneiraConvidarDialog({ open, onOpenChange, peneira }: Props) {
           </DialogTitle>
         </DialogHeader>
 
+        <p className="rounded-md bg-muted/60 px-3 py-2 text-[11px] text-muted-foreground">
+          Aparecem só atletas cujo responsável ativou o recebimento de convites e que combinam com a categoria da peneira. Máximo de 50 convites por dia.
+        </p>
+
         {/* Filters */}
         <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)} className="gap-1.5 self-start">
           <Filter className="w-4 h-4" /> Filtros

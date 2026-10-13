@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { 
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ThumbsUp, MessageCircle, Share2, Send, MoreHorizontal, Trash2, User, Loader2, Pencil } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Share2, Send, MoreHorizontal, Trash2, User, Loader2, Pencil, Flag } from 'lucide-react';
+import { DenunciarDialog, TipoDenuncia } from './DenunciarDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { PostAtleta, usePostLike, useDeletePostAtleta, useUpdatePostAtleta, usePostComments, useCreateComment } from '@/hooks/useCarreiraData';
@@ -62,6 +63,12 @@ export function PostCard({ post, showAuthor = true, accentColor }: PostCardProps
   const createComment = useCreateComment();
   const isAuthenticated = !!user?.id || !!effectiveUserId;
   const { requireAuth } = useAnonymousGate();
+  // Denúncia (publicação ou comentário). Só quem está logado e não é o autor.
+  const [denuncia, setDenuncia] = useState<{ tipo: TipoDenuncia; id: string } | null>(null);
+  const denunciar = (tipo: TipoDenuncia, id: string) => {
+    if (!user?.id) { requireAuth('interaction'); return; }
+    setDenuncia({ tipo, id });
+  };
 
   // Resolve author from perfil_atleta or perfis_rede
   const perfilAtleta = post.perfil;
@@ -198,6 +205,21 @@ export function PostCard({ post, showAuthor = true, accentColor }: PostCardProps
                 </div>
               </div>
               
+              {!canManage && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Mais opções">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => denunciar('post', post.id)}>
+                      <Flag className="w-4 h-4 mr-2" />Denunciar publicação
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+
               {canManage && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -323,6 +345,12 @@ export function PostCard({ post, showAuthor = true, accentColor }: PostCardProps
                   <span className="text-xs font-semibold">{c.profile?.nome || 'Usuário'}</span>
                   <p className="text-xs">{c.texto}</p>
                 </div>
+                {c.user_id !== user?.id && (
+                  <button type="button" onClick={() => denunciar('comentario', c.id)} aria-label="Denunciar comentário"
+                    className="self-start p-1 text-muted-foreground hover:text-destructive">
+                    <Flag className="w-3 h-3" />
+                  </button>
+                )}
               </div>
             ))}
             {isAuthenticated && (
@@ -347,6 +375,13 @@ export function PostCard({ post, showAuthor = true, accentColor }: PostCardProps
           </div>
         )}
       </Card>
+
+      <DenunciarDialog
+        open={!!denuncia}
+        onOpenChange={(o) => { if (!o) setDenuncia(null); }}
+        tipo={denuncia?.tipo ?? 'post'}
+        conteudoId={denuncia?.id ?? ''}
+      />
 
       {selectedImage && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"

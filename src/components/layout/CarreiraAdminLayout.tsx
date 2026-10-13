@@ -13,7 +13,9 @@ import {
 import { NavLink } from '@/components/NavLink';
 import logoCarreira from '@/assets/logo-carreira-id.webp';
 
-import { Settings2, Megaphone, GraduationCap, Stethoscope, Bell, Star, Ticket, Mail, Database } from 'lucide-react';
+import { Settings2, Megaphone, GraduationCap, Stethoscope, Bell, Star, Ticket, Mail, Database, Flag, BadgeCheck } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const navItems = [
   { title: 'Dashboard', url: '/carreira/admin', icon: LayoutDashboard },
@@ -33,6 +35,8 @@ const navItems = [
   { title: 'Gamificação', url: '/carreira/admin/gamificacao', icon: Trophy },
   { title: 'Performance', url: '/carreira/admin/performance', icon: Trophy },
   { title: 'Moderação', url: '/carreira/admin/moderacao', icon: Shield },
+  { title: 'Denúncias', url: '/carreira/admin/denuncias', icon: Flag },
+  { title: 'Peneiras', url: '/carreira/admin/peneiras', icon: BadgeCheck },
   { title: 'Tutoriais', url: '/carreira/admin/tutoriais', icon: GraduationCap },
   { title: 'Diagnóstico', url: '/carreira/admin/diagnostico', icon: Stethoscope },
 ];
@@ -42,6 +46,16 @@ function CarreiraAdminSidebar() {
   const collapsed = state === 'collapsed';
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
+  // Quantas denúncias esperam decisão (aparece como bolinha no menu).
+  const { data: pendentes } = useQuery({
+    queryKey: ['admin-denuncias-pendentes'],
+    queryFn: async () => {
+      const { count } = await (supabase as any).from('denuncias_conteudo').select('id', { count: 'exact', head: true }).eq('status', 'pendente');
+      return (count as number) ?? 0;
+    },
+    refetchOnMount: true,
+    staleTime: 60_000,
+  });
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
@@ -71,6 +85,9 @@ function CarreiraAdminSidebar() {
                     >
                       <item.icon className="mr-2 h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && item.url === '/carreira/admin/denuncias' && !!pendentes && (
+                        <span className="ml-auto rounded-full bg-destructive px-1.5 text-[10px] font-semibold text-destructive-foreground">{pendentes}</span>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

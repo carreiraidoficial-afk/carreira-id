@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, CalendarDays, MapPin, Users, Phone, Image, X, Mail } from 'lucide-react';
-import { useCreatePeneira, useUpdatePeneira, Peneira } from '@/hooks/usePeneirasData';
+import { useCreatePeneira, useUpdatePeneira, usePeneiraPrivado, Peneira } from '@/hooks/usePeneirasData';
 import { MODALIDADES, CATEGORIAS, ESTADOS } from '@/constants/esportes';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -57,6 +57,14 @@ export function PeneiraFormDialog({ open, onOpenChange, criadorId, criadorPerfil
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [uploadingBanner, setUploadingBanner] = useState(false);
 
+  const { data: privado } = usePeneiraPrivado(editPeneira?.id ?? null, open && !!editPeneira);
+  useEffect(() => {
+    if (!privado) return;
+    setLocalEndereco(privado.local_endereco || '');
+    setContatoWhatsapp(privado.contato_whatsapp ? formatPhoneMask(privado.contato_whatsapp) : '');
+    setContatoEmail(privado.contato_email || '');
+  }, [privado]);
+
   useEffect(() => {
     if (editPeneira && open) {
       setTitulo(editPeneira.titulo);
@@ -65,7 +73,7 @@ export function PeneiraFormDialog({ open, onOpenChange, criadorId, criadorPerfil
       const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
       setDataEvento(local);
       setLocalNome(editPeneira.local_nome);
-      setLocalEndereco(editPeneira.local_endereco || '');
+      // endereço e contatos vêm pela função segura (efeito logo abaixo)
       setCidade(editPeneira.cidade || '');
       setEstado(editPeneira.estado || '');
       setModalidade(editPeneira.modalidade);
@@ -73,8 +81,6 @@ export function PeneiraFormDialog({ open, onOpenChange, criadorId, criadorPerfil
       setPosicoes(editPeneira.posicoes || []);
       setVagas(editPeneira.vagas ? String(editPeneira.vagas) : '');
       setRequisitos(editPeneira.requisitos || '');
-      setContatoWhatsapp(editPeneira.contato_whatsapp ? formatPhoneMask(editPeneira.contato_whatsapp) : '');
-      setContatoEmail(editPeneira.contato_email || '');
       setFiltroStatusFederado(editPeneira.filtro_status_federado || '');
       setBannerPreview(editPeneira.banner_url || null);
       setBannerFile(null);
@@ -177,6 +183,16 @@ export function PeneiraFormDialog({ open, onOpenChange, criadorId, criadorPerfil
             {isEdit ? 'Editar Peneira' : 'Criar Peneira / Seletiva'}
           </DialogTitle>
         </DialogHeader>
+
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-foreground space-y-1">
+          <p className="font-semibold">Regras para criar peneiras no Carreira ID</p>
+          <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+            <li>Toda peneira passa por análise do Carreira ID antes de convidar atletas.</li>
+            <li>É proibido cobrar. Não escreva valores, taxas nem pagamentos.</li>
+            <li>Não coloque links, e-mails ou telefones no texto. Use os campos de contato: o endereço e o contato só aparecem para quem confirmar o convite.</li>
+            <li>Crie com pelo menos 7 dias de antecedência. Mudou algo importante? A peneira volta para análise.</li>
+          </ul>
+        </div>
 
         <div className="space-y-4">
           {/* Basic info */}

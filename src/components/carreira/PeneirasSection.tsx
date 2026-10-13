@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { CalendarDays, Plus, Loader2 } from 'lucide-react';
 import { useMinhasPeneiras, useMeusConvitesPeneira, useCanCreatePeneira } from '@/hooks/usePeneirasData';
@@ -21,6 +23,15 @@ export function PeneirasSection({ userId, perfilRedeId, perfilRedeTipo, accentCo
   const { data: minhasPeneiras = [], isLoading: loadingPeneiras } = useMinhasPeneiras(canCreate ? userId : null);
   const { data: meusConvites = [], isLoading: loadingConvites } = useMeusConvitesPeneira(userId);
   const [formOpen, setFormOpen] = useState(false);
+  // Só organizador verificado cria peneira
+  const { data: verificado = false } = useQuery({
+    queryKey: ['rede-verificado', perfilRedeId],
+    queryFn: async () => {
+      const { data } = await supabase.from('perfis_rede').select('verificado' as any).eq('id', perfilRedeId!).maybeSingle();
+      return !!(data as any)?.verificado;
+    },
+    enabled: !!perfilRedeId && canCreate,
+  });
 
   const pendentes = meusConvites.filter((c) => c.status === 'pendente');
   const respondidos = meusConvites.filter((c) => c.status !== 'pendente' && c.status !== 'descartado');
@@ -38,7 +49,7 @@ export function PeneirasSection({ userId, perfilRedeId, perfilRedeTipo, accentCo
           <CalendarDays className="w-5 h-5" />
           Peneiras
         </button>
-        {canCreate && perfilRedeId && (
+        {canCreate && verificado && perfilRedeId && (
           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setFormOpen(true)}>
             <Plus className="w-4 h-4" /> Nova Peneira
           </Button>
@@ -78,7 +89,7 @@ export function PeneirasSection({ userId, perfilRedeId, perfilRedeTipo, accentCo
         </div>
       )}
 
-      {canCreate && perfilRedeId && (
+      {canCreate && verificado && perfilRedeId && (
         <PeneiraFormDialog
           open={formOpen}
           onOpenChange={setFormOpen}

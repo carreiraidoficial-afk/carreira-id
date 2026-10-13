@@ -117,11 +117,20 @@ export function PeneiraCard({ peneira, isOwner }: Props) {
               </div>
             )}
 
+            {/* Situação da análise (só o organizador vê) */}
+            {isOwner && peneira.aprovacao_status && peneira.aprovacao_status !== 'aprovada' && (
+              <div className={`rounded-md px-3 py-2 text-xs ${peneira.aprovacao_status === 'recusada' ? 'bg-red-500/10 text-red-700' : 'bg-amber-500/10 text-amber-700'}`}>
+                {peneira.aprovacao_status === 'recusada'
+                  ? `Recusada pelo Carreira ID${peneira.aprovacao_nota ? `: ${peneira.aprovacao_nota}` : '.'} Edite para enviar de novo.`
+                  : 'Em análise pelo Carreira ID. Você poderá convidar atletas depois da aprovação.'}
+              </div>
+            )}
+
             {/* Owner actions */}
             {isOwner && peneira.status === 'aberta' && (
               <div className="space-y-2 pt-1">
                 <div className="flex gap-2">
-                  <Button size="sm" className="flex-1 gap-1.5" onClick={() => setConvidarOpen(true)}>
+                  <Button size="sm" className="flex-1 gap-1.5" disabled={peneira.aprovacao_status !== 'aprovada'} onClick={() => setConvidarOpen(true)}>
                     <Send className="w-3 h-3" /> Convidar
                   </Button>
                   <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setConvitesListOpen(true)}>

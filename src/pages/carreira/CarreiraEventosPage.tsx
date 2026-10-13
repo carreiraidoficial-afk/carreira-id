@@ -15,6 +15,8 @@ import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
+import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
+import { ConvitesPeneiraOptIn } from '@/components/carreira/ConvitesPeneiraOptIn';
 
 export default function CarreiraEventosPage() {
   const navigate = useNavigate();
@@ -38,17 +40,21 @@ export default function CarreiraEventosPage() {
       if (!currentUserId) return null;
       const { data } = await supabase
         .from('perfis_rede')
-        .select('id, tipo, slug')
+        .select('id, tipo, slug, verificado' as any)
         .eq('user_id', currentUserId)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      return data;
+      return data as unknown as { id: string; tipo: string; slug: string | null; verificado: boolean } | null;
     },
     enabled: !!currentUserId,
   });
 
   const canCreate = useCanCreatePeneira(perfilRede?.tipo || null);
+  // Só organizador verificado pelo Carreira ID cria peneira (o banco também exige).
+  const verificado = !!(perfilRede as any)?.verificado;
+  const podeCriar = canCreate && verificado;
+  const { perfilAtivo: atletaAtivo } = useCriancaAtiva(currentUserId);
   const { data: minhasPeneiras = [], isLoading: loadingPeneiras } = useMinhasPeneiras(canCreate ? currentUserId : null);
   const { data: meusConvites = [], isLoading: loadingConvites } = useMeusConvitesPeneira(currentUserId);
 
@@ -71,7 +77,7 @@ export default function CarreiraEventosPage() {
   return (
     <div className="min-h-screen bg-background lg:pt-14" data-theme={theme}>
       <CarreiraPageHeader
-        actions={canCreate && perfilRede?.id ? (
+        actions={podeCriar && perfilRede?.id ? (
           <Button size="sm" className="h-9 gap-1.5 px-2.5 sm:px-3" onClick={() => setFormOpen(true)} aria-label="Nova peneira">
             <Plus className="w-4 h-4" /><span className="hidden sm:inline">Nova Peneira</span>
           </Button>
@@ -83,6 +89,20 @@ export default function CarreiraEventosPage() {
           <CalendarDays className="w-6 h-6 text-primary" />
           <h1 className="text-xl font-bold text-foreground">Eventos & Peneiras</h1>
         </div>
+
+        {/* Responsável: ativar o recebimento de convites (padrão desligado) */}
+        {atletaAtivo?.id && (
+          <div className="mb-5">
+            <ConvitesPeneiraOptIn perfilAtletaId={atletaAtivo.id} nomeAtleta={(atletaAtivo as any).nome} />
+          </div>
+        )}
+
+        {canCreate && !verificado && (
+          <div className="mb-5 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-foreground">
+            <p className="font-semibold">Seu perfil ainda não foi verificado</p>
+            <p className="mt-0.5 text-muted-foreground">Para proteger os atletas, só organizadores verificados pelo Carreira ID criam peneiras. Fale com a gente para verificar o seu perfil.</p>
+          </div>
+        )}
 
         {canCreate ? (
           <Tabs defaultValue="minhas" className="space-y-4">
@@ -109,9 +129,11 @@ export default function CarreiraEventosPage() {
                 <div className="text-center py-12">
                   <CalendarDays className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
                   <p className="text-sm text-muted-foreground">Nenhuma peneira criada ainda</p>
-                  <Button size="sm" className="mt-4 gap-1.5" onClick={() => setFormOpen(true)}>
-                    <Plus className="w-4 h-4" /> Criar Peneira
-                  </Button>
+                  {podeCriar && (
+                    <Button size="sm" className="mt-4 gap-1.5" onClick={() => setFormOpen(true)}>
+                      <Plus className="w-4 h-4" /> Criar Peneira
+                    </Button>
+                  )}
                 </div>
               )}
               {peneirasEncerradas.length > 0 && (
@@ -145,7 +167,7 @@ export default function CarreiraEventosPage() {
         )}
       </main>
 
-      {canCreate && perfilRede?.id && (
+      {podeCriar && perfilRede?.id && (
         <PeneiraFormDialog
           open={formOpen}
           onOpenChange={setFormOpen}

@@ -5,7 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CalendarDays, MapPin, User, Check, X, Clock, EyeOff, Ban } from 'lucide-react';
 import { format, isBefore } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { PeneiraConvite, useRespondConvitePeneira } from '@/hooks/usePeneirasData';
+import { PeneiraConvite, useRespondConvitePeneira, usePeneiraPrivado } from '@/hooks/usePeneirasData';
+import { ShieldCheck } from 'lucide-react';
 
 interface Props {
   convite: PeneiraConvite;
@@ -22,6 +23,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 export function PeneiraConviteCard({ convite, accentColor }: Props) {
   const respond = useRespondConvitePeneira();
   const peneira = convite.peneira;
+  // endereço e contato só chegam depois que o responsável confirma
+  const { data: privado } = usePeneiraPrivado(peneira?.id ?? null, convite.status === 'confirmado');
   if (!peneira) return null;
 
   // Hide descartado convites
@@ -106,6 +109,23 @@ export function PeneiraConviteCard({ convite, accentColor }: Props) {
             {peneira.posicoes?.map((p) => (
               <Badge key={p} variant="outline" className="text-[10px]">{p}</Badge>
             ))}
+          </div>
+        )}
+
+        {/* Segurança: lembretes para o responsável */}
+        {convite.status !== 'recusado' && !isCancelled && (
+          <div className="flex gap-2 rounded-md bg-muted/60 px-3 py-2 text-[11px] text-muted-foreground">
+            <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5 text-green-600" />
+            <span>Leve um responsável e confirme quem é o organizador. O Carreira ID nunca pede pagamento para participar de peneira. Algo estranho? Avise a gente.</span>
+          </div>
+        )}
+
+        {/* Endereço e contato (só depois de confirmar) */}
+        {convite.status === 'confirmado' && privado && (privado.local_endereco || privado.contato_whatsapp || privado.contato_email) && (
+          <div className="space-y-0.5 rounded-md border px-3 py-2 text-xs">
+            {privado.local_endereco && <p><span className="text-muted-foreground">Endereço: </span>{privado.local_endereco}</p>}
+            {privado.contato_whatsapp && <p><span className="text-muted-foreground">WhatsApp: </span>{privado.contato_whatsapp}</p>}
+            {privado.contato_email && <p><span className="text-muted-foreground">E-mail: </span>{privado.contato_email}</p>}
           </div>
         )}
 

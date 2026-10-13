@@ -50,6 +50,8 @@ const CarreiraAdminPushPage = lazy(() => import("./pages/carreira/admin/Carreira
 const CarreiraAdminTitularesPage = lazy(() => import("./pages/carreira/admin/CarreiraAdminTitularesPage"));
 const CarreiraAdminCuponsPage = lazy(() => import("./pages/carreira/admin/CarreiraAdminCuponsPage"));
 const CarreiraAdminEmailsPage = lazy(() => import("./pages/carreira/admin/CarreiraAdminEmailsPage"));
+const CarreiraAdminDenunciasPage = lazy(() => import("./pages/carreira/admin/CarreiraAdminDenunciasPage"));
+const CarreiraAdminPeneirasPage = lazy(() => import("./pages/carreira/admin/CarreiraAdminPeneirasPage"));
 const CarreiraAdminBancoCampeonatosPage = lazy(() => import("./pages/carreira/admin/CarreiraAdminBancoCampeonatosPage"));
 const ResetPasswordPage = lazy(() => import("./pages/carreira/ResetPasswordPage"));
 const CarreiraPlanosPage = lazy(() => import("./pages/carreira/CarreiraPlanosPage"));
@@ -201,6 +203,8 @@ const App = () => {
               <Route path="/carreira/admin/titulares" element={<CarreiraAdminTitularesPage />} />
               <Route path="/carreira/admin/cupons" element={<CarreiraAdminCuponsPage />} />
               <Route path="/carreira/admin/emails" element={<CarreiraAdminEmailsPage />} />
+              <Route path="/carreira/admin/denuncias" element={<CarreiraAdminDenunciasPage />} />
+              <Route path="/carreira/admin/peneiras" element={<CarreiraAdminPeneirasPage />} />
               <Route path="/carreira/admin/banco-campeonatos" element={<CarreiraAdminBancoCampeonatosPage />} />
               <Route path="/perfil/:userId" element={<PerfilPage />} />
               <Route path="/escola/:slug" element={<EscolaPerfilPage />} />

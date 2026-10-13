@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { formatarLocalizacao } from '@/lib/localizacao';
 import { telefoneParaWhatsapp, formatarTelefoneExibicao } from '@/lib/form-validators';
 import { ehProfissionalEquipe, normalizarLinkedin, tituloProfissional } from '@/lib/perfil-profissional';
@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConectarButton } from '../ConectarButton';
 import { ConexoesCount } from '../ConexoesCount';
-import { Instagram, Globe, Linkedin, MapPin, Phone, Settings } from 'lucide-react';
+import { Flag, Instagram, Globe, Linkedin, MapPin, Phone, Settings } from 'lucide-react';
+import { DenunciarDialog } from '../DenunciarDialog';
 import type { ProfileType } from '../ProfileTypeSelector';
 
 const TYPE_CONFIG: Record<ProfileType, { label: string; icon: string; color: string }> = {
@@ -57,6 +58,7 @@ interface Props {
 }
 
 export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfile, accentColor, children, viewerPerfilAtletaId, isEscolaParceira }: Props) {
+  const [denunciaAberta, setDenunciaAberta] = useState(false);
   const config = TYPE_CONFIG[perfil.tipo as ProfileType] || { label: perfil.tipo, icon: '👤', color: 'bg-muted text-muted-foreground' };
 
   const siteUrl = (perfil.site || perfil.dados_perfil?.site || perfil.dados_perfil?.portfolio || '').trim();
@@ -239,6 +241,15 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
                 (DadosEspecificos, compartilhado com a versão desktop) --
                 não duplicar aqui. */}
 
+            {!isOwnProfile && currentUserId && (
+              <div className="mt-3 flex justify-center">
+                <button type="button" onClick={() => setDenunciaAberta(true)}
+                  className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-destructive">
+                  <Flag className="h-3 w-3" />Denunciar perfil
+                </button>
+              </div>
+            )}
+
             {/* Owner action button - single unified edit */}
             {isOwnProfile && onEditProfile && (
               <div className="mt-3 flex justify-center">
@@ -252,6 +263,9 @@ export function PerfilLayout({ perfil, isOwnProfile, currentUserId, onEditProfil
       </Card>
 
       {children}
+      {!isOwnProfile && currentUserId && (
+        <DenunciarDialog open={denunciaAberta} onOpenChange={setDenunciaAberta} tipo="perfil_rede" conteudoId={perfil.id} />
+      )}
     </div>
   );
 }
