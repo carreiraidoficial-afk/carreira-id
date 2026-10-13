@@ -40,7 +40,7 @@ export function CarreiraLayout({ children }: CarreiraLayoutProps) {
   return (
     <div className="min-h-screen bg-background text-foreground lg:pt-14" data-theme={theme}>
       {/* Header */}
-      <header className="sticky top-0 lg:top-14 z-50 bg-background/95 backdrop-blur border-b border-border">
+      <header data-theme="dark-orange" className="sticky top-0 lg:top-14 z-50 bg-black text-foreground border-b border-border">
         <div className="container flex items-center justify-between h-14 lg:h-16 px-4">
           {/* Logo e identidade */}
           <div className="flex items-center gap-3">

@@ -408,7 +408,7 @@ export default function CarreiraExplorarPage() {
       {/* Accent top bar */}
       <div className="h-1 w-full bg-[hsl(25_95%_55%)]" />
       {/* Header */}
-        <header className="sticky top-0 lg:top-14 z-50 bg-background/95 backdrop-blur border-b border-border">
+        <header data-theme="dark-orange" className="sticky top-0 lg:top-14 z-50 bg-black text-foreground border-b border-border">
         {/* Row 1: Logo + Search (desktop inline) + Actions */}
         <div className="container flex items-center justify-between h-14 lg:h-16 px-4 max-w-6xl">
           <Link to={carreiraPath('/feed')} className="flex items-center gap-2 shrink-0">
@@ -437,7 +437,7 @@ export default function CarreiraExplorarPage() {
           <div className="flex items-center gap-2">
             {isAnonymous ? (
               <>
-                <CarreiraThemeButton />
+                <CarreiraThemeButton className="hidden sm:inline-flex" />
                 <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => navigate('/auth')}>
                   <LogIn className="w-4 h-4 mr-1" />
                   <span className="hidden sm:inline">Entrar</span>

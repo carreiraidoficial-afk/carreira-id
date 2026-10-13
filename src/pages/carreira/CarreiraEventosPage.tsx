@@ -71,7 +71,6 @@ export default function CarreiraEventosPage() {
   return (
     <div className="min-h-screen bg-background lg:pt-14" data-theme={theme}>
       <CarreiraPageHeader
-        onBack={() => navigate(carreiraPath('/feed'))}
         actions={canCreate && perfilRede?.id ? (
           <Button size="sm" className="h-9 gap-1.5 px-2.5 sm:px-3" onClick={() => setFormOpen(true)} aria-label="Nova peneira">
             <Plus className="w-4 h-4" /><span className="hidden sm:inline">Nova Peneira</span>

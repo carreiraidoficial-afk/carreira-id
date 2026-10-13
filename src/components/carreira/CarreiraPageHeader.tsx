@@ -31,14 +31,15 @@ interface CarreiraPageHeaderProps {
  * Cabeçalho padrão das telas internas do Carreira ID: [voltar] [logo] ......... [ações] [tema].
  * A logo e o botão de tema são sempre os mesmos; só o título e as ações mudam.
  */
-export function CarreiraPageHeader({ title, onBack, actions, accentColor, solidDark, isDarkTheme, maxWidth = 'max-w-2xl', tone = 'auto', sticky = true, children }: CarreiraPageHeaderProps) {
+export function CarreiraPageHeader({ title, onBack, actions, accentColor, solidDark, isDarkTheme, maxWidth = 'max-w-2xl', tone = 'black', sticky = true, children }: CarreiraPageHeaderProps) {
   const preto = tone === 'black';
   return (
     <header
+      data-theme={preto ? 'dark-orange' : undefined}
       className={cn(
         sticky && 'sticky top-0 lg:top-14 z-50',
         'border-b border-border',
-        preto ? 'bg-black text-white' : solidDark && isDarkTheme ? 'bg-[hsl(0_0%_0%/0.97)]' : 'bg-background/95 backdrop-blur',
+        preto ? 'bg-black text-foreground' : solidDark && isDarkTheme ? 'bg-[hsl(0_0%_0%/0.97)]' : 'bg-background/95 backdrop-blur',
       )}
       style={accentColor ? { borderBottom: `2px solid ${accentColor}50` } : undefined}
     >

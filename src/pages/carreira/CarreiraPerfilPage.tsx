@@ -751,7 +751,8 @@ export default function CarreiraPerfilPage() {
 
       {/* Header */}
       <header
-        className={`sticky top-0 lg:top-14 z-50 backdrop-blur-sm shadow-sm border-b ${isDarkTheme ? 'bg-[hsl(0_0%_0%/0.97)]' : 'bg-background/95'}`}
+        data-theme="dark-orange"
+        className="sticky top-0 lg:top-14 z-50 shadow-sm border-b bg-black text-foreground"
         style={{ borderColor: `${accentColor}40` }}
       >
         {/* Row 1: Voltar + Seletor de identidade + Actions */}
