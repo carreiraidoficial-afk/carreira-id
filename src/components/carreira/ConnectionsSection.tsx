@@ -615,11 +615,11 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
                   </button>
                 )}
               </div>
-              <div className={mostrarTodasSugestoes ? 'grid grid-cols-2 gap-2' : '-mx-4 flex snap-x snap-mandatory scroll-pl-4 gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'}>
+              <div className="grid grid-cols-3 gap-2">
                 {(mostrarTodasSugestoes ? visiveis : visiveis.slice(0, SUGESTOES_PREVIEW)).map((person) => {
                   const badge = getSuggestionBadge(person);
                   return (
-                    <div key={person.id} className={`relative bg-card border border-border rounded-xl p-3 text-center ${mostrarTodasSugestoes ? '' : 'w-[9.5rem] shrink-0 snap-start'}`}>
+                    <div key={person.id} className="relative bg-card border border-border rounded-xl p-2.5 text-center">
                       <button
                         onClick={() => setSugestoesDispensadas((s) => new Set(s).add(person.id))}
                         className="absolute top-1 right-1 text-muted-foreground hover:text-foreground p-0.5"
@@ -645,7 +645,7 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
                           <badge.Icon className="w-2.5 h-2.5 text-white" />
                         </span>
                       </button>
-                      <p className="mt-1.5 line-clamp-2 min-h-[2rem] text-xs font-semibold leading-tight">{person.nome}</p>
+                      <p className="text-xs font-semibold mt-1.5 truncate">{person.nome}</p>
                       <p className="text-[10px] text-muted-foreground truncate">{TYPE_LABELS[person.tipo] || person.tipo}</p>
                       {(person.cidade || person.estado) && (
                         <p className="text-[9px] text-muted-foreground truncate flex items-center justify-center gap-0.5 mt-0.5">
