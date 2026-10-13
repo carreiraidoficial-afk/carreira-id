@@ -4,7 +4,7 @@ import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
 import { CarreiraThemeToggle } from '@/components/carreira/CarreiraThemeToggle';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, TableProperties, Loader2 } from 'lucide-react';
-import logoCarreira from '@/assets/logo-carreira-id-dark.png';
+import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
@@ -50,7 +50,7 @@ export default function CarreiraGamerPontosPage() {
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
           <Link to={carreiraPath('/feed')} className="flex items-center gap-2 shrink-0">
-            <img src={logoCarreira} alt="Carreira" className="h-16 lg:h-20" />
+            <CarreiraLogo />
           </Link>
           <h1 className="ml-4 text-lg font-semibold text-foreground">Tabela de Pontos da Liga</h1>
           <CarreiraThemeToggle

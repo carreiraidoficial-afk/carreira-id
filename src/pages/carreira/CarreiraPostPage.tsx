@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { CarreiraThemeButton } from '@/components/carreira/CarreiraThemeToggle';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,7 +7,7 @@ import { PostAtleta } from '@/hooks/useCarreiraData';
 import { PostCard } from '@/components/carreira/PostCard';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
 import { Button } from '@/components/ui/button';
-import logoCarreira from '@/assets/logo-carreira-id-dark.png';
+import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 
 export default function CarreiraPostPage() {
   const { postId } = useParams<{ postId: string }>();
@@ -46,8 +47,9 @@ export default function CarreiraPostPage() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <Link to="/feed" className="flex items-center gap-2">
-            <img src={logoCarreira} alt="Carreira ID" className="h-7" />
+            <CarreiraLogo />
           </Link>
+          <CarreiraThemeButton className="ml-auto" />
         </div>
       </header>
 

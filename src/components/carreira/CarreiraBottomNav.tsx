@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
 import { useUnreadCarreiraComunicados } from '@/hooks/useCarreiraComunicadosData';
-import logoCarreira from '@/assets/logo-carreira-id-dark.png';
+import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 
 const ADMIN_EMAIL = 'carreiraidoficial@gmail.com';
 
@@ -246,7 +246,7 @@ export function CarreiraBottomNav({ currentUserId, profileSlug: profileSlugProp 
       <nav className="hidden lg:flex fixed top-0 left-0 right-0 z-[9999] bg-background border-b border-border h-14">
           <div className="container max-w-6xl h-full flex items-center gap-1 px-4">
             <Link to={carreiraPath('/feed')} className="shrink-0 mr-2">
-              <img src={logoCarreira} alt="Carreira ID" className="h-8" />
+              <CarreiraLogo />
             </Link>
             {navItems.map((item) => (
               <button

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { CarreiraThemeButton } from '@/components/carreira/CarreiraThemeToggle';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
 import { CarreiraTimeline } from '@/components/carreira/CarreiraTimeline';
@@ -7,7 +8,7 @@ import { useCarreiraSession } from '@/hooks/useCarreiraSession';
 import { useCriancaAtiva, slugDoDono } from '@/hooks/useCriancaAtiva';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { useSEO } from '@/hooks/useSEO';
-import logoCarreira from '@/assets/logo-carreira-id-dark.png';
+import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 
 /**
  * Atalho dedicado pro currículo esportivo (Jornada, Publicações,
@@ -37,8 +38,9 @@ export default function CarreiraCurriculoPage() {
           <Link to={carreiraPath('/feed')} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <img src={logoCarreira} alt="Carreira" className="h-8" />
+          <CarreiraLogo />
           <h1 className="font-bold text-foreground">Currículo</h1>
+          <CarreiraThemeButton className="ml-auto" />
         </div>
       </header>
 

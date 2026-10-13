@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CarreiraThemeButton } from '@/components/carreira/CarreiraThemeToggle';
 import { plataformaUserIds, conexaoComPlataforma } from '@/lib/perfil-plataforma';
 import { useSuporteAlvo } from '@/hooks/useSuporteAlvo';
 import { useQuery } from '@tanstack/react-query';
@@ -8,7 +9,7 @@ import { ConnectionsSection } from '@/components/carreira/ConnectionsSection';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
 import { NotificacoesBell } from '@/components/carreira/NotificacoesBell';
 import { Loader2, Users, Heart, Wrench } from 'lucide-react';
-import logoCarreira from '@/assets/logo-carreira-id-dark.png';
+import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 import conexoesBannerBg from '@/assets/torcida-pais-bg.jpg';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
@@ -152,9 +153,12 @@ export default function CarreiraConexoesPage() {
         <div className="container max-w-2xl px-4 pt-4 pb-6 relative">
           <div className="flex items-center justify-between">
             <Link to={carreiraPath('/feed')} className="flex items-center gap-2 shrink-0">
-              <img src={logoCarreira} alt="Carreira" className="h-8" />
+              <CarreiraLogo />
             </Link>
-            <NotificacoesBell />
+            <div className="flex items-center gap-1 text-white">
+              <CarreiraThemeButton className="text-white hover:bg-white/15 hover:text-white" />
+              <NotificacoesBell />
+            </div>
           </div>
           <h1 className="mt-4 text-3xl font-extrabold text-white">Conexões</h1>
           <p className="text-white/70 text-sm mt-1">Construa sua rede no esporte</p>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CarreiraThemeButton } from '@/components/carreira/CarreiraThemeToggle';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { CalendarDays, Plus, Loader2, ArrowLeft, RotateCcw } from 'lucide-react';
@@ -9,7 +10,7 @@ import { PeneiraConviteCard } from '@/components/carreira/PeneiraConviteCard';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import logoCarreira from '@/assets/logo-carreira-id-dark.png';
+import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
@@ -75,13 +76,16 @@ export default function CarreiraEventosPage() {
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-4 h-4" />
-            <img src={logoCarreira} alt="Carreira" className="h-20" />
+            <CarreiraLogo />
           </button>
-          {canCreate && perfilRede?.id && (
-            <Button size="sm" className="gap-1.5" onClick={() => setFormOpen(true)}>
-              <Plus className="w-4 h-4" /> Nova Peneira
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            <CarreiraThemeButton />
+            {canCreate && perfilRede?.id && (
+              <Button size="sm" className="gap-1.5" onClick={() => setFormOpen(true)}>
+                <Plus className="w-4 h-4" /> Nova Peneira
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 

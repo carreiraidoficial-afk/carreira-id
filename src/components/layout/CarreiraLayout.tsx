@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { LogOut, User, Home, ArrowLeft, Settings } from 'lucide-react';
-import logoCarreira from '@/assets/logo-carreira-id-dark.png';
+import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { EditContaDialog } from '@/components/carreira/EditContaDialog';
 import { CarreiraThemeToggle } from '@/components/carreira/CarreiraThemeToggle';
@@ -41,11 +41,11 @@ export function CarreiraLayout({ children }: CarreiraLayoutProps) {
     <div className="min-h-screen bg-background text-foreground lg:pt-14" data-theme={theme}>
       {/* Header */}
       <header className="sticky top-0 lg:top-14 z-50 bg-background/95 backdrop-blur border-b border-border">
-        <div className="container flex items-center justify-between h-20 px-4">
+        <div className="container flex items-center justify-between h-14 lg:h-16 px-4">
           {/* Logo e identidade */}
           <div className="flex items-center gap-3">
             <Link to={carreiraPath('/minha')} className="flex items-center gap-2">
-              <img src={logoCarreira} alt="Carreira ID" className="h-14" />
+              <CarreiraLogo />
             </Link>
             <span className="hidden sm:inline text-xs text-muted-foreground border-l pl-3">
               Carreira Esportiva
@@ -110,7 +110,7 @@ export function CarreiraLayout({ children }: CarreiraLayoutProps) {
       {/* Footer */}
       <footer className="border-t border-border mt-12 py-8 bg-card">
         <div className="container flex flex-col items-center gap-3">
-          <img src={logoCarreira} alt="Carreira ID" className="h-14" />
+          <CarreiraLogo />
           <p className="text-xs text-muted-foreground">Carreira Esportiva — Sua trajetória no esporte</p>
         </div>
       </footer>

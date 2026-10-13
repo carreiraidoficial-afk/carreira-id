@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
+import { CarreiraThemeButton } from '@/components/carreira/CarreiraThemeToggle';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { DescobrirAtletasSection } from '@/components/carreira/DescobrirAtletasSection';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
-import logoCarreira from '@/assets/logo-carreira-id-dark.png';
+import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { useCriancaAtiva, slugDoDono } from '@/hooks/useCriancaAtiva';
@@ -40,9 +41,10 @@ export default function CarreiraDescobrirPage() {
         <div className="container flex items-center h-14 lg:h-16 px-4 max-w-6xl gap-3">
           <button onClick={() => navigate(carreiraPath('/feed'))} className="flex items-center gap-2 text-muted-foreground hover:text-foreground shrink-0">
             <ArrowLeft className="w-4 h-4" />
-            <img src={logoCarreira} alt="Carreira" className="h-16 lg:h-20" />
+            <CarreiraLogo />
           </button>
           <h1 className="text-sm font-semibold text-foreground">Descobrir Atletas</h1>
+          <CarreiraThemeButton className="ml-auto" />
         </div>
       </header>
 

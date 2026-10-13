@@ -8,7 +8,7 @@ import { CarreiraThemeToggle } from '@/components/carreira/CarreiraThemeToggle';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Trophy, User, Zap, TableProperties, ChevronRight, Loader2 } from 'lucide-react';
-import logoCarreira from '@/assets/logo-carreira-id-dark.png';
+import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { useQuery } from '@tanstack/react-query';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -92,7 +92,7 @@ export default function CarreiraGamerPage() {
       >
         <div className="container flex items-center h-14 px-4 max-w-2xl">
           <Link to={carreiraPath('/feed')} className="flex items-center gap-2 shrink-0">
-            <img src={logoCarreira} alt="Carreira" className="h-16 lg:h-20" />
+            <CarreiraLogo />
           </Link>
           <h1 className="ml-4 text-lg font-semibold text-foreground">Liga</h1>
           <div className="ml-auto flex items-center gap-2">

@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { CarreiraThemeButton } from '@/components/carreira/CarreiraThemeToggle';
 import { plataformaUserIds, conexaoComPlataforma, ehPerfilPlataforma } from '@/lib/perfil-plataforma';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
 import { Link, useNavigate } from 'react-router-dom';
@@ -14,7 +15,7 @@ import { ConectarButton } from '@/components/carreira/ConectarButton';
 import { NotificacoesBell } from '@/components/carreira/NotificacoesBell';
 import { AnonymousFeedCTA } from '@/components/carreira/AnonymousFeedCTA';
 import { useAnonymousGate, FEED_ANON_POST_LIMIT } from '@/hooks/useAnonymousGate';
-import logoCarreira from '@/assets/logo-carreira-id-dark.png';
+import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
@@ -411,7 +412,7 @@ export default function CarreiraExplorarPage() {
         {/* Row 1: Logo + Search (desktop inline) + Actions */}
         <div className="container flex items-center justify-between h-14 lg:h-16 px-4 max-w-6xl">
           <Link to={carreiraPath('/feed')} className="flex items-center gap-2 shrink-0">
-            <img src={logoCarreira} alt="Carreira" className="h-16 lg:h-20" />
+            <CarreiraLogo />
           </Link>
 
           {/* Search bar — desktop inline */}
@@ -436,6 +437,7 @@ export default function CarreiraExplorarPage() {
           <div className="flex items-center gap-2">
             {isAnonymous ? (
               <>
+                <CarreiraThemeButton />
                 <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => navigate('/auth')}>
                   <LogIn className="w-4 h-4 mr-1" />
                   <span className="hidden sm:inline">Entrar</span>
@@ -447,6 +449,7 @@ export default function CarreiraExplorarPage() {
               </>
             ) : (
               <>
+                <CarreiraThemeButton />
                 <NotificacoesBell />
                 <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => navigate(carreiraPath(`/perfil/${sessionUserId}`))}>
                   <Users className="w-4 h-4 mr-1" />
