@@ -61,6 +61,8 @@ export function usePushNotifications() {
   const [optOut, setOptOut] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
+  // O aparelho TEM assinatura de push de verdade? (null = ainda verificando). Diferente de isSubscribed, que só reflete a intenção.
+  const [deviceActive, setDeviceActive] = useState<boolean | null>(null);
 
   const userId = session?.user?.id;
 
@@ -107,6 +109,16 @@ export function usePushNotifications() {
           }
         } catch { /* silencioso: tentativa de reconciliacao em segundo plano */ }
       }
+
+      // Situação real do aparelho: permissão concedida E assinatura existente
+      let active = false;
+      if (isSupported && Notification.permission === 'granted') {
+        try {
+          const reg2 = await getExistingPushRegistration();
+          active = !!(reg2 && (await reg2.pushManager.getSubscription()));
+        } catch { active = false; }
+      }
+      if (!cancelled) setDeviceActive(active);
     };
 
     // Encadeia (nao paralelo) com qualquer reconciliacao de outra instancia do
@@ -205,7 +217,8 @@ export function usePushNotifications() {
     setIsLoading(true);
     try {
       const result = await doSubscribe(userId);
-      if (result.ok) setOptOut(false);
+      if (result.ok) { setOptOut(false); setDeviceActive(true); }
+      setPermission(Notification.permission);
       return result;
     } catch (err: any) {
       console.error('Push subscription error:', err);
@@ -222,6 +235,7 @@ export function usePushNotifications() {
     try {
       await supabase.from('profiles').update({ push_optout: true }).eq('user_id', userId);
       setOptOut(true);
+      setDeviceActive(false);
 
       const registration = await getExistingPushRegistration();
       if (!registration) return;
@@ -246,6 +260,10 @@ export function usePushNotifications() {
     isSupported,
     permission,
     isSubscribed: optOut !== true,
+    /** Aparelho com push realmente ativo (permissão + assinatura). null enquanto verifica. */
+    deviceActive,
+    /** Vale convidar o usuário a ativar: tem suporte, não ativou, não desligou de propósito e não bloqueou no navegador. */
+    needsPrompt: isSupported && deviceActive === false && optOut !== true && permission !== 'denied',
     isLoading,
     subscribe,
     unsubscribe,

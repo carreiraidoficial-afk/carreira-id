@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { PushPromptBanner } from '@/components/carreira/PushPromptBanner';
 import { CarreiraThemeButton } from '@/components/carreira/CarreiraThemeToggle';
 import { plataformaUserIds, conexaoComPlataforma, ehPerfilPlataforma } from '@/lib/perfil-plataforma';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
@@ -542,6 +543,7 @@ export default function CarreiraExplorarPage() {
       )}
 
       <main className="container max-w-6xl px-4 py-6">
+        <PushPromptBanner className="mx-auto mb-4 max-w-2xl" />
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_280px] gap-6">
           {/* Left sidebar */}
           <aside className="hidden lg:block space-y-4">

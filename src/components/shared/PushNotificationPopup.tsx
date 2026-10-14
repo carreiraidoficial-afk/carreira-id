@@ -10,8 +10,9 @@ interface PushNotificationPopupProps {
 }
 
 export function PushNotificationPopup({ open, onOpenChange }: PushNotificationPopupProps) {
-  const { isSupported, isSubscribed, isLoading, subscribe } = usePushNotifications();
-  const shouldSkip = !isSupported || isSubscribed;
+  const { isSupported, deviceActive, permission, isLoading, subscribe } = usePushNotifications();
+  // Só pula se não há o que pedir: sem suporte, já ativo de verdade, ou bloqueado no navegador.
+  const shouldSkip = !isSupported || deviceActive === true || permission === 'denied';
 
   // Nada a pedir aqui (sem suporte, ou ja inscrito) -- fecha sozinho via onOpenChange
   // em vez de so retornar null, senao quem chama (ex: navegacao pos-cadastro) nunca

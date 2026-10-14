@@ -8,6 +8,7 @@ import { ConnectionsSection } from '@/components/carreira/ConnectionsSection';
 import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
 import { NotificacoesBell } from '@/components/carreira/NotificacoesBell';
 import { Loader2, Users, Heart, Wrench } from 'lucide-react';
+import { PushPromptBanner } from '@/components/carreira/PushPromptBanner';
 import { CarreiraPageHeader } from '@/components/carreira/CarreiraPageHeader';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
@@ -171,6 +172,7 @@ export default function CarreiraConexoesPage() {
           (useProfileViews acima, ProfileViewsSection) continua intacta,
           só não está plugada aqui. */}
       <main className="container max-w-2xl px-4 py-6 pb-24 space-y-6">
+        <PushPromptBanner />
         <ConnectionsSection userId={currentUserId} currentUserId={currentUserId} perfilAtletaId={perfilAtivo?.id} />
       </main>
 
