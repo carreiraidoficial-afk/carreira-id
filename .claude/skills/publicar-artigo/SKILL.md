@@ -173,30 +173,39 @@ Resposta esperada: `200` ou `202` sem corpo. Não é bloqueante — se falhar,
 o Bing ainda vai descobrir a página pelo sitemap/crawl normal, só mais
 devagar; avise o usuário e siga em frente.
 
-## Etapa 7.6 — Avisar o Make (publicação automática no Facebook)
+## Etapa 7.6 — Publicar no Facebook (n8n)
 
-Existe uma automação no Make que publica o artigo na Página do Facebook.
-Ela é disparada pela edge function `notify-blog-post-published`, que repassa
-os dados pro webhook do Make autenticado por API key (cabeçalho
-`x-make-apikey`) -- endereço e chave ficam só nos secrets
-`MAKE_FACEBOOK_WEBHOOK_URL` e `MAKE_FACEBOOK_WEBHOOK_APIKEY` do Supabase,
-nunca no código, porque este repositório é público. Depois do deploy do
-artigo estar no ar:
+Um workflow no n8n publica o artigo na Página do Facebook "Carreira ID".
+Ele é chamado direto por um webhook (cabeçalho `x-carreira-token`). O
+endereço e o token ficam **só** no arquivo local
+`.claude/n8n-facebook.local` (ignorado pelo git, porque este repositório é
+público), com duas linhas: `N8N_FACEBOOK_WEBHOOK_URL=...` e
+`N8N_FACEBOOK_WEBHOOK_TOKEN=...`. **Nunca** escreva esses valores no
+repositório, na resposta ao usuário nem em arquivos versionados.
 
-**Importante (Windows/Git Bash): nunca use `curl -d '{...}'` com o JSON
-inline quando title/excerpt tiverem acento.** O Windows retranscreve
-argumentos de linha de comando pra uma code page antiga antes do curl.exe
-receber, corrompendo qualquer acento (silenciosamente -- sem erro, só o
-texto errado do outro lado). Escreva o JSON num arquivo primeiro (via Write)
-e use `-d @arquivo`, que lê os bytes direto do disco sem passar pelo argv:
+**Regras para não publicar o que não deve:**
+- Dispare **uma única vez, só para o artigo que acabou de ser publicado nesta
+  execução**. Nunca em edição de artigo antigo, correção, troca de capa ou
+  adição de podcast, e nunca em loop sobre artigos existentes.
+- Isso é uma postagem pública de verdade. Se o pedido do usuário foi só
+  ajustar um artigo que já estava no ar, **não dispare**.
+- O workflow tem uma trava contra repetição (nó Remove Duplicates pela
+  `url`), mas não dependa dela: não reenvie a mesma URL.
+- Só dispare depois que o artigo estiver no ar (a URL precisa responder 200
+  e a capa também).
+
+**Windows/Git Bash: nunca use `curl -d '{...}'` com o JSON inline** quando
+title/excerpt tiverem acento: o Windows corrompe os acentos
+silenciosamente. Escreva o JSON num arquivo (via Write) e use `-d @arquivo`:
 
 ```bash
-curl -s -X POST "https://fppsotlycinwqsjpoybg.supabase.co/functions/v1/notify-blog-post-published" \
-  -H "Content-Type: application/json" \
-  -d @/caminho/do/scratchpad/notify-payload.json
+set -a; . .claude/n8n-facebook.local; set +a
+curl -s -w "
+HTTP %{http_code}
+" -X POST "$N8N_FACEBOOK_WEBHOOK_URL"   -H "Content-Type: application/json; charset=utf-8"   -H "x-carreira-token: $N8N_FACEBOOK_WEBHOOK_TOKEN"   -d @/caminho/do/scratchpad/facebook-payload.json
 ```
 
-onde `notify-payload.json` tem exatamente:
+onde `facebook-payload.json` tem exatamente:
 ```json
 {
   "title": "TÍTULO DO ARTIGO",
@@ -206,11 +215,12 @@ onde `notify-payload.json` tem exatamente:
 }
 ```
 
-Resposta esperada: `{"success":true}`. Se vier
-`{"success":false,"error":"MAKE_FACEBOOK_WEBHOOK_URL ou MAKE_FACEBOOK_WEBHOOK_APIKEY não configurada"}`,
-é porque os secrets ainda não foram configurados -- não é erro seu, apenas
-avise e siga em frente (não bloqueia a publicação). Se vier qualquer outro
-erro, também não é bloqueante: avise o usuário e continue.
+Resposta esperada: HTTP 200 com `{"message":"Workflow was started"}` (o
+workflow começou; o post aparece na Página em instantes). Se o arquivo
+`.claude/n8n-facebook.local` não existir, pule esta etapa e avise o
+usuário. Se vier 404 ("webhook not registered"), o workflow está inativo
+no n8n: avise o usuário para ligar o botão Active. Qualquer erro aqui não é
+bloqueante: avise e siga em frente.
 
 ## Etapa 8 — Verificar (sem `npm run dev`)
 
