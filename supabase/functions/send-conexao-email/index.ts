@@ -43,27 +43,109 @@ Deno.serve(async (req) => {
     if (!resendKey) return json({ error: 'RESEND_API_KEY não configurada' }, 500);
 
     const quem = esc(String(nome || 'Alguém').slice(0, 80));
+    const primeiroNome = esc(String(prof?.nome || '').trim().split(' ')[0] || 'tudo bem');
     const solicitada = tipo === 'conexao_solicitada';
-    const assunto = solicitada ? `${String(nome || 'Alguém').slice(0, 60)} quer se conectar com você no Carreira ID` : `${String(nome || 'Alguém').slice(0, 60)} aceitou sua conexão no Carreira ID`;
+    const assunto = solicitada
+      ? `${String(nome || 'Alguém').slice(0, 60)} quer se conectar com você no Carreira ID`
+      : `${String(nome || 'Alguém').slice(0, 60)} aceitou sua conexão no Carreira ID`;
     const titulo = solicitada ? `${quem} quer se conectar com você` : `${quem} aceitou sua conexão`;
     const texto = solicitada
-      ? 'Abra o Carreira ID para aceitar ou recusar o pedido. Conectar-se ajuda a mostrar a trajetória do atleta para quem importa.'
-      : 'Vocês agora estão conectados no Carreira ID. Abra o app para ver o perfil e continuar a conversa.';
+      ? 'Abra o Carreira ID para aceitar ou recusar o pedido. Conectar-se ajuda a mostrar a trajetória do atleta para quem importa no esporte de base.'
+      : 'Vocês agora estão conectados no Carreira ID. Abra o app para ver o perfil e continuar construindo a rede.';
+    const cta = solicitada ? 'Ver o pedido' : 'Ver a conexão';
     const link = 'https://carreiraid.com.br/conexoes';
 
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#f4f4f4;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
-<table role="presentation" style="width:100%;border-collapse:collapse;"><tr><td align="center" style="padding:32px 12px;">
-<table role="presentation" style="width:560px;max-width:100%;border-collapse:collapse;background:#ffffff;border-radius:10px;overflow:hidden;">
-<tr><td style="background:#000000;padding:22px 28px;"><span style="color:#ffffff;font-size:22px;font-weight:800;letter-spacing:.5px;">CARREIRA <span style="color:#f97316;">ID</span></span></td></tr>
-<tr><td style="padding:32px 28px;">
-<h1 style="margin:0 0 14px 0;color:#111827;font-size:22px;">${solicitada ? '🔗' : '✅'} ${titulo}</h1>
-<p style="margin:0 0 24px 0;color:#4b5563;font-size:16px;line-height:1.6;">${texto}</p>
-<div style="text-align:center;margin:26px 0;"><a href="${link}" style="display:inline-block;background:#f97316;color:#ffffff;text-decoration:none;font-weight:700;padding:14px 32px;border-radius:8px;font-size:16px;">Abrir o Carreira ID</a></div>
-<p style="margin:24px 0 0 0;color:#6b7280;font-size:13px;line-height:1.5;">💡 Quer ser avisado na hora, direto no celular? Abra o app e ative as notificações (basta um toque).</p>
-</td></tr></table>
-<p style="color:#9ca3af;font-size:12px;margin:16px 0 0 0;">Você recebeu este aviso porque tem uma conta no Carreira ID.</p>
-</td></tr></table></body></html>`;
+    // Mesmo molde dos e-mails de lembrete (send-perfil-incompleto-email): fundo escuro, logo original, botão laranja.
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${titulo}</title>
+<style>
+  table{border-collapse:collapse;}
+  img{border:0;display:block;}
+  a{text-decoration:none;}
+  @media (max-width:520px){
+    .container{width:100% !important;}
+    .stack-pad{padding-left:24px !important;padding-right:24px !important;}
+    .hero-headline{font-size:26px !important;line-height:1.25 !important;}
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#0b1220;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">
+    ${titulo} — abra o Carreira ID para ver.
+  </div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0b1220;">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+        <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:#131f35;border:1px solid #24324a;">
+
+          <tr>
+            <td class="stack-pad" style="padding:28px 40px;border-bottom:1px solid #24324a;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="left" valign="middle">
+                    <img src="https://carreiraid.com.br/logo-carreira-id-email.png" width="170" height="42" alt="Carreira ID" style="display:block;">
+                  </td>
+                  <td align="right" valign="middle">
+                    <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:1.2px;">Esporte de Base</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="stack-pad" style="padding:44px 40px 8px 40px;">
+              <p style="margin:0 0 10px 0;font-size:13px;font-weight:700;color:#22c55e;text-transform:uppercase;letter-spacing:1.5px;">
+                Olá, ${primeiroNome}!
+              </p>
+              <h1 class="hero-headline" style="margin:0 0 14px 0;font-size:32px;line-height:1.2;font-weight:800;color:#f1f5f9;letter-spacing:-0.3px;">
+                ${titulo}
+              </h1>
+              <p style="margin:0;font-size:15px;line-height:1.6;color:#94a3b8;max-width:480px;">
+                ${texto}
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td align="center" style="padding:32px 40px 8px 40px;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="background:#f97316;">
+                    <a href="${link}" style="display:inline-block;padding:15px 36px;font-size:15px;font-weight:700;color:#0b1220;">
+                      ${cta} →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:14px 0 0 0;font-size:12px;color:#64748b;">Quer ser avisado na hora, direto no celular? Ative as notificações no app (basta um toque).</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="stack-pad" style="padding:28px 40px 0 40px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="height:1px;background:#24324a;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="stack-pad" style="padding:20px 40px;background:#0f1a2e;border-top:1px solid #24324a;">
+              <p style="margin:0;font-size:11px;line-height:1.6;color:#475569;">
+                Você recebeu este e-mail porque tem uma conta no Carreira ID.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 
     const resend = new Resend(resendKey);
     const r = await resend.emails.send({ from: 'Carreira ID <contato@carreiraid.com.br>', to: [email], subject: assunto, html });
