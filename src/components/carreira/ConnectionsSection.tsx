@@ -1,4 +1,4 @@
-import { VisitasPerfilTab, useVisitasResumo } from '@/components/carreira/VisitasPerfilTab';
+import { VisitasPerfilCard } from '@/components/carreira/VisitasPerfilTab';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { sugerirAtivarPush } from '@/lib/pedir-push';
 import { plataformaUserIds, conexaoComPlataforma, ehPerfilPlataforma } from '@/lib/perfil-plataforma';
@@ -351,8 +351,7 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
     enabled: isOwnProfile && !!currentUserId,
   });
 
-  const [activeTab, setActiveTab] = useState<'todas' | 'torcedores' | 'torcendo' | 'solicitacoes' | 'visitas'>('todas');
-  const { data: visitasResumo } = useVisitasResumo(isOwnProfile ? perfilAtletaId : null);
+  const [activeTab, setActiveTab] = useState<'todas' | 'torcedores' | 'torcendo' | 'solicitacoes'>('todas');
   const [mostrarTodasSugestoes, setMostrarTodasSugestoes] = useState(false);
   const [sugestoesDispensadas, setSugestoesDispensadas] = useState<Set<string>>(new Set());
   const SUGESTOES_PREVIEW = 3;
@@ -441,13 +440,12 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
     <div className="space-y-4">
       {/* Abas: controle segmentado, cabem na largura do celular */}
       {isOwnProfile && (
-        <div className={`grid ${perfilAtletaId ? 'grid-cols-5' : 'grid-cols-4'} gap-1 rounded-xl bg-muted p-1`} role="tablist">
+        <div className="grid grid-cols-4 gap-1 rounded-xl bg-muted p-1" role="tablist">
           {([
             { value: 'todas' as const, label: 'Todas', count: connections?.length || 0 },
             { value: 'torcedores' as const, label: 'Torcedores', count: torcedores?.length || 0 },
             { value: 'torcendo' as const, label: 'Torcendo', count: torcendo?.length || 0 },
             { value: 'solicitacoes' as const, label: 'Solicitações', count: pendingRequests?.length || 0 },
-            ...(perfilAtletaId ? [{ value: 'visitas' as const, label: 'Visitas', count: visitasResumo?.total || 0 }] : []),
           ]).map(({ value, label, count }) => {
             const ativa = activeTab === value;
             return (
@@ -510,11 +508,6 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
             </div>
           )}
         </div>
-      )}
-
-      {/* Visitas: quem viu o perfil (lista no Premium; no Base só o número) */}
-      {isOwnProfile && activeTab === 'visitas' && perfilAtletaId && (
-        <VisitasPerfilTab perfilAtletaId={perfilAtletaId} accentColor="#3b82f6" />
       )}
 
       {/* Solicitações pendentes */}
@@ -606,6 +599,9 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
 
       {(!isOwnProfile || activeTab === 'todas') && (
         <>
+          {/* Quem viu o perfil: dentro da aba Conexões (lista no Premium; no Base só o número) */}
+          {isOwnProfile && perfilAtletaId && <VisitasPerfilCard perfilAtletaId={perfilAtletaId} accentColor="#3b82f6" />}
+
           {/* Suggestions */}
           {isOwnProfile && (() => {
             const visiveis = (suggestions || []).filter((p) => !sugestoesDispensadas.has(p.id));

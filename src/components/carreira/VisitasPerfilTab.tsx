@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Eye, Lock, Loader2, Crown } from 'lucide-react';
@@ -71,98 +72,109 @@ function haQuanto(iso: string): string {
   return `há ${dias} dias`;
 }
 
-export function VisitasPerfilTab({ perfilAtletaId, accentColor }: { perfilAtletaId: string; accentColor: string }) {
+export function VisitasPerfilCard({ perfilAtletaId, accentColor }: { perfilAtletaId: string; accentColor: string }) {
   const navigate = useNavigate();
+  const [aberto, setAberto] = useState(false);
   const { data: resumo, isLoading } = useVisitasResumo(perfilAtletaId);
   const podeVer = !!resumo?.pode_ver;
   const { data: visitantes, isLoading: carregandoLista } = useVisitantes(perfilAtletaId, podeVer);
 
-  if (isLoading) {
-    return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
-  }
-
+  if (isLoading) return null;
   const total = resumo?.total ?? 0;
 
+  const cabecalho = (
+    <div className="flex items-center justify-between gap-2">
+      <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+        <Eye className="h-4 w-4" style={{ color: accentColor }} />
+        Quem viu seu perfil
+      </h3>
+      <span className="text-xs text-muted-foreground">
+        {total} {total === 1 ? 'visita' : 'visitas'} em 30 dias
+      </span>
+    </div>
+  );
+
+  // Base: só o número e um convite. A lista fica para o Premium.
   if (!podeVer) {
-    // Base: só o número. A lista fica para o Premium.
     return (
-      <div className="space-y-3">
-        <div className="rounded-xl border bg-card p-4 text-center">
-          <Eye className="mx-auto mb-1 h-5 w-5" style={{ color: accentColor }} />
-          <p className="text-3xl font-extrabold leading-none text-foreground">{total}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {total === 1 ? 'pessoa visitou' : 'pessoas visitaram'} este perfil nos últimos 30 dias
-          </p>
-        </div>
-        {total > 0 && (
-          <div className="relative overflow-hidden rounded-xl border bg-card">
-            <div className="space-y-2 p-3 blur-sm select-none" aria-hidden>
-              {Array.from({ length: Math.min(total, 3) }).map((_, i) => (
+      <div className="space-y-3 rounded-xl border bg-card p-3">
+        {cabecalho}
+        {total > 0 ? (
+          <div className="relative overflow-hidden rounded-lg border">
+            <div className="select-none space-y-2 p-3 blur-sm" aria-hidden>
+              {Array.from({ length: Math.min(total, 2) }).map((_, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-muted" />
+                  <div className="h-9 w-9 rounded-full bg-muted" />
                   <div className="space-y-1.5">
-                    <div className="h-3 w-32 rounded bg-muted" />
-                    <div className="h-2.5 w-20 rounded bg-muted/70" />
+                    <div className="h-3 w-28 rounded bg-muted" />
+                    <div className="h-2.5 w-16 rounded bg-muted/70" />
                   </div>
                 </div>
               ))}
             </div>
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/60 p-3 text-center">
-              <Lock className="h-5 w-5 text-muted-foreground" />
-              <p className="text-sm font-medium text-foreground">Veja quem visitou o perfil</p>
-              <Button size="sm" className="gap-1.5 text-white" style={{ backgroundColor: accentColor }} onClick={() => navigate(carreiraPath('/planos'))}>
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/60 p-2 text-center">
+              <p className="flex items-center gap-1 text-xs font-medium text-foreground">
+                <Lock className="h-3.5 w-3.5" /> Veja quem visitou o perfil
+              </p>
+              <Button size="sm" className="h-8 gap-1.5 text-xs text-white" style={{ backgroundColor: accentColor }} onClick={() => navigate(carreiraPath('/planos'))}>
                 <Crown className="h-3.5 w-3.5" /> Conhecer o Premium
               </Button>
             </div>
           </div>
-        )}
-        {total === 0 && (
-          <p className="text-center text-xs text-muted-foreground">
-            Compartilhe o link do perfil para receber visitas. Com o Premium você vê quem foram.
-          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">Compartilhe o link do perfil para receber visitas. Com o Premium você vê quem foram.</p>
         )}
       </div>
     );
   }
 
   if (carregandoLista) {
-    return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
+    return <div className="flex justify-center rounded-xl border bg-card p-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
   }
 
   if (!visitantes || visitantes.length === 0) {
     return (
-      <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
-        Ninguém visitou o perfil nos últimos 30 dias. Compartilhe o link para receber visitas.
+      <div className="space-y-1 rounded-xl border bg-card p-3">
+        {cabecalho}
+        <p className="text-xs text-muted-foreground">Ninguém visitou o perfil nos últimos 30 dias. Compartilhe o link para receber visitas.</p>
       </div>
     );
   }
 
+  const PREVIA = 4;
+  const mostrados = aberto ? visitantes : visitantes.slice(0, PREVIA);
+
   return (
-    <div className="space-y-2">
-      <p className="px-1 text-xs text-muted-foreground">
-        {visitantes.length} {visitantes.length === 1 ? 'pessoa' : 'pessoas'} nos últimos 30 dias
-      </p>
-      {visitantes.map((v: any) => (
-        <button
-          key={v.id}
-          type="button"
-          onClick={() => navigate(carreiraPath(`/perfil/${v.viewer_user_id}`))}
-          className="flex w-full items-center gap-3 rounded-xl border bg-card p-3 text-left transition-colors hover:bg-muted/50"
-        >
-          {v.foto ? (
-            <img src={v.foto} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
-          ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-bold text-muted-foreground">
-              {v.nome?.[0] || '?'}
+    <div className="space-y-2 rounded-xl border bg-card p-3">
+      {cabecalho}
+      <div className="space-y-1">
+        {mostrados.map((v: any) => (
+          <button
+            key={v.id}
+            type="button"
+            onClick={() => navigate(carreiraPath(`/perfil/${v.viewer_user_id}`))}
+            className="flex w-full items-center gap-3 rounded-lg p-1.5 text-left transition-colors hover:bg-muted/50"
+          >
+            {v.foto ? (
+              <img src={v.foto} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+            ) : (
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
+                {v.nome?.[0] || '?'}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-foreground">{v.nome || 'Usuário'}</p>
+              <p className="truncate text-xs text-muted-foreground">{TIPOS[v.tipo || ''] || v.tipo || ''}</p>
             </div>
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-foreground">{v.nome || 'Usuário'}</p>
-            <p className="truncate text-xs text-muted-foreground">{TIPOS[v.tipo || ''] || v.tipo || ''}</p>
-          </div>
-          <span className="shrink-0 text-xs text-muted-foreground">{haQuanto(v.created_at)}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">{haQuanto(v.created_at)}</span>
+          </button>
+        ))}
+      </div>
+      {visitantes.length > PREVIA && (
+        <button type="button" onClick={() => setAberto((a) => !a)} className="w-full pt-1 text-center text-xs font-medium" style={{ color: accentColor }}>
+          {aberto ? 'Mostrar menos' : `Ver todas (${visitantes.length})`}
         </button>
-      ))}
+      )}
     </div>
   );
 }
