@@ -6,6 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Image as ImageIcon, X, Upload, Plus, Trash2, Medal } from 'lucide-react';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { CarreiraPaywall } from './CarreiraPaywall';
+import type { CarreiraLimitResult } from '@/hooks/useCarreiraFreemium';
 import { useJornada } from '@/hooks/useJornada';
 import { CATEGORIAS, isModalidadeVolei, isModalidadeBasquete } from '@/constants/esportes';
 import type {
@@ -70,6 +74,21 @@ export function JornadaCampeonatoFormDialog({ open, onOpenChange, criancaId, mod
     adicionarPremiacaoCampeonato, excluirPremiacaoCampeonato,
   } = useJornada(criancaId);
   const [saving, setSaving] = useState(false);
+
+  // Plano Base: limite mensal de campeonatos novos (imposto também no servidor). Só vale para campeonato novo.
+  const { data: limitResult } = useQuery({
+    queryKey: ['carreira-jornada-limit', criancaId, open],
+    queryFn: async (): Promise<CarreiraLimitResult | null> => {
+      const { data, error } = await (supabase as any).rpc('check_carreira_jornada_limit', { p_crianca_id: criancaId });
+      if (error) return null;
+      return data as CarreiraLimitResult;
+    },
+    enabled: open && !editingCampeonato && !!criancaId,
+    staleTime: 0,
+    gcTime: 0,
+  });
+  const showPaywall = !editingCampeonato && limitResult?.status === 'limit_reached';
+
   const [modalidade, setModalidade] = useState<string>(modalidades[0] || 'Futebol');
   const [nome, setNome] = useState('');
   const [organizador, setOrganizador] = useState('');
@@ -202,6 +221,14 @@ export function JornadaCampeonatoFormDialog({ open, onOpenChange, criancaId, mod
         <DialogHeader>
           <DialogTitle>{editingCampeonato ? 'Editar Campeonato' : 'Novo Campeonato'}</DialogTitle>
         </DialogHeader>
+        {showPaywall && limitResult ? (
+          <CarreiraPaywall
+            limitResult={limitResult}
+            criancaId={criancaId}
+            onClose={() => onOpenChange(false)}
+            onSubscribed={() => onOpenChange(false)}
+          />
+        ) : (
         <form onSubmit={handleSubmit} className="space-y-3">
           {modalidades.length > 1 && (
             <div>
@@ -375,6 +402,7 @@ export function JornadaCampeonatoFormDialog({ open, onOpenChange, criancaId, mod
             </Button>
           </div>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );
