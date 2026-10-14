@@ -41,3 +41,17 @@ verify_jwt = true
 
 # trigger redeploy
 
+[functions.reset-teacher-password]
+verify_jwt = false
+
+[functions.reset-responsavel-password]
+verify_jwt = false
+
+[functions.create-teacher-with-login]
+verify_jwt = false
+
+[functions.send-teacher-welcome-email]
+verify_jwt = false
+
+[functions.asaas-account-info]
+verify_jwt = false

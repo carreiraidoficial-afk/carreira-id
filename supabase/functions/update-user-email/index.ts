@@ -23,6 +23,25 @@ serve(async (req) => {
       },
     });
 
+    // Só o servidor (chave de serviço) ou um ADMIN logado pode trocar o e-mail de uma conta.
+    // Antes, qualquer pessoa conseguia trocar o e-mail de qualquer usuário só com o user_id, e assim
+    // assumir a conta (pedindo redefinição de senha).
+    const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+    let autorizado = !!token && token === supabaseServiceKey;
+    if (!autorizado && token) {
+      const { data: authData } = await supabaseAdmin.auth.getUser(token);
+      if (authData?.user) {
+        const { data: ehAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: authData.user.id, _role: "admin" });
+        autorizado = !!ehAdmin;
+      }
+    }
+    if (!autorizado) {
+      return new Response(JSON.stringify({ error: "forbidden" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     const { user_id, new_email } = await req.json();
 
     if (!user_id || !new_email) {

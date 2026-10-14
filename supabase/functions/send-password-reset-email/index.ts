@@ -19,6 +19,16 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Só o servidor (outras funções chamam com a chave de serviço). Antes, qualquer pessoa com a chave pública
+  // do app conseguia mandar e-mail por este endereço, com destinatário, nome e senha à escolha.
+  const __tokenServico = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+  if (!__tokenServico || __tokenServico !== Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) {
+    return new Response(JSON.stringify({ success: false, error: "forbidden" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
+
   try {
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (!resendApiKey) {
