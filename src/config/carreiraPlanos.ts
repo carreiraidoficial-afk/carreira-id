@@ -38,6 +38,11 @@ export interface PlanoInfo {
 
 /** Preço fixo do plano Premium (usado em toda a UI). */
 export const PRECO_PREMIUM = 12.0;
+/** Plano anual do Premium: pagamento único de 365 dias (sem renovação automática). O preço que vale é o do servidor
+ * (saas_config -> carreira_valor_premium_anual); este valor é só o que a tela mostra. */
+export const PRECO_PREMIUM_ANUAL = 120.0;
+/** Máximo de parcelas no cartão no plano anual. */
+export const PARCELAS_MAX_ANUAL = 12;
 /** Preço fixo da assinatura Família (cobre todos os filhos cadastrados, usado em toda a UI). */
 export const PRECO_FAMILIA = 19.9;
 /** Duração do trial gratuito, em dias. */

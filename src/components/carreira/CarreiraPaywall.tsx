@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Lock, Star, Zap, Trophy, Copy, CheckCircle, Loader2, CreditCard, QrCode, Crown, AlertCircle } from 'lucide-react';
 import { CarreiraLimitResult } from '@/hooks/useCarreiraFreemium';
-import { PLANOS, CarreiraPlano, normalizePlano } from '@/config/carreiraPlanos';
+import { PLANOS, CarreiraPlano, normalizePlano, PRECO_PREMIUM_ANUAL, PARCELAS_MAX_ANUAL } from '@/config/carreiraPlanos';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
@@ -23,6 +23,9 @@ interface CarreiraPaywallProps {
 
 type PaywallStep = 'info' | 'loading' | 'pix' | 'checking' | 'card_form' | 'success';
 type PaymentMethod = 'pix' | 'cartao';
+type Ciclo = 'mensal' | 'anual';
+
+const brl = (v: number) => v.toFixed(2).replace('.', ',');
 
 const formatCpf = (value: string) => {
   const digits = value.replace(/\D/g, '').slice(0, 11);
@@ -50,6 +53,8 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
   const [step, setStep] = useState<PaywallStep>('info');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cartao');
   const [cpfInput, setCpfInput] = useState('');
+  const [ciclo, setCiclo] = useState<Ciclo>('mensal');
+  const [parcelas, setParcelas] = useState(1);
   const [selectedPlan] = useState<CarreiraPlano>(
     planoSelecionado ? normalizePlano(planoSelecionado) : 'premium'
   );
@@ -90,6 +95,9 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
   const cpfValid = cpfDigits.length === 11;
   const planInfo = PLANOS[selectedPlan];
   const isPremium = selectedPlan === 'premium';
+  const anual = ciclo === 'anual';
+  const precoCiclo = anual ? PRECO_PREMIUM_ANUAL : planInfo.preco;
+  const economiaAnual = planInfo.preco * 12 - PRECO_PREMIUM_ANUAL;
   const isSandboxTest = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('asaas_sandbox') === '1';
 
   const generatePix = async () => {
@@ -115,6 +123,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
           nome: resolvedUser.name,
           email: resolvedUser.email,
           plano: selectedPlan,
+          ciclo,
         },
       });
 
@@ -226,6 +235,8 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
           nome: resolvedUser.name,
           email: resolvedUser.email,
           sandbox: isSandboxTest,
+          ciclo,
+          parcelas: anual ? parcelas : 1,
           card: {
             holderName: cardForm.holderName.trim().toUpperCase(),
             number: numberDigits,
@@ -263,7 +274,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
 
       const result = data?.data || {};
       if (result.status === 'approved') {
-        toast.success('Assinatura ativada! Cobrança mensal automática configurada.');
+        toast.success(anual ? 'Plano anual ativado! Obrigado.' : 'Assinatura ativada! Cobrança mensal automática configurada.');
         queryClient.invalidateQueries({ queryKey: ['carreira-plano'] });
         queryClient.invalidateQueries({ queryKey: ['carreira-atividade-limit'] });
         setStep('success');
@@ -377,12 +388,17 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
         <p className="text-xs text-muted-foreground">
           Todas as funcionalidades do plano já estão disponíveis.
         </p>
-        {paymentMethod === 'pix' && (
+        {anual && (
+          <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
+            📅 O plano anual vale por <strong>365 dias</strong> e <strong>não renova sozinho</strong>. Avisamos por e-mail e notificação antes de vencer.
+          </p>
+        )}
+        {!anual && paymentMethod === 'pix' && (
           <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
             💡 Em <strong>30 dias</strong> será gerado um novo PIX para renovação. Fique atento ao seu e-mail!
           </p>
         )}
-        {paymentMethod === 'cartao' && (
+        {!anual && paymentMethod === 'cartao' && (
           <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
             💳 Sua assinatura é <strong>recorrente</strong>. A cobrança será feita automaticamente no seu cartão a cada mês.
           </p>
@@ -446,7 +462,9 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
           </div>
           <h3 className="text-lg font-bold text-foreground">Dados do cartão</h3>
           <p className="text-xs text-muted-foreground">
-            Cobrança mensal automática de <strong>R$ {planInfo.preco.toFixed(2).replace('.', ',')}</strong>. Cancele quando quiser.
+            {anual
+              ? <>Pagamento único de <strong>R$ {brl(PRECO_PREMIUM_ANUAL)}</strong> por 365 dias, sem renovação automática.</>
+              : <>Cobrança mensal automática de <strong>R$ {brl(planInfo.preco)}</strong>. Cancele quando quiser.</>}
           </p>
           {isSandboxTest && (
             <Badge variant="outline" className="border-amber-500/50 text-amber-600 bg-amber-500/10 text-[10px]">
@@ -535,6 +553,22 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
               onChange={(e) => updateCard({ phone: formatPhone(e.target.value) })}
             />
           </div>
+          {anual && (
+            <div className="space-y-1">
+              <Label className="text-xs">Parcelas</Label>
+              <select
+                value={parcelas}
+                onChange={(e) => setParcelas(Number(e.target.value))}
+                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                {Array.from({ length: PARCELAS_MAX_ANUAL }, (_, i) => i + 1).map((n) => (
+                  <option key={n} value={n}>
+                    {n === 1 ? `À vista — R$ ${brl(PRECO_PREMIUM_ANUAL)}` : `${n}x de R$ ${brl(PRECO_PREMIUM_ANUAL / n)} sem juros`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {cardError && (
@@ -556,7 +590,11 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
           onClick={submitCardSubscription}
         >
           {cardSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
-          {cardSubmitting ? 'Processando...' : `Assinar por R$ ${planInfo.preco.toFixed(2).replace('.', ',')}/mês`}
+          {cardSubmitting
+            ? 'Processando...'
+            : anual
+              ? (parcelas > 1 ? `Pagar ${parcelas}x de R$ ${brl(PRECO_PREMIUM_ANUAL / parcelas)}` : `Pagar R$ ${brl(PRECO_PREMIUM_ANUAL)}`)
+              : `Assinar por R$ ${brl(planInfo.preco)}/mês`}
         </Button>
         <p className="text-[10px] text-center text-muted-foreground">
           Seus dados são enviados diretamente para a Asaas (PCI compliant). Não armazenamos número nem CVV.
@@ -590,7 +628,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
           <span className="text-2xl font-bold text-primary">
             R$ {pixData.valor.toFixed(2).replace('.', ',')}
           </span>
-          <span className="text-sm text-muted-foreground block">pagamento único • 30 dias de acesso</span>
+          <span className="text-sm text-muted-foreground block">pagamento único • {anual ? '365 dias' : '30 dias'} de acesso</span>
         </div>
 
         <Button variant="outline" className="w-full gap-2" onClick={copyBrCode}>
@@ -654,8 +692,33 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
           <span className="text-sm font-bold" style={{ color: planInfo.cor }}>Plano {planInfo.nome}</span>
         </div>
         <p className="text-xs mt-1" style={{ color: planInfo.cor }}>
-          R$ {planInfo.preco.toFixed(2).replace('.', ',')}/mês
+          {anual ? `R$ ${brl(PRECO_PREMIUM_ANUAL)}/ano` : `R$ ${brl(planInfo.preco)}/mês`}
         </p>
+      </div>
+
+      {/* Mensal ou anual */}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => setCiclo('mensal')}
+          className={`p-2.5 rounded-lg border text-left transition-all ${!anual ? 'ring-1 border-primary bg-primary/5' : 'border-border hover:border-primary/40'}`}
+        >
+          <div className="text-sm font-semibold">Mensal</div>
+          <div className="text-[11px] text-muted-foreground">R$ {brl(planInfo.preco)}/mês</div>
+        </button>
+        <button
+          type="button"
+          onClick={() => setCiclo('anual')}
+          className={`relative p-2.5 rounded-lg border text-left transition-all ${anual ? 'ring-1 border-primary bg-primary/5' : 'border-border hover:border-primary/40'}`}
+        >
+          {economiaAnual > 0 && (
+            <span className="absolute -top-2 right-2 rounded-full bg-emerald-600 px-2 py-0.5 text-[9px] font-bold uppercase text-white">
+              Economize R$ {brl(economiaAnual)}
+            </span>
+          )}
+          <div className="text-sm font-semibold">Anual</div>
+          <div className="text-[11px] text-muted-foreground">R$ {brl(PRECO_PREMIUM_ANUAL)} • até {PARCELAS_MAX_ANUAL}x no cartão</div>
+        </button>
       </div>
 
       {/* Upgrade Card */}
@@ -706,7 +769,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
                 <CreditCard className="w-4 h-4 flex-shrink-0" />
                 <div className="text-left">
                   <div>Cartão</div>
-                  <div className="text-[10px] font-normal text-muted-foreground">Recorrente</div>
+                  <div className="text-[10px] font-normal text-muted-foreground">{anual ? `Até ${PARCELAS_MAX_ANUAL}x` : 'Recorrente'}</div>
                 </div>
               </button>
               <button
@@ -721,7 +784,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
                 <QrCode className="w-4 h-4 flex-shrink-0" />
                 <div className="text-left">
                   <div>PIX</div>
-                  <div className="text-[10px] font-normal text-muted-foreground">30 dias</div>
+                  <div className="text-[10px] font-normal text-muted-foreground">{anual ? '365 dias' : '30 dias'}</div>
                 </div>
               </button>
             </div>
@@ -748,14 +811,18 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
             {step === 'loading'
               ? 'Processando...'
               : paymentMethod === 'cartao'
-                ? `Assinar por R$ ${preco.toFixed(2).replace('.', ',')}/mês`
-                : `Pagar R$ ${preco.toFixed(2).replace('.', ',')} via PIX`}
+                ? (anual ? `Continuar com o cartão — R$ ${brl(precoCiclo)}` : `Assinar por R$ ${brl(preco)}/mês`)
+                : `Pagar R$ ${brl(precoCiclo)} via PIX`}
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            {paymentMethod === 'cartao'
-              ? 'Cartão de crédito • Cobrança mensal automática • Cancele quando quiser'
-              : 'Pagamento via PIX • 30 dias de acesso • Cancele quando quiser'}
+            {anual
+              ? (paymentMethod === 'cartao'
+                  ? 'Pagamento único • 365 dias de acesso • Parcele em até 12x • Não renova sozinho'
+                  : 'Pagamento único via PIX • 365 dias de acesso • Não renova sozinho')
+              : (paymentMethod === 'cartao'
+                  ? 'Cartão de crédito • Cobrança mensal automática • Cancele quando quiser'
+                  : 'Pagamento via PIX • 30 dias de acesso • Cancele quando quiser')}
           </p>
         </CardContent>
       </Card>

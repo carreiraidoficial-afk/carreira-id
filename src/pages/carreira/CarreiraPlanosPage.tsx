@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, Crown, Zap, ArrowLeft, Lock, Sparkles } from 'lucide-react';
-import { CarreiraPlano, PLANOS, planoNivel, TRIAL_DIAS } from '@/config/carreiraPlanos';
+import { CarreiraPlano, PLANOS, planoNivel, TRIAL_DIAS, PRECO_PREMIUM_ANUAL } from '@/config/carreiraPlanos';
 import { useCarreiraPlano } from '@/hooks/useCarreiraPlano';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -137,6 +137,9 @@ export default function CarreiraPlanos() {
                           {info.preco.toFixed(2).replace('.', ',')}
                         </span>
                         <span className="text-sm text-white/40">/mês</span>
+                        <p className="mt-1 text-xs text-white/50">
+                          ou <strong className="text-white/80">R$ {PRECO_PREMIUM_ANUAL.toFixed(2).replace('.', ',')}/ano</strong> (economize R$ {(info.preco * 12 - PRECO_PREMIUM_ANUAL).toFixed(2).replace('.', ',')}) — em até 12x no cartão
+                        </p>
                       </div>
                     )}
                   </div>

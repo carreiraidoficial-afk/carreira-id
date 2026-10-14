@@ -101,23 +101,27 @@ Deno.serve(async (req) => {
       expiraEm.setDate(expiraEm.getDate() + 30);
 
       // Match by either the payment_id passed in (PIX flow) or the Asaas subscription id (card flow)
-      const matchIds = [payment_id, asaasSubscriptionId].filter(Boolean) as string[];
+      const matchIds = [payment_id, asaasSubscriptionId, paymentData?.installment].filter(Boolean) as string[];
+      const chavePagamento = String(paymentData?.installment || paymentData?.id || payment_id);
       const { data: pendingSub } = await supabase
         .from('carreira_assinaturas')
-        .select('id')
+        .select('id, duracao_dias, ultimo_pagamento_id')
         .in('gateway_subscription_id', matchIds)
         .eq('user_id', authUser.id)
         .eq('status', 'pendente')
         .maybeSingle();
 
-      if (pendingSub) {
+      if (pendingSub && pendingSub.ultimo_pagamento_id !== chavePagamento) {
+        // Duração da própria assinatura (30 dias no mensal, 365 no anual) e marca da cobrança já contabilizada.
+        const expiraIndividual = new Date(Date.now() + (pendingSub.duracao_dias || 30) * 24 * 60 * 60 * 1000);
         const { error: updateError2 } = await supabase
           .from('carreira_assinaturas')
           .update({
             status: 'ativa',
             metodo_pagamento: paymentData.billingType === 'PIX' ? 'pix' : 'cartao_credito',
             inicio_em: new Date().toISOString().split('T')[0],
-            expira_em: expiraEm.toISOString().split('T')[0],
+            expira_em: expiraIndividual.toISOString().split('T')[0],
+            ultimo_pagamento_id: chavePagamento,
           })
           .eq('id', pendingSub.id);
 

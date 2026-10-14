@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, QrCode, Crown, Zap, ArrowUp, ArrowDown, Loader2, CheckCircle2, XCircle, Clock, Sparkles } from 'lucide-react';
-import { PLANOS, CarreiraPlano, planoNivel, normalizePlano } from '@/config/carreiraPlanos';
+import { PLANOS, CarreiraPlano, planoNivel, normalizePlano, PRECO_PREMIUM_ANUAL } from '@/config/carreiraPlanos';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -26,6 +26,7 @@ interface Assinatura {
   inicio_em: string;
   expira_em: string | null;
   familia_id: string | null;
+  ciclo?: string | null;
 }
 
 const PLANO_ICONS: Record<string, React.ReactNode> = {
@@ -48,7 +49,7 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
     queryFn: async (): Promise<Assinatura | null> => {
       const { data, error } = await supabase
         .from('carreira_assinaturas')
-        .select('id, plano, status, metodo_pagamento, valor, inicio_em, expira_em, familia_id')
+        .select('id, plano, status, metodo_pagamento, valor, inicio_em, expira_em, familia_id, ciclo')
         .eq('user_id', userId)
         .eq('crianca_id', criancaId)
         .in('status', ['ativa', 'trial'])
@@ -176,7 +177,7 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
                 Plano {currentPlanoInfo.nome}
               </p>
               <p className="text-xs text-muted-foreground truncate">
-                {currentPlanoInfo.preco === 0 ? 'Gratuito' : `R$ ${currentPlanoInfo.preco.toFixed(2).replace('.', ',')}/mês`}
+                {currentPlanoInfo.preco === 0 ? 'Gratuito' : assinatura?.ciclo === 'anual' ? `R$ ${PRECO_PREMIUM_ANUAL.toFixed(2).replace('.', ',')}/ano` : `R$ ${currentPlanoInfo.preco.toFixed(2).replace('.', ',')}/mês`}
               </p>
             </div>
           </div>
@@ -201,6 +202,12 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
             {metodo.icon}
             <span>Pagamento via <strong className="text-foreground">{metodo.label}</strong></span>
           </div>
+        )}
+
+        {assinatura?.ciclo === 'anual' && assinatura.expira_em && (
+          <p className="mt-2 pt-2 border-t text-xs text-muted-foreground" style={{ borderColor: `${currentPlanoInfo.cor}20` }}>
+            Plano anual válido até <strong className="text-foreground">{new Date(assinatura.expira_em).toLocaleDateString('pt-BR')}</strong>. Não renova sozinho: avisamos antes de vencer.
+          </p>
         )}
 
         {assinatura?.inicio_em && (

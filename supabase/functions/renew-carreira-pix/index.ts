@@ -8,7 +8,7 @@ const json = (body: unknown, status = 200) =>
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
-function htmlRenovacao(primeiroNome: string, vencimento: string, link: string, brCode: string | null) {
+function htmlRenovacao(primeiroNome: string, vencimento: string, link: string, brCode: string | null, valorTxt: string, anual: boolean) {
   const codigo = brCode
     ? `<p style="margin:18px 0 6px 0;font-size:12px;color:#737373;">PIX copia e cola:</p>
        <p style="margin:0;padding:12px;background:#171717;border:1px solid #262626;font-size:11px;line-height:1.5;color:#d4d4d4;word-break:break-all;font-family:monospace;">${esc(brCode)}</p>`
@@ -21,7 +21,7 @@ function htmlRenovacao(primeiroNome: string, vencimento: string, link: string, b
 <tr><td style="padding:40px 40px 8px 40px;">
 <p style="margin:0 0 10px 0;font-size:13px;font-weight:700;color:#22c55e;text-transform:uppercase;letter-spacing:1.5px;">Olá, ${primeiroNome}!</p>
 <h1 style="margin:0 0 14px 0;font-size:28px;line-height:1.25;font-weight:800;color:#f5f5f5;">Seu Premium vence em ${esc(vencimento)}</h1>
-<p style="margin:0;font-size:15px;line-height:1.6;color:#a3a3a3;">Geramos o PIX da renovação (R$ 12,00). Pague até o vencimento para continuar com os recursos Premium, sem interrupção.</p>
+<p style="margin:0;font-size:15px;line-height:1.6;color:#a3a3a3;">Geramos o PIX da renovação ${anual ? 'do plano anual ' : ''}(R$ ${valorTxt}). Pague até o vencimento para continuar com os recursos Premium, sem interrupção. O novo período soma ao que ainda resta.</p>
 ${codigo}
 </td></tr>
 <tr><td align="center" style="padding:28px 40px 36px 40px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" bgcolor="#f97316" style="background:#f97316;"><a href="${esc(link)}" style="display:inline-block;padding:15px 36px;font-size:15px;font-weight:700;color:#000000;text-decoration:none;">Pagar a renovação →</a></td></tr></table></td></tr>
@@ -48,14 +48,15 @@ Deno.serve(async (req) => {
     const resendKey = Deno.env.get('RESEND_API_KEY');
 
     const agora = new Date();
-    const doisDias = new Date(agora.getTime() + 2 * 24 * 60 * 60 * 1000);
+    // Mensal por PIX: avisa 2 dias antes. Anual (qualquer forma de pagamento, pois não renova sozinho): 7 dias antes.
+    const seteDias = new Date(agora.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     const { data: expiringSubs, error: queryError } = await supabase
       .from('carreira_assinaturas')
-      .select('id, user_id, crianca_id, valor, expira_em, renovacao_pix_para')
+      .select('id, user_id, crianca_id, valor, expira_em, renovacao_pix_para, ciclo')
       .eq('status', 'ativa')
-      .eq('metodo_pagamento', 'pix')
-      .lte('expira_em', doisDias.toISOString())
+      .or('metodo_pagamento.eq.pix,ciclo.eq.anual')
+      .lte('expira_em', seteDias.toISOString())
       .gte('expira_em', agora.toISOString());
 
     if (queryError) {
@@ -69,6 +70,10 @@ Deno.serve(async (req) => {
 
     for (const sub of (expiringSubs || [])) {
       try {
+        const anual = sub.ciclo === 'anual';
+        const janelaDias = anual ? 7 : 2;
+        if (new Date(sub.expira_em!).getTime() > agora.getTime() + janelaDias * 24 * 60 * 60 * 1000) continue;
+
         // Uma cobrança por vencimento: se já geramos para esta data de expiração, não repete.
         if (sub.renovacao_pix_para && new Date(sub.renovacao_pix_para).getTime() === new Date(sub.expira_em!).getTime()) {
           jaGerados++;
@@ -92,8 +97,8 @@ Deno.serve(async (req) => {
         const customerId = searchResult.data[0].id;
 
         // Preço sempre da configuração (nunca fixo no código)
-        let valor = Number(sub.valor) || 12.0;
-        const { data: cfg } = await supabase.from('saas_config').select('valor').eq('chave', 'carreira_valor_premium').maybeSingle();
+        let valor = anual ? 120.0 : (Number(sub.valor) || 12.0);
+        const { data: cfg } = await supabase.from('saas_config').select('valor').eq('chave', anual ? 'carreira_valor_premium_anual' : 'carreira_valor_premium').maybeSingle();
         if (cfg?.valor) valor = parseFloat(cfg.valor);
 
         const dueDateStr = new Date(sub.expira_em!).toISOString().split('T')[0];
@@ -105,7 +110,7 @@ Deno.serve(async (req) => {
             billingType: 'PIX',
             value: valor,
             dueDate: dueDateStr,
-            description: 'Carreira ID Premium - Renovação mensal',
+            description: anual ? 'Carreira ID Premium - Renovação do plano anual' : 'Carreira ID Premium - Renovação mensal',
             externalReference: `carreira_renew_premium_${sub.user_id}_${sub.crianca_id}`,
             notificationDisabled: true,
           }),
@@ -158,7 +163,7 @@ Deno.serve(async (req) => {
                 from: 'Carreira ID <contato@carreiraid.com.br>',
                 to: [email],
                 subject: `Seu Premium vence em ${vencimento}: renove por PIX`,
-                html: htmlRenovacao(primeiroNome, vencimento, link, brCode),
+                html: htmlRenovacao(primeiroNome, vencimento, link, brCode, valor.toFixed(2).replace('.', ','), anual),
               });
             }
           } catch (e) { console.error('e-mail de renovação falhou:', e); }

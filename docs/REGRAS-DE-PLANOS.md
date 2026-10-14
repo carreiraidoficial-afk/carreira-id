@@ -66,7 +66,7 @@ Implementado em `src/hooks/useCarreiraPlano.ts` (telas) e em `check_carreira_ati
 - Renovação por PIX (`renew-carreira-pix`, todo dia 8h): uma cobrança por vencimento, avisa por push e e-mail.
 - Configurar no painel do Asaas: eventos `PAYMENT_REFUNDED` e `PAYMENT_CHARGEBACK_REQUESTED` no webhook de produção.
 
-## 6. Plano anual (preparado, aguardando publicação)
+## 6. Plano anual (publicado em 14/10/2026; ainda sem teste real de pagamento)
 
 - R$ 120,00 por 365 dias, pagamento único: PIX, ou cartão à vista / até 12x. **Não renova sozinho**; aviso 7 dias antes de vencer.
 - Quem já tem assinatura ativa só contrata o anual quando ela vencer ou for cancelada.
@@ -93,5 +93,5 @@ Implementado em `src/hooks/useCarreiraPlano.ts` (telas) e em `check_carreira_ati
 
 - **14/10/2026** — Função `check_carreira_atividade_limit` corrigida: Premium e teste passam a ser ilimitados em registros de Carreira. Antes, qualquer plano pago era travado em 3 por mês e o teste valia como Base. O Base seguiu igual (2).
 - **14/10/2026** — Gatilho `assinaturas_protege` (usuário não se promove sozinho); funções de pagamento exigem login; webhook confere no Asaas.
-- **14/10/2026** — Plano anual preparado (banco e código), ainda não publicado.
+- **14/10/2026** — Plano anual publicado (banco, funções e tela). Pendente: primeiro pagamento real de teste.
 - **14/10/2026** — Tela Admin → Planos corrigida (cache com a mesma chave que os limites do app causava erro).

@@ -37,7 +37,9 @@ Deno.serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     const user_id = authUser.id;
-    const { crianca_id, cpf, nome, email } = await req.json();
+    const { crianca_id, cpf, nome, email, ciclo: cicloBody } = await req.json();
+    const ciclo: 'mensal' | 'anual' = cicloBody === 'anual' ? 'anual' : 'mensal';
+    const duracaoDias = ciclo === 'anual' ? 365 : 30;
     const planoSelecionado = 'premium';
 
     console.log('Generating Carreira PIX for user:', user_id, 'crianca:', crianca_id, 'plano:', planoSelecionado);
@@ -67,7 +69,7 @@ Deno.serve(async (req) => {
 
     if (existingSub && (!existingSub.expira_em || new Date(existingSub.expira_em) > new Date())) {
       return new Response(
-        JSON.stringify({ error: 'Já existe uma assinatura ativa para este atleta' }),
+        JSON.stringify({ error: ciclo === 'anual' ? 'Este atleta já tem uma assinatura ativa. O plano anual pode ser contratado quando ela vencer ou for cancelada.' : 'Já existe uma assinatura ativa para este atleta' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -93,12 +95,12 @@ Deno.serve(async (req) => {
       await supabase.from('carreira_assinaturas').update({ status: 'cancelada' }).eq('id', p.id);
     }
 
-    // Preço fixo do Premium: R$ 12,00 (configurável em saas_config -> carreira_valor_premium)
-    let valor = 12.0;
+    // Preço vem sempre da configuração (nunca do app): mensal R$ 12 / anual R$ 120.
+    let valor = ciclo === 'anual' ? 120.0 : 12.0;
     const { data: configValor } = await supabase
       .from('saas_config')
       .select('valor')
-      .eq('chave', 'carreira_valor_premium')
+      .eq('chave', ciclo === 'anual' ? 'carreira_valor_premium_anual' : 'carreira_valor_premium')
       .maybeSingle();
     if (configValor) valor = parseFloat(configValor.valor);
 
@@ -149,7 +151,7 @@ Deno.serve(async (req) => {
         billingType: 'PIX',
         value: valor,
         dueDate: dueDate.toISOString().split('T')[0],
-        description: `Carreira ID Premium - Assinatura mensal`,
+        description: ciclo === 'anual' ? 'Carreira ID Premium - Plano anual' : 'Carreira ID Premium - Assinatura mensal',
         externalReference: `carreira_premium_${user_id}_${crianca_id}`,
         notificationDisabled: true,
       }),
@@ -181,7 +183,7 @@ Deno.serve(async (req) => {
 
     // Step 4: Create pending subscription record
     const expiraEm = new Date();
-    expiraEm.setDate(expiraEm.getDate() + 30);
+    expiraEm.setDate(expiraEm.getDate() + duracaoDias);
 
     const { data: subscription, error: subError } = await supabase
       .from('carreira_assinaturas')
@@ -192,6 +194,8 @@ Deno.serve(async (req) => {
         status: 'pendente',
         valor,
         metodo_pagamento: 'pix',
+        ciclo,
+        duracao_dias: duracaoDias,
         gateway: 'asaas',
         gateway_subscription_id: paymentResult.id,
         inicio_em: new Date().toISOString().split('T')[0],

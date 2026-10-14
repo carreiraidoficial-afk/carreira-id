@@ -168,12 +168,12 @@ serve(async (req) => {
           }
         }
 
-        let assinatura: { id: string; user_id: string; status: string; valor?: number | null } | null = null;
+        let assinatura: { id: string; user_id: string; status: string; valor?: number | null; expira_em?: string | null; duracao_dias?: number | null; ultimo_pagamento_id?: string | null } | null = null;
 
         if (payment.subscription) {
           const { data } = await supabase
             .from("carreira_assinaturas")
-            .select("id, user_id, status, valor")
+            .select("id, user_id, status, valor, expira_em, duracao_dias, ultimo_pagamento_id")
             .eq("gateway_subscription_id", payment.subscription)
             .maybeSingle();
           assinatura = data;
@@ -182,8 +182,17 @@ serve(async (req) => {
         if (!assinatura) {
           const { data } = await supabase
             .from("carreira_assinaturas")
-            .select("id, user_id, status, valor")
+            .select("id, user_id, status, valor, expira_em, duracao_dias, ultimo_pagamento_id")
             .eq("gateway_subscription_id", payment.id)
+            .maybeSingle();
+          assinatura = data;
+        }
+
+        if (!assinatura && payment.installment) {
+          const { data } = await supabase
+            .from("carreira_assinaturas")
+            .select("id, user_id, status, valor, expira_em, duracao_dias, ultimo_pagamento_id")
+            .eq("gateway_subscription_id", payment.installment)
             .maybeSingle();
           assinatura = data;
         }
@@ -195,7 +204,7 @@ serve(async (req) => {
           if (userId && criancaId) {
             const { data } = await supabase
               .from("carreira_assinaturas")
-              .select("id, user_id, status, valor")
+              .select("id, user_id, status, valor, expira_em, duracao_dias, ultimo_pagamento_id")
               .eq("user_id", userId)
               .eq("crianca_id", criancaId)
               .neq("status", "cancelada")
@@ -215,21 +224,34 @@ serve(async (req) => {
         }
 
         if (paymentConfirmedEvents.includes(event)) {
-          if (assinatura.valor && valorPago > 0 && valorPago < Number(assinatura.valor) * 0.99) {
+          if (!payment.installment && assinatura.valor && valorPago > 0 && valorPago < Number(assinatura.valor) * 0.99) {
             console.warn("Valor pago menor que o da assinatura (ignorado):", valorPago, assinatura.valor);
             return new Response(JSON.stringify({ success: true, ignored: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
           }
           const wasPending = assinatura.status === "pendente";
-          const expiraEm = new Date();
-          expiraEm.setDate(expiraEm.getDate() + 30);
+          // Cada cobrança soma os dias UMA vez (CONFIRMED e RECEIVED da mesma cobrança, parcelas do cartão e a checagem do app
+          // chegam todas aqui). A validade soma ao que ainda resta, em vez de recomeçar de hoje.
+          const chavePagamento = String(payment.installment || payment.id);
+          if (assinatura.ultimo_pagamento_id === chavePagamento) {
+            return new Response(
+              JSON.stringify({ success: true, subscriptionId: assinatura.id, alreadyCounted: true }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          const hoje = new Date();
+          const aindaValida = assinatura.status === "ativa" && assinatura.expira_em && new Date(assinatura.expira_em) > hoje;
+          const base = aindaValida ? new Date(assinatura.expira_em as string) : hoje;
+          const expiraEm = new Date(base.getTime());
+          expiraEm.setDate(expiraEm.getDate() + (assinatura.duracao_dias || 30));
 
           const { error: updateError } = await supabase
             .from("carreira_assinaturas")
             .update({
               status: "ativa",
               metodo_pagamento: payment.billingType === "CREDIT_CARD" ? "cartao_credito" : "pix",
-              inicio_em: new Date().toISOString().split("T")[0],
+              ...(aindaValida ? {} : { inicio_em: hoje.toISOString().split("T")[0] }),
               expira_em: expiraEm.toISOString().split("T")[0],
+              ultimo_pagamento_id: chavePagamento,
             })
             .eq("id", assinatura.id);
 
