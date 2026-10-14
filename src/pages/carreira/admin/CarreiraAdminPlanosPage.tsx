@@ -53,7 +53,7 @@ const FEATURE_LABELS: Record<string, { label: string; desc: string; type: 'boole
 
 function usePlanosConfig() {
   return useQuery({
-    queryKey: ['carreira-planos-config'],
+    queryKey: ['carreira-planos-config-admin'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('carreira_planos_config')
@@ -104,6 +104,7 @@ export default function CarreiraAdminPlanosPage() {
         delete next[plano.id];
         return next;
       });
+      queryClient.invalidateQueries({ queryKey: ['carreira-planos-config-admin'] });
       queryClient.invalidateQueries({ queryKey: ['carreira-planos-config'] });
       queryClient.invalidateQueries({ queryKey: ['carreira-plano'] });
       toast.success(`Plano ${plano.nome} atualizado!`);
