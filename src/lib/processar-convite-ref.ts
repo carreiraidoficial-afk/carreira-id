@@ -147,22 +147,7 @@ async function solicitarVinculoComEscola(novoUserId: string, novoPerfilAtletaId:
   } as any);
   if (error) throw error;
 
-  // Avisa a escola (best-effort, igual ao botão Conectar).
-  try {
-    const { data: atleta } = await supabase.from('perfil_atleta').select('nome').eq('id', novoPerfilAtletaId).maybeSingle();
-    await supabase.functions.invoke('send-carreira-push', {
-      body: {
-        user_ids: [escola.user_id],
-        title: '🔗 Novo aluno pediu vínculo',
-        body: `${atleta?.nome || 'Um atleta'} quer se vincular à sua escola`,
-        url: '/conexoes',
-        tag: 'conexao_solicitada',
-        category: 'conexao_solicitada',
-      },
-    });
-  } catch {
-    // notificação é opcional
-  }
+  // O aviso por push para a escola sai do banco (gatilho em rede_conexoes).
 }
 
 export async function processarConviteRef(novoUserId: string): Promise<void> {

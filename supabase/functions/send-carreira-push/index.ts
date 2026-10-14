@@ -170,6 +170,44 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { user_ids, title, body, url, tag, destinatario_tipo, destinatario_filtro, category } = await req.json();
 
+    // ---- Quem pode chamar esta função ----
+    // 'internal': o servidor (chave de serviço ou segredo interno dos gatilhos do banco) -> sem restrição.
+    // 'admin': admin logado (comunicados) -> sem restrição.
+    // 'user': usuário logado comum -> só avisos pontuais (curtida, comentário, conexão, peneira), com limites.
+    // Qualquer outra chamada (inclusive só com a chave pública) é recusada: antes, qualquer pessoa podia
+    // mandar push para qualquer usuário, ou para todos.
+    const authHeader = req.headers.get('Authorization') || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+    const internalSecret = Deno.env.get('PUSH_INTERNAL_SECRET') || '';
+    const providedSecret = req.headers.get('x-internal-secret') || '';
+    let caller: 'internal' | 'admin' | 'user' | null = null;
+    if (token && token === supabaseServiceKey) {
+      caller = 'internal';
+    } else if (internalSecret && providedSecret && providedSecret === internalSecret) {
+      caller = 'internal';
+    } else if (token) {
+      const { data: authData } = await supabase.auth.getUser(token);
+      if (authData?.user) {
+        const { data: isAdmin } = await supabase.rpc('has_role', { _user_id: authData.user.id, _role: 'admin' });
+        caller = isAdmin ? 'admin' : 'user';
+      }
+    }
+    if (!caller) {
+      return new Response(JSON.stringify({ error: 'unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (caller === 'user') {
+      const CATEGORIAS_USUARIO = ['conexao_solicitada', 'conexao_aceita', 'peneira_convite', 'post_like', 'post_comentario'];
+      const okIds = Array.isArray(user_ids) && user_ids.length > 0 && user_ids.length <= 50;
+      const okTexto = String(title || '').length <= 80 && String(body || '').length <= 200;
+      if (destinatario_tipo || !okIds || !okTexto || !CATEGORIAS_USUARIO.includes(category)) {
+        return new Response(JSON.stringify({ error: 'forbidden' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // Categoria (opcional) -> respeita os toggles de /carreira/admin/push.
     // Sem 'category', o push segue direto (usado por fluxos que não têm toggle
     // dedicado ali, ex: confirmação de pagamento, lembrete de trial).
