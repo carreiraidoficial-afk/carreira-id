@@ -77,7 +77,7 @@ export function EscolaPerfilHero({ perfil, displayName, accentColor, isEscolaPar
         style={{ border: `2px solid ${accentColor}50` }}
       >
         {/* Capa */}
-        <div className="relative h-36 sm:h-48 lg:h-60 w-full overflow-hidden">
+        <div className="relative aspect-[3/1] w-full overflow-hidden">
           {perfil.banner_url ? (
             <img src={perfil.banner_url} alt="" className="w-full h-full object-cover" />
           ) : (
