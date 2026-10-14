@@ -34,6 +34,7 @@ import { HistoricoProfissionalFormDialog } from '@/components/carreira/Historico
 import { SalaTrofeusEscola } from '@/components/carreira/SalaTrofeusEscola';
 import { ComunidadeEscolaSection } from '@/components/carreira/ComunidadeEscolaSection';
 import { EscolaPerfilHero } from '@/components/carreira/escola/EscolaPerfilHero';
+import { EscolaOgCardAuto } from '@/components/carreira/escola/EscolaOgCardAuto';
 import { EscolaSobreCard } from '@/components/carreira/escola/EscolaSobreCard';
 import { SalaTrofeusEscolaFormDialog } from '@/components/carreira/SalaTrofeusEscolaFormDialog';
 import { useCreateTrofeuEscola, useUpdateTrofeuEscola, useDeleteTrofeuEscola, type TrofeuEscola, type TrofeuEscolaInput } from '@/hooks/useSalaTrofeusEscola';
@@ -1133,6 +1134,7 @@ export default function CarreiraPerfilPage() {
             {/* Perfil de escola: hero com capa + métricas + Sobre (substitui o card lateral e o PerfilLayout mobile) */}
             {isDonoEscolaProfile && (
               <>
+                {isOwnerOuSuporte && <EscolaOgCardAuto perfil={perfil as any} />}
                 <EscolaPerfilHero
                   perfil={perfil as any}
                   displayName={displayProfileName}
