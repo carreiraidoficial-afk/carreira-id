@@ -72,6 +72,8 @@ const handler = async (req: Request): Promise<Response> => {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
 <title>Perfil Incompleto</title>
 <style>
   table{border-collapse:collapse;}
@@ -84,24 +86,24 @@ const handler = async (req: Request): Promise<Response> => {
   }
 </style>
 </head>
-<body style="margin:0;padding:0;background:#0b1220;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<body bgcolor="#000000" style="margin:0;padding:0;background:#000000;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">
     ${titulo} — complete seu perfil e apareça pra quem importa no esporte de base.
   </div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0b1220;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background:#000000;">
     <tr>
       <td align="center" style="padding:40px 16px;">
-        <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:#131f35;border:1px solid #24324a;">
+        <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" bgcolor="#0d0d0d" style="width:600px;max-width:600px;background:#0d0d0d;border:1px solid #262626;">
 
           <tr>
-            <td class="stack-pad" style="padding:28px 40px;border-bottom:1px solid #24324a;">
+            <td class="stack-pad" style="padding:28px 40px;border-bottom:1px solid #262626;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="left" valign="middle">
                     <img src="https://carreiraid.com.br/logo-carreira-id-email.png" width="170" height="42" alt="Carreira ID" style="display:block;">
                   </td>
                   <td align="right" valign="middle">
-                    <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:1.2px;">Esporte de Base</span>
+                    <span style="font-size:11px;font-weight:600;color:#a3a3a3;text-transform:uppercase;letter-spacing:1.2px;">Esporte de Base</span>
                   </td>
                 </tr>
               </table>
@@ -113,10 +115,10 @@ const handler = async (req: Request): Promise<Response> => {
               <p style="margin:0 0 10px 0;font-size:13px;font-weight:700;color:#22c55e;text-transform:uppercase;letter-spacing:1.5px;">
                 Olá, ${primeiroNome}!
               </p>
-              <h1 class="hero-headline" style="margin:0 0 14px 0;font-size:32px;line-height:1.2;font-weight:800;color:#f1f5f9;letter-spacing:-0.3px;">
+              <h1 class="hero-headline" style="margin:0 0 14px 0;font-size:32px;line-height:1.2;font-weight:800;color:#f5f5f5;letter-spacing:-0.3px;">
                 ${titulo}
               </h1>
-              <p style="margin:0;font-size:15px;line-height:1.6;color:#94a3b8;max-width:480px;">
+              <p style="margin:0;font-size:15px;line-height:1.6;color:#a3a3a3;max-width:480px;">
                 ${corpo}
               </p>
             </td>
@@ -124,7 +126,7 @@ const handler = async (req: Request): Promise<Response> => {
 
           <tr>
             <td class="stack-pad" style="padding:36px 40px 4px 40px;">
-              <p style="margin:0;font-size:15px;line-height:1.6;color:#f1f5f9;">
+              <p style="margin:0;font-size:15px;line-height:1.6;color:#f5f5f5;">
                 <strong>Ao concluir seu cadastro, você poderá:</strong>
               </p>
             </td>
@@ -134,47 +136,47 @@ const handler = async (req: Request): Promise<Response> => {
             <td class="stack-pad" style="padding:12px 40px 0 40px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td width="44" valign="top" style="padding:18px 0;border-top:1px solid #24324a;">
-                    <table role="presentation" width="30" height="30" cellpadding="0" cellspacing="0" style="width:30px;height:30px;background:#1c2c47;">
+                  <td width="44" valign="top" style="padding:18px 0;border-top:1px solid #262626;">
+                    <table role="presentation" width="30" height="30" cellpadding="0" cellspacing="0" style="width:30px;height:30px;background:#1a1a1a;">
                       <tr><td align="center" valign="middle" style="font-size:14px;color:#f97316;font-weight:700;">01</td></tr>
                     </table>
                   </td>
-                  <td valign="top" style="padding:18px 0 18px 14px;border-top:1px solid #24324a;">
-                    <p style="margin:0 0 3px 0;font-size:15px;font-weight:700;color:#f1f5f9;">Registrar sua jornada esportiva</p>
-                    <p style="margin:0;font-size:13px;line-height:1.5;color:#94a3b8;">Campeonatos, jogos, gols e estatísticas — documentados automaticamente.</p>
+                  <td valign="top" style="padding:18px 0 18px 14px;border-top:1px solid #262626;">
+                    <p style="margin:0 0 3px 0;font-size:15px;font-weight:700;color:#f5f5f5;">Registrar sua jornada esportiva</p>
+                    <p style="margin:0;font-size:13px;line-height:1.5;color:#a3a3a3;">Campeonatos, jogos, gols e estatísticas — documentados automaticamente.</p>
                   </td>
                 </tr>
                 <tr>
-                  <td width="44" valign="top" style="padding:18px 0;border-top:1px solid #24324a;">
-                    <table role="presentation" width="30" height="30" cellpadding="0" cellspacing="0" style="width:30px;height:30px;background:#1c2c47;">
+                  <td width="44" valign="top" style="padding:18px 0;border-top:1px solid #262626;">
+                    <table role="presentation" width="30" height="30" cellpadding="0" cellspacing="0" style="width:30px;height:30px;background:#1a1a1a;">
                       <tr><td align="center" valign="middle" style="font-size:14px;color:#f97316;font-weight:700;">02</td></tr>
                     </table>
                   </td>
-                  <td valign="top" style="padding:18px 0 18px 14px;border-top:1px solid #24324a;">
-                    <p style="margin:0 0 3px 0;font-size:15px;font-weight:700;color:#f1f5f9;">Publicar fotos e vídeos</p>
-                    <p style="margin:0;font-size:13px;line-height:1.5;color:#94a3b8;">Mostre lances e momentos direto no feed do seu perfil.</p>
+                  <td valign="top" style="padding:18px 0 18px 14px;border-top:1px solid #262626;">
+                    <p style="margin:0 0 3px 0;font-size:15px;font-weight:700;color:#f5f5f5;">Publicar fotos e vídeos</p>
+                    <p style="margin:0;font-size:13px;line-height:1.5;color:#a3a3a3;">Mostre lances e momentos direto no feed do seu perfil.</p>
                   </td>
                 </tr>
                 <tr>
-                  <td width="44" valign="top" style="padding:18px 0;border-top:1px solid #24324a;">
-                    <table role="presentation" width="30" height="30" cellpadding="0" cellspacing="0" style="width:30px;height:30px;background:#1c2c47;">
+                  <td width="44" valign="top" style="padding:18px 0;border-top:1px solid #262626;">
+                    <table role="presentation" width="30" height="30" cellpadding="0" cellspacing="0" style="width:30px;height:30px;background:#1a1a1a;">
                       <tr><td align="center" valign="middle" style="font-size:14px;color:#f97316;font-weight:700;">03</td></tr>
                     </table>
                   </td>
-                  <td valign="top" style="padding:18px 0 18px 14px;border-top:1px solid #24324a;">
-                    <p style="margin:0 0 3px 0;font-size:15px;font-weight:700;color:#f1f5f9;">Se conectar com quem importa</p>
-                    <p style="margin:0;font-size:13px;line-height:1.5;color:#94a3b8;">Professores, técnicos, torcedores e outros atletas de base.</p>
+                  <td valign="top" style="padding:18px 0 18px 14px;border-top:1px solid #262626;">
+                    <p style="margin:0 0 3px 0;font-size:15px;font-weight:700;color:#f5f5f5;">Se conectar com quem importa</p>
+                    <p style="margin:0;font-size:13px;line-height:1.5;color:#a3a3a3;">Professores, técnicos, torcedores e outros atletas de base.</p>
                   </td>
                 </tr>
                 <tr>
-                  <td width="44" valign="top" style="padding:18px 0 18px 0;border-top:1px solid #24324a;border-bottom:1px solid #24324a;">
-                    <table role="presentation" width="30" height="30" cellpadding="0" cellspacing="0" style="width:30px;height:30px;background:#1c2c47;">
+                  <td width="44" valign="top" style="padding:18px 0 18px 0;border-top:1px solid #262626;border-bottom:1px solid #262626;">
+                    <table role="presentation" width="30" height="30" cellpadding="0" cellspacing="0" style="width:30px;height:30px;background:#1a1a1a;">
                       <tr><td align="center" valign="middle" style="font-size:14px;color:#f97316;font-weight:700;">04</td></tr>
                     </table>
                   </td>
-                  <td valign="top" style="padding:18px 0 18px 14px;border-top:1px solid #24324a;border-bottom:1px solid #24324a;">
-                    <p style="margin:0 0 3px 0;font-size:15px;font-weight:700;color:#f1f5f9;">Compartilhar seu perfil</p>
-                    <p style="margin:0;font-size:13px;line-height:1.5;color:#94a3b8;">Um link só, pronto pra mostrar seu potencial pra qualquer clube.</p>
+                  <td valign="top" style="padding:18px 0 18px 14px;border-top:1px solid #262626;border-bottom:1px solid #262626;">
+                    <p style="margin:0 0 3px 0;font-size:15px;font-weight:700;color:#f5f5f5;">Compartilhar seu perfil</p>
+                    <p style="margin:0;font-size:13px;line-height:1.5;color:#a3a3a3;">Um link só, pronto pra mostrar seu potencial pra qualquer clube.</p>
                   </td>
                 </tr>
               </table>
@@ -185,27 +187,27 @@ const handler = async (req: Request): Promise<Response> => {
             <td align="center" style="padding:32px 40px 8px 40px;">
               <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="background:#f97316;">
-                    <a href="${profileUrl}" style="display:inline-block;padding:15px 36px;font-size:15px;font-weight:700;color:#0b1220;">
+                  <td align="center" bgcolor="#f97316" style="background:#f97316;">
+                    <a href="${profileUrl}" style="display:inline-block;padding:15px 36px;font-size:15px;font-weight:700;color:#000000;">
                       ${ctaTexto} →
                     </a>
                   </td>
                 </tr>
               </table>
-              <p style="margin:14px 0 0 0;font-size:12px;color:#64748b;">Leva menos de 3 minutos.</p>
+              <p style="margin:14px 0 0 0;font-size:12px;color:#737373;">Leva menos de 3 minutos.</p>
             </td>
           </tr>
 
           <tr>
             <td align="center" style="padding:20px 40px 8px 40px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0f1a2e;border:1px solid #24324a;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;border:1px solid #262626;">
                 <tr>
                   <td align="center" style="padding:22px 20px;">
-                    <p style="margin:0 0 12px 0;font-size:13px;line-height:1.5;color:#94a3b8;">Ficou com alguma dúvida? A gente te ajuda na hora.</p>
+                    <p style="margin:0 0 12px 0;font-size:13px;line-height:1.5;color:#a3a3a3;">Ficou com alguma dúvida? A gente te ajuda na hora.</p>
                     <table role="presentation" cellpadding="0" cellspacing="0">
                       <tr>
                         <td align="center" style="background:#22c55e;">
-                          <a href="${WHATSAPP_SUPORTE}" style="display:inline-block;padding:11px 24px;font-size:13px;font-weight:700;color:#0b1220;">
+                          <a href="${WHATSAPP_SUPORTE}" style="display:inline-block;padding:11px 24px;font-size:13px;font-weight:700;color:#000000;">
                             💬 Falar no WhatsApp
                           </a>
                         </td>
@@ -219,20 +221,20 @@ const handler = async (req: Request): Promise<Response> => {
 
           <tr>
             <td class="stack-pad" style="padding:28px 40px 0 40px;">
-              <p style="margin:0;font-size:14px;line-height:1.6;color:#94a3b8;">
+              <p style="margin:0;font-size:14px;line-height:1.6;color:#a3a3a3;">
                 Estamos na torcida pela sua jornada.<br>
-                <strong style="color:#f1f5f9;">Equipe Carreira ID</strong>
+                <strong style="color:#f5f5f5;">Equipe Carreira ID</strong>
               </p>
             </td>
           </tr>
 
           <tr>
             <td align="center" style="padding:28px 40px 32px 40px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px dashed #24324a;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px dashed #262626;">
                 <tr>
                   <td align="center" style="padding:24px 20px;">
-                    <p style="margin:0 0 4px 0;font-size:14px;font-weight:700;color:#f1f5f9;">👨‍👩‍👧 Grupo de Pais de Atletas de Base</p>
-                    <p style="margin:0 0 14px 0;font-size:13px;line-height:1.5;color:#94a3b8;">Troca com outros pais e mães, dicas e novidades — direto no seu WhatsApp.</p>
+                    <p style="margin:0 0 4px 0;font-size:14px;font-weight:700;color:#f5f5f5;">👨‍👩‍👧 Grupo de Pais de Atletas de Base</p>
+                    <p style="margin:0 0 14px 0;font-size:13px;line-height:1.5;color:#a3a3a3;">Troca com outros pais e mães, dicas e novidades — direto no seu WhatsApp.</p>
                     <table role="presentation" cellpadding="0" cellspacing="0">
                       <tr>
                         <td align="center" style="border:1px solid #f97316;">
@@ -249,8 +251,8 @@ const handler = async (req: Request): Promise<Response> => {
           </tr>
 
           <tr>
-            <td class="stack-pad" style="padding:20px 40px;background:#0f1a2e;border-top:1px solid #24324a;">
-              <p style="margin:0;font-size:11px;line-height:1.6;color:#475569;">
+            <td class="stack-pad" style="padding:20px 40px;background:#0a0a0a;border-top:1px solid #262626;">
+              <p style="margin:0;font-size:11px;line-height:1.6;color:#525252;">
                 Você recebeu este e-mail porque criou uma conta no Carreira ID.
               </p>
             </td>

@@ -61,6 +61,8 @@ Deno.serve(async (req) => {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
 <title>${titulo}</title>
 <style>
   table{border-collapse:collapse;}
@@ -73,24 +75,24 @@ Deno.serve(async (req) => {
   }
 </style>
 </head>
-<body style="margin:0;padding:0;background:#0b1220;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<body bgcolor="#000000" style="margin:0;padding:0;background:#000000;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">
     ${titulo} — abra o Carreira ID para ver.
   </div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0b1220;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#000000" style="background:#000000;">
     <tr>
       <td align="center" style="padding:40px 16px;">
-        <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:#131f35;border:1px solid #24324a;">
+        <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" bgcolor="#0d0d0d" style="width:600px;max-width:600px;background:#0d0d0d;border:1px solid #262626;">
 
           <tr>
-            <td class="stack-pad" style="padding:28px 40px;border-bottom:1px solid #24324a;">
+            <td class="stack-pad" style="padding:28px 40px;border-bottom:1px solid #262626;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="left" valign="middle">
                     <img src="https://carreiraid.com.br/logo-carreira-id-email.png" width="170" height="42" alt="Carreira ID" style="display:block;">
                   </td>
                   <td align="right" valign="middle">
-                    <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:1.2px;">Esporte de Base</span>
+                    <span style="font-size:11px;font-weight:600;color:#a3a3a3;text-transform:uppercase;letter-spacing:1.2px;">Esporte de Base</span>
                   </td>
                 </tr>
               </table>
@@ -102,10 +104,10 @@ Deno.serve(async (req) => {
               <p style="margin:0 0 10px 0;font-size:13px;font-weight:700;color:#22c55e;text-transform:uppercase;letter-spacing:1.5px;">
                 Olá, ${primeiroNome}!
               </p>
-              <h1 class="hero-headline" style="margin:0 0 14px 0;font-size:32px;line-height:1.2;font-weight:800;color:#f1f5f9;letter-spacing:-0.3px;">
+              <h1 class="hero-headline" style="margin:0 0 14px 0;font-size:32px;line-height:1.2;font-weight:800;color:#f5f5f5;letter-spacing:-0.3px;">
                 ${titulo}
               </h1>
-              <p style="margin:0;font-size:15px;line-height:1.6;color:#94a3b8;max-width:480px;">
+              <p style="margin:0;font-size:15px;line-height:1.6;color:#a3a3a3;max-width:480px;">
                 ${texto}
               </p>
             </td>
@@ -115,26 +117,26 @@ Deno.serve(async (req) => {
             <td align="center" style="padding:32px 40px 8px 40px;">
               <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="background:#f97316;">
-                    <a href="${link}" style="display:inline-block;padding:15px 36px;font-size:15px;font-weight:700;color:#0b1220;">
+                  <td align="center" bgcolor="#f97316" style="background:#f97316;">
+                    <a href="${link}" style="display:inline-block;padding:15px 36px;font-size:15px;font-weight:700;color:#000000;">
                       ${cta} →
                     </a>
                   </td>
                 </tr>
               </table>
-              <p style="margin:14px 0 0 0;font-size:12px;color:#64748b;">Quer ser avisado na hora, direto no celular? Ative as notificações no app (basta um toque).</p>
+              <p style="margin:14px 0 0 0;font-size:12px;color:#737373;">Quer ser avisado na hora, direto no celular? Ative as notificações no app (basta um toque).</p>
             </td>
           </tr>
 
           <tr>
             <td class="stack-pad" style="padding:28px 40px 0 40px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="height:1px;background:#24324a;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="height:1px;background:#262626;font-size:0;line-height:0;">&nbsp;</td></tr></table>
             </td>
           </tr>
 
           <tr>
-            <td class="stack-pad" style="padding:20px 40px;background:#0f1a2e;border-top:1px solid #24324a;">
-              <p style="margin:0;font-size:11px;line-height:1.6;color:#475569;">
+            <td class="stack-pad" style="padding:20px 40px;background:#0a0a0a;border-top:1px solid #262626;">
+              <p style="margin:0;font-size:11px;line-height:1.6;color:#525252;">
                 Você recebeu este e-mail porque tem uma conta no Carreira ID.
               </p>
             </td>
