@@ -22,7 +22,7 @@ Atualize este arquivo sempre que uma regra mudar (veja o Histórico no fim).
 | Selo no perfil | não | sim (aparece escrito "Elite") |
 | Estatísticas avançadas | não | sim |
 | Liga de Conexões | não | sim |
-| Ver quem visualizou o perfil | não | **prometido; decidido que volta para a tela, posição ainda a definir** |
+| Ver quem visualizou o perfil (aba Visitas em Conexões) | só o número de visitas dos últimos 30 dias, lista borrada | lista de quem visitou (nome, foto, tipo, quando). Imposto no servidor |
 | Currículo em PDF | não | **botão existe, mas não está em nenhuma tela** |
 
 Plano Família: R$ 19,90/mês, cobre 2 ou mais atletas do mesmo responsável (tabela `carreira_assinaturas_familia`). Só mensal.
@@ -79,7 +79,7 @@ Implementado em `src/hooks/useCarreiraPlano.ts` (telas) e em `check_carreira_ati
 |---|---|---|
 | 1 | Limite do Base para registros de Carreira | **Resolvido em 14/10/2026: 1 por mês** |
 | 2 | Limite da Jornada no Base | **Resolvido em 14/10/2026: 1 campeonato novo por mês** (a regra conta campeonatos, não jogos; confirmar se é isso mesmo que se quer) |
-| 3 | "Ver quem visualizou o perfil" saiu da tela de Conexões, mas é promessa do Premium | Decidido: volta para a tela; falta escolher onde ela fica |
+| 3 | "Ver quem visualizou o perfil" saiu da tela de Conexões, mas é promessa do Premium | **Resolvido em 14/10/2026**: aba "Visitas" em Conexões |
 | 4 | Currículo em PDF existe no código, sem tela | Decidir onde entra ou remover da lista de recursos |
 | 5 | Preço editável no admin não faz efeito | Unificar a fonte do preço |
 | 6 | Limites só valem na tela, não no servidor | Avaliar travas no banco |
@@ -88,6 +88,8 @@ Implementado em `src/hooks/useCarreiraPlano.ts` (telas) e em `check_carreira_ati
 | 8 | Google Play: cobrança de assinatura dentro do app pode exigir o sistema do Google | Decidir antes de publicar na loja |
 
 ## 8. Histórico de mudanças nas regras
+
+- **14/10/2026** — Aba "Visitas" em Conexões: Premium (e teste) vê quem visitou; Base vê só o número dos últimos 30 dias. A leitura da lista é bloqueada no servidor para o Base.
 
 - **14/10/2026** — Base passa a 1 registro de Carreira por mês (antes o banco aplicava 2). Base passa a ter limite de 1 campeonato novo por mês na Jornada, imposto no servidor; Premium e teste continuam ilimitados.
 
