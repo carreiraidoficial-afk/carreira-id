@@ -7,6 +7,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { PushContextPrompter } from "@/components/carreira/PushContextPrompter";
 import { PWAUpdatePrompt } from "@/components/shared/PWAUpdatePrompt";
 import { OfflineBanner } from "@/components/shared/OfflineBanner";
 import { AnonymousGateProvider } from "@/hooks/useAnonymousGate";
@@ -149,6 +150,7 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <PushContextPrompter />
         <PWAUpdatePrompt />
         <OfflineBanner />
         <BrowserRouter>

@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { sugerirAtivarPush } from '@/lib/pedir-push';
 import { UserPlus, Check, Clock, Loader2, UserMinus, MapPin } from 'lucide-react';
 
 interface Unidade {
@@ -128,6 +129,7 @@ export function ConectarButton({ targetUserId, currentUserId, accentColor = '#3b
       toast.success(unidadeNome ? `Solicitação enviada para ${unidadeNome}!` : 'Solicitação enviada!');
       invalidate();
       // o aviso por push sai do banco (gatilho em rede_conexoes)
+      sugerirAtivarPush('Quer ser avisado na hora quando aceitarem sua conexão?');
     }
     setLoading(false);
     setShowUnidadeDialog(false);
@@ -154,6 +156,7 @@ export function ConectarButton({ targetUserId, currentUserId, accentColor = '#3b
     toast.success('Conexão aceita!');
     invalidate();
     // o aviso por push sai do banco (gatilho em rede_conexoes)
+    sugerirAtivarPush('Quer ser avisado na hora quando alguém pedir para se conectar?');
     setLoading(false);
   };
 

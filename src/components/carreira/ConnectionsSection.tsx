@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { sugerirAtivarPush } from '@/lib/pedir-push';
 import { plataformaUserIds, conexaoComPlataforma, ehPerfilPlataforma } from '@/lib/perfil-plataforma';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -373,7 +374,7 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
       .update({ status: 'aceita' } as any)
       .eq('id', connectionId);
     if (error) toast.error('Erro ao aceitar');
-    else { toast.success('Conexão aceita!'); invalidateConnections(); }
+    else { toast.success('Conexão aceita!'); invalidateConnections(); sugerirAtivarPush('Quer ser avisado na hora quando alguém pedir para se conectar?'); }
     setRespondingId(null);
   };
 
@@ -423,6 +424,7 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
       if (error) throw error;
       toast.success('Solicitação enviada!');
       invalidateConnections();
+      sugerirAtivarPush('Quer ser avisado na hora quando aceitarem sua conexão?');
     } catch {
       toast.error('Erro ao conectar');
     }

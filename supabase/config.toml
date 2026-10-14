@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.send-carreira-push]
 verify_jwt = false
 
+[functions.send-conexao-email]
+verify_jwt = false
+
 [functions.asaas-webhook]
 verify_jwt = false
 
