@@ -15,6 +15,7 @@ const FUNDOS: FundoLink[] = [
   { esporte: /volei/, tipo: 'matricula', src: '/links/volei-matricula.webp' },
   { esporte: /volei/, tipo: 'aula_experimental', src: '/links/aula-experimental-volei.webp' },
   { esporte: /volei/, tipo: 'competicao', src: '/links/competicao-volei.webp' },
+  { esporte: /futebol/, tipo: 'aula_experimental', src: '/links/futebol-aula-experimental.webp' },
   { esporte: null, tipo: 'planos', src: '/links/planos-geral.webp' },
 ];
 
