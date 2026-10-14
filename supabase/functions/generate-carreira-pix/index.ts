@@ -27,7 +27,17 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
-    const { user_id, crianca_id, cpf, nome, email } = await req.json();
+        // O usuário vem do token de login, nunca do corpo da requisição (antes dava para agir em nome de outro user_id).
+    const { data: { user: authUser } } = await createClient(
+      Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } },
+    ).auth.getUser();
+    if (!authUser) {
+      return new Response(JSON.stringify({ error: 'Não autorizado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const user_id = authUser.id;
+    const { crianca_id, cpf, nome, email } = await req.json();
     const planoSelecionado = 'premium';
 
     console.log('Generating Carreira PIX for user:', user_id, 'crianca:', crianca_id, 'plano:', planoSelecionado);
@@ -37,6 +47,13 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: 'Dados obrigatórios não informados (user_id, crianca_id, cpf, nome, email)' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // O atleta precisa ser do usuário logado.
+    const { data: donoAtleta } = await supabase.from('perfil_atleta').select('id').eq('crianca_id', crianca_id).eq('user_id', user_id).maybeSingle();
+    if (!donoAtleta) {
+      return new Response(JSON.stringify({ error: 'Atleta não encontrado para este usuário' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // Check if already has active subscription

@@ -34,7 +34,17 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
     const payload = await req.json();
-    const { user_id, crianca_ids, cpf, nome, email, card, holderInfo } = payload;
+        // O usuário vem do token de login, nunca do corpo da requisição (antes dava para agir em nome de outro user_id).
+    const { data: { user: authUser } } = await createClient(
+      Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } },
+    ).auth.getUser();
+    if (!authUser) {
+      return new Response(JSON.stringify({ error: 'Não autorizado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const user_id = authUser.id;
+    const { crianca_ids, cpf, nome, email, card, holderInfo } = payload;
 
     if (!user_id || !Array.isArray(crianca_ids) || crianca_ids.length < 2 || !cpf || !nome || !email || !card || !holderInfo) {
       return new Response(JSON.stringify({ error: 'Dados obrigatórios não informados' }),

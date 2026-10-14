@@ -35,3 +35,9 @@ verify_jwt = true
 
 # trigger redeploy
 
+
+[functions.create-carreira-checkout]
+verify_jwt = true
+
+[functions.check-carreira-payment]
+verify_jwt = true

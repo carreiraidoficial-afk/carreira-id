@@ -25,9 +25,23 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
-    const { payment_id, subscription_id } = await req.json();
 
-    console.log('Checking Carreira payment:', payment_id, 'subscription:', subscription_id);
+    // Só quem está logado consulta, e só ativa assinatura que é dele. Antes a função aceitava qualquer
+    // subscription_id do corpo e ativava a linha se o payment_id informado estivesse pago.
+    const authHeader = req.headers.get('Authorization') ?? '';
+    const anonClient = createClient(SUPABASE_URL!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: authHeader } } });
+    const { data: { user: authUser } } = await anonClient.auth.getUser();
+    if (!authUser) {
+      return new Response(JSON.stringify({ error: 'Não autorizado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const { payment_id } = await req.json();
+    if (typeof payment_id !== 'string' || !payment_id) {
+      return new Response(JSON.stringify({ error: 'payment_id obrigatório' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    console.log('Checking Carreira payment:', payment_id);
 
     // Try to detect whether payment_id is actually an Asaas subscription id (sub_...)
     // If so, resolve the latest payment of that subscription.
@@ -86,29 +100,13 @@ Deno.serve(async (req) => {
       const expiraEm = new Date();
       expiraEm.setDate(expiraEm.getDate() + 30);
 
-      if (subscription_id) {
-        const { error: updateError } = await supabase
-          .from('carreira_assinaturas')
-          .update({
-            status: 'ativa',
-            inicio_em: new Date().toISOString().split('T')[0],
-            expira_em: expiraEm.toISOString().split('T')[0],
-          })
-          .eq('id', subscription_id);
-
-        if (updateError) {
-          console.error('Error activating subscription by id:', updateError);
-        } else {
-          console.log('Subscription activated by id:', subscription_id);
-        }
-      }
-
       // Match by either the payment_id passed in (PIX flow) or the Asaas subscription id (card flow)
       const matchIds = [payment_id, asaasSubscriptionId].filter(Boolean) as string[];
       const { data: pendingSub } = await supabase
         .from('carreira_assinaturas')
         .select('id')
         .in('gateway_subscription_id', matchIds)
+        .eq('user_id', authUser.id)
         .eq('status', 'pendente')
         .maybeSingle();
 
@@ -137,6 +135,7 @@ Deno.serve(async (req) => {
         .from('carreira_assinaturas_familia')
         .select('id')
         .in('gateway_subscription_id', matchIds)
+        .eq('user_id', authUser.id)
         .eq('status', 'pendente')
         .maybeSingle();
 
