@@ -24,8 +24,8 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function renderHtml(opts: { title: string; description: string; image: string; canonical: string; internalRoute: string; type?: string }) {
-  const { title, description, image, canonical, internalRoute, type = "profile" } = opts;
+function renderHtml(opts: { title: string; description: string; image: string; canonical: string; internalRoute: string; type?: string; wideImage?: boolean }) {
+  const { title, description, image, canonical, internalRoute, type = "profile", wideImage = false } = opts;
   return `<!DOCTYPE html>
 <html lang="pt-BR" prefix="og: https://ogp.me/ns#">
 <head>
@@ -40,7 +40,9 @@ function renderHtml(opts: { title: string; description: string; image: string; c
 <meta property="og:description" content="${escapeHtml(description)}" />
 <meta property="og:url" content="${canonical}" />
 <meta property="og:image" content="${escapeHtml(image)}" />
-<meta property="og:image:secure_url" content="${escapeHtml(image)}" />
+<meta property="og:image:secure_url" content="${escapeHtml(image)}" />${wideImage ? `
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />` : ""}
 
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${escapeHtml(title)}" />
@@ -158,7 +160,7 @@ serve(async (req) => {
   // Fallback: perfis_rede (professor, técnico, torcedor, etc. e o legado pai_responsavel)
   const { data: rede } = await supabase
     .from("perfis_rede")
-    .select("nome, foto_url, bio, tipo, user_id")
+    .select("nome, foto_url, banner_url, bio, tipo, user_id, cidade, estado, dados_perfil")
     .eq("slug", slug)
     .maybeSingle();
 
@@ -183,9 +185,22 @@ serve(async (req) => {
       }
     }
     const title = `${rede.nome} | CARREIRA ID`;
-    const description = rede.bio || `Perfil de ${rede.nome} na rede CARREIRA ID.`;
+    let description = rede.bio || `Perfil de ${rede.nome} na rede CARREIRA ID.`;
+    let image = rede.foto_url || GENERIC_IMAGE;
+    let wide = false;
+    if (rede.tipo === "dono_escola") {
+      const dados = (rede.dados_perfil || {}) as Record<string, unknown>;
+      const modalidades = Array.isArray(dados.modalidades) ? (dados.modalidades as string[]).join(", ") : "";
+      const local = [rede.cidade, rede.estado].filter(Boolean).join("/");
+      const cabecalho = ["Escola de esportes", modalidades, local].filter(Boolean).join(" · ");
+      description = rede.bio ? `${cabecalho}. ${rede.bio}` : cabecalho;
+      // Cartão 1200x630 em JPG (og_image_url) > capa da escola > logo. WhatsApp lida mal com webp e imagem quadrada.
+      const cartao = typeof dados.og_image_url === "string" ? dados.og_image_url : null;
+      image = cartao || rede.banner_url || rede.foto_url || GENERIC_IMAGE;
+      wide = !!cartao;
+    }
     return new Response(
-      renderHtml({ title, description, image: rede.foto_url || GENERIC_IMAGE, canonical: internalRoute, internalRoute }),
+      renderHtml({ title, description, image, canonical: internalRoute, internalRoute, wideImage: wide }),
       { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=300, s-maxage=300" } },
     );
   }
