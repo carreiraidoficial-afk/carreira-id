@@ -21,14 +21,8 @@ verify_jwt = false
 [functions.asaas-webhook]
 verify_jwt = false
 
-[functions.disable-asaas-notifications]
-verify_jwt = false
-
 [functions.create-carreira-card-subscription]
 verify_jwt = true
-
-[functions.cleanup-asaas-duplicates]
-verify_jwt = false
 
 [functions.admin-delete-user]
 verify_jwt = true
@@ -41,17 +35,3 @@ verify_jwt = true
 
 # trigger redeploy
 
-[functions.reset-teacher-password]
-verify_jwt = false
-
-[functions.reset-responsavel-password]
-verify_jwt = false
-
-[functions.create-teacher-with-login]
-verify_jwt = false
-
-[functions.send-teacher-welcome-email]
-verify_jwt = false
-
-[functions.asaas-account-info]
-verify_jwt = false
