@@ -64,26 +64,8 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
       const planoInfo = PLANOS[targetPlano];
       
       if (isUpgrade) {
-        // Upgrade: cancel old, create new immediately
-        if (assinatura) {
-          await supabase
-            .from('carreira_assinaturas')
-            .update({ status: 'cancelada', cancelada_em: new Date().toISOString() } as any)
-            .eq('id', assinatura.id);
-        }
-        
-        if (targetPlano === 'base') return; // No subscription needed for base
-        
-        // Create new subscription (in real flow, this would go through payment)
-        await supabase.from('carreira_assinaturas').insert({
-          user_id: userId,
-          crianca_id: criancaId,
-          plano: targetPlano,
-          status: 'ativa',
-          valor: planoInfo.preco,
-          metodo_pagamento: assinatura?.metodo_pagamento || 'pix',
-          inicio_em: new Date().toISOString(),
-        } as any);
+        // Assinatura paga só nasce pelo pagamento (o banco recusa criação direta). Não cancela nada aqui.
+        throw new Error('PAGAMENTO_NECESSARIO');
       } else {
         // Downgrade: schedule for end of period
         // If going to base, cancel subscription; current benefits continue until expira_em
@@ -99,7 +81,10 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
             });
             if (error) throw error;
           } else {
-            // Downgrade to competidor: mark current as ending, create pending new one
+            throw new Error('PAGAMENTO_NECESSARIO');
+          }
+          if (false as boolean) {
+            // (legado, inalcançável) Downgrade to competidor: mark current as ending, create pending new one
             await supabase
               .from('carreira_assinaturas')
               .update({ 
@@ -132,7 +117,13 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
           : 'Downgrade agendado. Você mantém os benefícios até o fim do período.'
       );
     },
-    onError: () => {
+    onError: (e: any) => {
+      if (e?.message === 'PAGAMENTO_NECESSARIO') {
+        toast.info('Para assinar o Premium, escolha a forma de pagamento.');
+        setConfirmAction(null);
+        navigate(carreiraPath('/planos'));
+        return;
+      }
       toast.error('Erro ao alterar plano');
       setConfirmAction(null);
     },
