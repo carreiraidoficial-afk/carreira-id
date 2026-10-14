@@ -273,6 +273,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Quem desligou as notificações no perfil (push_optout) não recebe, mesmo que ainda tenha
+    // aparelhos cadastrados de antes (desligar só removia o aparelho em uso).
+    const { data: optouts } = await supabase
+      .from('profiles')
+      .select('user_id')
+      .in('user_id', targetUserIds)
+      .eq('push_optout', true);
+    const optoutSet = new Set((optouts || []).map((o: any) => o.user_id));
+    if (optoutSet.size > 0) targetUserIds = targetUserIds.filter((id) => !optoutSet.has(id));
+    if (targetUserIds.length === 0) {
+      return new Response(JSON.stringify({ sent: 0, skipped: true, reason: 'destinatários com notificações desligadas' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Get subscriptions from carreira table
     const { data: subscriptions, error: subError } = await supabase
       .from('carreira_push_subscriptions')
