@@ -34,6 +34,8 @@ Nomes antigos: `competidor`, `elite`, `mensal`, `pro_mensal` valem como Premium 
 - 7 dias, **sem cartão**, ao criar o perfil do atleta (ou os dias de um cupom válido, `carreira_cupons.dias_trial`).
 - Durante o teste o atleta tem **tudo do Premium** (tela e, desde 14/10/2026, também os limites de registros de Carreira e da Jornada).
 - Uma vez por atleta. O servidor recusa um segundo teste para o mesmo atleta.
+- Quem toca em "Assinar" durante o teste não perde o teste: ele só é encerrado quando o pagamento confirma, e os dias que sobravam entram no primeiro período pago.
+- Avisos: push e e-mail, 2 dias antes e quando acaba (e-mail só para quem não pediu para sair dos lembretes).
 - Ao terminar, volta sozinho para Base (decisão de 14/10/2026: o teste continua de 7 dias). Nada é apagado; só valem de novo os limites do Base e os recursos exclusivos do Premium voltam a ficar fechados. Ninguém é cobrado sem ter informado cartão ou pago um PIX.
 - O usuário não consegue se dar Premium pelo app: o banco bloqueia (gatilho `assinaturas_protege`).
 
@@ -88,6 +90,8 @@ Implementado em `src/hooks/useCarreiraPlano.ts` (telas) e em `check_carreira_ati
 | 8 | Google Play: cobrança de assinatura dentro do app pode exigir o sistema do Google | Decidir antes de publicar na loja |
 
 ## 8. Histórico de mudanças nas regras
+
+- **15/10/2026** — Teste grátis: gerar o PIX ou enviar o cartão **não cancela mais o teste**; ele só termina quando o pagamento confirma, e os dias que sobravam do teste são somados ao primeiro período pago (gatilho `carreira_assinatura_converte_trial`). Avisos de fim de teste agora também por **e-mail** (2 dias antes e quando acaba, até 3 dias depois), para todos que não assinaram e não pediram para sair dos lembretes.
 
 - **15/10/2026** — Cupons ganham limite opcional de usos (campo "Limite de usos" no admin), conferido no servidor.
 

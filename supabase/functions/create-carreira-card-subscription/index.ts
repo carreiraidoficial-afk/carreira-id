@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
       .select('id, gateway_subscription_id')
       .eq('user_id', user_id)
       .eq('crianca_id', crianca_id)
-      .in('status', ['pendente', 'inadimplente', 'trial']);
+      .in('status', ['pendente', 'inadimplente']);
     for (const p of (pendingSubs || [])) {
       if (p.gateway_subscription_id) {
         try {

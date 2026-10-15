@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Cancela qualquer trial/pendente/inadimplente anterior da mesma criança para
+    // Cancela cobranças pendentes/inadimplentes anteriores da mesma criança (o TESTE grátis NÃO é cancelado aqui: ele só termina quando o pagamento confirma, ver trigger carreira_assinatura_converte_trial) para
     // evitar duas linhas paralelas em carreira_assinaturas (trial nunca tem
     // gateway_subscription_id, então não há nada a cancelar na Asaas para ela)
     const { data: pendingSubs } = await supabase
@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
       .select('id, gateway_subscription_id')
       .eq('user_id', user_id)
       .eq('crianca_id', crianca_id)
-      .in('status', ['pendente', 'inadimplente', 'trial']);
+      .in('status', ['pendente', 'inadimplente']);
     for (const p of (pendingSubs || [])) {
       if (p.gateway_subscription_id) {
         try {
