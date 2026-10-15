@@ -305,16 +305,18 @@ export function EscolasParceirasSection() {
   const { data: escolas = [] } = useQuery({
     queryKey: ['escolas-parceiras-landing'],
     queryFn: async () => {
+      // Os ids das escolas parceiras vêm do servidor (a tabela de cupons não é pública); os dados públicos delas vêm do perfil.
+      const { data: ids, error: erroIds } = await (supabase as any).rpc('carreira_escolas_parceiras_ids');
+      if (erroIds) throw erroIds;
+      const lista = (ids || []) as string[];
+      if (lista.length === 0) return [] as EscolaParceira[];
       const { data, error } = await supabase
-        .from('carreira_cupons' as any)
-        .select('perfil_rede_id, created_at, perfis_rede:perfil_rede_id(id, nome, foto_url, slug, cidade, dados_perfil)')
-        .eq('ativo', true)
-        .not('perfil_rede_id', 'is', null)
-        .order('created_at');
+        .from('perfis_rede')
+        .select('id, nome, foto_url, slug, cidade, dados_perfil')
+        .in('id', lista);
       if (error) throw error;
-      return ((data || []) as any[])
-        .map((c) => c.perfis_rede)
-        .filter(Boolean) as EscolaParceira[];
+      const porId = new Map(((data || []) as any[]).map((p) => [p.id, p]));
+      return lista.map((id) => porId.get(id)).filter(Boolean) as EscolaParceira[];
     },
   });
 

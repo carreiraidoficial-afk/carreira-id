@@ -550,14 +550,9 @@ export default function CarreiraPerfilPage() {
   const { data: isEscolaParceira = false } = useQuery({
     queryKey: ['escola-parceira-badge', isDonoEscolaForBadge ? perfil!.id : null],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('carreira_cupons' as any)
-        .select('id')
-        .eq('perfil_rede_id', perfil!.id)
-        .eq('ativo', true)
-        .limit(1);
+      const { data, error } = await (supabase as any).rpc('carreira_escola_e_parceira', { p_perfil_rede_id: perfil!.id });
       if (error) throw error;
-      return (data || []).length > 0;
+      return data === true;
     },
     enabled: isDonoEscolaForBadge,
   });

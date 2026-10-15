@@ -205,15 +205,11 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
 
       // 4. Handle cupom personalizado if present (código digitado pela família)
       if (cupomCodigo.trim()) {
-        const { data: cupom } = await supabase
-          .from('carreira_cupons' as any)
-          .select('id, dias_trial, validade')
-          .ilike('codigo', cupomCodigo.trim())
-          .eq('ativo', true)
-          .maybeSingle();
+        // A validação é feita no servidor (código exato, ativo e dentro da validade): a tabela de cupons não é pública.
+        const { data: cupom } = await (supabase as any).rpc('carreira_cupom_validar', { p_codigo: cupomCodigo.trim() });
 
-        if (cupom && (!(cupom as any).validade || new Date((cupom as any).validade) > new Date())) {
-          setCupomAplicado({ diasTrial: (cupom as any).dias_trial, cupomId: (cupom as any).id });
+        if (cupom && cupom.id) {
+          setCupomAplicado({ diasTrial: cupom.dias_trial, cupomId: cupom.id });
         } else {
           toast.info('Código de cupom inválido ou expirado — seguindo com o trial padrão.');
         }
