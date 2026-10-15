@@ -89,6 +89,8 @@ Implementado em `src/hooks/useCarreiraPlano.ts` (telas) e em `check_carreira_ati
 
 ## 8. Histórico de mudanças nas regras
 
+- **15/10/2026** — Cupons ganham limite opcional de usos (campo "Limite de usos" no admin), conferido no servidor.
+
 - **15/10/2026** — Cupons: a tabela deixou de ser pública (antes qualquer visitante listava todos os códigos). Validação do código, selo de escola parceira e lista de escolas parceiras agora passam por funções do servidor (`carreira_cupom_validar`, `carreira_escola_e_parceira`, `carreira_escolas_parceiras_ids`). Código vale só por igualdade exata (sem curingas).
 
 - **14/10/2026** — "Quem viu" deixou de ser uma aba separada: virou um cartão no topo da aba Conexões (decisão do usuário). Mesma regra: Premium vê quem visitou; Base vê só o número.
@@ -107,5 +109,5 @@ Implementado em `src/hooks/useCarreiraPlano.ts` (telas) e em `check_carreira_ati
 - Um cupom dá **dias de teste extras** (campo `dias_trial`) a um atleta novo, digitado no cadastro. Não dá desconto e não paga assinatura.
 - Só vale no cadastro de um atleta novo; não se aplica a atleta que já existe.
 - Admin → Cupons: criar, editar, ativar/desativar, validade, vínculo com escola parceira e contagem de atletas trazidos.
-- Limite de usos por código: **ainda não existe** (proposta em discussão).
+- **Limite de usos por código** (opcional, campo no admin): ex. IGOR30 com 20 = vale para até 20 famílias; vazio = ilimitado. Cada teste criado com o cupom conta um uso (excluir o teste devolve a vaga). Esgotado, o código deixa de ser aceito e a família ganha o teste padrão de 7 dias, sem erro. Conferido no servidor, com trava para a última vaga.
 - Para dar Premium a uma conta que já existe: Admin → Assinaturas → "Conceder isenção".

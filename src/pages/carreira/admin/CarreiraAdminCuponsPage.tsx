@@ -24,6 +24,7 @@ interface Cupom {
   dias_trial: number;
   ativo: boolean;
   validade: string | null;
+  max_usos: number | null;
   usos: number;
   perfil_rede_id: string | null;
   escola_nome?: string | null;
@@ -44,6 +45,7 @@ export default function CarreiraAdminCuponsPage() {
   const [nomeTitular, setNomeTitular] = useState('');
   const [diasTrial, setDiasTrial] = useState('30');
   const [validade, setValidade] = useState('');
+  const [maxUsos, setMaxUsos] = useState('');
   const [verUsosDe, setVerUsosDe] = useState<{ id: string; codigo: string } | null>(null);
   const [perfilRedeId, setPerfilRedeId] = useState<string>(SEM_ESCOLA);
 
@@ -117,6 +119,7 @@ export default function CarreiraAdminCuponsPage() {
         dias_trial: parseInt(diasTrial, 10),
         validade: validade ? new Date(`${validade}T23:59:59`).toISOString() : null,  // vale até o fim do dia escolhido, no horário local
         perfil_rede_id: perfilRedeId === SEM_ESCOLA ? null : perfilRedeId,
+        max_usos: maxUsos.trim() ? parseInt(maxUsos, 10) : null,  // vazio = ilimitado
       };
       if (editing) {
         const { error } = await supabase
@@ -167,6 +170,7 @@ export default function CarreiraAdminCuponsPage() {
     setNomeTitular('');
     setDiasTrial('30');
     setValidade('');
+    setMaxUsos('');
     setPerfilRedeId(SEM_ESCOLA);
     setDialogOpen(true);
   }
@@ -177,6 +181,7 @@ export default function CarreiraAdminCuponsPage() {
     setNomeTitular(c.nome_titular);
     setDiasTrial(String(c.dias_trial));
     setValidade(c.validade ? dataLocalISO(new Date(c.validade)) : '');
+    setMaxUsos(c.max_usos ? String(c.max_usos) : '');
     setPerfilRedeId(c.perfil_rede_id || SEM_ESCOLA);
     setDialogOpen(true);
   }
@@ -233,7 +238,11 @@ export default function CarreiraAdminCuponsPage() {
                     <p className="text-xs text-muted-foreground mt-1">
                       {c.dias_trial} dias de trial
                       {c.validade && ` · válido até ${new Date(c.validade).toLocaleDateString('pt-BR')}`}
+                      {c.max_usos ? ` · limite de ${c.max_usos} ${c.max_usos === 1 ? 'uso' : 'usos'}` : ' · sem limite de usos'}
                     </p>
+                    {c.max_usos && c.usos >= c.max_usos && (
+                      <p className="mt-1 text-xs font-semibold text-destructive">Esgotado: o código não é mais aceito (quem digitar ganha o teste padrão).</p>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -242,7 +251,7 @@ export default function CarreiraAdminCuponsPage() {
                     title="Ver quem usou este cupom"
                   >
                     <Users className="w-3.5 h-3.5" />
-                    {c.usos}
+                    {c.max_usos ? `${c.usos}/${c.max_usos}` : c.usos}
                     <span className="hidden text-xs sm:inline">ver quem</span>
                   </button>
                   <Switch checked={c.ativo} onCheckedChange={ativo => toggleMutation.mutate({ id: c.id, ativo })} />
@@ -290,6 +299,13 @@ export default function CarreiraAdminCuponsPage() {
             <div>
               <Label>Válido até (opcional)</Label>
               <Input type="date" value={validade} onChange={e => setValidade(e.target.value)} />
+            </div>
+            <div>
+              <Label>Limite de usos (opcional)</Label>
+              <Input type="number" min={1} value={maxUsos} onChange={e => setMaxUsos(e.target.value)} placeholder="Ex: 20 — vazio = sem limite" />
+              <p className="text-xs text-muted-foreground mt-1">
+                Quantas famílias podem usar este código. Ao chegar no limite, ele deixa de ser aceito. Excluir um teste devolve a vaga.
+              </p>
             </div>
             <div>
               <Label>Escola parceira (opcional)</Label>
