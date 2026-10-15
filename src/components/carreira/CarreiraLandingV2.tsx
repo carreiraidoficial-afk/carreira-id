@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -345,6 +346,8 @@ export function EscolasParceirasSection() {
 
 export function CarreiraLandingV2() {
   const cadastroLink = carreiraPath('/cadastro');
+  // Plano Premium: mensal (R$ 12) ou anual (R$ 120, pagamento único). Só muda o que aparece; o Base é o mesmo.
+  const [premiumAnual, setPremiumAnual] = useState(false);
   // ?ref=atleta pula a tela de escolha de perfil (ver CarreiraCadastroPage) --
   // usado nos CTAs principais, que são majoritariamente clicados por pais de
   // atleta. cadastroLink (sem ref) continua mostrando a lista completa de
@@ -782,7 +785,24 @@ export function CarreiraLandingV2() {
           <h2 className="mt-6 text-3xl sm:text-4xl md:text-5xl font-extrabold">
             Comece gratuito. <span className="text-orange-400">Evolua quando quiser</span>.
           </h2>
-          <div className="grid md:grid-cols-2 gap-5 mt-14 max-w-3xl mx-auto">
+          <div className="mt-8 inline-flex rounded-full border border-[#2a3a4e] bg-[#1a2332] p-1 text-sm font-semibold" role="tablist" aria-label="Periodicidade do Premium">
+            <button
+              type="button" role="tab" aria-selected={!premiumAnual}
+              onClick={() => setPremiumAnual(false)}
+              className={`rounded-full px-5 py-2 transition ${!premiumAnual ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
+            >
+              Mensal
+            </button>
+            <button
+              type="button" role="tab" aria-selected={premiumAnual}
+              onClick={() => setPremiumAnual(true)}
+              className={`flex items-center gap-2 rounded-full px-5 py-2 transition ${premiumAnual ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
+            >
+              Anual
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${premiumAnual ? 'bg-white/20 text-white' : 'bg-emerald-500/20 text-emerald-400'}`}>2 meses grátis</span>
+            </button>
+          </div>
+          <div className="grid md:grid-cols-2 gap-5 mt-8 max-w-3xl mx-auto">
             {/* Base */}
             <div className="bg-[#1a2332] border border-[#2a3a4e] rounded-2xl p-7 text-left flex flex-col">
               <div className="flex items-center gap-2">
@@ -830,9 +850,12 @@ export function CarreiraLandingV2() {
               <p className="text-gray-400 text-sm mt-1">Acesso completo à plataforma</p>
               <p className="mt-4">
                 <span className="text-sm text-gray-400">R$</span>
-                <span className="text-3xl font-extrabold text-white mx-0.5">12,00</span>
-                <span className="text-sm text-gray-400">/mês</span>
+                <span className="text-3xl font-extrabold text-white mx-0.5">{premiumAnual ? '120,00' : '12,00'}</span>
+                <span className="text-sm text-gray-400">{premiumAnual ? '/ano' : '/mês'}</span>
               </p>
+              {premiumAnual && (
+                <p className="text-xs text-emerald-400 mt-1">Equivale a R$ 10,00 por mês • economize R$ 24,00 • até 12x no cartão</p>
+              )}
               <p className="text-xs text-purple-300 mt-1">Experimente 7 dias grátis — sem cartão</p>
               <div className="border-t border-purple-500/20 my-4" />
               <ul className="space-y-2.5 flex-1">
@@ -862,7 +885,9 @@ export function CarreiraLandingV2() {
             </div>
           </div>
           <p className="mt-8 text-xs text-gray-500">
-            Cancele quando quiser • Sem taxa de cancelamento
+            {premiumAnual
+              ? 'Pagamento único por 365 dias • Não renova sozinho: avisamos antes de vencer'
+              : 'Cancele quando quiser • Sem taxa de cancelamento'}
           </p>
         </div>
       </section>
@@ -941,7 +966,7 @@ export function CarreiraLandingV2() {
             {[
               {
                 q: 'O Carreira ID é gratuito?',
-                a: 'Sim! O plano Base é gratuito para sempre. Você pode criar seu perfil público, fazer publicações, conectar-se a outros atletas e compartilhar seu link. O plano Premium (R$ 12,00/mês) libera recursos avançados, como vídeos, estatísticas completas e destaque nas buscas.',
+                a: 'Sim! O plano Base é gratuito para sempre. Você pode criar seu perfil público, fazer publicações, conectar-se a outros atletas e compartilhar seu link. O plano Premium (R$ 12,00/mês ou R$ 120,00/ano) libera recursos avançados, como vídeos, estatísticas completas e destaque nas buscas.',
               },
               {
                 q: 'Quem pode criar um perfil?',

@@ -260,7 +260,7 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
               <span aria-hidden className="float-right h-9 w-9" />
               {temAcesso('selo_elite') && (
                 <span className="mb-1.5 inline-flex w-fit items-center gap-1 rounded-md bg-violet-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                  <Crown className="h-3 w-3" /> Elite
+                  <Crown className="h-3 w-3" /> Premium
                 </span>
               )}
               <h1 className="break-words text-xl font-extrabold leading-tight text-white sm:text-2xl" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.55)' }}>
