@@ -276,7 +276,7 @@ serve(async (req) => {
                 body: JSON.stringify({
                   user_ids: [assinatura.user_id],
                   title: "✅ Pagamento confirmado!",
-                  body: "Sua assinatura Premium do Carreira ID já está ativa.",
+                  body: "Sua assinatura Elite do Carreira ID já está ativa.",
                   url: "/planos",
                   tag: "pagamento-confirmado",
                 }),

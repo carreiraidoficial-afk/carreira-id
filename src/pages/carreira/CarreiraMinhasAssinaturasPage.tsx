@@ -119,7 +119,7 @@ export default function CarreiraMinhasAssinaturasPage() {
               <p className="text-sm font-bold text-foreground">Economize com a Assinatura Família</p>
             </div>
             <p className="text-xs text-muted-foreground">
-              Um valor fixo de R$ {PRECO_FAMILIA.toFixed(2).replace('.', ',')}/mês libera o Premium pra todos os seus atletas cadastrados, hoje e no futuro.
+              Um valor fixo de R$ {PRECO_FAMILIA.toFixed(2).replace('.', ',')}/mês libera o Elite pra todos os seus atletas cadastrados, hoje e no futuro.
             </p>
             <Button size="sm" onClick={() => setCheckoutOpen(true)}>Assinar Família</Button>
           </Card>

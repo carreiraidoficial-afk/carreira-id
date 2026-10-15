@@ -103,7 +103,7 @@ export default function CarreiraGamerPage() {
           planoAtual={plano}
           planoRequerido="premium"
           liberado={temAcesso('liga_conexoes')}
-          mensagem="Participação na Liga de Conexões é um recurso Premium"
+          mensagem="Participação na Liga de Conexões é um recurso Elite"
         >
           {/* Link para Tabela de Pontos */}
           <button

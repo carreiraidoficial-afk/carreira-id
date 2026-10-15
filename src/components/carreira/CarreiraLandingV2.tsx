@@ -346,7 +346,7 @@ export function EscolasParceirasSection() {
 
 export function CarreiraLandingV2() {
   const cadastroLink = carreiraPath('/cadastro');
-  // Plano Premium: mensal (R$ 12) ou anual (R$ 120, pagamento único). Só muda o que aparece; o Base é o mesmo.
+  // Plano Elite: mensal (R$ 12) ou anual (R$ 120, pagamento único). Só muda o que aparece; o Base é o mesmo.
   const [premiumAnual, setPremiumAnual] = useState(false);
   // ?ref=atleta pula a tela de escolha de perfil (ver CarreiraCadastroPage) --
   // usado nos CTAs principais, que são majoritariamente clicados por pais de
@@ -785,7 +785,7 @@ export function CarreiraLandingV2() {
           <h2 className="mt-6 text-3xl sm:text-4xl md:text-5xl font-extrabold">
             Comece gratuito. <span className="text-orange-400">Evolua quando quiser</span>.
           </h2>
-          <div className="mt-8 inline-flex rounded-full border border-[#2a3a4e] bg-[#1a2332] p-1 text-sm font-semibold" role="tablist" aria-label="Periodicidade do Premium">
+          <div className="mt-8 inline-flex rounded-full border border-[#2a3a4e] bg-[#1a2332] p-1 text-sm font-semibold" role="tablist" aria-label="Periodicidade do Elite">
             <button
               type="button" role="tab" aria-selected={!premiumAnual}
               onClick={() => setPremiumAnual(false)}
@@ -838,14 +838,14 @@ export function CarreiraLandingV2() {
               </Link>
             </div>
 
-            {/* Premium */}
+            {/* Elite */}
             <div className="bg-gradient-to-b from-purple-900/40 to-[#1a2332] border border-purple-500/30 rounded-2xl p-7 text-left flex flex-col relative overflow-hidden">
               <div className="absolute top-3 right-3">
                 <span className="text-[10px] font-bold bg-purple-500 text-white px-3 py-1 rounded-full uppercase tracking-wider">7 dias grátis</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-2xl">👑</span>
-                <h3 className="text-purple-400 font-bold text-xl">Premium</h3>
+                <h3 className="text-purple-400 font-bold text-xl">Elite</h3>
               </div>
               <p className="text-gray-400 text-sm mt-1">Acesso completo à plataforma</p>
               <p className="mt-4">
@@ -865,7 +865,7 @@ export function CarreiraLandingV2() {
                   'Vídeos de até 1 minuto',
                   'Vídeos do YouTube (highlights)',
                   'Prioridade nas buscas',
-                  'Selo Premium',
+                  'Selo Elite',
                   'Destaque em listagens',
                   'Estatísticas avançadas',
                   'Ver quem visualizou o perfil',
@@ -966,7 +966,7 @@ export function CarreiraLandingV2() {
             {[
               {
                 q: 'O Carreira ID é gratuito?',
-                a: 'Sim! O plano Base é gratuito para sempre. Você pode criar seu perfil público, fazer publicações, conectar-se a outros atletas e compartilhar seu link. O plano Premium (R$ 12,00/mês ou R$ 120,00/ano) libera recursos avançados, como vídeos, estatísticas completas e destaque nas buscas.',
+                a: 'Sim! O plano Base é gratuito para sempre. Você pode criar seu perfil público, fazer publicações, conectar-se a outros atletas e compartilhar seu link. O plano Elite (R$ 12,00/mês ou R$ 120,00/ano) libera recursos avançados, como vídeos, estatísticas completas e destaque nas buscas.',
               },
               {
                 q: 'Quem pode criar um perfil?',
@@ -998,7 +998,7 @@ export function CarreiraLandingV2() {
               },
               {
                 q: 'Posso cancelar o plano a qualquer momento?',
-                a: 'Sim, o plano Premium pode ser cancelado a qualquer momento sem multa. Seu perfil continua ativo no plano Base gratuito, preservando todas as suas publicações.',
+                a: 'Sim, o plano Elite pode ser cancelado a qualquer momento sem multa. Seu perfil continua ativo no plano Base gratuito, preservando todas as suas publicações.',
               },
               {
                 q: 'Como compartilho meu perfil?',

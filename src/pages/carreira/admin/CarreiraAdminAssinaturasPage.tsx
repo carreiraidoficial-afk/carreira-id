@@ -20,11 +20,11 @@ import { toast } from 'sonner';
 import CarreiraAdminLayout from '@/components/layout/CarreiraAdminLayout';
 
 const PLANO_DISPLAY: Record<string, string> = {
-  pro_mensal: 'Premium',
-  mensal: 'Premium',
-  competidor: 'Premium',
-  elite: 'Premium',
-  premium: 'Premium',
+  pro_mensal: 'Elite',
+  mensal: 'Elite',
+  competidor: 'Elite',
+  elite: 'Elite',
+  premium: 'Elite',
   base: 'Base',
 };
 
@@ -44,7 +44,7 @@ const PLANO_PRECO: Record<string, number> = {
 // de verdade (Asaas + banco). Quem sobrar não é migrado automaticamente pro
 // plano individual (evita criar cobrança nova sem o responsável confirmar
 // pagamento); ele só passa a não ter assinatura ativa, e vê a tela normal
-// de assinar Premium na próxima vez que precisar.
+// de assinar Elite na próxima vez que precisar.
 async function dissolverFamiliaSeNecessario(familiaId: string, assinaturaIdExcluida: string) {
   const { count } = await supabase
     .from('carreira_assinaturas')
@@ -161,7 +161,7 @@ function useAdminAssinaturas(search: string) {
 
 // Calcula o status REAL de acesso de uma assinatura, do jeito que o app
 // calcula pra liberar/bloquear recursos (useCarreiraPlano.ts) -- em vez de
-// só repetir o texto bruto salvo no banco, que fica "Trial"/"Premium" pra
+// só repetir o texto bruto salvo no banco, que fica "Trial"/"Elite" pra
 // sempre mesmo depois do vencimento, até um admin editar manualmente.
 function getEfetivo(ass: any): { acessoAtivo: boolean; statusLabel: string; statusClass: string; planoEfetivo: string; venceu: boolean; notaPlano: string | null } {
   const isIsento = ass.metodo_pagamento === 'isento';
@@ -177,7 +177,7 @@ function getEfetivo(ass: any): { acessoAtivo: boolean; statusLabel: string; stat
       venceu: !acessoAtivo,
       // Só chegou a existir cobrança/contrato de verdade se o status já foi
       // "ativa" (pagou ou foi isentado) -- nunca para quem só estava em trial.
-      notaPlano: (!acessoAtivo && ass.plano_display === 'Premium') ? 'contratou Premium' : null,
+      notaPlano: (!acessoAtivo && ass.plano_display === 'Elite') ? 'contratou Elite' : null,
     };
   }
   if (ass.status === 'trial') {
@@ -190,7 +190,7 @@ function getEfetivo(ass: any): { acessoAtivo: boolean; statusLabel: string; stat
       venceu: !acessoAtivo,
       // Trial nunca foi uma contratação -- o usuário só testou de graça e
       // não converteu em pagamento, então não pode dizer "contratou".
-      notaPlano: (!acessoAtivo && ass.plano_display === 'Premium') ? 'testou o Premium (não converteu)' : null,
+      notaPlano: (!acessoAtivo && ass.plano_display === 'Elite') ? 'testou o Elite (não converteu)' : null,
     };
   }
   const labelMap: Record<string, string> = { cancelada: 'Cancelada', pendente: 'Pendente', expirada: 'Expirada' };
@@ -521,7 +521,7 @@ function EditAssinaturaDialog({ assinatura, onClose, onSaved }: { assinatura: an
                   if (v === 'isento') {
                     // Isento precisa vir junto com status "ativa", valor 0 e sem
                     // data de vencimento -- é exatamente o que useCarreiraPlano.ts
-                    // checa pra liberar acesso Premium. Selecionar só o método
+                    // checa pra liberar acesso Elite. Selecionar só o método
                     // sem ajustar o resto deixaria a assinatura "isenta" mas
                     // ainda travada em trial/vencida.
                     setForm({ ...form, metodo_pagamento: v, status: 'ativa', valor: '0', expira_em: '', plano: form.plano || 'premium' });
@@ -541,7 +541,7 @@ function EditAssinaturaDialog({ assinatura, onClose, onSaved }: { assinatura: an
           </div>
           {form.metodo_pagamento === 'isento' && (
             <p className="text-xs text-amber-600">
-              Isento concede Premium vitalício: status, valor e vencimento foram ajustados automaticamente e ficam travados enquanto o método for "Isento".
+              Isento concede Elite vitalício: status, valor e vencimento foram ajustados automaticamente e ficam travados enquanto o método for "Isento".
             </p>
           )}
           {form.metodo_pagamento === 'isento' && assinatura.familia_id && (
@@ -705,7 +705,7 @@ function ConcederIsencaoDialog({ onClose, onSaved }: { onClose: () => void; onSa
               </Button>
             </div>
             <p className="text-sm text-muted-foreground">
-              Isso vai conceder acesso Premium vitalício (sem cobrança), {selecionado.assinatura_atual ? 'atualizando a assinatura atual' : 'criando uma nova assinatura'} deste atleta.
+              Isso vai conceder acesso Elite vitalício (sem cobrança), {selecionado.assinatura_atual ? 'atualizando a assinatura atual' : 'criando uma nova assinatura'} deste atleta.
             </p>
             {selecionado.assinatura_atual?.familia_id && (
               <p className="text-xs text-amber-600 bg-amber-500/10 rounded-lg p-2.5">

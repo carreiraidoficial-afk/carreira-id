@@ -91,7 +91,7 @@ export function CarreiraStatsCards({ criancaId, accentColor = '#3b82f6' }: Carre
               planoAtual={plano}
               planoRequerido="premium"
               liberado={temAcesso('stats_avancadas')}
-              mensagem="Estatísticas avançadas de goleiro são um recurso Premium"
+              mensagem="Estatísticas avançadas de goleiro são um recurso Elite"
             >
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {goleiroConfig.map(({ key, label, icon: Icon }) => (

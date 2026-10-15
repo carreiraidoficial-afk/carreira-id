@@ -308,7 +308,7 @@ export default function CarreiraAdminDashboard() {
                   color="text-gray-600 bg-gray-100"
                 />
                 <StatCard
-                  label="👑 Premium"
+                  label="👑 Elite"
                   value={finance?.ativas.premium ?? 0}
                   icon={<CreditCard className="w-5 h-5" />}
                   color="text-violet-600 bg-violet-100"
@@ -331,7 +331,7 @@ export default function CarreiraAdminDashboard() {
                   color="text-emerald-600 bg-emerald-100"
                 />
                 <StatCard
-                  label="Receita Premium"
+                  label="Receita Elite"
                   value={formatCurrency(finance?.receita.premium ?? 0)}
                   icon={<DollarSign className="w-5 h-5" />}
                   color="text-violet-600 bg-violet-100"

@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Preço fixo do Premium: R$ 12,00 (configurável em saas_config -> carreira_valor_premium)
+    // Preço fixo do Elite: R$ 12,00 (configurável em saas_config -> carreira_valor_premium)
     let valor = 12.0;
     const { data: configValor } = await supabase
       .from('saas_config')
@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
         cycle: 'MONTHLY',
         value: valor,
         nextDueDate: nextDueDate.toISOString().split('T')[0],
-        description: `Carreira ID Premium - Assinatura mensal`,
+        description: `Carreira ID Elite - Assinatura mensal`,
         externalReference: `carreira_premium_${user_id}_${crianca_id}`,
         notificationDisabled: true,
       }),

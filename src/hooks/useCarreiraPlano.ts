@@ -75,7 +75,7 @@ export function useCarreiraPlano(criancaId: string | null): CarreiraPlanoResult 
       // Check active subscription OR active trial -- filtra só por crianca_id
       // (não pelo user_id de quem está vendo): o plano é da CRIANÇA, não da
       // sessão atual. Sem isso, um colaborador (acesso delegado por outro
-      // responsável) nunca herdava os recursos Premium do atleta que ele
+      // responsável) nunca herdava os recursos Elite do atleta que ele
       // colabora, porque o user_id da assinatura é sempre o do dono/pagante.
       const { data: assinatura } = await supabase
         .from('carreira_assinaturas')

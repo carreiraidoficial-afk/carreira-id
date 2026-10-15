@@ -259,7 +259,7 @@ export function CarreiraFamiliaCheckout({ criancaIds, criancaNomes, onClose, onS
         </div>
         <h3 className="text-lg font-bold text-foreground">Assinatura Família ativa! 🎉</h3>
         <p className="text-sm text-muted-foreground">
-          Premium liberado para <strong className="text-foreground">{criancaNomes.join(', ')}</strong>.
+          Elite liberado para <strong className="text-foreground">{criancaNomes.join(', ')}</strong>.
         </p>
         {paymentMethod === 'cartao' && (
           <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
@@ -410,7 +410,7 @@ export function CarreiraFamiliaCheckout({ criancaIds, criancaNomes, onClose, onS
         </div>
         <h3 className="text-lg font-bold text-foreground">Assinatura Família</h3>
         <p className="text-sm text-muted-foreground">
-          Um valor fixo cobre o Premium de todos os seus atletas cadastrados, hoje e no futuro.
+          Um valor fixo cobre o Elite de todos os seus atletas cadastrados, hoje e no futuro.
         </p>
       </div>
 

@@ -13,19 +13,19 @@ function htmlRenovacao(primeiroNome: string, vencimento: string, link: string, b
     ? `<p style="margin:18px 0 6px 0;font-size:12px;color:#737373;">PIX copia e cola:</p>
        <p style="margin:0;padding:12px;background:#171717;border:1px solid #262626;font-size:11px;line-height:1.5;color:#d4d4d4;word-break:break-all;font-family:monospace;">${esc(brCode)}</p>`
     : '';
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="color-scheme" content="dark"><title>Renove seu Premium</title></head>
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="color-scheme" content="dark"><title>Renove seu plano Elite</title></head>
 <body bgcolor="#000000" style="margin:0;padding:0;background:#000000;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#000000"><tr><td align="center" style="padding:40px 16px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" bgcolor="#0d0d0d" style="width:600px;max-width:100%;background:#0d0d0d;border:1px solid #262626;">
 <tr><td style="padding:28px 40px;border-bottom:1px solid #262626;"><img src="https://carreiraid.com.br/logo-carreira-id-email.png" width="170" height="42" alt="Carreira ID" style="display:block;border:0;"></td></tr>
 <tr><td style="padding:40px 40px 8px 40px;">
 <p style="margin:0 0 10px 0;font-size:13px;font-weight:700;color:#22c55e;text-transform:uppercase;letter-spacing:1.5px;">Olá, ${primeiroNome}!</p>
-<h1 style="margin:0 0 14px 0;font-size:28px;line-height:1.25;font-weight:800;color:#f5f5f5;">Seu Premium vence em ${esc(vencimento)}</h1>
-<p style="margin:0;font-size:15px;line-height:1.6;color:#a3a3a3;">Geramos o PIX da renovação ${anual ? 'do plano anual ' : ''}(R$ ${valorTxt}). Pague até o vencimento para continuar com os recursos Premium, sem interrupção. O novo período soma ao que ainda resta.</p>
+<h1 style="margin:0 0 14px 0;font-size:28px;line-height:1.25;font-weight:800;color:#f5f5f5;">Seu plano Elite vence em ${esc(vencimento)}</h1>
+<p style="margin:0;font-size:15px;line-height:1.6;color:#a3a3a3;">Geramos o PIX da renovação ${anual ? 'do plano anual ' : ''}(R$ ${valorTxt}). Pague até o vencimento para continuar com os recursos Elite, sem interrupção. O novo período soma ao que ainda resta.</p>
 ${codigo}
 </td></tr>
 <tr><td align="center" style="padding:28px 40px 36px 40px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" bgcolor="#f97316" style="background:#f97316;"><a href="${esc(link)}" style="display:inline-block;padding:15px 36px;font-size:15px;font-weight:700;color:#000000;text-decoration:none;">Pagar a renovação →</a></td></tr></table></td></tr>
-<tr><td style="padding:20px 40px;background:#0a0a0a;border-top:1px solid #262626;"><p style="margin:0;font-size:11px;line-height:1.6;color:#525252;">Você recebeu este e-mail porque tem uma assinatura Premium por PIX no Carreira ID.</p></td></tr>
+<tr><td style="padding:20px 40px;background:#0a0a0a;border-top:1px solid #262626;"><p style="margin:0;font-size:11px;line-height:1.6;color:#525252;">Você recebeu este e-mail porque tem uma assinatura Elite por PIX no Carreira ID.</p></td></tr>
 </table></td></tr></table></body></html>`;
 }
 
@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
             billingType: 'PIX',
             value: valor,
             dueDate: dueDateStr,
-            description: anual ? 'Carreira ID Premium - Renovação do plano anual' : 'Carreira ID Premium - Renovação mensal',
+            description: anual ? 'Carreira ID Elite - Renovação do plano anual' : 'Carreira ID Elite - Renovação mensal',
             externalReference: `carreira_renew_premium_${sub.user_id}_${sub.crianca_id}`,
             notificationDisabled: true,
           }),
@@ -143,8 +143,8 @@ Deno.serve(async (req) => {
             headers: { 'Content-Type': 'application/json', 'x-internal-secret': internalSecret },
             body: JSON.stringify({
               user_ids: [sub.user_id],
-              title: 'Renove seu Premium',
-              body: `Seu Premium vence em ${vencimento}. O PIX da renovação já está pronto.`,
+              title: 'Renove seu plano Elite',
+              body: `Seu plano Elite vence em ${vencimento}. O PIX da renovação já está pronto.`,
               url: '/minhas-assinaturas',
               tag: 'renovacao-pix',
             }),
@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
               await resend.emails.send({
                 from: 'Carreira ID <contato@carreiraid.com.br>',
                 to: [email],
-                subject: `Seu Premium vence em ${vencimento}: renove por PIX`,
+                subject: `Seu plano Elite vence em ${vencimento}: renove por PIX`,
                 html: htmlRenovacao(primeiroNome, vencimento, link, brCode, valor.toFixed(2).replace('.', ','), anual),
               });
             }

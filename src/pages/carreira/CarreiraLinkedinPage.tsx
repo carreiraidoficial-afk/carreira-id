@@ -81,7 +81,7 @@ export default function CarreiraLinkedinPage() {
             <div className="flex items-center gap-2 text-sm">
               <Crown className="w-4 h-4 text-violet-500" />
               <span>
-                Comece agora seus <strong>7 dias grátis</strong> do Premium — depois R$ 12/mês
+                Comece agora seus <strong>7 dias grátis</strong> do Elite — depois R$ 12/mês
               </span>
             </div>
             <Button

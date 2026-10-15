@@ -120,7 +120,7 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
     },
     onError: (e: any) => {
       if (e?.message === 'PAGAMENTO_NECESSARIO') {
-        toast.info('Para assinar o Premium, escolha a forma de pagamento.');
+        toast.info('Para assinar o Elite, escolha a forma de pagamento.');
         setConfirmAction(null);
         navigate(carreiraPath('/planos'));
         return;
@@ -192,7 +192,7 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
 
         {isTrialActive && (
           <div className="mt-2 pt-2 border-t text-xs" style={{ borderColor: `${currentPlanoInfo.cor}20`, color: currentPlanoInfo.cor }}>
-            <strong>{diasRestantesTrial} {diasRestantesTrial === 1 ? 'dia restante' : 'dias restantes'}</strong> — depois, R$ 12,00/mês para continuar.
+            <strong>{diasRestantesTrial} {diasRestantesTrial === 1 ? 'dia restante' : 'dias restantes'}</strong> — depois, R$ 12,00/mês para continuar. <strong>Assine agora e ganhe pelo menos 7 dias a mais:</strong> os dias do teste não se perdem.
           </div>
         )}
 

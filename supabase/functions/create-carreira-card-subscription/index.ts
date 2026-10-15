@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
           customer: customerId,
           billingType: 'CREDIT_CARD',
           dueDate: today,
-          description: 'Carreira ID Premium - Plano anual',
+          description: 'Carreira ID Elite - Plano anual',
           externalReference: `carreira_premium_${user_id}_${crianca_id}`,
           notificationDisabled: true,
           ...(parcelas > 1 ? { installmentCount: parcelas, totalValue: valor } : { value: valor }),
@@ -226,7 +226,7 @@ Deno.serve(async (req) => {
       cycle: 'MONTHLY',
       value: valor,
       nextDueDate: today,
-      description: 'Carreira ID Premium - Assinatura mensal',
+      description: 'Carreira ID Elite - Assinatura mensal',
       externalReference: `carreira_premium_${user_id}_${crianca_id}`,
       notificationDisabled: true,
       creditCard: {

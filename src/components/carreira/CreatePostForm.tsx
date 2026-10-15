@@ -391,7 +391,7 @@ export function CreatePostForm({ perfil, perfilRedeId, perfilRedeNome, perfilRed
             {linkIsLockedVideo && (
               <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <Lock className="w-3 h-3" />
-                Vídeos incorporados (YouTube/Vimeo) são um recurso Premium — este link será publicado como um card simples.
+                Vídeos incorporados (YouTube/Vimeo) são um recurso Elite — este link será publicado como um card simples.
               </div>
             )}
 

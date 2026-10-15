@@ -94,7 +94,7 @@ export function VisitasPerfilCard({ perfilAtletaId, accentColor }: { perfilAtlet
     </div>
   );
 
-  // Base: só o número e um convite. A lista fica para o Premium.
+  // Base: só o número e um convite. A lista fica para o Elite.
   if (!podeVer) {
     return (
       <div className="space-y-3 rounded-xl border bg-card p-3">
@@ -117,12 +117,12 @@ export function VisitasPerfilCard({ perfilAtletaId, accentColor }: { perfilAtlet
                 <Lock className="h-3.5 w-3.5" /> Veja quem visitou o perfil
               </p>
               <Button size="sm" className="h-8 gap-1.5 text-xs text-white" style={{ backgroundColor: accentColor }} onClick={() => navigate(carreiraPath('/planos'))}>
-                <Crown className="h-3.5 w-3.5" /> Conhecer o Premium
+                <Crown className="h-3.5 w-3.5" /> Conhecer o Elite
               </Button>
             </div>
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">Compartilhe o link do perfil para receber visitas. Com o Premium você vê quem foram.</p>
+          <p className="text-xs text-muted-foreground">Compartilhe o link do perfil para receber visitas. Com o Elite você vê quem foram.</p>
         )}
       </div>
     );

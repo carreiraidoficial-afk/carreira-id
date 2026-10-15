@@ -599,7 +599,7 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
 
       {(!isOwnProfile || activeTab === 'todas') && (
         <>
-          {/* Quem viu o perfil: dentro da aba Conexões (lista no Premium; no Base só o número) */}
+          {/* Quem viu o perfil: dentro da aba Conexões (lista no Elite; no Base só o número) */}
           {isOwnProfile && perfilAtletaId && <VisitasPerfilCard perfilAtletaId={perfilAtletaId} accentColor="#3b82f6" />}
 
           {/* Suggestions */}

@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
         billingType: 'PIX',
         value: valor,
         dueDate: dueDate.toISOString().split('T')[0],
-        description: ciclo === 'anual' ? 'Carreira ID Premium - Plano anual' : 'Carreira ID Premium - Assinatura mensal',
+        description: ciclo === 'anual' ? 'Carreira ID Elite - Plano anual' : 'Carreira ID Elite - Assinatura mensal',
         externalReference: `carreira_premium_${user_id}_${crianca_id}`,
         notificationDisabled: true,
       }),

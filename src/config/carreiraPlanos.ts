@@ -1,6 +1,6 @@
 export type CarreiraPlano = 'base' | 'premium';
 
-/** Legacy plan strings that map to the new Premium plan */
+/** Legacy plan strings that map to the new Elite plan */
 const LEGACY_PREMIUM = new Set(['premium', 'competidor', 'elite', 'mensal', 'pro_mensal']);
 
 /** Normalize any plan string (legacy or new) to a CarreiraPlano */
@@ -36,9 +36,9 @@ export interface PlanoInfo {
   destaques: string[];
 }
 
-/** Preço fixo do plano Premium (usado em toda a UI). */
+/** Preço fixo do plano Elite (usado em toda a UI). */
 export const PRECO_PREMIUM = 12.0;
-/** Plano anual do Premium: pagamento único de 365 dias (sem renovação automática). O preço que vale é o do servidor
+/** Plano anual do Elite: pagamento único de 365 dias (sem renovação automática). O preço que vale é o do servidor
  * (saas_config -> carreira_valor_premium_anual); este valor é só o que a tela mostra. */
 export const PRECO_PREMIUM_ANUAL = 120.0;
 /** Máximo de parcelas no cartão no plano anual. */
@@ -82,7 +82,7 @@ export const PLANOS: Record<CarreiraPlano, PlanoInfo> = {
     ],
   },
   premium: {
-    nome: 'Premium',
+    nome: 'Elite',
     preco: PRECO_PREMIUM,
     cor: '#8b5cf6',
     icone: '👑',
@@ -108,7 +108,7 @@ export const PLANOS: Record<CarreiraPlano, PlanoInfo> = {
       'Publicações no feed sem limite diário',
       'Vídeos de até 1 minuto e vídeos do YouTube (treinos, jogos e highlights)',
       'Prioridade nas buscas para scouts e clubes',
-      'Selo Premium no perfil',
+      'Selo Elite no perfil',
       'Destaque em listagens de atletas',
       'Estatísticas avançadas',
       'Ver quem visualizou o perfil',

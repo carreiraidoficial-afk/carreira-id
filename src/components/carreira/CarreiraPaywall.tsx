@@ -9,7 +9,7 @@ import { CarreiraLimitResult } from '@/hooks/useCarreiraFreemium';
 import { PLANOS, CarreiraPlano, normalizePlano, PRECO_PREMIUM_ANUAL, PARCELAS_MAX_ANUAL } from '@/config/carreiraPlanos';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 interface CarreiraPaywallProps {
@@ -54,6 +54,21 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cartao');
   const [cpfInput, setCpfInput] = useState('');
   const [ciclo, setCiclo] = useState<Ciclo>('mensal');
+  // Quem está no teste grátis e assina agora ganha pelo menos 7 dias a mais (regra no banco: carreira_assinatura_converte_trial).
+  const { data: emTeste = false } = useQuery({
+    queryKey: ['paywall-em-teste', criancaId],
+    enabled: !!criancaId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('carreira_assinaturas')
+        .select('id')
+        .eq('crianca_id', criancaId!)
+        .eq('status', 'trial')
+        .gt('expira_em', new Date().toISOString())
+        .limit(1);
+      return (data || []).length > 0;
+    },
+  });
   const [parcelas, setParcelas] = useState(1);
   const [selectedPlan] = useState<CarreiraPlano>(
     planoSelecionado ? normalizePlano(planoSelecionado) : 'premium'
@@ -685,7 +700,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
         </div>
       )}
 
-      {/* Único plano pago: Premium */}
+      {/* Único plano pago: Elite */}
       <div className="rounded-lg border-2 p-3 text-center" style={{ borderColor: `${planInfo.cor}40`, backgroundColor: `${planInfo.cor}08` }}>
         <div className="flex items-center justify-center gap-2">
           <span className="text-lg">{planInfo.icone}</span>
@@ -739,6 +754,12 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
               </li>
             ))}
           </ul>
+
+          {emTeste && (
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-xs text-emerald-600 dark:text-emerald-300">
+              🎁 <strong>Assine agora e ganhe pelo menos 7 dias grátis a mais.</strong> Seus dias de teste não se perdem: eles se somam à assinatura.
+            </div>
+          )}
 
           {/* CPF Input */}
           <div className="space-y-1.5">

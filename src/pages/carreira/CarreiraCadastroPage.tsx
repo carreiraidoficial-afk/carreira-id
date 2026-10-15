@@ -996,7 +996,7 @@ export default function CarreiraCadastroPage() {
               <Sparkles className="w-12 h-12 mx-auto text-primary" />
               <h3 className="text-xl font-bold">Agora você tem {familiaOfferCriancaNomes.length} atletas! 🎉</h3>
               <p className="text-sm" style={{ color: 'hsl(0 0% 60%)' }}>
-                Um valor fixo de <strong className="text-primary">R$ {PRECO_FAMILIA.toFixed(2).replace('.', ',')}/mês</strong> libera o Premium para todos eles — {familiaOfferCriancaNomes.join(', ')} — hoje e no futuro.
+                Um valor fixo de <strong className="text-primary">R$ {PRECO_FAMILIA.toFixed(2).replace('.', ',')}/mês</strong> libera o Elite para todos eles — {familiaOfferCriancaNomes.join(', ')} — hoje e no futuro.
               </p>
               <div className="flex gap-3 pt-2">
                 <Button
