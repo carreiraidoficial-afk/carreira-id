@@ -153,10 +153,11 @@ function criarEstilos(p: ReturnType<typeof paleta>) {
     secaoTexto: { fontSize: 9, fontWeight: 800, letterSpacing: 1.3, textTransform: 'uppercase', color: p.texto },
     secaoNota: { marginLeft: 'auto', fontSize: 7.5, fontWeight: 600, color: p.suave },
     // Números
-    numerosLinha: { flexDirection: 'row', marginBottom: 6 },
-    numero: { flex: 1, backgroundColor: p.cartao, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 10, borderLeftWidth: 3, borderLeftColor: p.acento },
-    numeroValor: { fontSize: 20, fontWeight: 800, color: p.texto, lineHeight: 1 },
-    numeroRotulo: { fontSize: 7.5, fontWeight: 600, color: p.suave, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.6 },
+    numerosFaixa: { flexDirection: 'row', backgroundColor: p.cartao, borderRadius: 10, borderTopWidth: 2, borderTopColor: p.acento, paddingVertical: 7 },
+    numeroCelula: { flex: 1, alignItems: 'center' },
+    numeroDivisor: { borderLeftWidth: 0.5, borderLeftColor: p.linha },
+    numeroValor: { fontSize: 16, fontWeight: 800, color: p.texto, lineHeight: 1 },
+    numeroRotulo: { fontSize: 6.5, fontWeight: 600, color: p.suave, marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.5 },
     // Aproveitamento
     barra: { flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', marginBottom: 6 },
     legenda: { flexDirection: 'row', justifyContent: 'space-between' },
@@ -247,7 +248,6 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
     { valor: String(data.campeonatosDetalhe.length), rotulo: 'Campeonatos' },
     ...(jogosDestaque ? [{ valor: String(jogosDestaque), rotulo: 'Jogos em destaque' }] : []),
   ].slice(0, 6);
-  const linhasNumeros = numeros.length > 3 ? [numeros.slice(0, 3), numeros.slice(3)] : [numeros];
 
   // Temporadas (por ano do jogo)
   const anos = [...new Set(jogos.map((j) => ano(j.data)))].filter(Boolean).sort((a, b) => b.localeCompare(a));
@@ -348,16 +348,14 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
           {/* Números + aproveitamento */}
           <View style={e.secao}>
             <Titulo texto="Números da carreira" e={e} />
-            {linhasNumeros.map((linha, li) => (
-              <View key={li} style={e.numerosLinha}>
-                {linha.map((n, ci) => (
-                  <View key={n.rotulo} style={[e.numero, ci < linha.length - 1 ? { marginRight: 7 } : {}]} wrap={false}>
-                    <Text style={e.numeroValor}>{n.valor}</Text>
-                    <Text style={e.numeroRotulo}>{n.rotulo}</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
+            <View style={e.numerosFaixa} wrap={false}>
+              {numeros.map((n, i) => (
+                <View key={n.rotulo} style={[e.numeroCelula, i > 0 ? e.numeroDivisor : {}]}>
+                  <Text style={e.numeroValor}>{n.valor}</Text>
+                  <Text style={e.numeroRotulo}>{n.rotulo}</Text>
+                </View>
+              ))}
+            </View>
             {comPlacar.length > 0 ? (
               <View style={{ marginTop: 6 }} wrap={false}>
                 <View style={e.barra}>

@@ -166,14 +166,6 @@ export function destaques(d: CurriculoData): { valor: number; rotulo: string }[]
   return lista.filter((x) => x.valor > 0).slice(0, 6);
 }
 
-/** Divide os números em linhas equilibradas (6 → 3+3, 5 → 3+2, 4 → 2+2), sem buracos no meio. */
-function linhasDe<T>(itens: T[]): T[][] {
-  const n = itens.length;
-  if (n <= 3) return n ? [itens] : [];
-  if (n === 4) return [itens.slice(0, 2), itens.slice(2)];
-  return [itens.slice(0, 3), itens.slice(3)];
-}
-
 /** Dados do atleta para o bloco "Ficha técnica" (aparece quando ainda não há premiações). */
 function fichaTecnica(d: CurriculoData): { rotulo: string; valor: string }[] {
   const mods = (d.modalidades && d.modalidades.length ? d.modalidades : [d.modalidade]).filter(Boolean).join(' · ');
@@ -215,14 +207,15 @@ function criarEstilos(p: ReturnType<typeof paleta>) {
     secaoTitulo: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
     secaoTraco: { width: 16, height: 3, borderRadius: 2, backgroundColor: p.acento, marginRight: 7 },
     secaoTexto: { fontSize: 9, fontWeight: 800, letterSpacing: 1.3, textTransform: 'uppercase', color: p.texto },
-    numerosLinha: { flexDirection: 'row', marginBottom: 6 },
     ficha: { backgroundColor: p.cartao, borderRadius: 10, paddingHorizontal: 11, paddingVertical: 4 },
     fichaLinha: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 0.6, borderBottomColor: p.linha },
     fichaRotulo: { fontSize: 8, fontWeight: 600, color: p.suave, textTransform: 'uppercase', letterSpacing: 0.5 },
     fichaValor: { fontSize: 9.5, fontWeight: 700, color: p.texto, maxWidth: '62%', textAlign: 'right' },
-    numero: { flex: 1, backgroundColor: p.cartao, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 10, marginBottom: 6, borderLeftWidth: 3, borderLeftColor: p.acento },
-    numeroValor: { fontSize: 22, fontWeight: 800, color: p.texto, lineHeight: 1 },
-    numeroRotulo: { fontSize: 7.5, fontWeight: 600, color: p.suave, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.6 },
+    numerosFaixa: { flexDirection: 'row', backgroundColor: p.cartao, borderRadius: 10, borderTopWidth: 2, borderTopColor: p.acento, paddingVertical: 7 },
+    numeroCelula: { flex: 1, alignItems: 'center' },
+    numeroDivisor: { borderLeftWidth: 0.5, borderLeftColor: p.linha },
+    numeroValor: { fontSize: 16, fontWeight: 800, color: p.texto, lineHeight: 1 },
+    numeroRotulo: { fontSize: 6.5, fontWeight: 600, color: p.suave, marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.5 },
     colunas: { flexDirection: 'row' },
     colEsq: { width: '56%', paddingRight: 14 },
     colDir: { width: '44%' },
@@ -331,15 +324,11 @@ export function CurriculoDocument({ data }: { data: CurriculoData }) {
           {/* Números */}
           {numeros.length > 0 ? (
             <Secao titulo="Números da carreira" estilos={e}>
-              <View>
-                {linhasDe(numeros).map((linha, li) => (
-                  <View key={li} style={e.numerosLinha}>
-                    {linha.map((n, ci) => (
-                      <View key={n.rotulo} style={[e.numero, ci < linha.length - 1 ? { marginRight: 7 } : {}]} wrap={false}>
-                        <Text style={e.numeroValor}>{n.valor}</Text>
-                        <Text style={e.numeroRotulo}>{n.rotulo}</Text>
-                      </View>
-                    ))}
+              <View style={e.numerosFaixa} wrap={false}>
+                {numeros.map((n, i) => (
+                  <View key={n.rotulo} style={[e.numeroCelula, i > 0 ? e.numeroDivisor : {}]}>
+                    <Text style={e.numeroValor}>{n.valor}</Text>
+                    <Text style={e.numeroRotulo}>{n.rotulo}</Text>
                   </View>
                 ))}
               </View>
