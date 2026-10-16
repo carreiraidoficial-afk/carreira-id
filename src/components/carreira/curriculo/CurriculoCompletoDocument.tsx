@@ -158,11 +158,6 @@ function criarEstilos(p: ReturnType<typeof paleta>) {
     numeroDivisor: { borderLeftWidth: 0.5, borderLeftColor: p.linha },
     numeroValor: { fontSize: 16, fontWeight: 800, color: p.texto, lineHeight: 1 },
     numeroRotulo: { fontSize: 6.5, fontWeight: 600, color: p.suave, marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.5 },
-    // Aproveitamento
-    barra: { flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', marginBottom: 6 },
-    legenda: { flexDirection: 'row', justifyContent: 'space-between' },
-    legendaItem: { fontSize: 8.5, color: p.suave },
-    legendaValor: { fontWeight: 800, color: p.texto },
     // Tabelas
     th: { flexDirection: 'row', paddingVertical: 5, paddingHorizontal: 6, backgroundColor: p.cartao, borderRadius: 6, marginBottom: 2 },
     thTxt: { fontSize: 7, fontWeight: 800, color: p.suave, textTransform: 'uppercase', letterSpacing: 0.6 },
@@ -225,11 +220,6 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
   const colunas = colunasDesempenho(data);
   const comPlacar = jogos.filter((j) => resultado(j));
   const vit = comPlacar.filter((j) => resultado(j) === 'V').length;
-  const emp = comPlacar.filter((j) => resultado(j) === 'E').length;
-  const der = comPlacar.filter((j) => resultado(j) === 'D').length;
-  const golsPro = soma(comPlacar.map((j) => j.golsPro));
-  const golsContra = soma(comPlacar.map((j) => j.golsContra));
-  const aproveitamento = comPlacar.length ? Math.round(((vit * 3 + emp) / (comPlacar.length * 3)) * 100) : null;
 
   // Estatística individual: só vale onde foi registrada (campo preenchido), e dizemos isso no documento
   const registrouGols = jogos.filter((j) => j.gols != null || j.assistencias != null);
@@ -242,7 +232,6 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
   const numeros: { valor: string; rotulo: string }[] = [
     { valor: String(jogos.length), rotulo: 'Jogos' },
     { valor: String(vit), rotulo: 'Vitórias' },
-    ...(aproveitamento != null ? [{ valor: `${aproveitamento}%`, rotulo: 'Aproveitamento' }] : []),
     ...(ehLinha && registrouGols.length ? [{ valor: String(totalGols), rotulo: 'Gols' }, { valor: String(totalAssist), rotulo: 'Assistências' }] : []),
     ...(ehGoleiro ? [{ valor: String(soma(jogos.map((j) => j.defesas))), rotulo: 'Defesas' }] : []),
     { valor: String(data.campeonatosDetalhe.length), rotulo: 'Campeonatos' },
@@ -345,7 +334,7 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
         <View style={e.bioBox}>{limpar(data.bio) ? <Text style={e.bio}>{limpar(data.bio)}</Text> : null}</View>
 
         <View style={e.corpo}>
-          {/* Números + aproveitamento */}
+          {/* Números */}
           <View style={e.secao}>
             <Titulo texto="Números da carreira" e={e} />
             <View style={e.numerosFaixa} wrap={false}>
@@ -356,21 +345,6 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
                 </View>
               ))}
             </View>
-            {comPlacar.length > 0 ? (
-              <View style={{ marginTop: 6 }} wrap={false}>
-                <View style={e.barra}>
-                  {vit > 0 ? <View style={{ flex: vit, backgroundColor: '#16A34A' }} /> : null}
-                  {emp > 0 ? <View style={{ flex: emp, backgroundColor: '#9CA3AF' }} /> : null}
-                  {der > 0 ? <View style={{ flex: der, backgroundColor: '#DC2626' }} /> : null}
-                </View>
-                <View style={e.legenda}>
-                  <Text style={e.legendaItem}><Text style={e.legendaValor}>{vit}</Text> {vit === 1 ? 'vitória' : 'vitórias'}</Text>
-                  <Text style={e.legendaItem}><Text style={e.legendaValor}>{emp}</Text> {emp === 1 ? 'empate' : 'empates'}</Text>
-                  <Text style={e.legendaItem}><Text style={e.legendaValor}>{der}</Text> {der === 1 ? 'derrota' : 'derrotas'}</Text>
-                  <Text style={e.legendaItem}>Gols da equipe: <Text style={e.legendaValor}>{golsPro}</Text> pró · <Text style={e.legendaValor}>{golsContra}</Text> contra</Text>
-                </View>
-              </View>
-            ) : null}
             {ehLinha && registrouGols.length > 0 && registrouGols.length < jogos.length ? (
               <Text style={e.nota}>
                 Gols e assistências do atleta constam em {registrouGols.length} de {jogos.length} jogos (só onde foram registrados no perfil).
