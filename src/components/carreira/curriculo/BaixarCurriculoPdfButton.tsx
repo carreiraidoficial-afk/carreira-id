@@ -1,123 +1,41 @@
 import { useState } from 'react';
-import { parseDataLocal } from '@/lib/datas';
-import { useQuery } from '@tanstack/react-query';
-import { Download, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { useCarreiraExperiencias } from '@/hooks/useCarreiraExperienciasData';
-import { useCarreiraStats } from '@/hooks/useCarreiraJornadaData';
-import { useJornada } from '@/hooks/useJornada';
-import type { CurriculoData } from './CurriculoDocument';
+import { Crown, FileText } from 'lucide-react';
+import { useCarreiraPlano } from '@/hooks/useCarreiraPlano';
+import type { PerfilAtleta } from '@/hooks/useCarreiraData';
+import { CurriculoPdfDialog } from './CurriculoPdfDialog';
 
-interface BaixarCurriculoPdfButtonProps {
-  criancaId: string | null | undefined;
-  nome: string;
-  fotoUrl: string | null;
-  modalidade: string | null;
-  categoria: string | null;
-  cidade: string | null;
-  estado: string | null;
-  slug: string;
+interface Props {
+  perfil: PerfilAtleta;
+  /** Mesma cor dos outros botões da linha (cor de destaque do atleta). */
+  accentColor: string;
+  className?: string;
 }
 
-function useIdadeCrianca(criancaId: string | null | undefined) {
-  return useQuery({
-    queryKey: ['crianca-data-nascimento', criancaId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('criancas')
-        .select('data_nascimento')
-        .eq('id', criancaId!)
-        .maybeSingle();
-      if (!data?.data_nascimento) return null;
-      const nascimento = parseDataLocal(data.data_nascimento);
-      const hoje = new Date();
-      let idade = hoje.getFullYear() - nascimento.getFullYear();
-      const aindaNaoFezAniversario =
-        hoje.getMonth() < nascimento.getMonth() ||
-        (hoje.getMonth() === nascimento.getMonth() && hoje.getDate() < nascimento.getDate());
-      if (aindaNaoFezAniversario) idade--;
-      return idade;
-    },
-    enabled: !!criancaId,
-  });
-}
-
-export function BaixarCurriculoPdfButton(props: BaixarCurriculoPdfButtonProps) {
-  const { criancaId, nome, fotoUrl, modalidade, categoria, cidade, estado, slug } = props;
-  const [gerando, setGerando] = useState(false);
-
-  const { data: experiencias } = useCarreiraExperiencias(criancaId);
-  const { stats } = useCarreiraStats(criancaId, 'todos');
-  const jornada = useJornada(criancaId);
-  const { data: idade } = useIdadeCrianca(criancaId);
-
-  const handleDownload = async () => {
-    setGerando(true);
-    try {
-      const [{ pdf }, { CurriculoDocument }] = await Promise.all([
-        import('@react-pdf/renderer'),
-        import('./CurriculoDocument'),
-      ]);
-
-      const data: CurriculoData = {
-        nome,
-        fotoUrl,
-        modalidade,
-        categoria,
-        cidade,
-        estado,
-        idade: idade ?? null,
-        slug,
-        stats: {
-          totalJogos: stats.totalJogos,
-          totalGols: stats.totalGols,
-          totalAssistencias: stats.totalAssistencias,
-          totalVitorias: stats.totalVitorias,
-          totalCampeonatos: stats.totalCampeonatos,
-          totalPremiacoes: stats.totalPremiacoes,
-        },
-        experiencias: (experiencias || []).map((exp) => ({
-          nomeEscola: exp.nome_escola,
-          dataInicio: exp.data_inicio,
-          dataFim: exp.data_fim,
-          atual: exp.atual,
-          categoria: exp.categoria_instituicao,
-          cidade: exp.cidade,
-          estado: exp.estado,
-        })),
-        campeonatos: (jornada.data.campeonatos || []).map((camp: any) => ({
-          nome: camp.nome,
-          organizador: camp.organizador || null,
-          dataInicio: camp.data_inicio,
-          posicaoFinal: camp.posicao_final || null,
-          categoria: camp.categoria || null,
-          nomeTime: camp.nome_time || null,
-        })),
-      };
-
-      const blob = await pdf(<CurriculoDocument data={data} />).toBlob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `curriculo-esportivo-${slug}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('[BaixarCurriculoPdfButton] erro ao gerar PDF:', err);
-      toast.error('Não foi possível gerar o PDF. Tente novamente.');
-    } finally {
-      setGerando(false);
-    }
-  };
+/**
+ * Botão "Currículo PDF" da linha de seções do perfil. Fica em destaque (preenchido, com selo) e abre a janela
+ * onde se escolhe o modelo (resumo ou completo) e a aparência (claro ou escuro).
+ * Quem não tem o recurso no plano vê um cadeado e a janela explica o Elite.
+ */
+export function BaixarCurriculoPdfButton({ perfil, accentColor, className = '' }: Props) {
+  const [aberto, setAberto] = useState(false);
+  const { temAcesso } = useCarreiraPlano(perfil.crianca_id || null);
+  const liberado = temAcesso('curriculo_pdf');
 
   return (
-    <Button variant="outline" size="sm" onClick={handleDownload} disabled={gerando} className="gap-2">
-      {gerando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-      {gerando ? 'Gerando PDF...' : 'Baixar Currículo em PDF'}
-    </Button>
+    <>
+      <button
+        type="button"
+        onClick={() => setAberto(true)}
+        className={`relative flex items-center justify-center gap-1.5 rounded-xl border-2 px-3 py-2.5 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:brightness-110 ${className}`}
+        style={{ backgroundColor: accentColor, borderColor: accentColor, backgroundImage: 'linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 55%)' }}
+      >
+        <FileText className="h-4 w-4" />
+        Currículo PDF
+        <span className="absolute -top-2 right-2 flex items-center gap-0.5 rounded-full bg-white px-1.5 py-0.5 text-[9px] font-extrabold uppercase leading-none" style={{ color: accentColor }}>
+          {liberado ? 'PDF' : <><Crown className="h-2.5 w-2.5" /> Elite</>}
+        </span>
+      </button>
+      {aberto && <CurriculoPdfDialog perfil={perfil} open={aberto} onOpenChange={setAberto} liberado={liberado} />}
+    </>
   );
 }

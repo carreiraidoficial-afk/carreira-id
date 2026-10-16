@@ -25,7 +25,7 @@ Atualize este arquivo sempre que uma regra mudar (veja o Histórico no fim).
 | Estatísticas avançadas | não | sim |
 | Liga de Conexões | não | sim |
 | Ver quem visualizou o perfil (cartão "Quem viu seu perfil" dentro de Conexões) | só o número de visitas dos últimos 30 dias, lista borrada | lista de quem visitou (nome, foto, tipo, quando). Imposto no servidor |
-| Currículo em PDF | não | **botão existe, mas não está em nenhuma tela** |
+| Currículo em PDF (Resumo de 1 página ou Completo com todos os jogos; claro ou escuro; QR do perfil) | não: o botão aparece com selo Elite e a janela leva aos planos | sim: botão "Currículo PDF" na linha de seções do perfil, ao lado de Premiações (só para quem gerencia o perfil). **Em teste:** hoje só aparece para atletas da lista `carreira_recursos_liberados` (recurso `curriculo_pdf`; só o João Guilherme). A chave `curriculo_pdf` em Admin → Planos está desligada no Elite; ao ligá-la, o recurso vale para todo o Elite. Decisão pendente: liberar o Resumo para o Base |
 
 Plano Família: R$ 19,90/mês, cobre 2 ou mais atletas do mesmo responsável (tabela `carreira_assinaturas_familia`). Só mensal.
 
@@ -84,7 +84,7 @@ Implementado em `src/hooks/useCarreiraPlano.ts` (telas) e em `check_carreira_ati
 | 1 | Limite do Base para registros de Carreira | **Resolvido em 14/10/2026: 1 por mês** |
 | 2 | Limite da Jornada no Base | **Resolvido em 14/10/2026: 1 campeonato novo por mês** (a regra conta campeonatos, não jogos; confirmar se é isso mesmo que se quer) |
 | 3 | "Ver quem visualizou o perfil" saiu da tela de Conexões, mas é promessa do Elite | **Resolvido em 14/10/2026**: aba "Visitas" em Conexões |
-| 4 | Currículo em PDF existe no código, sem tela | Decidir onde entra ou remover da lista de recursos |
+| 4 | Currículo em PDF | **Resolvido em 16/10/2026**: botão no perfil do atleta (dono), Elite; vôlei e basquete ainda mostram só números gerais |
 | 5 | Preço editável no admin não faz efeito | Unificar a fonte do preço |
 | 6 | Limites só valem na tela, não no servidor | Avaliar travas no banco |
 | 7 | Teste grátis: manter, simplificar ou remover | Em discussão |
@@ -92,6 +92,8 @@ Implementado em `src/hooks/useCarreiraPlano.ts` (telas) e em `check_carreira_ati
 | 8 | Google Play: cobrança de assinatura dentro do app pode exigir o sistema do Google | Decidir antes de publicar na loja |
 
 ## 8. Histórico de mudanças nas regras
+
+- **16/10/2026** — Currículo em PDF volta ao app como recurso do Elite: botão "Currículo PDF" ao lado de Premiações, com janela para escolher Resumo ou Completo e aparência clara ou escura. Em fase de teste: liberado só para o João Guilherme (tabela `carreira_recursos_liberados`); chave `curriculo_pdf` do Elite desligada até a liberação geral.
 
 - **15/10/2026** — O plano pago passa a se chamar **Elite** em toda a interface, e-mails e avisos (identificador interno segue `premium`).
 - **15/10/2026** — Quem assina durante o teste ganha pelo menos 7 dias grátis a mais (antes: só os dias que sobravam).

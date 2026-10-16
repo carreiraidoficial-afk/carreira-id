@@ -44,6 +44,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { BaixarCurriculoPdfButton } from './curriculo/BaixarCurriculoPdfButton';
+import { useRecursoLiberado } from '@/hooks/useRecursoLiberado';
 
 interface CarreiraTimelineProps {
   perfil: PerfilAtleta;
@@ -118,6 +120,7 @@ export function CarreiraTimeline({ perfil, isOwner = false, podeExcluir = isOwne
   const { data: escolinhas, isLoading: escolinhasLoading } = useEscolinhasCarreira(isPlatformProfile ? undefined : perfil.crianca_id);
   const { data: experiencias, isLoading: experienciasLoading } = useCarreiraExperiencias(isPlatformProfile ? undefined : perfil.crianca_id);
   const { data: limitResult } = useCarreiraAtividadeLimit(isOwner && perfil.crianca_id ? perfil.crianca_id : null);
+  const { temAcesso: temAcessoPlano } = useCarreiraPlano(perfil.crianca_id || null);
   const deleteExperiencia = useDeleteCarreiraExperiencia();
   const jornada = useJornada(isPlatformProfile ? null : perfil.crianca_id);
   const { data: trofeus } = useCarreiraCampeonatoTrofeus(isPlatformProfile ? null : perfil.crianca_id);
@@ -136,6 +139,10 @@ export function CarreiraTimeline({ perfil, isOwner = false, podeExcluir = isOwne
   } | undefined;
 
   const accentColor = perfil.cor_destaque || '#3b82f6';
+  // Currículo em PDF: em teste, só aparece para atletas da lista de liberados (admin) ou, no futuro, para quem tem o recurso no plano.
+  const curriculoLiberadoTeste = useRecursoLiberado('curriculo_pdf', perfil.crianca_id, isOwner && !isPlatformProfile);
+  const curriculoNoPlano = temAcessoPlano('curriculo_pdf');
+  const mostraCurriculoPdf = isOwner && !!perfil.crianca_id && !isPlatformProfile && (curriculoLiberadoTeste || curriculoNoPlano);
   const activeTabs = INSTITUTIONAL_TABS;
 
 
@@ -476,7 +483,7 @@ export function CarreiraTimeline({ perfil, isOwner = false, podeExcluir = isOwne
                     type="button"
                     onClick={() => handleTabClick(value)}
                     aria-pressed={isActive}
-                    className={`flex items-center justify-center gap-1.5 rounded-xl border-2 px-3 py-2.5 text-xs font-semibold transition-all duration-200 ${value === 'visao' ? 'col-span-2 sm:col-span-3' : (lista.length - 1) % 2 === 1 && i === lista.length - 1 ? 'col-span-2 sm:col-span-1' : ''}`}
+                    className={`flex items-center justify-center gap-1.5 rounded-xl border-2 px-3 py-2.5 text-xs font-semibold transition-all duration-200 ${value === 'visao' ? 'col-span-2 sm:col-span-3' : !mostraCurriculoPdf && (lista.length - 1) % 2 === 1 && i === lista.length - 1 ? 'col-span-2 sm:col-span-1' : ''}`}
                     style={{
                       backgroundColor: isActive ? accentColor : `${accentColor}15`,
                       color: isActive ? '#fff' : accentColor,
@@ -488,6 +495,8 @@ export function CarreiraTimeline({ perfil, isOwner = false, podeExcluir = isOwne
                   </button>
                 );
               })}
+              {/* Currículo em PDF: ao lado de Premiações, em destaque. Só o dono vê; abre a escolha de modelo e aparência. */}
+              {mostraCurriculoPdf && <BaixarCurriculoPdfButton perfil={perfil as any} accentColor={accentColor} />}
             </div>
 
             {activeTab === 'visao' ? (
