@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Crown, Download, FileText, Files, Loader2, Moon, Sun } from 'lucide-react';
+import { ArrowLeft, Crown, Download, Eye, FileText, Files, Loader2, Moon, Sun } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -14,7 +14,8 @@ import { useCarreiraStats } from '@/hooks/useCarreiraJornadaData';
 import { useJornada } from '@/hooks/useJornada';
 import type { PerfilAtleta } from '@/hooks/useCarreiraData';
 import type { CurriculoTema } from './CurriculoDocument';
-import { gerarCurriculoPdf, type CurriculoModelo } from './gerarCurriculoPdf';
+import { baixarCurriculoPdf, montarCurriculoPdf, type CurriculoModelo, type CurriculoPdfPronto } from './gerarCurriculoPdf';
+import { CurriculoPreview } from './CurriculoPreview';
 
 interface Props {
   perfil: PerfilAtleta;
@@ -68,6 +69,7 @@ export function CurriculoPdfDialog({ perfil, open, onOpenChange, liberado }: Pro
   const [tema, setTema] = useState<CurriculoTema>('claro');
   const [incluirVideos, setIncluirVideos] = useState(true);
   const [gerando, setGerando] = useState(false);
+  const [pronto, setPronto] = useState<CurriculoPdfPronto | null>(null);
 
   const { data: experiencias } = useCarreiraExperiencias(open ? criancaId : null);
   const { stats } = useCarreiraStats(open ? criancaId : null, 'todos');
@@ -77,29 +79,34 @@ export function CurriculoPdfDialog({ perfil, open, onOpenChange, liberado }: Pro
   const perfilPublico = perfil.is_public !== false;
   const carregando = jornada.isLoading;
 
-  const baixar = async () => {
+  const visualizar = async () => {
     if (!liberado) {
-      toast.error('Para baixar o currículo é preciso ter a assinatura do plano Elite.');
+      toast.error('Para visualizar o currículo é preciso ter a assinatura do plano Elite.');
       return;
     }
     setGerando(true);
     try {
-      await gerarCurriculoPdf(
+      setPronto(await montarCurriculoPdf(
         { perfil, idade: idade ?? null, experiencias: experiencias || [], stats, jornada: jornada.data as any },
         { modelo, tema, incluirVideos },
-      );
-      onOpenChange(false);
+      ));
     } catch (err) {
       console.error('[CurriculoPdfDialog] erro ao gerar PDF:', err);
-      toast.error('Não foi possível gerar o PDF. Tente novamente.');
+      toast.error('Não foi possível gerar o currículo. Tente novamente.');
     } finally {
       setGerando(false);
     }
   };
 
+  const baixar = () => {
+    if (!liberado || !pronto) return;
+    baixarCurriculoPdf(pronto);
+    toast.success('Currículo baixado.');
+  };
+
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!gerando) onOpenChange(v); }}>
-      <DialogContent className="max-w-md">
+    <Dialog open={open} onOpenChange={(v) => { if (!gerando) { if (!v) setPronto(null); onOpenChange(v); } }}>
+      <DialogContent className={pronto ? 'flex max-h-[92vh] max-w-2xl flex-col' : 'max-w-md'}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" style={{ color: cor }} />
@@ -119,6 +126,20 @@ export function CurriculoPdfDialog({ perfil, open, onOpenChange, liberado }: Pro
               <Crown className="h-4 w-4" /> Conhecer o Elite
             </Button>
           </div>
+        ) : pronto ? (
+          <>
+            <div className="min-h-0 flex-1 overflow-y-auto rounded-lg bg-muted/40 p-2">
+              <CurriculoPreview blob={pronto.blob} />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="gap-2" onClick={() => setPronto(null)}>
+                <ArrowLeft className="h-4 w-4" /> Voltar
+              </Button>
+              <Button className="flex-1 gap-2 text-white" style={{ backgroundColor: cor }} onClick={baixar}>
+                <Download className="h-4 w-4" /> Baixar PDF
+              </Button>
+            </div>
+          </>
         ) : (
           <div className="space-y-4">
             <div>
@@ -155,9 +176,9 @@ export function CurriculoPdfDialog({ perfil, open, onOpenChange, liberado }: Pro
               </div>
             )}
 
-            <Button className="w-full gap-2 text-white" style={{ backgroundColor: cor }} disabled={gerando || carregando} onClick={baixar}>
-              {gerando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              {gerando ? 'Gerando o PDF...' : carregando ? 'Carregando os dados...' : 'Baixar PDF'}
+            <Button className="w-full gap-2 text-white" style={{ backgroundColor: cor }} disabled={gerando || carregando} onClick={visualizar}>
+              {gerando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+              {gerando ? 'Montando o currículo...' : carregando ? 'Carregando os dados...' : 'Visualizar'}
             </Button>
           </div>
         )}

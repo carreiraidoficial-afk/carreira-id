@@ -56,8 +56,13 @@ function paraJogo(j: any, campeonato: { id: string; nome: string } | null): Curr
   };
 }
 
-/** Monta o PDF no navegador e baixa o arquivo. */
-export async function gerarCurriculoPdf(dados: DadosParaCurriculo, opcoes: OpcoesCurriculo): Promise<void> {
+export interface CurriculoPdfPronto {
+  blob: Blob;
+  nomeArquivo: string;
+}
+
+/** Monta o PDF no navegador (sem baixar), para mostrar a prévia e baixar o mesmo arquivo depois. */
+export async function montarCurriculoPdf(dados: DadosParaCurriculo, opcoes: OpcoesCurriculo): Promise<CurriculoPdfPronto> {
   const { perfil, idade, experiencias, stats, jornada } = dados;
   const [{ pdf }, resumoMod, completoMod, qr] = await Promise.all([
     import('@react-pdf/renderer'),
@@ -187,12 +192,21 @@ export async function gerarCurriculoPdf(dados: DadosParaCurriculo, opcoes: Opcoe
   }
 
   const blob = await pdf(documento).toBlob();
+  return { blob, nomeArquivo: `curriculo-${opcoes.modelo}-${perfil.slug}-${opcoes.tema}.pdf` };
+}
+
+export function baixarCurriculoPdf({ blob, nomeArquivo }: CurriculoPdfPronto): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `curriculo-${opcoes.modelo}-${perfil.slug}-${opcoes.tema}.pdf`;
+  a.download = nomeArquivo;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+/** Monta o PDF no navegador e baixa o arquivo. */
+export async function gerarCurriculoPdf(dados: DadosParaCurriculo, opcoes: OpcoesCurriculo): Promise<void> {
+  baixarCurriculoPdf(await montarCurriculoPdf(dados, opcoes));
 }
