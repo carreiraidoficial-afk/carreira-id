@@ -45,6 +45,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { BaixarCurriculoPdfButton } from './curriculo/BaixarCurriculoPdfButton';
+import { useAuth } from '@/contexts/AuthContext';
 import { useRecursoLiberado } from '@/hooks/useRecursoLiberado';
 
 interface CarreiraTimelineProps {
@@ -121,6 +122,7 @@ export function CarreiraTimeline({ perfil, isOwner = false, podeExcluir = isOwne
   const { data: experiencias, isLoading: experienciasLoading } = useCarreiraExperiencias(isPlatformProfile ? undefined : perfil.crianca_id);
   const { data: limitResult } = useCarreiraAtividadeLimit(isOwner && perfil.crianca_id ? perfil.crianca_id : null);
   const { temAcesso: temAcessoPlano } = useCarreiraPlano(perfil.crianca_id || null);
+  const { user: authUser } = useAuth();
   const deleteExperiencia = useDeleteCarreiraExperiencia();
   const jornada = useJornada(isPlatformProfile ? null : perfil.crianca_id);
   const { data: trofeus } = useCarreiraCampeonatoTrofeus(isPlatformProfile ? null : perfil.crianca_id);
@@ -140,9 +142,11 @@ export function CarreiraTimeline({ perfil, isOwner = false, podeExcluir = isOwne
 
   const accentColor = perfil.cor_destaque || '#3b82f6';
   // Currículo em PDF: em teste, só aparece para atletas da lista de liberados (admin) ou, no futuro, para quem tem o recurso no plano.
-  const curriculoLiberadoTeste = useRecursoLiberado('curriculo_pdf', perfil.crianca_id, isOwner && !isPlatformProfile);
+  // Só o dono do perfil (não colaborador nem modo suporte) enxerga o botão.
+  const ehDonoDoPerfil = !!authUser?.id && authUser.id === (perfil as any).user_id;
+  const curriculoLiberadoTeste = useRecursoLiberado('curriculo_pdf', perfil.crianca_id, ehDonoDoPerfil && !isPlatformProfile);
   const curriculoNoPlano = temAcessoPlano('curriculo_pdf');
-  const mostraCurriculoPdf = isOwner && !!perfil.crianca_id && !isPlatformProfile && (curriculoLiberadoTeste || curriculoNoPlano);
+  const mostraCurriculoPdf = ehDonoDoPerfil && !!perfil.crianca_id && !isPlatformProfile && (curriculoLiberadoTeste || curriculoNoPlano);
   const activeTabs = INSTITUTIONAL_TABS;
 
 

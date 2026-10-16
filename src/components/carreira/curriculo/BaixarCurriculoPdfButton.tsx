@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Crown, FileText } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useCarreiraPlano } from '@/hooks/useCarreiraPlano';
 import type { PerfilAtleta } from '@/hooks/useCarreiraData';
 import { CurriculoPdfDialog } from './CurriculoPdfDialog';
@@ -18,8 +19,11 @@ interface Props {
  */
 export function BaixarCurriculoPdfButton({ perfil, accentColor, className = '' }: Props) {
   const [aberto, setAberto] = useState(false);
-  const { temAcesso } = useCarreiraPlano(perfil.crianca_id || null);
-  const liberado = temAcesso('curriculo_pdf');
+  const { user } = useAuth();
+  const { temPlano } = useCarreiraPlano(perfil.crianca_id || null);
+  // Só o dono do perfil, com plano Elite (assinatura ou teste ativo), gera o currículo.
+  const ehDono = !!user?.id && user.id === (perfil as any).user_id;
+  const liberado = ehDono && temPlano('premium');
 
   return (
     <>

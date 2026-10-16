@@ -78,6 +78,10 @@ export function CurriculoPdfDialog({ perfil, open, onOpenChange, liberado }: Pro
   const carregando = jornada.isLoading;
 
   const baixar = async () => {
+    if (!liberado) {
+      toast.error('Para baixar o currículo é preciso ter a assinatura do plano Elite.');
+      return;
+    }
     setGerando(true);
     try {
       await gerarCurriculoPdf(
@@ -109,7 +113,7 @@ export function CurriculoPdfDialog({ perfil, open, onOpenChange, liberado }: Pro
         {!liberado ? (
           <div className="space-y-3 rounded-xl border p-4 text-center">
             <Crown className="mx-auto h-7 w-7" style={{ color: cor }} />
-            <p className="text-sm font-semibold">O currículo em PDF é um recurso do plano Elite</p>
+            <p className="text-sm font-semibold">Para baixar o currículo é necessário ter a assinatura do plano Elite</p>
             <p className="text-xs text-muted-foreground">Com o Elite você baixa o resumo de uma página e o currículo completo, com todos os jogos e campanhas.</p>
             <Button className="w-full gap-2 text-white" style={{ backgroundColor: cor }} onClick={() => { onOpenChange(false); navigate(carreiraPath('/planos')); }}>
               <Crown className="h-4 w-4" /> Conhecer o Elite
