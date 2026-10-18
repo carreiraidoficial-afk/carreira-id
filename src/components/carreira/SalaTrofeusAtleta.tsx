@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Medal, Loader2, Calendar } from 'lucide-react';
+import { Trophy, Loader2, Calendar } from 'lucide-react';
+import { CabecalhoSala, FaixaConquistas, SeloTrofeu, resumoConquistas, tipoDoSelo } from './trofeus-ui';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -256,18 +257,18 @@ export function SalaTrofeusAtleta({
 
   return (
     <Card className="p-4 sm:p-6 space-y-5">
-      <div className="flex items-center gap-2">
-        <Trophy className="w-5 h-5" style={{ color: accentColor }} />
-        <h3 className="text-lg font-semibold">Sala de Troféus</h3>
-      </div>
+      <CabecalhoSala
+        icone={<Trophy className="w-5 h-5" style={{ color: accentColor }} />}
+        resumo={resumoConquistas({ titulos: stats.titulos, vices: stats.vices, anoRecente: anos[0] })}
+      />
 
       {/* Estatísticas */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <StatBox label="Total" value={stats.total} accentColor={accentColor} />
-        <StatBox label="Títulos" value={stats.titulos} color="#f59e0b" />
-        <StatBox label="Vices" value={stats.vices} color="#94a3b8" />
-        <StatBox label="Destaques" value={stats.individuais} color="#a855f7" />
-      </div>
+      <FaixaConquistas itens={[
+        { valor: stats.total, rotulo: 'Troféus', cor: accentColor },
+        { valor: stats.titulos, rotulo: 'Títulos', cor: '#f59e0b', esconderSeZero: true },
+        { valor: stats.vices, rotulo: 'Vices', cor: '#94a3b8', esconderSeZero: true },
+        { valor: stats.individuais, rotulo: 'Destaques', cor: '#a855f7', esconderSeZero: true },
+      ]} />
 
       {/* Lista por ano */}
       <div className="space-y-4">
@@ -292,19 +293,6 @@ export function SalaTrofeusAtleta({
   );
 }
 
-function StatBox({ label, value, accentColor, color }: { label: string; value: number; accentColor?: string; color?: string }) {
-  const c = color || accentColor || '#3b82f6';
-  return (
-    <div
-      className="rounded-lg p-3 text-center border-2"
-      style={{ borderColor: `${c}40`, backgroundColor: `${c}10` }}
-    >
-      <div className="text-2xl font-bold" style={{ color: c }}>{value}</div>
-      <div className="truncate text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
-    </div>
-  );
-}
-
 function TrofeuRow({ item, accentColor }: { item: TrofeuItem; accentColor: string }) {
   const colocMeta = item.colocacao ? POSICAO_META[item.colocacao] : undefined;
   const corFundo =
@@ -318,15 +306,14 @@ function TrofeuRow({ item, accentColor }: { item: TrofeuItem; accentColor: strin
     ? format(parseDataLocal(item.data), "dd 'de' MMM", { locale: ptBR })
     : '';
 
-  const Icone = item.categoria === 'coletivo' ? Trophy : Medal;
-
   const colocLinha = [item.colocacaoLabel, item.categoriaIdade].filter(Boolean).join(' • ');
 
   return (
     <div
-      className="flex items-stretch gap-3 p-3 rounded-lg border"
+      className="flex items-center gap-3 p-3 rounded-xl border"
       style={{ borderColor: `${corFundo}40`, backgroundColor: `${corFundo}10` }}
     >
+      <SeloTrofeu tipo={tipoDoSelo(item.colocacao, item.categoria === 'individual')} />
       <div className="flex-1 min-w-0 space-y-1">
         <h5 className="font-semibold text-sm leading-snug truncate" title={item.titulo}>
           {item.titulo}
@@ -355,7 +342,6 @@ function TrofeuRow({ item, accentColor }: { item: TrofeuItem; accentColor: strin
           )}
         </div>
       </div>
-      <Icone className="w-5 h-5 mt-0.5 shrink-0" style={{ color: corFundo }} />
     </div>
   );
 }

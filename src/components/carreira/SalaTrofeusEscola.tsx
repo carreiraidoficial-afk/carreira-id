@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Trophy, Plus, MoreVertical, Pencil, Trash2, Calendar, Loader2 } from 'lucide-react';
+import { CabecalhoSala, FaixaConquistas, SeloTrofeu, resumoConquistas, tipoDoSelo } from './trofeus-ui';
 import { useTrofeusEscola, type ColocacaoTrofeuEscola, type TrofeuEscola } from '@/hooks/useSalaTrofeusEscola';
 
 const COLOCACAO_META: Record<ColocacaoTrofeuEscola, { label: string; emoji: string; color: string }> = {
@@ -65,18 +66,16 @@ export function SalaTrofeusEscola({ perfilRedeId, isOwner, podeExcluir, accentCo
   return (
     <Card>
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Trophy className="w-5 h-5" style={{ color: accentColor }} />
-            Sala de Troféus
-          </CardTitle>
-          {isOwner && onAdd && (
-            <Button variant="outline" size="sm" className="gap-1 border-dashed" onClick={onAdd}>
+        <CabecalhoSala
+          icone={<Trophy className="w-5 h-5" style={{ color: accentColor }} />}
+          resumo={resumoConquistas({ titulos: stats.titulos, vices: stats.vices, anoRecente: anos[0] })}
+          direita={isOwner && onAdd ? (
+            <Button variant="outline" size="sm" className="gap-1 border-dashed shrink-0" onClick={onAdd}>
               <Plus className="w-4 h-4" />
               Adicionar
             </Button>
-          )}
-        </div>
+          ) : undefined}
+        />
       </CardHeader>
       <CardContent className="space-y-4">
         {(trofeus || []).length === 0 ? (
@@ -87,11 +86,11 @@ export function SalaTrofeusEscola({ perfilRedeId, isOwner, podeExcluir, accentCo
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-3 gap-2">
-              <StatBox label="Total" value={stats.total} accentColor={accentColor} />
-              <StatBox label="Títulos" value={stats.titulos} color="#f59e0b" />
-              <StatBox label="Vices" value={stats.vices} color="#94a3b8" />
-            </div>
+            <FaixaConquistas itens={[
+              { valor: stats.total, rotulo: 'Troféus', cor: accentColor },
+              { valor: stats.titulos, rotulo: 'Títulos', cor: '#f59e0b', esconderSeZero: true },
+              { valor: stats.vices, rotulo: 'Vices', cor: '#94a3b8', esconderSeZero: true },
+            ]} />
             <div className="space-y-4">
               {anos.map((ano) => (
                 <div key={ano}>
@@ -115,23 +114,13 @@ export function SalaTrofeusEscola({ perfilRedeId, isOwner, podeExcluir, accentCo
   );
 }
 
-function StatBox({ label, value, accentColor, color }: { label: string; value: number; accentColor?: string; color?: string }) {
-  const c = color || accentColor || '#3b82f6';
-  return (
-    <div className="rounded-lg p-3 text-center border-2" style={{ borderColor: `${c}40`, backgroundColor: `${c}10` }}>
-      <div className="text-2xl font-bold" style={{ color: c }}>{value}</div>
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
-    </div>
-  );
-}
-
 function TrofeuRow({ item, isOwner, podeExcluir, onEdit, onDelete }: { item: TrofeuEscola; isOwner?: boolean; podeExcluir?: boolean; onEdit?: (item: TrofeuEscola) => void; onDelete?: (id: string) => void }) {
   const meta = COLOCACAO_META[item.colocacao];
   const subLinha = [meta.label, item.categoria].filter(Boolean).join(' • ');
 
   return (
-    <div className="relative flex items-start gap-3 p-3 rounded-lg border" style={{ borderColor: `${meta.color}40`, backgroundColor: `${meta.color}10` }}>
-      <span className="text-lg leading-none mt-0.5">{meta.emoji}</span>
+    <div className="relative flex items-center gap-3 p-3 rounded-xl border" style={{ borderColor: `${meta.color}40`, backgroundColor: `${meta.color}10` }}>
+      <SeloTrofeu tipo={tipoDoSelo(item.colocacao)} />
       <div className="flex-1 min-w-0 pr-6">
         <h5 className="font-semibold text-sm leading-snug">{item.titulo}</h5>
         <p className="text-xs font-medium mt-0.5" style={{ color: meta.color }}>{subLinha}</p>
