@@ -24,6 +24,14 @@ export interface OpcoesCurriculo {
 const rotuloPremiacao = (tipo: string | null | undefined) =>
   (tipo || '').replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
 
+/** "20/09 · PHJ Academy 3x3 Bangu · 2ª Rodada": lembra em que jogo foi. */
+function detalheDoJogo(j: any): string | null {
+  const data = j.data_jogo ? `${String(j.data_jogo).slice(8, 10)}/${String(j.data_jogo).slice(5, 7)}` : null;
+  const placar = j.placar_time_atleta != null && j.placar_adversario != null ? `${j.placar_time_atleta}x${j.placar_adversario}` : 'x';
+  const confronto = j.time_adversario ? [j.time_atleta, placar, j.time_adversario].filter(Boolean).join(' ') : null;
+  return [data, confronto, j.fase_campeonato].filter(Boolean).join(' · ') || null;
+}
+
 function paraJogo(j: any, campeonato: { id: string; nome: string } | null): CurriculoJogo {
   const penaltis = j.teve_disputa_penaltis && j.placar_penaltis_time != null
     ? { pro: j.placar_penaltis_time as number, contra: (j.placar_penaltis_adversario ?? 0) as number }
@@ -103,11 +111,12 @@ export async function montarCurriculoPdf(dados: DadosParaCurriculo, opcoes: Opco
     .sort((a, b) => (b.data_final || b.data_inicio || '').localeCompare(a.data_final || a.data_inicio || ''))
     .flatMap((c) => {
       const itens: CurriculoPremiacao[] = [];
+      const anoCamp = Number((c.data_final || c.data_inicio || '').slice(0, 4)) || null;
       if (POSICOES_PODIO.includes(c.posicao_final)) {
-        itens.push({ titulo: POSICAO_LABELS[c.posicao_final], campeonato: c.nome, tipo: 'coletivo' });
+        itens.push({ titulo: POSICAO_LABELS[c.posicao_final], campeonato: c.nome, tipo: 'coletivo', ano: anoCamp });
       }
       (c.premiacoes || []).forEach((p: any) =>
-        itens.push({ titulo: p.titulo || rotuloPremiacao(p.tipo_premiacao), campeonato: c.nome, tipo: 'individual' }),
+        itens.push({ titulo: p.titulo || rotuloPremiacao(p.tipo_premiacao), campeonato: c.nome, tipo: 'individual', ano: anoCamp }),
       );
       jogosDestaque
         .filter(({ camp }) => camp.id === c.id)
@@ -117,7 +126,8 @@ export async function montarCurriculoPdf(dados: DadosParaCurriculo, opcoes: Opco
             titulo: 'Destaque do jogo',
             campeonato: c.nome,
             tipo: 'destaque_jogo',
-            detalhe: [j.time_adversario ? `vs ${j.time_adversario}` : null, j.fase_campeonato].filter(Boolean).join(' · ') || null,
+            ano: anoCamp,
+            detalhe: detalheDoJogo(j),
           }),
         );
       return itens;

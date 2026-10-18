@@ -121,6 +121,8 @@ function colunasDesempenho(d: CurriculoCompletoData): ColunaJogo[] {
   ];
 }
 
+const NOTA_FONTE = 'Dados registrados pela família e pelos colaboradores do atleta no Carreira ID. Os números refletem apenas o que foi lançado no perfil.';
+
 function criarEstilos(p: ReturnType<typeof paleta>) {
   return StyleSheet.create({
     page: { fontFamily: FONTE, fontSize: 9, color: p.texto, backgroundColor: p.pagina, paddingTop: 44, paddingBottom: 64 },
@@ -173,6 +175,15 @@ function criarEstilos(p: ReturnType<typeof paleta>) {
     campLinha: { flexDirection: 'row', marginTop: 5 },
     campStat: { fontSize: 8, color: p.suave, marginRight: 10 },
     campStatV: { fontWeight: 800, color: p.texto },
+    trofResumo: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 4 },
+    trofPilula: { fontSize: 7.5, fontWeight: 700, borderRadius: 8, paddingVertical: 3, paddingHorizontal: 8, marginRight: 5, marginBottom: 4, backgroundColor: p.cartao, color: p.texto },
+    anoCab: { flexDirection: 'row', alignItems: 'center', marginTop: 8, marginBottom: 5 },
+    anoTexto: { fontSize: 11, fontWeight: 800, color: p.acento },
+    anoLinha: { flex: 1, height: 0.8, backgroundColor: p.linha, marginLeft: 8 },
+    trofCamp: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 3 },
+    trofCampNome: { fontSize: 9.5, fontWeight: 800, color: p.texto, flex: 1 },
+    trofItem: { flexDirection: 'row', alignItems: 'flex-start', marginLeft: 12, marginTop: 4 },
+    trofPonto: { width: 4, height: 4, borderRadius: 2, backgroundColor: p.acento, marginTop: 4, marginRight: 7 },
     chipPos: { fontSize: 7.5, fontWeight: 800, borderRadius: 8, paddingVertical: 3, paddingHorizontal: 8 },
     // Mídias e trajetória
     midia: { flexDirection: 'row', alignItems: 'center', paddingVertical: 5, borderBottomWidth: 0.6, borderBottomColor: p.linha },
@@ -255,14 +266,31 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
   });
 
   // Campanhas por campeonato
-  // Premiações agrupadas pelo campeonato, na ordem em que vieram (coletiva, individuais, destaques de jogo)
-  const gruposPremiacoes: { campeonato: string; itens: NonNullable<typeof data.premiacoes> }[] = [];
+  // Premiações: por ano, depois por campeonato (na ordem em que vieram: coletiva, individuais, destaques de jogo)
+  type Premio = NonNullable<typeof data.premiacoes>[number];
+  const anosPremiacoes: { ano: number | null; camps: { campeonato: string; itens: Premio[] }[] }[] = [];
   (data.premiacoes || []).forEach((pr) => {
+    const ano = pr.ano ?? null;
+    let grupoAno = anosPremiacoes.find((g) => g.ano === ano);
+    if (!grupoAno) { grupoAno = { ano, camps: [] }; anosPremiacoes.push(grupoAno); }
     const nome = pr.campeonato || 'Outras conquistas';
-    const grupo = gruposPremiacoes.find((g) => g.campeonato === nome);
-    if (grupo) grupo.itens.push(pr);
-    else gruposPremiacoes.push({ campeonato: nome, itens: [pr] });
+    let camp = grupoAno.camps.find((c) => c.campeonato === nome);
+    if (!camp) { camp = { campeonato: nome, itens: [] }; grupoAno.camps.push(camp); }
+    camp.itens.push(pr);
   });
+  const premios = data.premiacoes || [];
+  const nTitulos = premios.filter((x) => x.tipo === 'coletivo' && x.titulo === POSICAO_LABELS.campeao).length;
+  const nVices = premios.filter((x) => x.tipo === 'coletivo' && x.titulo === POSICAO_LABELS.vice).length;
+  const nTerceiros = premios.filter((x) => x.tipo === 'coletivo' && x.titulo === POSICAO_LABELS.terceiro).length;
+  const nIndividuais = premios.filter((x) => x.tipo === 'individual').length;
+  const nDestaques = premios.filter((x) => x.tipo === 'destaque_jogo').length;
+  const resumoPremios = [
+    nTitulos ? `${nTitulos} ${nTitulos === 1 ? 'título' : 'títulos'}` : null,
+    nVices ? `${nVices} ${nVices === 1 ? 'vice-campeonato' : 'vice-campeonatos'}` : null,
+    nTerceiros ? `${nTerceiros} × 3º lugar` : null,
+    nIndividuais ? `${nIndividuais} ${nIndividuais === 1 ? 'prêmio individual' : 'prêmios individuais'}` : null,
+    nDestaques ? `${nDestaques} ${nDestaques === 1 ? 'destaque de jogo' : 'destaques de jogo'}` : null,
+  ].filter(Boolean) as string[];
 
   const campanhas = [...data.campeonatosDetalhe]
     .sort((a, b) => (b.dataInicio || '').localeCompare(a.dataInicio || ''))
@@ -501,27 +529,53 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
             </View>
           ) : null}
 
-          {/* Premiações: coletivas (pódio) e individuais, cada uma dentro do campeonato correspondente */}
-          {(data.premiacoes || []).length > 0 ? (
+          {/* Premiações: sala de troféus, por ano e por campeonato */}
+          {premios.length > 0 ? (
             <View style={e.secao}>
-              <Titulo texto="Premiações" nota={`${(data.premiacoes || []).length} no total`} e={e} />
-              {gruposPremiacoes.map((g) => (
-                <View key={g.campeonato} style={{ marginBottom: 8 }}>
-                  <Text style={[e.td, { fontWeight: 800, marginBottom: 2 }]}>{limpar(g.campeonato)}</Text>
-                  {g.itens.map((pr, i) => (
-                    <View key={i} style={e.midia} wrap={false}>
-                      <Text style={[e.td, { flex: 1, fontWeight: 700 }]}>{limpar(pr.titulo)}</Text>
-                      {pr.detalhe ? <Text style={e.tdSuave}>{limpar(pr.detalhe)}</Text> : null}
-                    </View>
-                  ))}
+              <Titulo texto="Premiações" nota={`${premios.length} no total`} e={e} />
+              <View style={e.trofResumo}>
+                {resumoPremios.map((t) => <Text key={t} style={e.trofPilula}>{t}</Text>)}
+              </View>
+              {anosPremiacoes.map((ga) => (
+                <View key={String(ga.ano)}>
+                  {ga.camps.map((c, ci) => {
+                    const ultimo = premios.length > 0 && ga === anosPremiacoes[anosPremiacoes.length - 1] && ci === ga.camps.length - 1;
+                    const coletivo = c.itens.find((x) => x.tipo === 'coletivo');
+                    const medalha = coletivo ? MEDALHA[Object.keys(POSICAO_LABELS).find((k) => POSICAO_LABELS[k] === coletivo.titulo) || ''] : undefined;
+                    const outros = c.itens.filter((x) => x.tipo !== 'coletivo');
+                    return (
+                      <View key={c.campeonato} style={{ marginBottom: 6 }} wrap={false}>
+                        {ci === 0 ? (
+                          <View style={e.anoCab}>
+                            <Text style={e.anoTexto}>{ga.ano ?? 'Outras'}</Text>
+                            <View style={e.anoLinha} />
+                          </View>
+                        ) : null}
+                        <View style={e.trofCamp}>
+                          <Text style={e.trofCampNome}>{limpar(c.campeonato)}</Text>
+                          {coletivo && medalha ? (
+                            <Text style={[e.chipPos, { backgroundColor: medalha.fundo, color: medalha.texto }]}>{coletivo.titulo}</Text>
+                          ) : null}
+                        </View>
+                        {outros.map((pr, i) => (
+                          <View key={i} style={e.trofItem}>
+                            <View style={e.trofPonto} />
+                            <View style={{ flex: 1 }}>
+                              <Text style={[e.td, { fontWeight: 700 }]}>{limpar(pr.titulo)}</Text>
+                              {pr.detalhe ? <Text style={e.tdSuave}>{limpar(pr.detalhe)}</Text> : null}
+                            </View>
+                          </View>
+                        ))}
+                        {ultimo ? <Text style={[e.nota, { marginTop: 14 }]}>{NOTA_FONTE}</Text> : null}
+                      </View>
+                    );
+                  })}
                 </View>
               ))}
             </View>
           ) : null}
 
-          <Text style={[e.nota, { marginTop: 14 }]}>
-            Dados registrados pela família e pelos colaboradores do atleta no Carreira ID. Os números refletem apenas o que foi lançado no perfil.
-          </Text>
+          {premios.length === 0 ? <Text style={[e.nota, { marginTop: 14 }]}>{NOTA_FONTE}</Text> : null}
         </View>
 
         {/* Rodapé fixo com QR do perfil e numeração */}

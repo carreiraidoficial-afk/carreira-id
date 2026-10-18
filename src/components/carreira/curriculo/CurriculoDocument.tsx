@@ -29,8 +29,10 @@ export interface CurriculoPremiacao {
   campeonato: string | null;
   /** coletivo = campeão/vice/3º do time; individual = prêmio do atleta; destaque_jogo = uma partida em que foi o destaque. */
   tipo?: 'coletivo' | 'individual' | 'destaque_jogo';
-  /** Detalhe da linha (nos destaques de jogo: "vs Adversário · Fase"). */
+  /** Detalhe da linha (nos destaques de jogo: data, time x adversário e fase). */
   detalhe?: string | null;
+  /** Ano do campeonato, para separar a lista por ano. */
+  ano?: number | null;
 }
 
 /** Posições que entram como troféu (e ganham selo): só o pódio. */

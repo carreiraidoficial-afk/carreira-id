@@ -45,10 +45,32 @@ export function CurriculoPreview({ blob }: Props) {
           canvas.style.display = 'block';
           canvas.style.borderRadius = '6px';
           canvas.style.boxShadow = '0 1px 6px rgba(0,0,0,0.25)';
-          canvas.style.marginBottom = '12px';
           await pagina.render({ canvasContext: canvas.getContext('2d')!, viewport }).promise;
           if (cancelado) return;
-          area.appendChild(canvas);
+          const caixa = document.createElement('div');
+          caixa.style.position = 'relative';
+          caixa.style.marginBottom = '12px';
+          caixa.appendChild(canvas);
+          // Links do PDF (vídeos dos jogos) viram links clicáveis que abrem em nova aba: a pessoa não sai do app.
+          const anotacoes: any[] = await pagina.getAnnotations();
+          anotacoes
+            .filter((a) => a.subtype === 'Link' && typeof a.url === 'string' && /^https?:/i.test(a.url))
+            .forEach((a) => {
+              const [x1, y1, x2, y2] = viewport.convertToViewportRectangle(a.rect);
+              const link = document.createElement('a');
+              link.href = a.url;
+              link.target = '_blank';
+              link.rel = 'noopener noreferrer';
+              link.title = 'Abrir em nova aba';
+              link.style.position = 'absolute';
+              link.style.left = `${(Math.min(x1, x2) / viewport.width) * 100}%`;
+              link.style.top = `${(Math.min(y1, y2) / viewport.height) * 100}%`;
+              link.style.width = `${(Math.abs(x2 - x1) / viewport.width) * 100}%`;
+              link.style.height = `${(Math.abs(y2 - y1) / viewport.height) * 100}%`;
+              caixa.appendChild(link);
+            });
+          if (cancelado) return;
+          area.appendChild(caixa);
         }
         if (!cancelado) setEstado('pronto');
         doc.destroy();
