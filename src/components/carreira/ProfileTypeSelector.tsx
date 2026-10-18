@@ -30,7 +30,7 @@ const OPCOES: Record<ProfileType, ProfileOption> = {
   tecnico: { type: 'tecnico', icon: '📋', label: 'Técnico', description: 'Dirige equipes em competições e jogos' },
   dono_escola: { type: 'dono_escola', icon: '🏫', label: 'Dono de Escola', description: 'Administra escolinha ou clube de base' },
   preparador_fisico: { type: 'preparador_fisico', icon: '💪', label: 'Preparador Físico', description: 'Cuida da performance física dos atletas' },
-  empresario: { type: 'empresario', icon: '💼', label: 'Empresário', description: 'Representa e gerencia carreiras de atletas' },
+  empresario: { type: 'empresario', icon: '💼', label: 'Empresário', description: 'Empreendedor do esporte: negócios, agências e projetos do ramo esportivo' },
   influenciador: { type: 'influenciador', icon: '⭐', label: 'Influenciador', description: 'Cria conteúdo sobre esporte' },
   scout: { type: 'scout', icon: '🎯', label: 'Scout', description: 'Observa e identifica talentos esportivos' },
   agente_clube: { type: 'agente_clube', icon: '🏢', label: 'Agente de Clube', description: 'Representa um clube na captação de talentos' },
@@ -54,7 +54,7 @@ const ENTRADAS: Entrada[] = [
   { chave: 'jogador_profissional', tipo: 'jogador_profissional', icon: OPCOES.jogador_profissional.icon, label: OPCOES.jogador_profissional.label, description: OPCOES.jogador_profissional.description },
   { chave: 'treinadores', icon: '👨‍🏫', label: 'Professor, Técnico ou Preparador', description: 'Ensina, treina ou prepara atletas', grupo: ['professor', 'tecnico', 'preparador_fisico'] },
   { chave: 'dono_escola', tipo: 'dono_escola', icon: OPCOES.dono_escola.icon, label: OPCOES.dono_escola.label, description: OPCOES.dono_escola.description },
-  { chave: 'agentes', icon: '💼', label: 'Empresário, Scout ou Agente', description: 'Representa, observa ou capta talentos', grupo: ['empresario', 'scout', 'agente_clube'] },
+  { chave: 'agentes', icon: '💼', label: 'Empresário, Scout ou Agente', description: 'Empreende, observa ou capta talentos no esporte', grupo: ['empresario', 'scout', 'agente_clube'] },
   { chave: 'conteudo', icon: '⭐', label: 'Influenciador ou Fotógrafo', description: 'Cria ou registra conteúdo sobre esporte', grupo: ['influenciador', 'fotografo'] },
   { chave: 'torcedor', tipo: 'torcedor', icon: OPCOES.torcedor.icon, label: OPCOES.torcedor.label, description: OPCOES.torcedor.description },
 ];
