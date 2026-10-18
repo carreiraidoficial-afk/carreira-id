@@ -172,6 +172,7 @@ function criarEstilos(p: ReturnType<typeof paleta>) {
     campLogo: { width: 28, height: 28, borderRadius: 5, marginRight: 9, objectFit: 'contain' },
     campNome: { fontSize: 10, fontWeight: 700, color: p.texto },
     campMeta: { fontSize: 8, color: p.suave, marginTop: 1.5 },
+    campTime: { fontSize: 9, fontWeight: 800, color: p.acento },
     campLinha: { flexDirection: 'row', marginTop: 5 },
     campStat: { fontSize: 8, color: p.suave, marginRight: 10 },
     campStatV: { fontWeight: 800, color: p.texto },
@@ -427,7 +428,9 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
                     <View style={{ flex: 1 }}>
                       <Text style={e.campNome}>{limpar(c.nome)}</Text>
                       <Text style={e.campMeta}>
-                        {[ano(c.dataInicio), c.categoria, c.nomeTime, c.organizador ? `Org.: ${limpar(c.organizador)}` : null].filter(Boolean).join('  ·  ')}
+                        {c.nomeTime ? <Text style={e.campTime}>{limpar(c.nomeTime)}</Text> : null}
+                        {c.nomeTime ? '  ·  ' : ''}
+                        {[ano(c.dataInicio), c.categoria].filter(Boolean).join('  ·  ')}
                       </Text>
                       <View style={e.campLinha}>
                         <Text style={e.campStat}><Text style={e.campStatV}>{c.jogos}</Text> {c.jogos === 1 ? 'jogo' : 'jogos'}</Text>
@@ -463,11 +466,13 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
                 {colunas.map((c) => <Text key={c.rotulo} style={[e.thTxt, e.centro, { width: c.largura }]}>{c.rotulo}</Text>)}
               </View>
               {jogos.map((j, i) => {
+                const anoJogo = j.data ? j.data.slice(0, 4) : '';
+                const primeiroDoAno = i === 0 || anoJogo !== (jogos[i - 1].data || '').slice(0, 4);
                 const r = resultado(j);
                 const cor = r === 'V' ? '#16A34A' : r === 'D' ? '#DC2626' : '#6B7280';
                 const fase = normalizarFase(j.fase);
                 const partida = [j.meuTime, 'x', j.adversario].filter(Boolean).join(' ');
-                return (
+                const linha = (
                   <View key={i} style={e.tr} wrap={false}>
                     <Text style={[e.td, { width: 44, fontSize: 8 }]}>{j.data ? `${j.data.slice(8, 10)}/${j.data.slice(5, 7)}/${j.data.slice(2, 4)}` : ''}</Text>
                     <View style={{ flex: 1, paddingRight: 6 }}>
@@ -485,6 +490,18 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
                       const v = c.valor(j);
                       return <Text key={c.rotulo} style={[e.td, e.centro, { width: c.largura, color: v ? p.texto : p.suave }]}>{v == null ? '—' : v}</Text>;
                     })}
+                  </View>
+                );
+                if (!primeiroDoAno) return linha;
+                const totalAno = jogos.filter((x) => (x.data || '').slice(0, 4) === anoJogo).length;
+                return (
+                  <View key={i} wrap={false}>
+                    <View style={e.anoCab}>
+                      <Text style={e.anoTexto}>{anoJogo || 'Sem data'}</Text>
+                      <View style={e.anoLinha} />
+                      <Text style={[e.tdSuave, { marginLeft: 8, marginTop: 0 }]}>{totalAno} {totalAno === 1 ? 'jogo' : 'jogos'}</Text>
+                    </View>
+                    {linha}
                   </View>
                 );
               })}

@@ -247,6 +247,7 @@ function criarEstilos(p: ReturnType<typeof paleta>) {
     campInfo: { flex: 1, paddingRight: 8 },
     campNome: { fontSize: 10, fontWeight: 700, color: p.texto },
     campMeta: { fontSize: 8, color: p.suave, marginTop: 1.5 },
+    campTime: { fontSize: 9, fontWeight: 800, color: p.acento },
     campChip: { fontSize: 7.5, fontWeight: 800, borderRadius: 8, paddingVertical: 3, paddingHorizontal: 8 },
     vazio: { fontSize: 9, color: p.suave },
     mais: { fontSize: 8, fontWeight: 600, color: p.acento, marginTop: 4 },
@@ -434,7 +435,9 @@ export function CurriculoDocument({ data }: { data: CurriculoData }) {
                     <View style={e.campInfo}>
                       <Text style={e.campNome}>{limpar(camp.nome)}</Text>
                       <Text style={e.campMeta}>
-                        {[camp.categoria, camp.nomeTime, camp.organizador ? `Org.: ${camp.organizador}` : null].filter(Boolean).join('  ·  ')}
+                        {camp.nomeTime ? <Text style={e.campTime}>{limpar(camp.nomeTime)}</Text> : null}
+                        {camp.nomeTime && camp.categoria ? '  ·  ' : ''}
+                        {camp.categoria || ''}
                       </Text>
                     </View>
                     {camp.posicaoFinal && medalha ? (
