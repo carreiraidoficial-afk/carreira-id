@@ -47,6 +47,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { BaixarCurriculoPdfButton } from './curriculo/BaixarCurriculoPdfButton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRecursoLiberado } from '@/hooks/useRecursoLiberado';
+import { useSuporteAlvo } from '@/hooks/useSuporteAlvo';
 
 interface CarreiraTimelineProps {
   perfil: PerfilAtleta;
@@ -142,8 +143,10 @@ export function CarreiraTimeline({ perfil, isOwner = false, podeExcluir = isOwne
 
   const accentColor = perfil.cor_destaque || '#3b82f6';
   // Currículo em PDF: em teste, só aparece para atletas da lista de liberados (admin) ou, no futuro, para quem tem o recurso no plano.
-  // Só o dono do perfil (não colaborador nem modo suporte) enxerga o botão.
-  const ehDonoDoPerfil = !!authUser?.id && authUser.id === (perfil as any).user_id;
+  // Só o dono do perfil enxerga o botão (colaborador não). O admin em Modo Suporte nesta conta também, para orientar a família.
+  const suporte = useSuporteAlvo();
+  const emSuporteDesteDono = suporte.ativo && suporte.alvo?.userId === (perfil as any).user_id;
+  const ehDonoDoPerfil = (!!authUser?.id && authUser.id === (perfil as any).user_id) || emSuporteDesteDono;
   const curriculoLiberadoTeste = useRecursoLiberado('curriculo_pdf', perfil.crianca_id, ehDonoDoPerfil && !isPlatformProfile);
   const curriculoNoPlano = temAcessoPlano('curriculo_pdf');
   const mostraCurriculoPdf = ehDonoDoPerfil && !!perfil.crianca_id && !isPlatformProfile && (curriculoLiberadoTeste || curriculoNoPlano);
@@ -500,7 +503,7 @@ export function CarreiraTimeline({ perfil, isOwner = false, podeExcluir = isOwne
                 );
               })}
               {/* Currículo em PDF: ao lado de Premiações, em destaque. Só o dono vê; abre a escolha de modelo e aparência. */}
-              {mostraCurriculoPdf && <BaixarCurriculoPdfButton perfil={perfil as any} accentColor={accentColor} />}
+              {mostraCurriculoPdf && <BaixarCurriculoPdfButton perfil={perfil as any} accentColor={accentColor} emSuporte={emSuporteDesteDono} />}
             </div>
 
             {activeTab === 'visao' ? (
