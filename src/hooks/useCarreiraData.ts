@@ -751,6 +751,44 @@ export interface ComunidadeAtleta {
   slug: string;
   modalidade: string | null;
   categoria: string | null;
+  /** Quando e como o atleta chegou à escola ('convite' = criou a conta pelo link da escola). Só a escola vê isso. */
+  conectadoEm?: string | null;
+  origem?: 'convite' | 'pedido' | null;
+}
+
+/** Busca as conexões da escola com atletas no status pedido e monta a lista (nome, foto, categoria, quando e como chegou). */
+async function buscarAtletasDaEscola(escolaUserId: string, status: 'aceita' | 'pendente'): Promise<ComunidadeAtleta[]> {
+  const { data: conexoes, error } = await supabase
+    .from('rede_conexoes')
+    .select('solicitante_id, destinatario_id, solicitante_perfil_atleta_id, destinatario_perfil_atleta_id, created_at, origem')
+    .eq('status', status)
+    .or(`solicitante_id.eq.${escolaUserId},destinatario_id.eq.${escolaUserId}`);
+  if (error) throw error;
+
+  // Só conta vínculo atleta → escola: o lado da escola NÃO tem perfil_atleta e o outro lado tem. A conta que
+  // é dona da escola também pode ser dona de atletas (filhos), e as conexões atleta↔atleta deles têm o
+  // user_id da escola de um lado: sem esse filtro, os contatos dos filhos viravam "alunos" da escola.
+  const origemPorAtleta = new Map<string, { conectadoEm: string | null; origem: 'convite' | 'pedido' | null }>();
+  (conexoes || []).forEach((row: any) => {
+    const escolaEhSolicitante = row.solicitante_id === escolaUserId;
+    const ladoEscola = escolaEhSolicitante ? row.solicitante_perfil_atleta_id : row.destinatario_perfil_atleta_id;
+    const ladoAtleta = escolaEhSolicitante ? row.destinatario_perfil_atleta_id : row.solicitante_perfil_atleta_id;
+    if (!ladoEscola && ladoAtleta) origemPorAtleta.set(ladoAtleta, { conectadoEm: row.created_at ?? null, origem: row.origem ?? null });
+  });
+  if (origemPorAtleta.size === 0) return [];
+
+  let consulta = supabase
+    .from('perfil_atleta')
+    .select('id, nome, foto_url, slug, modalidade, categoria')
+    .in('id', [...origemPorAtleta.keys()]);
+  // A página pública só mostra perfis públicos; a lista de pedidos é da escola e mostra quem pediu.
+  if (status === 'aceita') consulta = consulta.eq('is_public', true);
+  const { data: atletas, error: atletasError } = await consulta;
+  if (atletasError) throw atletasError;
+
+  return ((atletas || []) as ComunidadeAtleta[])
+    .map((a) => ({ ...a, ...origemPorAtleta.get(a.id) }))
+    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 }
 
 /** Atletas com conexão aceita com esta escola (perfil dono_escola) --
@@ -758,40 +796,20 @@ export interface ComunidadeAtleta {
 export function useComunidadeEscola(escolaUserId: string | undefined) {
   return useQuery({
     queryKey: ['comunidade-escola', escolaUserId],
-    queryFn: async () => {
-      if (!escolaUserId) return [];
-
-      const { data: conexoes, error } = await supabase
-        .from('rede_conexoes')
-        .select('solicitante_id, destinatario_id, solicitante_perfil_atleta_id, destinatario_perfil_atleta_id')
-        .eq('status', 'aceita')
-        .or(`solicitante_id.eq.${escolaUserId},destinatario_id.eq.${escolaUserId}`);
-      if (error) throw error;
-
-      // Só conta vínculo atleta → escola: o lado da escola NÃO tem perfil_atleta e o outro lado tem. A conta que
-      // é dona da escola também pode ser dona de atletas (filhos), e as conexões atleta↔atleta deles têm o
-      // user_id da escola de um lado: sem esse filtro, os contatos dos filhos viravam "alunos" da escola.
-      const atletaIds = (conexoes || [])
-        .map((row) => {
-          const escolaEhSolicitante = row.solicitante_id === escolaUserId;
-          const ladoEscola = escolaEhSolicitante ? row.solicitante_perfil_atleta_id : row.destinatario_perfil_atleta_id;
-          const ladoAtleta = escolaEhSolicitante ? row.destinatario_perfil_atleta_id : row.solicitante_perfil_atleta_id;
-          return ladoEscola ? null : ladoAtleta;
-        })
-        .filter((id): id is string => !!id);
-      if (atletaIds.length === 0) return [];
-
-      const { data: atletas, error: atletasError } = await supabase
-        .from('perfil_atleta')
-        .select('id, nome, foto_url, slug, modalidade, categoria')
-        .in('id', atletaIds)
-        .eq('is_public', true);
-      if (atletasError) throw atletasError;
-
-      return ((atletas || []) as ComunidadeAtleta[]).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-    },
+    queryFn: () => (escolaUserId ? buscarAtletasDaEscola(escolaUserId, 'aceita') : []),
     enabled: !!escolaUserId,
     // Atleta novo conectado tem que aparecer ao abrir a página (o padrão do app segura cache por 24h).
+    staleTime: 0,
+    refetchOnMount: true,
+  });
+}
+
+/** Atletas que entraram pelo convite ou pediram vínculo e ainda esperam a confirmação do dono da escola. */
+export function usePendentesEscola(escolaUserId: string | undefined, ativo: boolean) {
+  return useQuery({
+    queryKey: ['comunidade-escola-pendentes', escolaUserId],
+    queryFn: () => (escolaUserId ? buscarAtletasDaEscola(escolaUserId, 'pendente') : []),
+    enabled: !!escolaUserId && ativo,
     staleTime: 0,
     refetchOnMount: true,
   });

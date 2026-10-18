@@ -526,7 +526,8 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
             solicitante_id: userId,
             destinatario_id: inviterProfile.user_id,
             status: 'aceita',
-          });
+            origem: 'convite',
+          } as any);
         }
       }
 

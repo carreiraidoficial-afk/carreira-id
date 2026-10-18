@@ -219,7 +219,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
       if (inviteCode) {
         const { data: inviterProfile } = await supabase
           .from('perfis_rede')
-          .select('id, user_id')
+          .select('id, user_id, tipo')
           .eq('convite_codigo', inviteCode)
           .maybeSingle();
 
@@ -232,9 +232,11 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
           await supabase.from('rede_conexoes').insert({
             solicitante_id: userId,
             destinatario_id: inviterProfile.user_id,
-            status: 'aceita',
+            // Convite de escola: o dono precisa confirmar que é aluno antes do atleta entrar em "Nossos atletas".
+            status: inviterProfile.tipo === 'dono_escola' ? 'pendente' : 'aceita',
+            origem: 'convite',
             solicitante_perfil_atleta_id: novoPerfil?.id || null,
-          });
+          } as any);
         }
       }
 
