@@ -142,6 +142,7 @@ async function solicitarVinculoComEscola(novoUserId: string, novoPerfilAtletaId:
     solicitante_id: novoUserId,
     destinatario_id: escola.user_id,
     status: 'pendente',
+    origem: 'convite',
     solicitante_perfil_atleta_id: novoPerfilAtletaId,
     ...(unidadeValida ? { unidade_nome: unidadeValida } : {}),
   } as any);
@@ -158,15 +159,17 @@ export async function processarConviteRef(novoUserId: string): Promise<void> {
     // 1) Resolver convidante via convite_codigo
     let convidantePerfilId: string | null = null;
     let convidanteUserId: string | null = null;
+    let convidanteEhEscola = false;
     if (pending.conviteCodigo) {
       const { data } = await supabase
         .from('perfis_rede')
-        .select('id, user_id')
+        .select('id, user_id, tipo')
         .eq('convite_codigo', pending.conviteCodigo)
         .maybeSingle();
       if (data) {
         convidantePerfilId = data.id;
         convidanteUserId = data.user_id;
+        convidanteEhEscola = (data as any).tipo === 'dono_escola';
       }
     }
 
@@ -212,12 +215,14 @@ export async function processarConviteRef(novoUserId: string): Promise<void> {
       }
     } else if (convidanteUserId && convidanteUserId !== novoUserId) {
       // fallback: conecta com o convidante
+      // Convite de escola: o dono precisa confirmar que o atleta é aluno; os demais convites conectam direto.
       await supabase.from('rede_conexoes').insert({
         solicitante_id: novoUserId,
         destinatario_id: convidanteUserId,
-        status: 'aceita',
+        status: convidanteEhEscola && novoPerfilAtletaId ? 'pendente' : 'aceita',
+        origem: 'convite',
         solicitante_perfil_atleta_id: novoPerfilAtletaId,
-      });
+      } as any);
     }
 
     // 4) Veio do card "Aluno da escola?": pedido de vínculo PENDENTE com a escola.

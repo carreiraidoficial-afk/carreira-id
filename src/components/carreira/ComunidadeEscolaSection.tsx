@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useComunidadeEscola, usePendentesEscola, type ComunidadeAtleta } from '@/hooks/useCarreiraData';
+import { PedidosPendentesAlunos, nomeAbreviado, rotuloOrigem } from './PedidosPendentesAlunos';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -8,7 +9,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Card } from '@/components/ui/card';
-import { Users, User, ChevronRight, ExternalLink, UserMinus, Check, X, Clock, Link2 } from 'lucide-react';
+import { Users, User, ChevronRight, ExternalLink, UserMinus, Clock, Link2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 
@@ -22,32 +23,11 @@ interface Props {
 
 const PREVIEW = 10;
 
-/** "Maria Clara Souza" -> "Maria C." -- página pública, então não expõe nome completo de menor. */
-function nomeAbreviado(nome: string) {
-  const partes = nome.trim().split(/\s+/).filter(Boolean);
-  if (partes.length <= 1) return partes[0] || '';
-  return `${partes[0]} ${partes[partes.length - 1][0].toUpperCase()}.`;
-}
-
-function dataCurta(iso?: string | null) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
-}
-
-/** Como o atleta chegou à escola, para o dono saber de onde veio cada vínculo. */
-function rotuloOrigem(atleta: ComunidadeAtleta) {
-  const data = dataCurta(atleta.conectadoEm);
-  const quando = data ? ` em ${data}` : '';
-  return atleta.origem === 'convite' ? `Entrou pelo convite${quando}` : `Pediu vínculo${quando}`;
-}
-
 /** Atletas da escola: só quem tem perfil público e conexão aceita com a escola
  * (mesma lógica de "seguidores de empresa" do LinkedIn), visível a qualquer visitante. */
 export function ComunidadeEscolaSection({ escolaUserId, nomeEscola, accentColor = '#16a34a', podeGerenciar = false }: Props) {
   const { data: atletas = [], isLoading } = useComunidadeEscola(escolaUserId);
   const { data: pendentes = [] } = usePendentesEscola(escolaUserId, podeGerenciar);
-  const [respondendo, setRespondendo] = useState<string | null>(null);
   const [mostrarTodos, setMostrarTodos] = useState(false);
   const queryClient = useQueryClient();
   const [paraDesvincular, setParaDesvincular] = useState<ComunidadeAtleta | null>(null);
@@ -80,28 +60,6 @@ export function ComunidadeEscolaSection({ escolaUserId, nomeEscola, accentColor 
       .forEach((chave) => queryClient.invalidateQueries({ queryKey: [chave] }));
   };
 
-  // Confirma (ou recusa) que o atleta é aluno da escola. A conexão é do atleta, não da conta.
-  const responder = async (atleta: ComunidadeAtleta, aceitar: boolean) => {
-    setRespondendo(atleta.id);
-    const { data, error } = await supabase
-      .from('rede_conexoes')
-      .update({ status: aceitar ? 'aceita' : 'rejeitada' } as any)
-      .eq('status', 'pendente')
-      .or(
-        `and(destinatario_id.eq.${escolaUserId},destinatario_perfil_atleta_id.is.null,solicitante_perfil_atleta_id.eq.${atleta.id}),` +
-        `and(solicitante_id.eq.${escolaUserId},solicitante_perfil_atleta_id.is.null,destinatario_perfil_atleta_id.eq.${atleta.id})`,
-      )
-      .select('id');
-    setRespondendo(null);
-    if (error || !data || data.length === 0) {
-      toast.error('Não foi possível responder ao pedido. Tente novamente.');
-      return;
-    }
-    toast.success(aceitar ? `${nomeAbreviado(atleta.nome)} agora faz parte dos atletas da escola.` : 'Pedido recusado.');
-    ['comunidade-escola', 'comunidade-escola-pendentes', 'profile-connections-list', 'connections-count', 'user-connections', 'my-connections-accepted', 'conexoes-count', 'conexao-status']
-      .forEach((chave) => queryClient.invalidateQueries({ queryKey: [chave] }));
-  };
-
   const temPendentes = podeGerenciar && pendentes.length > 0;
   if (isLoading || (atletas.length === 0 && !temPendentes)) return null;
 
@@ -115,51 +73,10 @@ export function ComunidadeEscolaSection({ escolaUserId, nomeEscola, accentColor 
             <Clock className="w-4 h-4 shrink-0 text-amber-500" />
             Aguardando sua confirmação ({pendentes.length})
           </h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Estes atletas entraram pelo seu convite ou pediram vínculo. Eles só aparecem em "Nossos atletas" depois que você confirmar que são alunos.
+          <p className="mb-3 mt-0.5 text-xs text-muted-foreground">
+            Estes atletas entraram pelo link da escola ou pediram vínculo. Eles só aparecem em "Nossos atletas" depois que você confirmar que são alunos.
           </p>
-          <div className="mt-3 space-y-2">
-            {pendentes.map((atleta) => (
-              <div key={atleta.id} className="flex flex-wrap items-center gap-3 rounded-lg border bg-background/40 p-2.5" style={{ borderColor: `${accentColor}30` }}>
-                <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full bg-muted">
-                  {atleta.foto_url ? (
-                    <img src={atleta.foto_url} alt="" loading="lazy" className="h-full w-full object-cover object-top" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center" style={{ color: accentColor }}><User className="w-5 h-5" /></div>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-foreground">{nomeAbreviado(atleta.nome)}</p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {[atleta.categoria, atleta.modalidade].filter(Boolean).join(' · ')}
-                  </p>
-                  <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
-                    {atleta.origem === 'convite' ? <Link2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                    {rotuloOrigem(atleta)}
-                  </p>
-                </div>
-                <div className="flex shrink-0 gap-2">
-                  <button
-                    type="button"
-                    disabled={respondendo === atleta.id}
-                    onClick={() => responder(atleta, true)}
-                    className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
-                    style={{ backgroundColor: accentColor }}
-                  >
-                    <Check className="w-3.5 h-3.5" /> É aluno
-                  </button>
-                  <button
-                    type="button"
-                    disabled={respondendo === atleta.id}
-                    onClick={() => responder(atleta, false)}
-                    className="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-destructive disabled:opacity-60"
-                  >
-                    <X className="w-3.5 h-3.5" /> Recusar
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+          <PedidosPendentesAlunos escolaUserId={escolaUserId} accentColor={accentColor} />
         </div>
       )}
 

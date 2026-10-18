@@ -17,6 +17,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { ConectarButton } from './ConectarButton';
+import { PainelEscolaConexoes, type EscolaDoDono } from './PainelEscolaConexoes';
 
 function useSearchParaConectar(query: string, meuUserId: string | null) {
   return useQuery({
@@ -149,6 +150,24 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
   const [desconectando, setDesconectando] = useState(false);
 
   const isOwnProfile = userId === currentUserId;
+
+  // Se a conta é dona de uma escola, a tela ganha o painel de alunos e separa alunos de contatos.
+  const { data: escolaDoDono } = useQuery({
+    queryKey: ['escola-do-dono', userId],
+    queryFn: async (): Promise<EscolaDoDono | null> => {
+      const { data } = await supabase
+        .from('perfis_rede')
+        .select('id, nome, slug')
+        .eq('user_id', userId)
+        .eq('tipo', 'dono_escola')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return (data as EscolaDoDono | null) ?? null;
+    },
+    enabled: isOwnProfile,
+  });
+  const souEscola = isOwnProfile && !!escolaDoDono;
   const { data: searchResults, isLoading: searchLoading } = useSearchParaConectar(searchQuery, currentUserId);
 
   const { data: connections, isLoading } = useQuery({
@@ -172,6 +191,9 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
           // a busca abaixo por user_id pode trazer o irmão errado.
           connectedPerfilAtletaId: (souSolicitante ? c.destinatario_perfil_atleta_id : c.solicitante_perfil_atleta_id) || null,
           unidade_nome: (c as any).unidade_nome || null,
+          // Atleta que entrou na escola: o meu lado (escola) não tem perfil de atleta e o outro tem.
+          ehAluno: !(souSolicitante ? c.solicitante_perfil_atleta_id : c.destinatario_perfil_atleta_id)
+            && !!(souSolicitante ? c.destinatario_perfil_atleta_id : c.solicitante_perfil_atleta_id),
         };
       });
       const connectedUserIds = [...new Set(connectionDetails.map(c => c.connectedUserId))];
@@ -197,7 +219,7 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
           || redeByUser.get(cd.connectedUserId)
           || atletaByUserFallback.get(cd.connectedUserId);
         if (!profile) return null;
-        return { ...profile, unidade_nome: cd.unidade_nome, conexaoId: cd.conexaoId };
+        return { ...profile, unidade_nome: cd.unidade_nome, conexaoId: cd.conexaoId, ehAluno: cd.ehAluno };
       }).filter(Boolean);
     },
   });
@@ -241,6 +263,8 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
           ...profile,
           connectionId: r.id,
           unidade_nome: (r as any).unidade_nome || null,
+          // Pedido de atleta para a escola: quem trata é o painel da escola, não a lista genérica.
+          ehAluno: !!r.solicitante_perfil_atleta_id && !r.destinatario_perfil_atleta_id,
         };
       }).filter(Boolean);
     },
@@ -432,6 +456,10 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
     setConnectingId(null);
   };
 
+  // Dono de escola: alunos têm painel próprio; aqui ficam só os contatos e os pedidos que não são de aluno.
+  const contatos = souEscola ? (connections || []).filter((c: any) => !c.ehAluno) : (connections || []);
+  const pedidos = souEscola ? (pendingRequests || []).filter((p: any) => !p.ehAluno) : (pendingRequests || []);
+
   if (isLoading) {
     return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
   }
@@ -442,10 +470,10 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
       {isOwnProfile && (
         <div className="grid grid-cols-4 gap-1 rounded-xl bg-muted p-1" role="tablist">
           {([
-            { value: 'todas' as const, label: 'Todas', count: connections?.length || 0 },
+            { value: 'todas' as const, label: souEscola ? 'Contatos' : 'Todas', count: contatos.length },
             { value: 'torcedores' as const, label: 'Torcedores', count: torcedores?.length || 0 },
             { value: 'torcendo' as const, label: 'Torcendo', count: torcendo?.length || 0 },
-            { value: 'solicitacoes' as const, label: 'Solicitações', count: pendingRequests?.length || 0 },
+            { value: 'solicitacoes' as const, label: 'Solicitações', count: pedidos.length },
           ]).map(({ value, label, count }) => {
             const ativa = activeTab === value;
             return (
@@ -512,9 +540,9 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
 
       {/* Solicitações pendentes */}
       {isOwnProfile && activeTab === 'solicitacoes' && (
-        pendingRequests && pendingRequests.length > 0 ? (
+        pedidos.length > 0 ? (
           <div className="space-y-2">
-            {pendingRequests.map((person) => (
+            {pedidos.map((person: any) => (
               <PersonRow
                 key={person.id}
                 fotoUrl={person.foto_url}
@@ -599,6 +627,8 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
 
       {(!isOwnProfile || activeTab === 'todas') && (
         <>
+          {souEscola && escolaDoDono && <PainelEscolaConexoes escola={escolaDoDono} escolaUserId={userId} />}
+
           {/* Quem viu o perfil: dentro da aba Conexões (lista no Elite; no Base só o número) */}
           {isOwnProfile && perfilAtletaId && <VisitasPerfilCard perfilAtletaId={perfilAtletaId} accentColor="#3b82f6" />}
 
@@ -683,11 +713,16 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-3">
               <Users className="w-4 h-4 inline mr-1.5" />
-              Suas conexões ({connections?.length || 0})
+              {souEscola ? 'Contatos' : 'Suas conexões'} ({contatos.length})
             </h3>
-            {connections && connections.length > 0 ? (
+            {souEscola && (
+              <p className="-mt-2 mb-3 text-xs text-muted-foreground">
+                Pessoas e profissionais conectados a você. Os alunos da escola ficam no painel acima.
+              </p>
+            )}
+            {contatos.length > 0 ? (
               <div className="space-y-2">
-                {connections.map((person) => (
+                {contatos.map((person: any) => (
                   <PersonRow
                     key={person.id}
                     fotoUrl={person.foto_url}
