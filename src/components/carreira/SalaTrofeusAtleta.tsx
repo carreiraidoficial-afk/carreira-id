@@ -92,10 +92,10 @@ export function useCarreiraCampeonatoTrofeus(criancaId: string | null | undefine
 
       const items: TrofeuItem[] = [];
 
-      // Coletivos: posicao_final relevante
+      // Coletivos: só o pódio (campeão, vice e 3º lugar). As outras fases ficam na lista de campeonatos disputados.
       camps.forEach((c) => {
         const meta = POSICAO_META[c.posicao_final];
-        if (!meta || c.posicao_final === 'em_andamento' || !c.posicao_final) return;
+        if (!meta || !['campeao', 'vice', 'terceiro'].includes(c.posicao_final)) return;
         const data = c.data_final || c.data_inicio;
         items.push({
           id: `camp-${c.id}`,

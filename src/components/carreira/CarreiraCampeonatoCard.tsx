@@ -77,7 +77,7 @@ export function CarreiraCampeonatoCard({
             >
               {ABRANGENCIA_LABEL[c.abrangencia]}
             </span>
-            {c.posicao_final && POSICAO_FINAL_META[c.posicao_final as PosicaoFinalCampeonato] && (
+            {c.posicao_final && ['campeao', 'vice', 'terceiro'].includes(c.posicao_final) && POSICAO_FINAL_META[c.posicao_final as PosicaoFinalCampeonato] && (
               <span
                 className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
                 style={{

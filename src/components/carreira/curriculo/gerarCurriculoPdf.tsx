@@ -1,5 +1,5 @@
 import type { PerfilAtleta } from '@/hooks/useCarreiraData';
-import type { CurriculoData, CurriculoTema } from './CurriculoDocument';
+import { POSICAO_LABELS, POSICOES_PODIO, type CurriculoData, type CurriculoPremiacao, type CurriculoTema } from './CurriculoDocument';
 import type { CurriculoJogo, CurriculoMidia } from './CurriculoCompletoDocument';
 import { imagemParaDataUrl, registrarFontesCurriculo } from './curriculo-assets';
 
@@ -94,6 +94,35 @@ export async function montarCurriculoPdf(dados: DadosParaCurriculo, opcoes: Opco
     ...exps.slice(0, limiteClubes).map((x: any) => imagemParaDataUrl(x.logoUrl, { ladoMaximo: 96, formato: 'png' })),
   ]);
 
+  // Premiações = sala de troféus: pódio coletivo (campeão, vice, 3º) + prêmios individuais + cada partida em que foi destaque,
+  // sempre dentro do campeonato correspondente (campeonatos mais recentes primeiro).
+  const jogosDestaque: any[] = [
+    ...camps.flatMap((c) => (c.jogos || []).map((j: any) => ({ j, camp: c }))),
+  ].filter(({ j }) => j.destaque_jogo);
+  const trofeus: CurriculoPremiacao[] = [...camps]
+    .sort((a, b) => (b.data_final || b.data_inicio || '').localeCompare(a.data_final || a.data_inicio || ''))
+    .flatMap((c) => {
+      const itens: CurriculoPremiacao[] = [];
+      if (POSICOES_PODIO.includes(c.posicao_final)) {
+        itens.push({ titulo: POSICAO_LABELS[c.posicao_final], campeonato: c.nome, tipo: 'coletivo' });
+      }
+      (c.premiacoes || []).forEach((p: any) =>
+        itens.push({ titulo: p.titulo || rotuloPremiacao(p.tipo_premiacao), campeonato: c.nome, tipo: 'individual' }),
+      );
+      jogosDestaque
+        .filter(({ camp }) => camp.id === c.id)
+        .sort((x, y) => (x.j.data_jogo || '').localeCompare(y.j.data_jogo || ''))
+        .forEach(({ j }) =>
+          itens.push({
+            titulo: 'Destaque do jogo',
+            campeonato: c.nome,
+            tipo: 'destaque_jogo',
+            detalhe: [j.time_adversario ? `vs ${j.time_adversario}` : null, j.fase_campeonato].filter(Boolean).join(' · ') || null,
+          }),
+        );
+      return itens;
+    });
+
   const base: CurriculoData = {
     nome: perfil.nome,
     fotoUrl,
@@ -120,16 +149,14 @@ export async function montarCurriculoPdf(dados: DadosParaCurriculo, opcoes: Opco
       totalAssistencias: stats.totalAssistencias,
       totalVitorias: stats.totalVitorias,
       totalCampeonatos: stats.totalCampeonatos,
-      totalPremiacoes: stats.totalPremiacoes,
+      totalPremiacoes: trofeus.length,
       jogosComoGoleiro: stats.jogosComoGoleiro,
       totalDefesas: stats.totalDefesas,
       totalGolsSofridos: stats.totalGolsSofridos,
       totalPenaltisDefendidos: stats.totalPenaltisDefendidos,
     },
     experiencias: exps.map((x: any, i: number) => ({ ...x, logoUrl: logosClubes[i] ?? null })),
-    premiacoes: camps.flatMap((c) =>
-      (c.premiacoes || []).map((p: any) => ({ titulo: p.titulo || rotuloPremiacao(p.tipo_premiacao), campeonato: c.nome as string })),
-    ),
+    premiacoes: trofeus,
     campeonatos: camps.map((camp) => ({
       nome: camp.nome,
       organizador: camp.organizador || null,

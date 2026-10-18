@@ -27,7 +27,14 @@ export interface CurriculoCampeonato {
 export interface CurriculoPremiacao {
   titulo: string;
   campeonato: string | null;
+  /** coletivo = campeão/vice/3º do time; individual = prêmio do atleta; destaque_jogo = uma partida em que foi o destaque. */
+  tipo?: 'coletivo' | 'individual' | 'destaque_jogo';
+  /** Detalhe da linha (nos destaques de jogo: "vs Adversário · Fase"). */
+  detalhe?: string | null;
 }
+
+/** Posições que entram como troféu (e ganham selo): só o pódio. */
+export const POSICOES_PODIO = ['campeao', 'vice', 'terceiro'];
 
 export interface CurriculoStats {
   totalJogos: number;
@@ -282,7 +289,13 @@ export function CurriculoDocument({ data }: { data: CurriculoData }) {
     data.pais && data.pais !== 'Brasil' ? data.pais : null,
   ].filter(Boolean) as string[];
   const numeros = destaques(data);
-  const premiacoes = data.premiacoes || [];
+  // No resumo, as partidas em que foi destaque viram uma linha só ("Destaque do jogo (3x)"); o completo lista cada uma.
+  const premiacoesTodas = data.premiacoes || [];
+  const nDestaques = premiacoesTodas.filter((x) => x.tipo === 'destaque_jogo').length;
+  const premiacoes: CurriculoPremiacao[] = [
+    ...premiacoesTodas.filter((x) => x.tipo !== 'destaque_jogo'),
+    ...(nDestaques > 0 ? [{ titulo: nDestaques === 1 ? 'Destaque do jogo' : `Destaque do jogo (${nDestaques}x)`, campeonato: null, tipo: 'destaque_jogo' as const }] : []),
+  ];
   const clubes = data.experiencias.slice(0, MAX_CLUBES);
   const campeonatos = [...data.campeonatos].sort((a, b) => (b.dataInicio || '').localeCompare(a.dataInicio || ''));
   const dataGerado = new Date().toLocaleDateString('pt-BR');
@@ -412,7 +425,7 @@ export function CurriculoDocument({ data }: { data: CurriculoData }) {
               <Text style={e.vazio}>Nenhum campeonato registrado ainda.</Text>
             ) : (
               campeonatos.slice(0, MAX_CAMPEONATOS).map((camp, i) => {
-                const medalha = camp.posicaoFinal ? MEDALHA[camp.posicaoFinal] : undefined;
+                const medalha = camp.posicaoFinal && POSICOES_PODIO.includes(camp.posicaoFinal) ? MEDALHA[camp.posicaoFinal] : undefined;
                 return (
                   <View key={i} style={e.campLinha} wrap={false}>
                     <Text style={e.campAno}>{ano(camp.dataInicio)}</Text>
@@ -422,8 +435,8 @@ export function CurriculoDocument({ data }: { data: CurriculoData }) {
                         {[camp.categoria, camp.nomeTime, camp.organizador ? `Org.: ${camp.organizador}` : null].filter(Boolean).join('  ·  ')}
                       </Text>
                     </View>
-                    {camp.posicaoFinal ? (
-                      <Text style={[e.campChip, { backgroundColor: medalha?.fundo ?? p.cartao, color: medalha?.texto ?? p.suave }]}>
+                    {camp.posicaoFinal && medalha ? (
+                      <Text style={[e.campChip, { backgroundColor: medalha.fundo, color: medalha.texto }]}>
                         {POSICAO_LABELS[camp.posicaoFinal] || camp.posicaoFinal}
                       </Text>
                     ) : null}

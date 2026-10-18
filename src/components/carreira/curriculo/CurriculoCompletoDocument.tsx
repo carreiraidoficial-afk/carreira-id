@@ -1,6 +1,6 @@
 import { Document, Page, Text, View, Image, StyleSheet, Link } from '@react-pdf/renderer';
 import {
-  ano, arroba, corValida, formatDate, limpar, MEDALHA, paleta, POSICAO_LABELS,
+  ano, arroba, corValida, formatDate, limpar, MEDALHA, paleta, POSICAO_LABELS, POSICOES_PODIO,
   type CurriculoData, type CurriculoTema,
 } from './CurriculoDocument';
 
@@ -255,6 +255,15 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
   });
 
   // Campanhas por campeonato
+  // Premiações agrupadas pelo campeonato, na ordem em que vieram (coletiva, individuais, destaques de jogo)
+  const gruposPremiacoes: { campeonato: string; itens: NonNullable<typeof data.premiacoes> }[] = [];
+  (data.premiacoes || []).forEach((pr) => {
+    const nome = pr.campeonato || 'Outras conquistas';
+    const grupo = gruposPremiacoes.find((g) => g.campeonato === nome);
+    if (grupo) grupo.itens.push(pr);
+    else gruposPremiacoes.push({ campeonato: nome, itens: [pr] });
+  });
+
   const campanhas = [...data.campeonatosDetalhe]
     .sort((a, b) => (b.dataInicio || '').localeCompare(a.dataInicio || ''))
     .map((c) => {
@@ -384,7 +393,7 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
             <View style={e.secao}>
               <Titulo texto="Campeonatos disputados" nota={`${campanhas.length} no total`} e={e} />
               {campanhas.map((c) => {
-                const medalha = c.posicaoFinal ? MEDALHA[c.posicaoFinal] : undefined;
+                const medalha = c.posicaoFinal && POSICOES_PODIO.includes(c.posicaoFinal) ? MEDALHA[c.posicaoFinal] : undefined;
                 return (
                   <View key={c.id} style={e.camp} wrap={false}>
                     <View style={{ flex: 1 }}>
@@ -403,8 +412,8 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
                         {ehLinha && c.registrou ? <Text style={e.campStat}>Gols do atleta <Text style={e.campStatV}>{c.gols}</Text></Text> : null}
                       </View>
                     </View>
-                    {c.posicaoFinal ? (
-                      <Text style={[e.chipPos, { backgroundColor: medalha?.fundo ?? p.pagina, color: medalha?.texto ?? p.suave, alignSelf: 'flex-start' }]}>
+                    {c.posicaoFinal && medalha ? (
+                      <Text style={[e.chipPos, { backgroundColor: medalha.fundo, color: medalha.texto, alignSelf: 'flex-start' }]}>
                         {POSICAO_LABELS[c.posicaoFinal] || c.posicaoFinal}
                       </Text>
                     ) : null}
@@ -492,14 +501,19 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
             </View>
           ) : null}
 
-          {/* Premiações */}
+          {/* Premiações: coletivas (pódio) e individuais, cada uma dentro do campeonato correspondente */}
           {(data.premiacoes || []).length > 0 ? (
             <View style={e.secao}>
-              <Titulo texto="Premiações" e={e} />
-              {(data.premiacoes || []).map((pr, i) => (
-                <View key={i} style={e.midia} wrap={false}>
-                  <Text style={[e.td, { flex: 1, fontWeight: 700 }]}>{limpar(pr.titulo)}</Text>
-                  {pr.campeonato ? <Text style={e.tdSuave}>{limpar(pr.campeonato)}</Text> : null}
+              <Titulo texto="Premiações" nota={`${(data.premiacoes || []).length} no total`} e={e} />
+              {gruposPremiacoes.map((g) => (
+                <View key={g.campeonato} style={{ marginBottom: 8 }}>
+                  <Text style={[e.td, { fontWeight: 800, marginBottom: 2 }]}>{limpar(g.campeonato)}</Text>
+                  {g.itens.map((pr, i) => (
+                    <View key={i} style={e.midia} wrap={false}>
+                      <Text style={[e.td, { flex: 1, fontWeight: 700 }]}>{limpar(pr.titulo)}</Text>
+                      {pr.detalhe ? <Text style={e.tdSuave}>{limpar(pr.detalhe)}</Text> : null}
+                    </View>
+                  ))}
                 </View>
               ))}
             </View>
