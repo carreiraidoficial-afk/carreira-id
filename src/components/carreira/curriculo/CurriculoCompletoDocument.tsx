@@ -304,8 +304,6 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
         v: cp.filter((j) => resultado(j) === 'V').length,
         e: cp.filter((j) => resultado(j) === 'E').length,
         d: cp.filter((j) => resultado(j) === 'D').length,
-        gp: soma(cp.map((j) => j.golsPro)),
-        gc: soma(cp.map((j) => j.golsContra)),
         gols: soma(js.map((j) => j.gols)),
         registrou: js.some((j) => j.gols != null),
       };
@@ -414,6 +412,7 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
                   {ehLinha ? <Text style={[e.td, e.centro, { width: 44 }]}>{t.ast}</Text> : null}
                 </View>
               ))}
+              <Text style={[e.nota, { marginTop: 5 }]}>V = vitórias  ·  E = empates  ·  D = derrotas  ·  AST = assistências</Text>
             </View>
           ) : null}
 
@@ -436,8 +435,9 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
                         <Text style={e.campStat}><Text style={e.campStatV}>{c.jogos}</Text> {c.jogos === 1 ? 'jogo' : 'jogos'}</Text>
                         {c.jogos > 0 ? (
                           <>
-                            <Text style={e.campStat}><Text style={e.campStatV}>{c.v}V {c.e}E {c.d}D</Text></Text>
-                            <Text style={e.campStat}>Gols <Text style={e.campStatV}>{c.gp}x{c.gc}</Text></Text>
+                            <Text style={e.campStat}>
+                              <Text style={e.campStatV}>{c.v}</Text> {c.v === 1 ? 'vitória' : 'vitórias'}  ·  <Text style={e.campStatV}>{c.e}</Text> {c.e === 1 ? 'empate' : 'empates'}  ·  <Text style={e.campStatV}>{c.d}</Text> {c.d === 1 ? 'derrota' : 'derrotas'}
+                            </Text>
                           </>
                         ) : null}
                         {ehLinha && c.registrou ? <Text style={e.campStat}>Gols do atleta <Text style={e.campStatV}>{c.gols}</Text></Text> : null}
@@ -458,6 +458,7 @@ export function CurriculoCompletoDocument({ data }: { data: CurriculoCompletoDat
           {jogos.length > 0 ? (
             <View style={e.secao}>
               <Titulo texto="Histórico de jogos" nota={`${jogos.length} jogos`} e={e} />
+              <Text style={[e.nota, { marginBottom: 5 }]}>R = resultado do jogo:  V vitória  ·  E empate  ·  D derrota</Text>
               <View style={e.th} fixed={false}>
                 <Text style={[e.thTxt, { width: 44 }]}>Data</Text>
                 <Text style={[e.thTxt, { flex: 1 }]}>Competição · Partida</Text>
