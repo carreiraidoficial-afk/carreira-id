@@ -25,7 +25,7 @@ Atualize este arquivo sempre que uma regra mudar (veja o Histórico no fim).
 | Estatísticas avançadas | não | sim |
 | Liga de Conexões | não | sim |
 | Ver quem visualizou o perfil (cartão "Quem viu seu perfil" dentro de Conexões) | só o número de visitas dos últimos 30 dias, lista borrada | lista de quem visitou (nome, foto, tipo, quando). Imposto no servidor |
-| Currículo em PDF (Resumo de 1 página ou Completo com todos os jogos; claro ou escuro; QR do perfil) | não: o botão aparece com selo Elite e a janela leva aos planos | sim: botão "Currículo PDF" na linha de seções do perfil, ao lado de Premiações (só para quem gerencia o perfil). **Em teste:** hoje só aparece para atletas da lista `carreira_recursos_liberados` (recurso `curriculo_pdf`; só o João Guilherme). A chave `curriculo_pdf` em Admin → Planos está desligada no Elite; ao ligá-la, o recurso vale para todo o Elite. Decisão pendente: liberar o Resumo para o Base |
+| Currículo em PDF (Resumo de 1 página ou Completo com todos os jogos; claro ou escuro; QR do perfil) | não: o botão aparece com selo Elite e a janela leva aos planos | sim: botão "Currículo PDF" na linha de seções do perfil, ao lado de Premiações (só para quem gerencia o perfil). **Em teste:** hoje só aparece para atletas da lista `carreira_recursos_liberados` (recurso `curriculo_pdf`; João Guilherme e Enzo Lima; estar na lista dá acesso mesmo sem Elite ativo). A chave `curriculo_pdf` em Admin → Planos está desligada no Elite; ao ligá-la, o recurso vale para todo o Elite. Decisão pendente: liberar o Resumo para o Base |
 
 Plano Família: R$ 19,90/mês, cobre 2 ou mais atletas do mesmo responsável (tabela `carreira_assinaturas_familia`). Só mensal.
 
