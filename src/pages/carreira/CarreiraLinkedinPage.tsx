@@ -12,7 +12,7 @@ import { Loader2, Crown, Zap } from 'lucide-react';
 import { TutorialAutoShow } from '@/components/carreira/TutorialAutoShow';
 import { TutorialHelpButton } from '@/components/carreira/TutorialHelpButton';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
-import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
+import { useCriancaAtiva, useColaboradorInfo } from '@/hooks/useCriancaAtiva';
 
 export default function CarreiraLinkedinPage() {
   const { sessionUserId, loading: sessionLoading } = useCarreiraSession();
@@ -21,6 +21,8 @@ export default function CarreiraLinkedinPage() {
   const { perfilAtivo: perfil, isLoading: perfilLoading, perfis, selecionarCrianca } = useCriancaAtiva(sessionUserId);
 
   const criancaId = perfil?.crianca_id || null;
+  // Hook antes de qualquer return condicional (ordem dos hooks).
+  const { data: minhaColaboracao } = useColaboradorInfo((perfil as any)?.souColaborador ? criancaId : null, sessionUserId);
   const { plano, isLoading: planoLoading } = useCarreiraPlano(criancaId);
 
   if (sessionLoading) {
@@ -104,7 +106,7 @@ export default function CarreiraLinkedinPage() {
             {/* perfil só entra em `perfis` se for dono OU colaborador ativo --
                 EditPerfilDialog (dentro de PerfilHeader) deve ficar restrito
                 ao dono real; postar/jornada (CarreiraTimeline) vale pros dois. */}
-            <PerfilHeader perfil={perfil} isOwner={!perfil.souColaborador} viewerPerfilAtletaId={perfil.id} />
+            <PerfilHeader perfil={perfil} isOwner={!perfil.souColaborador} podeEditarPerfil={!!(minhaColaboracao as any)?.pode_editar_perfil} viewerPerfilAtletaId={perfil.id} />
             <CarreiraTimeline perfil={perfil} isOwner={true} podeExcluir={!perfil.souColaborador} />
           </div>
         ) : (

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +35,7 @@ interface ColaboradorRow {
   codigo_convite: string;
   status: string;
   user_id: string | null;
+  pode_editar_perfil: boolean;
 }
 
 function gerarCodigoConvite(): string {
@@ -47,7 +49,7 @@ function useMeusColaboradores(criancaIds: string[]) {
       if (criancaIds.length === 0) return [];
       const { data, error } = await supabase
         .from('perfil_atleta_colaboradores')
-        .select('id, crianca_id, nome, email, telefone, codigo_convite, status, user_id')
+        .select('id, crianca_id, nome, email, telefone, codigo_convite, status, user_id, pode_editar_perfil')
         .in('crianca_id', criancaIds)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -78,15 +80,16 @@ export function ColaboradoresTab({ userId }: ColaboradoresTabProps) {
 
   // Agrupa as linhas (uma por criança) pelo mesmo código de convite, pra
   // mostrar UMA pessoa com a lista de quais atletas ela tem acesso.
-  const grupos = new Map<string, { nome: string; email: string | null; telefone: string | null; status: string; criancaIds: string[]; ids: string[] }>();
+  const grupos = new Map<string, { nome: string; email: string | null; telefone: string | null; status: string; podeEditar: boolean; criancaIds: string[]; ids: string[] }>();
   for (const c of colaboradores) {
     const g = grupos.get(c.codigo_convite);
     if (g) {
       g.criancaIds.push(c.crianca_id);
       g.ids.push(c.id);
       if (c.status === 'ativo') g.status = 'ativo';
+      if (c.pode_editar_perfil) g.podeEditar = true;
     } else {
-      grupos.set(c.codigo_convite, { nome: c.nome, email: c.email, telefone: c.telefone, status: c.status, criancaIds: [c.crianca_id], ids: [c.id] });
+      grupos.set(c.codigo_convite, { nome: c.nome, email: c.email, telefone: c.telefone, status: c.status, podeEditar: !!c.pode_editar_perfil, criancaIds: [c.crianca_id], ids: [c.id] });
     }
   }
 
@@ -181,6 +184,20 @@ export function ColaboradoresTab({ userId }: ColaboradoresTabProps) {
     }
   };
 
+  const handleTogglePodeEditar = async (ids: string[], valor: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('perfil_atleta_colaboradores')
+        .update({ pode_editar_perfil: valor } as any)
+        .in('id', ids);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['meus-colaboradores'] });
+      toast.success(valor ? 'Agora essa pessoa pode editar o perfil' : 'Edição do perfil desativada');
+    } catch (e: any) {
+      toast.error('Erro ao salvar: ' + e.message);
+    }
+  };
+
   const handleReativar = async (ids: string[]) => {
     try {
       const { error } = await supabase
@@ -259,6 +276,16 @@ export function ColaboradoresTab({ userId }: ColaboradoresTabProps) {
               <Badge key={cid} variant="outline" className="text-[10px]">{nomeCrianca(cid)}</Badge>
             ))}
           </div>
+
+          {g.status === 'ativo' && (
+            <div className="flex items-center justify-between gap-3 rounded-md bg-muted/40 p-2">
+              <div className="min-w-0">
+                <p className="text-xs font-medium">Pode editar o perfil</p>
+                <p className="text-[11px] text-muted-foreground">Foto, capa, bio, Instagram, posições e cor. Nome, privacidade e plano continuam só com você.</p>
+              </div>
+              <Switch checked={g.podeEditar} onCheckedChange={(v) => handleTogglePodeEditar(g.ids, v)} />
+            </div>
+          )}
 
           {linkReenvioCodigo === codigo && (
             <div className="flex gap-2 pt-1">

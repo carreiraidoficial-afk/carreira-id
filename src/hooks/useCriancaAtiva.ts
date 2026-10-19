@@ -209,7 +209,7 @@ export function useColaboradorInfo(criancaId: string | null | undefined, userId:
       if (!criancaId || !userId) return null;
       const { data } = await supabase
         .from('perfil_atleta_colaboradores')
-        .select('nome, status')
+        .select('nome, status, pode_editar_perfil')
         .eq('crianca_id', criancaId)
         .eq('user_id', userId)
         .eq('status', 'ativo')

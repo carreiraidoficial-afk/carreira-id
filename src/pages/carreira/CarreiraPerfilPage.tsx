@@ -384,6 +384,7 @@ export default function CarreiraPerfilPage() {
   // (editar perfil, peneiras, assinatura etc) -- por isso um flag à parte.
   const { data: minhaColaboracao } = useColaboradorInfo(perfil?.type === 'atleta' ? perfil.crianca_id : null, currentUserId);
   const souColaboradorAtivo = !!minhaColaboracao;
+  const colaboradorPodeEditarPerfil = !!(minhaColaboracao as any)?.pode_editar_perfil;
   const canManageTimeline = isOwnerOuSuporte || souColaboradorAtivo;
 
   // Track profile view for anonymous visitors (drives gating after N profiles)
@@ -1233,7 +1234,7 @@ export default function CarreiraPerfilPage() {
             {/* Mobile-only: full PerfilHeader */}
             {perfil.type === 'atleta' && (
               <div className="lg:hidden">
-                <PerfilHeader perfil={perfil as any} isOwner={isOwner} viewerPerfilAtletaId={meuPerfilAtivo?.id} />
+                <PerfilHeader perfil={perfil as any} isOwner={isOwner} podeEditarPerfil={colaboradorPodeEditarPerfil} viewerPerfilAtletaId={meuPerfilAtivo?.id} />
               </div>
             )}
             {perfil.type === 'rede' && !isDonoEscolaProfile && (

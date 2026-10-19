@@ -95,6 +95,8 @@ interface EditPerfilDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   perfil: PerfilAtleta;
+  /** Colaborador autorizado: edita só o que o banco permite (foto, banner, cor, bio, Instagram, posições, pé/mão). */
+  modoColaborador?: boolean;
 }
 
 /**
@@ -103,7 +105,7 @@ interface EditPerfilDialogProps {
  * EditConfiguracoesDialog -- misturar tudo num só dialog com 5 abas
  * estourava a tela no celular.
  */
-export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialogProps) {
+export function EditPerfilDialog({ open, onOpenChange, perfil, modoColaborador = false }: EditPerfilDialogProps) {
   const updatePerfil = useUpdatePerfilAtleta();
   const [photoUrl, setPhotoUrl] = useState(perfil.foto_url || '');
   const [paisObj, setPaisObj] = useState<any>(null);
@@ -206,19 +208,35 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
   };
 
   const onSubmit = async (data: FormData) => {
-    if (!isPlatformProfile && selectedModalidades.length === 0) return;
+    if (!modoColaborador && !isPlatformProfile && selectedModalidades.length === 0) return;
 
     // Update crianca birth date if changed. Upsert em vez de update cego --
     // um update num id que não existe em `criancas` roda sem erro e não
     // salva nada (foi exatamente o que aconteceu com um perfil vindo de uma
     // migração manual de contas).
-    if (perfil.crianca_id && data.data_nascimento) {
+    if (!modoColaborador && perfil.crianca_id && data.data_nascimento) {
       const { error: criancaError } = await supabase
         .from('criancas')
         .upsert({ id: perfil.crianca_id, nome: perfil.nome, data_nascimento: data.data_nascimento });
       if (criancaError) {
         toast.error('Erro ao salvar data de nascimento: ' + criancaError.message);
       }
+    }
+
+    if (modoColaborador) {
+      await updatePerfil.mutateAsync({
+        id: perfil.id,
+        bio: data.bio || null,
+        foto_url: photoUrl || null,
+        banner_url: bannerUrl || null,
+        instagram_url: data.instagram_url || null,
+        cor_destaque: corDestaque,
+        pe_dominante: data.pe_dominante || null,
+        posicao_principal: data.posicao_principal || null,
+        posicao_secundaria: data.posicao_secundaria || null,
+      } as any);
+      onOpenChange(false);
+      return;
     }
 
     const updateData: any = {
@@ -264,17 +282,23 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
               onBannerChange={setBannerUrl}
             />
 
+            {modoColaborador && (
+              <p className="rounded-lg bg-muted/60 p-2.5 text-xs text-muted-foreground">
+                Você pode atualizar foto, capa, bio, Instagram, posições e cor. Nome, data de nascimento, modalidades e privacidade ficam com o responsável.
+              </p>
+            )}
+
             {/* Name */}
-            <FormField control={form.control} name="nome" render={({ field }) => (
+            {!modoColaborador && <FormField control={form.control} name="nome" render={({ field }) => (
               <FormItem>
                 <FormLabel>Nome completo *</FormLabel>
                 <FormControl><Input placeholder="Seu nome" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
-            )} />
+            )} />}
 
             {/* Birth date */}
-            {!isPlatformProfile && (
+            {!modoColaborador && !isPlatformProfile && (
               <FormField control={form.control} name="data_nascimento" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Data de Nascimento</FormLabel>
@@ -287,6 +311,7 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
             {/* Modalidades */}
             {!isPlatformProfile && (
               <>
+                {!modoColaborador && <>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Modalidades *</label>
                   <p className="text-xs text-muted-foreground mb-2">Selecione todas as modalidades que pratica</p>
@@ -325,6 +350,7 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
                     <FormMessage />
                   </FormItem>
                 )} />
+                </>}
 
                 {/* Dados Técnicos */}
                 <div className="grid grid-cols-2 gap-4">
@@ -369,6 +395,7 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
               </>
             )}
 
+            {!modoColaborador && <>
             {/* País */}
             <FormField control={form.control} name="pais" render={({ field }) => (
               <FormItem>
@@ -437,6 +464,8 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
               </div>
             )}
 
+            </>}
+
             {/* Bio */}
             <FormField control={form.control} name="bio" render={({ field }) => (
               <FormItem>
@@ -474,7 +503,7 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
             </div>
 
             {/* Dados Públicos */}
-            {!isPlatformProfile && (
+            {!modoColaborador && !isPlatformProfile && (
               <>
                 <Separator />
                 <div className="space-y-3">
@@ -512,7 +541,7 @@ export function EditPerfilDialog({ open, onOpenChange, perfil }: EditPerfilDialo
             {/* Buttons */}
             <div className="flex gap-2 justify-end pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-              <Button type="submit" disabled={updatePerfil.isPending || (!isPlatformProfile && selectedModalidades.length === 0)}>
+              <Button type="submit" disabled={updatePerfil.isPending || (!modoColaborador && !isPlatformProfile && selectedModalidades.length === 0)}>
                 {updatePerfil.isPending ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvando...</>) : 'Salvar Alterações'}
               </Button>
             </div>

@@ -30,14 +30,17 @@ import { CompartilharPerfilDialog } from './CompartilharPerfilDialog';
 interface PerfilHeaderProps {
   perfil: PerfilAtleta;
   isOwner?: boolean;
+  /** Colaborador com permissão de editar o perfil (foto, bio, posições...). */
+  podeEditarPerfil?: boolean;
   /** Perfil_atleta ativo de quem está vendo (o filho selecionado no seletor
    * de irmãos de quem está logado), quando aplicável -- isola a conexão
    * feita por esse visitante do outro filho dele. */
   viewerPerfilAtletaId?: string | null;
 }
 
-export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: PerfilHeaderProps) {
+export function PerfilHeader({ perfil, isOwner = false, podeEditarPerfil = false, viewerPerfilAtletaId }: PerfilHeaderProps) {
   const { user } = useAuth();
+  const podeEditar = isOwner || podeEditarPerfil;
   const queryClient = useQueryClient();
   const updatePerfil = useUpdatePerfilAtleta();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -238,7 +241,7 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
                   <User className="h-12 w-12" />
                 </div>
               )}
-              {isOwner && (
+              {podeEditar && (
                 <>
                   <button
                     onClick={() => fileInputRef.current?.click()}
@@ -336,7 +339,7 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
           </div>
 
           {/* Bio */}
-          {(perfil.bio || isOwner) && (
+          {(perfil.bio || podeEditar) && (
             <div className="flex items-start gap-3 rounded-xl border bg-muted/20 p-3">
               <Quote className="mt-0.5 h-6 w-6 shrink-0 opacity-60" style={{ color: cor }} />
               <div className="min-w-0 flex-1">
@@ -360,7 +363,7 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
                   <p className="text-sm text-muted-foreground">Conte um pouco sobre o atleta: gostos, posição, objetivos.</p>
                 )}
               </div>
-              {isOwner && (
+              {podeEditar && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -394,7 +397,7 @@ export function PerfilHeader({ perfil, isOwner = false, viewerPerfilAtletaId }: 
       </Card>
 
       {!isOwner && user && <DenunciarDialog open={denunciaAberta} onOpenChange={setDenunciaAberta} tipo="perfil_atleta" conteudoId={perfil.id} />}
-      {isOwner && <EditPerfilDialog open={editDialogOpen} onOpenChange={setEditDialogOpen} perfil={perfil} />}
+      {podeEditar && <EditPerfilDialog open={editDialogOpen} onOpenChange={setEditDialogOpen} perfil={perfil} modoColaborador={!isOwner} />}
       {isOwner && <EditConfiguracoesDialog open={configDialogOpen} onOpenChange={setConfigDialogOpen} perfil={perfil} />}
       <CompartilharPerfilDialog
         open={shareOpen}
