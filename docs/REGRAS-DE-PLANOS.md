@@ -33,12 +33,14 @@ Nomes antigos: `competidor`, `elite`, `mensal`, `pro_mensal` valem como Elite (f
 
 ## 2. Teste grátis (trial) — regra atual
 
-- 7 dias, **sem cartão**, ao criar o perfil do atleta (ou os dias de um cupom válido, `carreira_cupons.dias_trial`).
+- 15 dias de Elite, **sem cartão**, ao criar o perfil do atleta (ou os dias de um cupom válido, `carreira_cupons.dias_trial`; cupom com menos de 15 dias vale o padrão).
+- **Perfil completo = +15 dias, uma vez por atleta** (total de 30). Completo é: foto, bio, categoria, cidade e estado, posição, data de nascimento e pelo menos 1 jogo registrado. Conferido no servidor (`_perfil_completo_itens`, gatilhos em `perfil_atleta`, `carreira_jogos` e `criancas`); só concede a quem está no teste; registro em `carreira_bonus_perfil_completo`. A tela mostra o progresso (`PerfilCompletoCard`).
+- **Mensagem ao público:** o Carreira ID é gratuito; o plano Base não tem prazo. O Elite é experimental e depois pago.
 - Durante o teste o atleta tem **tudo do Elite** (tela e, desde 14/10/2026, também os limites de registros de Carreira e da Jornada).
 - Uma vez por atleta. O servidor recusa um segundo teste para o mesmo atleta.
-- **Quem assina durante o teste não precisa esperar:** a assinatura vale na hora, a cobrança é feita já, e a pessoa ganha **pelo menos 7 dias grátis a mais** (se sobravam mais de 7 dias, por exemplo num teste de cupom, ganha o que sobrava). O teste só é encerrado quando o pagamento confirma. Teste já vencido não dá bônus.
+- **Quem assina durante o teste não precisa esperar:** a assinatura vale na hora, a cobrança é feita já, e a pessoa ganha **pelo menos 15 dias a mais** (se sobravam mais de 15 dias, por exemplo num teste de cupom, ganha o que sobrava). O teste só é encerrado quando o pagamento confirma. Teste já vencido não dá bônus.
 - Avisos: push e e-mail, 2 dias antes e quando acaba (e-mail só para quem não pediu para sair dos lembretes).
-- Ao terminar, volta sozinho para Base (decisão de 14/10/2026: o teste continua de 7 dias). Nada é apagado; só valem de novo os limites do Base e os recursos exclusivos do Elite voltam a ficar fechados. Ninguém é cobrado sem ter informado cartão ou pago um PIX.
+- Ao terminar, volta sozinho para Base (decisão de 19/10/2026: 15 dias + 15 ao completar o perfil, antes eram 7). Nada é apagado; só valem de novo os limites do Base e os recursos exclusivos do Elite voltam a ficar fechados. Ninguém é cobrado sem ter informado cartão ou pago um PIX.
 - O usuário não consegue se dar Elite pelo app: o banco bloqueia (gatilho `assinaturas_protege`).
 
 ## 3. Quem decide cada coisa (fonte da verdade)
@@ -51,7 +53,7 @@ Nomes antigos: `competidor`, `elite`, `mensal`, `pro_mensal` valem como Elite (f
 | Preço cobrado | `saas_config` (`carreira_valor_premium`, `carreira_valor_premium_anual`) | O campo "Preço" do Admin → Planos **não altera a cobrança** |
 | Preço mostrado nas telas | Constantes em `src/config/carreiraPlanos.ts` (`PRECO_PREMIUM`, `PRECO_PREMIUM_ANUAL`, `PRECO_FAMILIA`) | Hoje precisam bater com o `saas_config` na mão |
 | Textos da página de planos ("1 registro por mês" etc.) | `src/config/carreiraPlanos.ts` (lista `destaques`) | Fixos no código; o admin não muda |
-| Duração do teste | `TRIAL_DIAS` (7) em `src/config/carreiraPlanos.ts` e regra do banco | |
+| Duração do teste e bônus | `TRIAL_DIAS` (15) e `BONUS_PERFIL_COMPLETO_DIAS` (15) em `src/config/carreiraPlanos.ts`; no banco: `assinaturas_protege`, `carreira_assinatura_converte_trial`, `_conceder_bonus_perfil_completo` | Mudar nos dois lados |
 
 ## 4. Como o acesso é decidido no app
 
@@ -122,3 +124,4 @@ Implementado em `src/hooks/useCarreiraPlano.ts` (telas) e em `check_carreira_ati
 - Admin → Cupons: criar, editar, ativar/desativar, validade, vínculo com escola parceira e contagem de atletas trazidos.
 - **Limite de usos por código** (opcional, campo no admin): ex. IGOR30 com 20 = vale para até 20 famílias; vazio = ilimitado. Cada teste criado com o cupom conta um uso (excluir o teste devolve a vaga). Esgotado, o código deixa de ser aceito e a família ganha o teste padrão de 7 dias, sem erro. Conferido no servidor, com trava para a última vaga.
 - Para dar Elite a uma conta que já existe: Admin → Assinaturas → "Conceder isenção".
+- **19/10/2026** — Teste do Elite passou de 7 para 15 dias, com +15 ao completar o perfil (foto, bio, categoria, local, posição, nascimento e 1 jogo). Quem assina durante o teste ganha pelo menos 15 dias a mais. Quem já estava no teste (ativo ou vencido) ganhou +15 dias, uma vez. Comunicação: o Carreira ID é gratuito e o Base não vence.

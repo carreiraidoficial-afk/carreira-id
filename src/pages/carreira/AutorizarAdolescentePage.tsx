@@ -165,7 +165,7 @@ export default function AutorizarAdolescentePage() {
         <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
           <li>O perfil de {nome} ({pedido.modalidade}) é criado <strong className="text-foreground">no seu nome</strong>: você é o responsável e administra a conta.</li>
           <li>{nome} ganha um acesso próprio para atualizar foto, capa, bio, posições e registrar a jornada. Nome, privacidade e plano ficam só com você.</li>
-          <li>Você ganha 7 dias de teste grátis do plano Elite. Depois, só continua se você quiser (R$ 12/mês).</li>
+          <li>O Carreira ID é gratuito. Você experimenta o plano Elite por 15 dias (e ganha mais 15 se o perfil for completado). Depois, o plano Base continua gratuito; o Elite só se você quiser (R$ 12/mês).</li>
           <li>O perfil nasce público (sem telefone, e-mail ou data de nascimento) e você pode mudar isso nas Configurações. Pode revogar o acesso de {nome} ou excluir tudo a qualquer momento.</li>
         </ul>
         <p className="text-xs text-muted-foreground">Usamos seu CPF apenas para identificar você como responsável. Ele não aparece no perfil.</p>

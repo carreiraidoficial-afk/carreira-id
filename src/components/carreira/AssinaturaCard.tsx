@@ -192,7 +192,7 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
 
         {isTrialActive && (
           <div className="mt-2 pt-2 border-t text-xs" style={{ borderColor: `${currentPlanoInfo.cor}20`, color: currentPlanoInfo.cor }}>
-            <strong>{diasRestantesTrial} {diasRestantesTrial === 1 ? 'dia restante' : 'dias restantes'}</strong> — depois, R$ 12,00/mês para continuar. <strong>Assine agora e ganhe pelo menos 7 dias a mais:</strong> os dias do teste não se perdem.
+            <strong>{diasRestantesTrial} {diasRestantesTrial === 1 ? 'dia restante' : 'dias restantes'}</strong> — depois o plano Base continua gratuito. Para manter o Elite, R$ 12,00/mês. <strong>Assine agora e ganhe pelo menos 15 dias a mais:</strong> os dias que restam não se perdem.
           </div>
         )}
 

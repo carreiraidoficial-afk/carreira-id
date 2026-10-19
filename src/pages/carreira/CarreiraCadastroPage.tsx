@@ -17,7 +17,7 @@ import { OnboardingTutorial } from '@/components/carreira/OnboardingTutorial';
 import { CarreiraPaywall } from '@/components/carreira/CarreiraPaywall';
 import { CarreiraFamiliaCheckout } from '@/components/carreira/CarreiraFamiliaCheckout';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { PLANOS, PRECO_PREMIUM, PRECO_FAMILIA, TRIAL_DIAS } from '@/config/carreiraPlanos';
+import { PLANOS, PRECO_PREMIUM, PRECO_FAMILIA, TRIAL_DIAS, BONUS_PERFIL_COMPLETO_DIAS } from '@/config/carreiraPlanos';
 import logoAtletaId from '@/assets/logo-atleta-id.png';
 import logoCarreiraId from '@/assets/logo-carreira-id-dark.png';
 import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
@@ -540,7 +540,7 @@ export default function CarreiraCadastroPage() {
               .limit(1);
             if (!existing || existing.length === 0) {
               const trialEnd = new Date();
-              trialEnd.setDate(trialEnd.getDate() + (cupomAplicado?.diasTrial || TRIAL_DIAS));
+              trialEnd.setDate(trialEnd.getDate() + Math.max(cupomAplicado?.diasTrial || 0, TRIAL_DIAS));
               await supabase.from('carreira_assinaturas').insert({
                 user_id: userId,
                 crianca_id: perfilAtleta.crianca_id,
@@ -554,7 +554,7 @@ export default function CarreiraCadastroPage() {
               } as any);
               if (cupomAplicado) {
                 setDiasTrialConcedidos(cupomAplicado.diasTrial);
-                toast.success(`Cupom aplicado! Você ganhou ${cupomAplicado.diasTrial} dias grátis 🎉`);
+                toast.success(`Cupom aplicado! Você ganhou ${cupomAplicado.diasTrial} dias de Elite 🎉`);
               }
             }
           } catch (err) {
@@ -1007,7 +1007,7 @@ export default function CarreiraCadastroPage() {
               <Rocket className="w-12 h-12 mx-auto" style={{ color: PLANOS.premium.cor }} />
               <h3 className="text-xl font-bold">Perfil criado com sucesso! 🎉</h3>
               <p className="text-sm" style={{ color: 'hsl(0 0% 60%)' }}>
-                Você ganhou <strong style={{ color: PLANOS.premium.cor }}>{diasTrialConcedidos} dias grátis</strong> do <strong style={{ color: PLANOS.premium.cor }}>{PLANOS.premium.icone} {PLANOS.premium.nome}</strong> para turbinar o perfil{createdChildName ? ` de ${createdChildName}` : ' do atleta'}. Depois do trial, R$ {PRECO_PREMIUM.toFixed(2).replace('.', ',')}/mês para continuar.
+                Você ganhou <strong style={{ color: PLANOS.premium.cor }}>{diasTrialConcedidos} dias</strong> do <strong style={{ color: PLANOS.premium.cor }}>{PLANOS.premium.icone} {PLANOS.premium.nome}</strong> para turbinar o perfil{createdChildName ? ` de ${createdChildName}` : ' do atleta'}, sem pagar nada. Complete o perfil (foto, bio, posição e 1 jogo) e ganhe mais {BONUS_PERFIL_COMPLETO_DIAS} dias. Depois, o plano Base continua gratuito; para manter o Elite, R$ {PRECO_PREMIUM.toFixed(2).replace('.', ',')}/mês.
               </p>
               <p className="text-xs" style={{ color: 'hsl(0 0% 50%)' }}>
                 Dica: o próprio atleta pode ter login próprio pra postar e registrar jornada — convide em Configurações → Colaboradores, dentro do perfil dele.
@@ -1022,7 +1022,7 @@ export default function CarreiraCadastroPage() {
                     finishOnboarding();
                   }}
                 >
-                  Continuar no trial
+                  Continuar
                 </Button>
                 <Button
                   className="flex-1 font-bold text-white"

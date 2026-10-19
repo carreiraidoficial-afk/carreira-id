@@ -18,11 +18,11 @@ const LINK_PLANOS = "https://carreiraid.com.br/planos";
 function htmlTrial(tipo: "trial_2dias" | "trial_expirado", primeiroNome: string, atleta: string) {
   const antes = tipo === "trial_2dias";
   const titulo = antes
-    ? `O teste do Elite de ${esc(atleta)} termina em 2 dias`
-    : `O teste do Elite de ${esc(atleta)} terminou`;
+    ? `O Elite experimental de ${esc(atleta)} termina em 2 dias`
+    : `O Elite experimental de ${esc(atleta)} terminou`;
   const texto = antes
-    ? "Depois disso o perfil continua no ar e tudo o que já foi registrado fica guardado. Mas o plano volta para o Base, que tem limites. Para continuar com o Elite sem interrupção, é só assinar — e quem assina antes do fim do teste ganha pelo menos 7 dias grátis a mais."
-    : "O perfil continua no ar e nada foi apagado. A partir de agora ele está no plano Base, que tem limites. Quando quiser voltar ao Elite, é só assinar: os registros e as conquistas continuam exatamente onde estavam.";
+    ? "Depois disso o perfil continua no ar e tudo o que já foi registrado fica guardado. O plano Base é gratuito e continua com você, só com alguns limites. Para manter o Elite sem interrupção, é só assinar — e quem assina antes do fim ganha pelo menos 15 dias a mais. Dica: completar o perfil (foto, bio, posição e 1 jogo) libera mais 15 dias, uma vez."
+    : "O perfil continua no ar e nada foi apagado. A partir de agora ele usa o plano Base, que é gratuito, com alguns limites. Quando quiser voltar ao Elite, é só assinar: os registros e as conquistas continuam exatamente onde estavam.";
   const lista = [
     "1 registro de Carreira por mês",
     "1 campeonato novo na Jornada por mês",
@@ -43,7 +43,7 @@ function htmlTrial(tipo: "trial_2dias" | "trial_expirado", primeiroNome: string,
 <p style="margin:0;font-size:14px;line-height:1.6;color:#a3a3a3;">Elite: <strong style="color:#f5f5f5;">R$ 12,00 por mês</strong> ou <strong style="color:#f5f5f5;">R$ 120,00 por ano</strong> (em até 12x no cartão). Pode pagar por PIX ou cartão.</p>
 </td></tr>
 <tr><td align="center" style="padding:28px 40px 36px 40px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" bgcolor="#f97316" style="background:#f97316;"><a href="${LINK_PLANOS}" style="display:inline-block;padding:15px 36px;font-size:15px;font-weight:700;color:#000000;text-decoration:none;">${antes ? "Continuar com o Elite" : "Voltar ao Elite"} →</a></td></tr></table></td></tr>
-<tr><td style="padding:20px 40px;background:#0a0a0a;border-top:1px solid #262626;"><p style="margin:0;font-size:11px;line-height:1.6;color:#525252;">Você recebeu este e-mail porque ${esc(atleta)} tem um perfil no Carreira ID com período de teste do Elite.</p></td></tr>
+<tr><td style="padding:20px 40px;background:#0a0a0a;border-top:1px solid #262626;"><p style="margin:0;font-size:11px;line-height:1.6;color:#525252;">Você recebeu este e-mail porque ${esc(atleta)} tem um perfil no Carreira ID com período experimental do Elite.</p></td></tr>
 </table></td></tr></table></body></html>`;
 }
 
@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
       const r = await resend.emails.send({
         from: "Carreira ID <contato@carreiraid.com.br>",
         to: [String(body.preview_to)],
-        subject: tipo === "trial_2dias" ? "O teste do Elite de João termina em 2 dias" : "O teste do Elite de João terminou",
+        subject: tipo === "trial_2dias" ? "O Elite experimental de João termina em 2 dias" : "O Elite experimental de João terminou",
         html: htmlTrial(tipo, "William", "João"),
       });
       return json({ preview: true, erro: (r as any)?.error ? String((r as any).error?.message || (r as any).error).slice(0, 200) : null });
@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
 
     if (expirandoEm2Dias && expirandoEm2Dias.length > 0) {
       const userIds = [...new Set(expirandoEm2Dias.map((a: any) => a.user_id))];
-      await sendPush(userIds, "⏰ Seu teste termina em 2 dias", "Assine para continuar com o Elite sem interrupção.", "trial-2dias");
+      await sendPush(userIds, "⏰ Seu Elite experimental termina em 2 dias", "O plano Base continua gratuito. Assine para manter o Elite.", "trial-2dias");
       results.emails_2dias = await sendEmails(expirandoEm2Dias, "trial_2dias");
       await supabase.from("carreira_assinaturas").update({ lembrete_trial_2d_em: now.toISOString() } as any).in("id", expirandoEm2Dias.map((a: any) => a.id));
       results.avisos_2dias = userIds.length;
@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
 
     if (expirados && expirados.length > 0) {
       const userIds = [...new Set(expirados.map((a: any) => a.user_id))];
-      await sendPush(userIds, "Seu teste do Elite acabou", "O perfil continua no ar no plano Base. Assine para voltar ao Elite.", "trial-expirado");
+      await sendPush(userIds, "Seu Elite experimental acabou", "O perfil continua no ar no plano Base, que é gratuito. Assine para voltar ao Elite.", "trial-expirado");
       results.emails_expirado = await sendEmails(expirados, "trial_expirado");
       await supabase.from("carreira_assinaturas").update({ lembrete_trial_expirado_em: now.toISOString() } as any).in("id", expirados.map((a: any) => a.id));
       results.avisos_expirado = userIds.length;

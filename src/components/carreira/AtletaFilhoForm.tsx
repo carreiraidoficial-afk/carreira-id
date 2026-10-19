@@ -476,7 +476,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
             className="font-mono uppercase"
             maxLength={30}
           />
-          <p className="text-xs text-muted-foreground">Ganhou um código de algum profissional? Digite aqui pra estender seu trial grátis.</p>
+          <p className="text-xs text-muted-foreground">Ganhou um código de algum profissional? Digite aqui para ganhar dias extras do Elite.</p>
         </div>
         <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
           {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}

@@ -211,7 +211,7 @@ begin
       values (v_uid, v_crianca, 'premium', 'ativa', v_fam.id, v_fam.metodo_pagamento, v_fam.inicio_em, v_fam.expira_em);
     else
       insert into public.carreira_assinaturas (user_id, crianca_id, plano, status, valor, expira_em, metodo_pagamento, inicio_em)
-      values (v_uid, v_crianca, 'premium', 'trial', 12.00, current_date + 7, null, now());
+      values (v_uid, v_crianca, 'premium', 'trial', 12.00, current_date + 15, null, now());
     end if;
   end if;
 

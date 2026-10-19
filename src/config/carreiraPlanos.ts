@@ -45,8 +45,10 @@ export const PRECO_PREMIUM_ANUAL = 120.0;
 export const PARCELAS_MAX_ANUAL = 12;
 /** Preço fixo da assinatura Família (cobre todos os filhos cadastrados, usado em toda a UI). */
 export const PRECO_FAMILIA = 19.9;
-/** Duração do trial gratuito, em dias. */
-export const TRIAL_DIAS = 7;
+/** Duração do Elite experimental ao criar o perfil, em dias. O plano Base continua gratuito depois. */
+export const TRIAL_DIAS = 15;
+/** Dias a mais quando o perfil fica completo (regra no banco: carreira_perfil_completo_status). */
+export const BONUS_PERFIL_COMPLETO_DIAS = 15;
 
 export const PLANOS: Record<CarreiraPlano, PlanoInfo> = {
   base: {

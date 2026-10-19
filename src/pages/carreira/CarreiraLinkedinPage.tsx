@@ -1,6 +1,7 @@
 import { Navigate, useNavigate } from 'react-router-dom';
 import { CarreiraLayout } from '@/components/layout/CarreiraLayout';
 import { CreatePerfilForm } from '@/components/carreira/CreatePerfilForm';
+import { PerfilCompletoCard } from '@/components/carreira/PerfilCompletoCard';
 import { PerfilHeader } from '@/components/carreira/PerfilHeader';
 import { CarreiraTimeline } from '@/components/carreira/CarreiraTimeline';
 import { SeletorCrianca } from '@/components/carreira/SeletorCrianca';
@@ -85,7 +86,7 @@ export default function CarreiraLinkedinPage() {
             <div className="flex items-center gap-2 text-sm">
               <Crown className="w-4 h-4 text-violet-500" />
               <span>
-                Comece agora seus <strong>7 dias grátis</strong> do Elite — depois R$ 12/mês
+                Experimente o <strong>Elite por 15 dias</strong> (+15 ao completar o perfil). O plano Base continua gratuito.
               </span>
             </div>
             <Button
@@ -108,6 +109,7 @@ export default function CarreiraLinkedinPage() {
             {/* perfil só entra em `perfis` se for dono OU colaborador ativo --
                 EditPerfilDialog (dentro de PerfilHeader) deve ficar restrito
                 ao dono real; postar/jornada (CarreiraTimeline) vale pros dois. */}
+            <PerfilCompletoCard criancaId={perfil.crianca_id} />
             <PerfilHeader perfil={perfil} isOwner={!perfil.souColaborador} podeEditarPerfil={!!(minhaColaboracao as any)?.pode_editar_perfil} viewerPerfilAtletaId={perfil.id} />
             <CarreiraTimeline perfil={perfil} isOwner={true} podeExcluir={!perfil.souColaborador} />
           </div>

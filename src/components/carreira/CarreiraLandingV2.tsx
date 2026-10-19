@@ -841,7 +841,7 @@ export function CarreiraLandingV2() {
             {/* Elite */}
             <div className="bg-gradient-to-b from-purple-900/40 to-[#1a2332] border border-purple-500/30 rounded-2xl p-7 text-left flex flex-col relative overflow-hidden">
               <div className="absolute top-3 right-3">
-                <span className="text-[10px] font-bold bg-purple-500 text-white px-3 py-1 rounded-full uppercase tracking-wider">7 dias grátis</span>
+                <span className="text-[10px] font-bold bg-purple-500 text-white px-3 py-1 rounded-full uppercase tracking-wider">Experimente 30 dias</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-2xl">👑</span>
@@ -856,7 +856,7 @@ export function CarreiraLandingV2() {
               {premiumAnual && (
                 <p className="text-xs text-emerald-400 mt-1">Equivale a R$ 10,00 por mês • economize R$ 24,00 • até 12x no cartão</p>
               )}
-              <p className="text-xs text-purple-300 mt-1">Experimente 7 dias grátis — sem cartão</p>
+              <p className="text-xs text-purple-300 mt-1">Experimente por 15 dias, sem cartão (+15 ao completar o perfil). O plano Base é sempre gratuito.</p>
               <div className="border-t border-purple-500/20 my-4" />
               <ul className="space-y-2.5 flex-1">
                 {[
@@ -880,7 +880,7 @@ export function CarreiraLandingV2() {
                 to={`${cadastroLink}?plano=premium`}
                 className="mt-6 block text-center bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-xl transition"
               >
-                Começar 7 dias grátis
+                Experimentar o Elite
               </Link>
             </div>
           </div>

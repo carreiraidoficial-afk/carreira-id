@@ -104,7 +104,7 @@ export default function CarreiraPlanos() {
               >
                 {isPopular && (
                   <div className="absolute top-0 right-0 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white rounded-bl-lg" style={{ backgroundColor: info.cor }}>
-                    {TRIAL_DIAS} dias grátis
+                    Experimente {TRIAL_DIAS} dias
                   </div>
                 )}
                 {isAtual && (

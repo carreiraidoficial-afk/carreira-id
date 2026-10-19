@@ -54,7 +54,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cartao');
   const [cpfInput, setCpfInput] = useState('');
   const [ciclo, setCiclo] = useState<Ciclo>('mensal');
-  // Quem está no teste grátis e assina agora ganha pelo menos 7 dias a mais (regra no banco: carreira_assinatura_converte_trial).
+  // Quem está no teste grátis e assina agora ganha pelo menos 15 dias a mais (regra no banco: carreira_assinatura_converte_trial).
   const { data: emTeste = false } = useQuery({
     queryKey: ['paywall-em-teste', criancaId],
     enabled: !!criancaId,
@@ -757,7 +757,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
 
           {emTeste && (
             <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-xs text-emerald-600 dark:text-emerald-300">
-              🎁 <strong>Assine agora e ganhe pelo menos 7 dias grátis a mais.</strong> Seus dias de teste não se perdem: eles se somam à assinatura.
+              🎁 <strong>Assine agora e ganhe pelo menos 15 dias a mais.</strong> Os dias que restam do Elite experimental não se perdem: eles se somam à assinatura.
             </div>
           )}
 
