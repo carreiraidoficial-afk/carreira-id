@@ -84,6 +84,8 @@ Deno.serve(async (req) => {
           .from('perfil_atleta')
           .select('cpf_cnpj')
           .eq('user_id', sub.user_id)
+          .not('cpf_cnpj', 'is', null)
+          .neq('cpf_cnpj', '')
           .limit(1)
           .maybeSingle();
         const cpf = perfil?.cpf_cnpj?.replace(/\D/g, '');

@@ -17,6 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, UserCircle, Save, CreditCard, ShieldCheck, Fingerprint, Smartphone, Bell, KeyRound, MessageCircle, FileText, ChevronRight, Users, Lock, Globe, Trash2, Layers } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
+import { validateCPF, formatCPF } from '@/lib/cpf-validator';
+import { lerPrivadoAtleta } from '@/lib/contato-perfil';
 import { AssinaturaCard } from './AssinaturaCard';
 import { ColaboradoresTab } from './ColaboradoresTab';
 import { DeleteAccountDialog } from './DeleteAccountDialog';
@@ -130,7 +132,7 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
           </TabsList>
 
           <TabsContent value="responsavel" className="mt-4">
-            <ResponsavelTab userId={perfil.user_id} />
+            <ResponsavelTab userId={perfil.user_id} comCpf={isAtleta} />
           </TabsContent>
 
           <TabsContent value="assinatura" className="mt-4">
@@ -349,12 +351,36 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
 }
 
 /* --- Responsável Tab --- */
-function ResponsavelTab({ userId }: { userId: string }) {
+function ResponsavelTab({ userId, comCpf = false }: { userId: string; comCpf?: boolean }) {
   const queryClient = useQueryClient();
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [telefone, setTelefone] = useState('');
   const [dirty, setDirty] = useState(false);
+
+  // CPF do responsável: é um só para todos os atletas da conta. Só o dono (ou o admin em suporte) o lê, por função do banco.
+  const [cpf, setCpf] = useState('');
+  const [cpfOriginal, setCpfOriginal] = useState('');
+  const [cpfCarregado, setCpfCarregado] = useState(false);
+  useEffect(() => {
+    if (!comCpf || !userId) return;
+    let cancelado = false;
+    setCpfCarregado(false);
+    (async () => {
+      const { data: atletas } = await supabase.from('perfil_atleta').select('id').eq('user_id', userId);
+      let achado = '';
+      for (const a of (atletas || [])) {
+        const priv = await lerPrivadoAtleta(a.id);
+        const digitos = String(priv?.cpf_cnpj || '').replace(/\D/g, '');
+        if (digitos) { achado = digitos; break; }
+      }
+      if (cancelado) return;
+      setCpf(achado ? formatCPF(achado) : '');
+      setCpfOriginal(achado);
+      setCpfCarregado(true);
+    })();
+    return () => { cancelado = true; };
+  }, [comCpf, userId]);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['responsavel-profile', userId],
@@ -413,13 +439,26 @@ function ResponsavelTab({ userId }: { userId: string }) {
         .update({ nome, telefone: telefone || null })
         .eq('user_id', userId);
       if (error) throw error;
+
+      if (comCpf && cpfCarregado) {
+        const limpo = cpf.replace(/\D/g, '');
+        if (limpo !== cpfOriginal) {
+          if (limpo && !validateCPF(limpo)) throw new Error('CPF inválido. Verifique os números digitados.');
+          const { error: cpfError } = await supabase
+            .from('perfil_atleta')
+            .update({ cpf_cnpj: limpo || null, tipo_documento: limpo ? 'cpf' : null })
+            .eq('user_id', userId);
+          if (cpfError) throw cpfError;
+          setCpfOriginal(limpo);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['responsavel-profile', userId] });
       toast.success('Dados do responsável atualizados!');
       setDirty(false);
     },
-    onError: () => toast.error('Erro ao atualizar dados'),
+    onError: (e: any) => toast.error(e?.message?.includes('CPF inválido') ? e.message : 'Erro ao atualizar dados'),
   });
 
   const formatPhone = (value: string) => {
@@ -457,6 +496,21 @@ function ResponsavelTab({ userId }: { userId: string }) {
             placeholder="(11) 99999-9999"
           />
         </div>
+        {comCpf && (
+          <div>
+            <label className="text-sm font-medium mb-1 block">CPF do Responsável</label>
+            <Input
+              value={cpf}
+              disabled={!cpfCarregado}
+              inputMode="numeric"
+              onChange={(e) => { setCpf(formatCPF(e.target.value)); setDirty(true); }}
+              placeholder={cpfCarregado ? '000.000.000-00' : 'Carregando...'}
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Privado: só você vê. É usado no pagamento e na renovação automática do PIX, e vale para todos os atletas da conta.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end pt-2">

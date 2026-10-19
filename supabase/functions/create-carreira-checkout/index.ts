@@ -82,6 +82,14 @@ Deno.serve(async (req) => {
 
     // Find or create customer
     const cleanCpf = cpf.replace(/\D/g, '');
+    // Guarda o CPF do responsável nos atletas dele que ainda não têm um: a renovação automática do PIX lê esse CPF.
+    try {
+      const dg = cleanCpf.split('').map(Number);
+      const dv = (n: number) => { const s = dg.slice(0, n).reduce((a: number, x: number, i: number) => a + x * (n + 1 - i), 0); const r = (s * 10) % 11; return r === 10 ? 0 : r; };
+      if (cleanCpf.length === 11 && !/^(\d)\1{10}$/.test(cleanCpf) && dv(9) === dg[9] && dv(10) === dg[10]) {
+        await supabase.from('perfil_atleta').update({ cpf_cnpj: cleanCpf, tipo_documento: 'cpf' }).eq('user_id', user_id).or('cpf_cnpj.is.null,cpf_cnpj.eq.');
+      }
+    } catch (e) { console.warn('Não foi possível guardar o CPF no perfil:', e); }
     let customerId: string | null = null;
 
     const searchResp = await fetch(`${ASAAS_API_URL}/customers?cpfCnpj=${cleanCpf}`, {
