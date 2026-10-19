@@ -28,6 +28,8 @@ import { Card } from '@/components/ui/card';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
 
+import { COLUNAS_PERFIL_ATLETA, COLUNAS_PERFIL_REDE } from '@/lib/contato-perfil';
+import { carregarContatosPublicos } from '@/lib/contato-perfil';
 // Carregado sob demanda: só o dono do perfil vê esse formulário, mas ele
 // carrega heic2any (~1,3MB) -- import estático fazia todo visitante baixar
 // essa biblioteca à toa.
@@ -57,7 +59,7 @@ export default function PerfilPage() {
     queryFn: async () => {
       const { data: redeData, error: redeError } = await supabase
         .from('perfis_rede')
-        .select('*')
+        .select(COLUNAS_PERFIL_REDE)
         .eq('user_id', userId!)
         .maybeSingle();
       if (redeError) throw redeError;
@@ -90,7 +92,11 @@ export default function PerfilPage() {
         return { type: 'slug_redirect' as const, slug: (redeData as any).slug as string };
       }
 
-      if (redeData) return { type: 'rede' as const, data: redeData };
+      if (redeData) {
+        // O telefone só chega quando o perfil marcou "WhatsApp público" (função do banco).
+        const contatos = await carregarContatosPublicos([(redeData as any).user_id]);
+        return { type: 'rede' as const, data: { ...redeData, telefone_whatsapp: contatos.get((redeData as any).user_id) ?? null } };
+      }
 
       const { data: atletasData, error: atletaError } = await supabase
         .from('perfil_atleta')

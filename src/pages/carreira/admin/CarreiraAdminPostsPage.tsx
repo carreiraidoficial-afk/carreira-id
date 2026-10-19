@@ -21,6 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import CarreiraAdminLayout from '@/components/layout/CarreiraAdminLayout';
 
+import { COLUNAS_PERFIL_ATLETA, COLUNAS_PERFIL_REDE } from '@/lib/contato-perfil';
 function useAdminPosts(search: string) {
   return useQuery({
     queryKey: ['carreira-admin-posts', search],
@@ -85,7 +86,7 @@ function useAutoCreateAdminPerfil() {
       try { foto_url = await uploadAdminLogo(user.id); } catch { /* silent */ }
       const { data, error } = await supabase.from('perfil_atleta')
         .insert({ user_id: user.id, slug, nome, modalidade: 'Plataforma', bio: 'Conta oficial Carreira ID', is_public: true, foto_url })
-        .select().single();
+        .select(COLUNAS_PERFIL_ATLETA).single();
       if (error) throw error;
       return data;
     },

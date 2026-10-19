@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { PerfilAtleta } from '@/hooks/useCarreiraData';
 
+import { COLUNAS_PERFIL_ATLETA, COLUNAS_PERFIL_REDE } from '@/lib/contato-perfil';
 const STORAGE_PREFIX = 'carreira_crianca_ativa_id';
 const AMBIENTE_STORAGE_PREFIX = 'carreira_ultimo_ambiente';
 
@@ -38,7 +39,7 @@ export function useMinhasCriancas(userId: string | null | undefined) {
 
       const { data: proprios, error } = await supabase
         .from('perfil_atleta')
-        .select('*')
+        .select(COLUNAS_PERFIL_ATLETA)
         .eq('user_id', userId)
         .order('created_at', { ascending: true });
       if (error) throw error;
@@ -57,7 +58,7 @@ export function useMinhasCriancas(userId: string | null | undefined) {
       if (idsParaBuscar.length > 0) {
         const { data: perfisColaborados } = await supabase
           .from('perfil_atleta')
-          .select('*')
+          .select(COLUNAS_PERFIL_ATLETA)
           .in('crianca_id', idsParaBuscar);
         colaborados = ((perfisColaborados || []) as PerfilAtleta[]).map((p) => ({ ...p, souColaborador: true }));
       }
@@ -119,7 +120,7 @@ export function salvarUltimoAmbiente(userId: string, ambiente: Ambiente) {
 export async function resolverSlugPosLogin(userId: string): Promise<string | null> {
   const { data: perfisAtleta } = await supabase
     .from('perfil_atleta')
-    .select('*')
+    .select(COLUNAS_PERFIL_ATLETA)
     .eq('user_id', userId)
     .order('created_at', { ascending: true });
   const perfilAtivo = pickCriancaAtiva((perfisAtleta || []) as PerfilAtleta[], userId);
@@ -150,7 +151,7 @@ export async function resolverSlugPosLogin(userId: string): Promise<string | nul
   if (criancaIdsColaborados.length > 0) {
     const { data: perfisColaborados } = await supabase
       .from('perfil_atleta')
-      .select('*')
+      .select(COLUNAS_PERFIL_ATLETA)
       .in('crianca_id', criancaIdsColaborados)
       .order('created_at', { ascending: true });
 

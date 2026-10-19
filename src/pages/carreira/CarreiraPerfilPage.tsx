@@ -73,6 +73,8 @@ import { useAnonymousGate } from '@/hooks/useAnonymousGate';
 import { useCriancaAtiva, useColaboradorInfo, useMeusAmbientes, salvarUltimoAmbiente } from '@/hooks/useCriancaAtiva';
 import { LockedSection } from '@/components/carreira/AnonymousFeedCTA';
 
+import { COLUNAS_PERFIL_ATLETA, COLUNAS_PERFIL_REDE } from '@/lib/contato-perfil';
+import { carregarContatosPublicos } from '@/lib/contato-perfil';
 const TYPE_LABELS: Record<string, string> = {
   professor: 'Professor',
   tecnico: 'Técnico',
@@ -222,7 +224,7 @@ function useProfileBySlug(slug: string) {
       // atleta (perfis ocultos ficam visíveis só pra quem tem conta no
       // Carreira ID, via policy "Usuarios logados podem ver perfis de
       // atletas nao publicos").
-      const atletaQuery = supabase.from('perfil_atleta').select('*').eq('slug', slug);
+      const atletaQuery = supabase.from('perfil_atleta').select(COLUNAS_PERFIL_ATLETA).eq('slug', slug);
       const { data: atletaData, error: atletaError } = await (currentUid ? atletaQuery : atletaQuery.eq('is_public', true)).maybeSingle();
       if (atletaError && atletaError.code !== 'PGRST116') throw atletaError;
       if (atletaData) return { type: 'atleta' as const, ...atletaData } as UnifiedProfile;
@@ -230,7 +232,7 @@ function useProfileBySlug(slug: string) {
       // 2. Try perfis_rede
       const { data: redeData, error: redeError } = await supabase
         .from('perfis_rede')
-        .select('*')
+        .select(COLUNAS_PERFIL_REDE)
         .eq('slug', slug)
         .maybeSingle();
       if (redeError && redeError.code !== 'PGRST116') throw redeError;
@@ -244,14 +246,16 @@ function useProfileBySlug(slug: string) {
           // 2+ linhas.
           const { data: atletaDoUser } = await supabase
             .from('perfil_atleta')
-            .select('*')
+            .select(COLUNAS_PERFIL_ATLETA)
             .eq('user_id', (redeData as any).user_id)
             .order('created_at', { ascending: true })
             .limit(1)
             .maybeSingle();
           if (atletaDoUser) return { type: 'atleta' as const, ...atletaDoUser } as UnifiedProfile;
         }
-        return { type: 'rede' as const, ...redeData } as UnifiedProfile;
+        // O telefone só chega quando o perfil marcou "WhatsApp público" (função do banco); a tabela não entrega mais o número.
+        const contatos = await carregarContatosPublicos([(redeData as any).user_id]);
+        return { type: 'rede' as const, ...redeData, telefone_whatsapp: contatos.get((redeData as any).user_id) ?? null } as UnifiedProfile;
       }
 
       return null;

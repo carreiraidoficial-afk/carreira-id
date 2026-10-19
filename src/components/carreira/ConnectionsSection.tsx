@@ -19,6 +19,7 @@ import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { ConectarButton } from './ConectarButton';
 import { PainelEscolaConexoes, type EscolaDoDono } from './PainelEscolaConexoes';
 
+import { carregarContatosPublicos } from '@/lib/contato-perfil';
 function useSearchParaConectar(query: string, meuUserId: string | null) {
   return useQuery({
     queryKey: ['search-para-conectar', query, meuUserId],
@@ -200,14 +201,16 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
       if (connectedUserIds.length === 0) return [];
       const { data: redeProfiles } = await supabase
         .from('perfis_rede')
-        .select('id, user_id, nome, tipo, foto_url, cidade, estado, telefone_whatsapp, whatsapp_publico')
+        .select('id, user_id, nome, tipo, foto_url, cidade, estado, whatsapp_publico')
         .in('user_id', connectedUserIds);
+      // O telefone só vem de quem marcou "WhatsApp público" (função do banco); a tabela não entrega mais o número.
+      const contatosPublicos = await carregarContatosPublicos(connectedUserIds);
       const { data: atletaProfiles } = await supabase
         .from('perfil_atleta')
         .select('id, user_id, nome, foto_url, slug, cidade, estado')
         .eq('is_public', true)
         .in('user_id', connectedUserIds);
-      const redeByUser = new Map((redeProfiles || []).map((p) => [p.user_id, p]));
+      const redeByUser = new Map((redeProfiles || []).map((p) => [p.user_id, { ...p, telefone_whatsapp: contatosPublicos.get(p.user_id) ?? null }]));
       const atletaById = new Map((atletaProfiles || []).map((p) => [p.id, { ...p, tipo: 'Atleta' }]));
       const atletaByUserFallback = new Map<string, any>();
       for (const p of (atletaProfiles || [])) {
@@ -330,7 +333,8 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
       if (!follows || follows.length === 0) return [];
       const followerIds = follows.map((f) => f.follower_id);
       const { data: redeProfiles } = await supabase
-        .from('perfis_rede').select('user_id, nome, foto_url, tipo, cidade, estado, telefone_whatsapp, whatsapp_publico').in('user_id', followerIds);
+        .from('perfis_rede').select('user_id, nome, foto_url, tipo, cidade, estado, whatsapp_publico').in('user_id', followerIds);
+      const contatosSeguidores = await carregarContatosPublicos(followerIds);
       const { data: atletaProfiles } = await supabase
         .from('perfil_atleta').select('user_id, nome, foto_url, slug, cidade, estado').in('user_id', followerIds);
       const redeMap = new Map((redeProfiles || []).map((p) => [p.user_id, p]));
@@ -345,7 +349,7 @@ export function ConnectionsSection({ userId, currentUserId, perfilAtletaId }: Pr
           tipo: rede?.tipo || 'Atleta',
           cidade: rede?.cidade || atleta?.cidade || null,
           estado: rede?.estado || atleta?.estado || null,
-          telefone_whatsapp: rede?.telefone_whatsapp || null,
+          telefone_whatsapp: contatosSeguidores.get(f.follower_id) || null,
           whatsapp_publico: rede?.whatsapp_publico || false,
         };
       });

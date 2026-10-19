@@ -19,6 +19,7 @@ import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import CarreiraAdminLayout from '@/components/layout/CarreiraAdminLayout';
 
+import { lerContatosAdmin } from '@/lib/contato-perfil';
 const PLANO_DISPLAY: Record<string, string> = {
   pro_mensal: 'Elite',
   mensal: 'Elite',
@@ -95,9 +96,12 @@ function useAdminAssinaturas(search: string) {
 
         const { data: perfis } = await supabase
           .from('perfil_atleta')
-          .select('crianca_id, slug, categoria, posicao_principal, telefone_whatsapp')
+          .select('crianca_id, slug, categoria, posicao_principal')
           .in('crianca_id', criancaIds);
-        if (perfis) perfis.forEach((p: any) => { perfilAtletaMap[p.crianca_id] = p; });
+        // O telefone do atleta vem por uma função só do admin (a tabela não o entrega mais).
+        const contatosAtletas = await lerContatosAdmin({ criancaIds });
+        const telefonePorCrianca = new Map(contatosAtletas.map((c) => [c.crianca_id, c.telefone_whatsapp]));
+        if (perfis) perfis.forEach((p: any) => { perfilAtletaMap[p.crianca_id] = { ...p, telefone_whatsapp: telefonePorCrianca.get(p.crianca_id) ?? null }; });
       }
 
       let result = (data || []).map((a: any) => {

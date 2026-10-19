@@ -10,6 +10,7 @@ import { CarreiraBottomNav } from '@/components/carreira/CarreiraBottomNav';
 import { Button } from '@/components/ui/button';
 import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 
+import { COLUNAS_PERFIL_ATLETA, COLUNAS_PERFIL_REDE } from '@/lib/contato-perfil';
 export default function CarreiraPostPage() {
   const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ export default function CarreiraPostPage() {
       setLoading(true);
       const { data } = await supabase
         .from('posts_atleta')
-        .select('*, perfil:perfil_atleta(*), perfil_rede:perfis_rede(*)')
+        .select(`*, perfil:perfil_atleta(${COLUNAS_PERFIL_ATLETA}), perfil_rede:perfis_rede(${COLUNAS_PERFIL_REDE})` as const)
         .eq('id', postId)
         .maybeSingle();
       if (cancelled) return;

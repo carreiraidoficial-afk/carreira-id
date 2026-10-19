@@ -481,8 +481,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
         }
       }
 
-      // Save email, data_nascimento, brasao
-      if (email.trim()) dadosPerfil.email = email.trim();
+      // Save data_nascimento, brasao (o e-mail fica só na conta: no perfil ele ficaria legível por qualquer pessoa)
       if (dataNascimento) dadosPerfil.data_nascimento = dataNascimento;
       if (brasaoUrl) dadosPerfil.brasao_url = brasaoUrl;
 

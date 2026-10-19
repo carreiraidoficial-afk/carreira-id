@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import CarreiraAdminLayout from '@/components/layout/CarreiraAdminLayout';
 import { ESTADOS, ESTADO_LABELS } from '@/constants/esportes';
 
+import { COLUNAS_PERFIL_ATLETA, COLUNAS_PERFIL_REDE, lerContatosAdmin } from '@/lib/contato-perfil';
 const POSICOES = ['Goleiro', 'Zagueiro', 'Lateral', 'Volante', 'Meia', 'Atacante'];
 
 const TYPE_LABELS: Record<string, string> = {
@@ -43,7 +44,7 @@ function useAdminPerfisAtleta(filtros: AtletaFiltros) {
   return useQuery({
     queryKey: ['carreira-admin-perfis-atleta', search, isTeste, estado, posicao],
     queryFn: async () => {
-      let query = supabase.from('perfil_atleta').select('*').eq('is_teste', isTeste).order('created_at', { ascending: false }).limit(200);
+      let query = supabase.from('perfil_atleta').select(COLUNAS_PERFIL_ATLETA).eq('is_teste', isTeste).order('created_at', { ascending: false }).limit(200);
       if (estado) query = query.eq('estado', estado);
       if (posicao) query = query.eq('posicao_principal', posicao);
       const { data, error } = await query;
@@ -54,8 +55,13 @@ function useAdminPerfisAtleta(filtros: AtletaFiltros) {
         const { data: profiles } = await supabase.from('profiles').select('user_id, nome, email, telefone, provider').in('user_id', userIds);
         if (profiles) profiles.forEach((p: any) => { profilesMap[p.user_id] = p; });
       }
+      // Telefone e CPF não saem mais da tabela: o admin os recebe por uma função própria.
+      const contatosAtleta = new Map((await lerContatosAdmin({ atletaIds: (data || []).map((p: any) => p.id) })).map((c) => [c.id, c]));
       let perfis = (data || []).map((p: any) => ({
         ...p,
+        telefone_whatsapp: contatosAtleta.get(p.id)?.telefone_whatsapp ?? null,
+        cpf_cnpj: contatosAtleta.get(p.id)?.cpf_cnpj ?? null,
+        tipo_documento: contatosAtleta.get(p.id)?.tipo_documento ?? null,
         email: profilesMap[p.user_id]?.email,
         provider: profilesMap[p.user_id]?.provider,
         responsavel_nome: profilesMap[p.user_id]?.nome,
@@ -96,7 +102,7 @@ function useAdminPerfisRede(search: string) {
   return useQuery({
     queryKey: ['carreira-admin-perfis-rede', search],
     queryFn: async () => {
-      const { data, error } = await supabase.from('perfis_rede').select('*').neq('tipo', 'pai_responsavel').order('created_at', { ascending: false }).limit(200);
+      const { data, error } = await supabase.from('perfis_rede').select(COLUNAS_PERFIL_REDE).neq('tipo', 'pai_responsavel').order('created_at', { ascending: false }).limit(200);
       if (error) throw error;
       const userIds = [...new Set((data || []).map((p: any) => p.user_id))];
       let profilesMap: Record<string, any> = {};
@@ -104,7 +110,8 @@ function useAdminPerfisRede(search: string) {
         const { data: profiles } = await supabase.from('profiles').select('user_id, email, provider').in('user_id', userIds);
         if (profiles) profiles.forEach((p: any) => { profilesMap[p.user_id] = p; });
       }
-      let perfis = (data || []).map((p: any) => ({ ...p, email: profilesMap[p.user_id]?.email, provider: profilesMap[p.user_id]?.provider, cidade: (p.dados_perfil as any)?.localizacao || (p.dados_perfil as any)?.cidade || null }));
+      const contatosRede = new Map((await lerContatosAdmin({ redeIds: (data || []).map((p: any) => p.id) })).map((c) => [c.id, c]));
+      let perfis = (data || []).map((p: any) => ({ ...p, telefone_whatsapp: contatosRede.get(p.id)?.telefone_whatsapp ?? null, cpf_cnpj: contatosRede.get(p.id)?.cpf_cnpj ?? null, tipo_documento: contatosRede.get(p.id)?.tipo_documento ?? null, email: profilesMap[p.user_id]?.email, provider: profilesMap[p.user_id]?.provider, cidade: (p.dados_perfil as any)?.localizacao || (p.dados_perfil as any)?.cidade || null }));
       if (search) {
         const s = search.toLowerCase();
         perfis = perfis.filter((p: any) => p.nome?.toLowerCase().includes(s) || p.slug?.toLowerCase().includes(s) || p.email?.toLowerCase().includes(s));

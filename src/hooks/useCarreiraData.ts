@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
 import { toast } from 'sonner';
 
+import { COLUNAS_PERFIL_ATLETA, COLUNAS_PERFIL_REDE } from '@/lib/contato-perfil';
 async function getDisplayName(userId: string): Promise<string> {
   // .limit(1) em vez de .maybeSingle(): um responsável pode ter mais de um
   // perfil_atleta (irmãos) -- .maybeSingle() erroraria com 2+ linhas.
@@ -169,7 +170,7 @@ export function usePerfilAtletaBySlug(slug: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('perfil_atleta')
-        .select('*')
+        .select(COLUNAS_PERFIL_ATLETA)
         .eq('slug', slug)
         .eq('is_public', true)
         .single();
@@ -295,7 +296,7 @@ export function useCreatePerfilAtleta() {
           posicao_secundaria: data.posicao_secundaria || null,
           origem: 'carreira',
         } as any)
-        .select()
+        .select(COLUNAS_PERFIL_ATLETA)
         .single();
 
       if (error) throw error;
@@ -321,7 +322,7 @@ export function useUpdatePerfilAtleta() {
         .from('perfil_atleta')
         .update(data)
         .eq('id', id)
-        .select()
+        .select(COLUNAS_PERFIL_ATLETA)
         .single();
 
       if (error) throw error;
@@ -350,7 +351,7 @@ export function usePostsAtleta(autorId: string | undefined) {
 
       const { data, error } = await supabase
         .from('posts_atleta')
-        .select(`*, perfil:perfil_atleta(*), perfil_rede:perfis_rede(*)`)
+        .select(`*, perfil:perfil_atleta(${COLUNAS_PERFIL_ATLETA}), perfil_rede:perfis_rede(${COLUNAS_PERFIL_REDE})` as const)
         .eq('autor_id', autorId)
         .order('created_at', { ascending: false });
 
@@ -374,7 +375,7 @@ export function usePostsRede(perfilRedeId: string | undefined) {
 
       const { data, error } = await supabase
         .from('posts_atleta')
-        .select(`*, perfil:perfil_atleta(*), perfil_rede:perfis_rede(*)`)
+        .select(`*, perfil:perfil_atleta(${COLUNAS_PERFIL_ATLETA}), perfil_rede:perfis_rede(${COLUNAS_PERFIL_REDE})` as const)
         .eq('perfil_rede_id', perfilRedeId)
         .order('created_at', { ascending: false });
 

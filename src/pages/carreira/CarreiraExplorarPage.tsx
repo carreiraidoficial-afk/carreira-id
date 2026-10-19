@@ -25,6 +25,7 @@ import { useCriancaAtiva, slugDoDono } from '@/hooks/useCriancaAtiva';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { useSEO } from '@/hooks/useSEO';
 
+import { COLUNAS_PERFIL_ATLETA, COLUNAS_PERFIL_REDE } from '@/lib/contato-perfil';
 const TYPE_LABELS: Record<string, string> = {
   professor: 'Professor',
   tecnico: 'Técnico',
@@ -161,7 +162,7 @@ function useFeedPosts(connectionIds: string[], userId?: string | null) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('posts_atleta')
-        .select(`*, perfil:perfil_atleta(*), perfil_rede:perfis_rede(*)`)
+        .select(`*, perfil:perfil_atleta(${COLUNAS_PERFIL_ATLETA}), perfil_rede:perfis_rede(${COLUNAS_PERFIL_REDE})` as const)
         .eq('visibilidade', 'publico')
         .order('created_at', { ascending: false })
         .limit(50);
@@ -184,7 +185,7 @@ function useMeusPosts(userId?: string | null) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('posts_atleta')
-        .select(`*, perfil:perfil_atleta(*), perfil_rede:perfis_rede(*)`)
+        .select(`*, perfil:perfil_atleta(${COLUNAS_PERFIL_ATLETA}), perfil_rede:perfis_rede(${COLUNAS_PERFIL_REDE})` as const)
         .eq('criado_por', userId!)
         .order('created_at', { ascending: false })
         .limit(50);

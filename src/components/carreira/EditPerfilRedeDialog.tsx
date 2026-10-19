@@ -48,6 +48,7 @@ interface DynFieldDef {
 }
 
 import { CATEGORIAS, MODALIDADES_ESCOLA, MODALIDADES_PROFISSIONAL, opcoesCampoSelect, opcoesEspecialidadeProfessor } from '@/constants/esportes';
+import { lerPrivadoRede } from '@/lib/contato-perfil';
 const POSICOES = ['Goleiro', 'Zagueiro', 'Lateral', 'Volante', 'Meia', 'Atacante'];
 
 function getDynamicFields(tipo: string): DynFieldDef[] {
@@ -279,6 +280,25 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
     },
   });
 
+  // CPF/CNPJ e telefone não vêm mais junto do perfil: o dono (ou o admin em Modo Suporte) os busca ao abrir.
+  // Enquanto não chegam, salvar fica bloqueado para não apagar o que já estava cadastrado.
+  const [privadoCarregado, setPrivadoCarregado] = useState(false);
+  useEffect(() => {
+    if (!open || !perfil?.id) return;
+    let cancelado = false;
+    setPrivadoCarregado(false);
+    lerPrivadoRede(perfil.id).then((priv) => {
+      if (cancelado || !priv) return;
+      const rawDoc = String(priv.cpf_cnpj || '').replace(/\D/g, '');
+      const docTipo = priv.tipo_documento === 'cnpj' ? 'cnpj' as const : 'cpf' as const;
+      form.setValue('tipo_documento', docTipo);
+      form.setValue('cpf_cnpj', rawDoc ? formatDoc(rawDoc, docTipo) : '');
+      form.setValue('telefone_whatsapp', formatPhone(String(priv.telefone_whatsapp || '')));
+      setPrivadoCarregado(true);
+    });
+    return () => { cancelado = true; };
+  }, [open, perfil?.id]);
+
   const tipoDoc = form.watch('tipo_documento') || 'cpf';
 
   // Load dados_perfil values into dynamic state
@@ -436,6 +456,10 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
   };
 
   const onSubmit = async (data: FormData) => {
+    if (!privadoCarregado) {
+      toast.error('Aguarde um instante: os dados de contato ainda estão carregando.');
+      return;
+    }
     // Validate document if provided
     const cleanDoc = (data.cpf_cnpj || '').replace(/\D/g, '');
     if (cleanDoc) {
