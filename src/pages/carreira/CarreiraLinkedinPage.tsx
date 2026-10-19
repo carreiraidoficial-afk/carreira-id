@@ -13,6 +13,7 @@ import { TutorialAutoShow } from '@/components/carreira/TutorialAutoShow';
 import { TutorialHelpButton } from '@/components/carreira/TutorialHelpButton';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
 import { useCriancaAtiva, useColaboradorInfo } from '@/hooks/useCriancaAtiva';
+import { AdolescenteAguardando, usePreCadastroAdolescente } from '@/components/carreira/AdolescenteAguardando';
 
 export default function CarreiraLinkedinPage() {
   const { sessionUserId, loading: sessionLoading } = useCarreiraSession();
@@ -21,7 +22,8 @@ export default function CarreiraLinkedinPage() {
   const { perfilAtivo: perfil, isLoading: perfilLoading, perfis, selecionarCrianca } = useCriancaAtiva(sessionUserId);
 
   const criancaId = perfil?.crianca_id || null;
-  // Hook antes de qualquer return condicional (ordem dos hooks).
+  // Hooks antes de qualquer return condicional (ordem dos hooks).
+  const { data: preCadastro } = usePreCadastroAdolescente(sessionUserId);
   const { data: minhaColaboracao } = useColaboradorInfo((perfil as any)?.souColaborador ? criancaId : null, sessionUserId);
   const { plano, isLoading: planoLoading } = useCarreiraPlano(criancaId);
 
@@ -110,7 +112,9 @@ export default function CarreiraLinkedinPage() {
             <CarreiraTimeline perfil={perfil} isOwner={true} podeExcluir={!perfil.souColaborador} />
           </div>
         ) : (
-          <CreatePerfilForm />
+          preCadastro && (preCadastro.status === 'pendente' || preCadastro.status === 'expirado' || preCadastro.status === 'recusado')
+            ? <AdolescenteAguardando userId={sessionUserId} />
+            : <CreatePerfilForm />
         )}
       </div>
     </CarreiraLayout>

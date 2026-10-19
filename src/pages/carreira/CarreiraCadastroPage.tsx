@@ -30,10 +30,26 @@ import { trackCompleteRegistration, trackProfileCreated, trackInitiateCheckout, 
 import { trackOnboardingFunil } from '@/lib/onboardingFunil';
 import { salvarPendingRef, lerPendingRef, processarConviteRef, salvarConviteDireto, lerConviteDireto, limparConviteDireto } from '@/lib/processar-convite-ref';
 import { TERMOS_VERSAO } from '@/lib/termosVersao';
+import { PENDING_AUTORIZAR_KEY } from '@/lib/adolescente-anuencia';
+import { AdolescenteCadastroForm } from '@/components/carreira/AdolescenteCadastroForm';
+import { AdolescenteAguardando } from '@/components/carreira/AdolescenteAguardando';
 import { resolverSlugPosLogin } from '@/hooks/useCriancaAtiva';
 
 import { pedirLinkRecuperacao, ESPERA_RECUPERACAO_S } from '@/lib/recuperar-senha';
-type Step = 'tutorial' | 'auth' | 'recuperar-senha' | 'profile-type' | 'profile-form';
+/** Para onde mandar quem acabou de entrar, antes da escolha de perfil: link de autorização do responsável ou espera do adolescente. */
+async function desvioPosLogin(): Promise<{ tipo: 'autorizar'; codigo: string } | { tipo: 'espera' } | null> {
+  try {
+    const codigo = localStorage.getItem(PENDING_AUTORIZAR_KEY);
+    if (codigo) return { tipo: 'autorizar', codigo };
+  } catch { /* ignore */ }
+  try {
+    const { data: pre } = await (supabase as any).rpc('adolescente_meu_pre_cadastro');
+    if (pre && (pre.status === 'pendente' || pre.status === 'expirado')) return { tipo: 'espera' };
+  } catch { /* ignore */ }
+  return null;
+}
+
+type Step = 'tutorial' | 'auth' | 'recuperar-senha' | 'profile-type' | 'profile-form' | 'adolescente-form' | 'adolescente-aguardando';
 
 const loginSchema = z.object({
   email: z.string().trim().email('Email inválido'),
@@ -93,6 +109,7 @@ export default function CarreiraCadastroPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [selectedType, setSelectedType] = useState<ProfileType | null>(null);
+  const [adolescenteToken, setAdolescenteToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [showSubscriptionPopup, setShowSubscriptionPopup] = useState(false);
   const [subscriptionConfirmed, setSubscriptionConfirmed] = useState(false);
@@ -247,6 +264,14 @@ export default function CarreiraCadastroPage() {
       }
 
       try {
+        const codigoAutorizar = localStorage.getItem(PENDING_AUTORIZAR_KEY);
+        if (codigoAutorizar) {
+          navigate(carreiraPath(`/autorizar?codigo=${encodeURIComponent(codigoAutorizar)}`), { replace: true });
+          return true;
+        }
+      } catch { /* ignore */ }
+
+      try {
         if (!wantsNewProfile) {
           const slug = await resolverSlugPosLogin(session.user.id);
           if (slug) {
@@ -256,6 +281,20 @@ export default function CarreiraCadastroPage() {
         }
       } catch (err) {
         console.error('Erro ao verificar perfil:', err);
+      }
+
+      // Responsável que veio do link de autorização, ou adolescente aguardando o responsável.
+      if (!wantsNewProfile) {
+        const desvio = await desvioPosLogin();
+        if (desvio?.tipo === 'autorizar') {
+          navigate(carreiraPath(`/autorizar?codigo=${encodeURIComponent(desvio.codigo)}`), { replace: true });
+          return true;
+        }
+        if (desvio?.tipo === 'espera') {
+          setStep('adolescente-aguardando');
+          setCheckingAuth(false);
+          return true;
+        }
       }
 
       const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.nome;
@@ -318,8 +357,13 @@ export default function CarreiraCadastroPage() {
           pushDataLayer('login', { method: 'email' });
           setUserId(data.user.id);
           const slug = await resolverSlugPosLogin(data.user.id);
-          if (slug) {
+          const desvio = await desvioPosLogin();
+          if (desvio?.tipo === 'autorizar') {
+            navigate(carreiraPath(`/autorizar?codigo=${encodeURIComponent(desvio.codigo)}`), { replace: true });
+          } else if (slug) {
             navigate(carreiraPath(`/${slug}`), { replace: true });
+          } else if (desvio?.tipo === 'espera') {
+            setStep('adolescente-aguardando');
           } else {
             setStep('profile-type');
           }
@@ -363,7 +407,12 @@ export default function CarreiraCadastroPage() {
             // (handleSession), que já sabe (via justAcceptedRef) que este
             // aceite veio do checkbox explícito, não de sessão automática.
             setUserId(data.user.id);
-            setStep('profile-type');
+            const desvio = await desvioPosLogin();
+            if (desvio?.tipo === 'autorizar') {
+              navigate(carreiraPath(`/autorizar?codigo=${encodeURIComponent(desvio.codigo)}`), { replace: true });
+            } else {
+              setStep('profile-type');
+            }
           } else {
             toast.success('Conta criada! Verifique seu email para confirmar.');
             setIsLogin(true);
@@ -629,12 +678,12 @@ export default function CarreiraCadastroPage() {
                   <span className={
                     (i === 0 && step === 'tutorial') ||
                     (i === 1 && (step === 'auth' || step === 'recuperar-senha')) ||
-                    (i === 2 && (step === 'profile-type' || step === 'profile-form'))
+                    (i === 2 && (step === 'profile-type' || step === 'profile-form' || step === 'adolescente-form' || step === 'adolescente-aguardando'))
                       ? 'font-semibold' : ''
                   } style={
                     (i === 0 && step === 'tutorial') ||
                     (i === 1 && (step === 'auth' || step === 'recuperar-senha')) ||
-                    (i === 2 && (step === 'profile-type' || step === 'profile-form'))
+                    (i === 2 && (step === 'profile-type' || step === 'profile-form' || step === 'adolescente-form' || step === 'adolescente-aguardando'))
                       ? { color: 'hsl(25 95% 55%)' } : undefined
                   }>
                     {label}
@@ -891,6 +940,25 @@ export default function CarreiraCadastroPage() {
               if (userId) trackOnboardingFunil(userId, 'tipo_selecionado', type);
               setSelectedType(type);
               setStep('profile-form');
+            }}
+            onSelectAdolescente={wantsNewProfile ? undefined : () => setStep('adolescente-form')}
+          />
+        )}
+
+        {step === 'adolescente-form' && userId && (
+          <AdolescenteCadastroForm
+            onBack={() => setStep('profile-type')}
+            onCriado={(token) => { setAdolescenteToken(token); setStep('adolescente-aguardando'); }}
+          />
+        )}
+
+        {step === 'adolescente-aguardando' && userId && (
+          <AdolescenteAguardando
+            userId={userId}
+            tokenInicial={adolescenteToken}
+            onAprovado={async () => {
+              const slug = await resolverSlugPosLogin(userId);
+              navigate(slug ? carreiraPath(`/${slug}`) : carreiraPath('/minha'), { replace: true });
             }}
           />
         )}

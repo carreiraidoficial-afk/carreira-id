@@ -23,6 +23,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const CarreiraLinkedinPage = lazy(() => import("./pages/carreira/CarreiraLinkedinPage"));
 const CarreiraMinhasAssinaturasPage = lazy(() => import("./pages/carreira/CarreiraMinhasAssinaturasPage"));
 const ColaborarPage = lazy(() => import("./pages/carreira/ColaborarPage"));
+const AutorizarAdolescentePage = lazy(() => import("./pages/carreira/AutorizarAdolescentePage"));
 const CarreiraPerfilPage = lazy(() => import("./pages/carreira/CarreiraPerfilPage"));
 const CarreiraExplorarPage = lazy(() => import("./pages/carreira/CarreiraExplorarPage"));
 const CarreiraPostPage = lazy(() => import("./pages/carreira/CarreiraPostPage"));
@@ -172,6 +173,7 @@ const App = () => {
               <Route path="/minha" element={<CarreiraLinkedinPage />} />
               <Route path="/minhas-assinaturas" element={<CarreiraMinhasAssinaturasPage />} />
               <Route path="/colaborar" element={<ColaborarPage />} />
+              <Route path="/autorizar" element={<AutorizarAdolescentePage />} />
               <Route path="/feed" element={<CarreiraExplorarPage />} />
               <Route path="/explorar" element={<CarreiraExplorarPage />} /> {/* retrocompat */}
               <Route path="/post/:postId" element={<CarreiraPostPage />} />

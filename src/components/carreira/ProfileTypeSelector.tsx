@@ -61,9 +61,11 @@ const ENTRADAS: Entrada[] = [
 
 interface Props {
   onSelect: (type: ProfileType) => void;
+  /** Atleta menor de 18 anos que quer se cadastrar sozinho (o responsável confirma depois). */
+  onSelectAdolescente?: () => void;
 }
 
-export function ProfileTypeSelector({ onSelect }: Props) {
+export function ProfileTypeSelector({ onSelect, onSelectAdolescente }: Props) {
   const [grupoAberto, setGrupoAberto] = useState<Entrada | null>(null);
 
   if (grupoAberto?.grupo) {
@@ -102,6 +104,14 @@ export function ProfileTypeSelector({ onSelect }: Props) {
             onClick={() => (e.tipo ? onSelect(e.tipo) : setGrupoAberto(e))}
           />
         ))}
+        {onSelectAdolescente && (
+          <CartaoOpcao
+            icon="🎽"
+            label="Sou atleta e tenho menos de 18 anos"
+            description="Faça o seu cadastro; seu responsável confirma depois"
+            onClick={onSelectAdolescente}
+          />
+        )}
       </div>
     </div>
   );

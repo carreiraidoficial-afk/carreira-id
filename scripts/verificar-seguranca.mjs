@@ -110,6 +110,21 @@ await teste('Funções do banco', 'rede_contato_publico não devolve telefone de
   return Array.isArray(d) && d.length === 0 ? true : 'devolveu linhas para um usuário inexistente';
 });
 
+// Cadastro de adolescente com anuência
+await teste('Cadastro de adolescente', 'tabela pre_cadastro_adolescente fechada a visitante', async () => negado(await get('pre_cadastro_adolescente?select=*&limit=1')));
+for (const [nome, corpo] of [
+  ['adolescente_criar_pre_cadastro', { p_nome: 'x', p_data_nascimento: '2011-01-01', p_modalidade: 'Futebol', p_categoria: null, p_cidade: null, p_estado: null, p_pais: 'Brasil', p_resp_nome: 'x', p_resp_whatsapp: '11999999999', p_resp_email: null }],
+  ['adolescente_meu_pre_cadastro', {}],
+  ['adolescente_reenviar_link', {}],
+  ['responsavel_aprovar_pre_cadastro', { p_token: 'x', p_cpf: '52998224725', p_termo_versao: 'v1' }],
+]) {
+  await teste('Cadastro de adolescente', `${nome} negada a visitante`, async () => negado(await rpc(nome, corpo)));
+}
+await teste('Cadastro de adolescente', 'link inexistente devolve só "invalido"', async () => {
+  const d = await (await rpc('responsavel_ver_pre_cadastro', { p_token: 'nao-existe' })).json();
+  return d && d.status === 'invalido' && Object.keys(d).length === 1 ? true : 'resposta inesperada';
+});
+
 // 7) Funções de servidor (edge functions)
 await teste('Funções de servidor', 'send-carreira-push recusa visitante', async () => {
   const r = await fetch(`${URL_BASE}/functions/v1/send-carreira-push`, { method: 'POST', headers: H, body: JSON.stringify({ user_ids: [ZERO], title: 'x', body: 'x' }) });
