@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Loader2, Lock, CheckCircle, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import logoCarreiraId from '@/assets/logo-carreira-id-dark.png';
 
+import { pedirLinkRecuperacao, ESPERA_RECUPERACAO_S } from '@/lib/recuperar-senha';
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const { isPasswordRecovery, isLoading: authLoading } = useAuth();
@@ -25,6 +26,66 @@ export default function ResetPasswordPage() {
   // ficar pronto — nada de checar o hash da URL aqui, ele pode já ter sido limpo
   // pelo próprio supabase-js antes desta página (lazy-loaded) terminar de montar.
   const hadHashOnLoad = useRef(window.location.hash.includes('type=recovery'));
+
+  // Lido uma vez ao abrir: o supabase-js limpa o hash da URL logo depois.
+  const inicial = useRef((() => {
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const consulta = new URLSearchParams(window.location.search);
+    return {
+      tokenHash: consulta.get('token_hash'),
+      tipo: consulta.get('type'),
+      erroDoLink: hash.get('error_description') || hash.get('error_code') || consulta.get('error_description') || consulta.get('error_code'),
+    };
+  })());
+
+  // Pode haver sessão de recuperação mesmo que o evento tenha passado antes desta página montar.
+  const [recuperacaoLocal, setRecuperacaoLocal] = useState(false);
+  useEffect(() => {
+    if (!hadHashOnLoad.current || isPasswordRecovery) return;
+    let cancelado = false;
+    supabase.auth.getSession().then(({ data }) => { if (!cancelado && data.session) setRecuperacaoLocal(true); });
+    return () => { cancelado = true; };
+  }, [isPasswordRecovery]);
+  const emRecuperacao = isPasswordRecovery || recuperacaoLocal;
+
+  // Link no formato novo (token_hash): só gasta o link quando a pessoa clica em "Continuar".
+  // Assim o antivírus/leitor de links do provedor de e-mail, que abre o link antes, não o inutiliza.
+  const [verificando, setVerificando] = useState(false);
+  const [erroVerificacao, setErroVerificacao] = useState<string | null>(null);
+  const continuarComToken = async () => {
+    if (!inicial.current.tokenHash) return;
+    setVerificando(true);
+    setErroVerificacao(null);
+    const { error } = await supabase.auth.verifyOtp({ type: 'recovery', token_hash: inicial.current.tokenHash });
+    setVerificando(false);
+    if (error) setErroVerificacao('Este link venceu ou já foi usado. Peça um novo abaixo.');
+    else setRecuperacaoLocal(true);
+  };
+
+  // Pedido de um novo link quando o atual não serve.
+  const [emailNovoLink, setEmailNovoLink] = useState('');
+  const [enviandoNovoLink, setEnviandoNovoLink] = useState(false);
+  const [mensagemNovoLink, setMensagemNovoLink] = useState<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
+  const [esperaNovoLink, setEsperaNovoLink] = useState(0);
+  useEffect(() => {
+    if (esperaNovoLink <= 0) return;
+    const t = setTimeout(() => setEsperaNovoLink((v) => v - 1), 1000);
+    return () => clearTimeout(t);
+  }, [esperaNovoLink]);
+  const pedirNovoLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEnviandoNovoLink(true);
+    setMensagemNovoLink(null);
+    const r = await pedirLinkRecuperacao(emailNovoLink);
+    setEnviandoNovoLink(false);
+    if (r.ok) {
+      setEmailNovoLink(r.email || emailNovoLink);
+      setEsperaNovoLink(ESPERA_RECUPERACAO_S);
+      setMensagemNovoLink({ tipo: 'ok', texto: `Se ${r.email || emailNovoLink} estiver cadastrado, enviamos um novo link. Confira também Spam, Lixo eletrônico e Outros.` });
+    } else {
+      setMensagemNovoLink({ tipo: 'erro', texto: r.erro || 'Não foi possível enviar o link agora.' });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +125,7 @@ export default function ResetPasswordPage() {
   // Enquanto o AuthContext ainda está processando a sessão inicial (que é quando
   // o evento de recuperação é capturado), mostra um loading em vez de decidir
   // cedo demais que o link é inválido.
-  if (authLoading && !isPasswordRecovery && hadHashOnLoad.current) {
+  if (authLoading && !emRecuperacao && hadHashOnLoad.current) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -72,14 +133,69 @@ export default function ResetPasswordPage() {
     );
   }
 
-  if (!isPasswordRecovery) {
+  // Link no formato novo: pede o clique antes de gastar o link.
+  if (!emRecuperacao && inicial.current.tokenHash && inicial.current.tipo === 'recovery' && !erroVerificacao) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
         <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <img src={logoCarreiraId} alt="Carreira ID" className="h-20 mx-auto mb-4" />
-            <p className="text-muted-foreground">Link inválido ou expirado.</p>
-            <Button className="mt-4" onClick={() => navigate('/cadastro')}>
+          <CardContent className="pt-6 text-center space-y-4">
+            <img src={logoCarreiraId} alt="Carreira ID" className="h-20 mx-auto" />
+            <h2 className="text-lg font-semibold">Criar nova senha</h2>
+            <p className="text-sm text-muted-foreground">Toque em continuar para definir a nova senha da sua conta.</p>
+            <Button className="w-full" size="lg" onClick={continuarComToken} disabled={verificando}>
+              {verificando ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Verificando...</> : 'Continuar'}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!emRecuperacao) {
+    const vencido = !!inicial.current.erroDoLink || !!erroVerificacao || !!inicial.current.tokenHash;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 space-y-4">
+            <div className="text-center">
+              <img src={logoCarreiraId} alt="Carreira ID" className="h-20 mx-auto mb-4" />
+              <h2 className="text-lg font-semibold">Não conseguimos abrir este link</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {erroVerificacao
+                  ? erroVerificacao
+                  : vencido
+                    ? 'O link venceu ou já foi usado. Isso acontece quando passa de 1 hora, quando é aberto duas vezes ou quando o programa de e-mail o abre antes de você.'
+                    : 'O link não foi reconhecido. Ele só funciona uma vez, por até 1 hora, e deve ser aberto no mesmo aparelho em que você pediu.'}
+              </p>
+            </div>
+
+            <form onSubmit={pedirNovoLink} className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="novo-link-email">Pedir um novo link</Label>
+                <Input
+                  id="novo-link-email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="seu@email.com"
+                  value={emailNovoLink}
+                  onChange={(e) => setEmailNovoLink(e.target.value)}
+                  disabled={enviandoNovoLink}
+                  maxLength={255}
+                />
+              </div>
+              {mensagemNovoLink && (
+                <p className={`text-sm rounded-md p-3 ${mensagemNovoLink.tipo === 'ok' ? 'bg-green-500/10 text-green-700' : 'bg-destructive/10 text-destructive'}`}>
+                  {mensagemNovoLink.texto}
+                </p>
+              )}
+              <Button type="submit" className="w-full" disabled={enviandoNovoLink || esperaNovoLink > 0}>
+                {enviandoNovoLink ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                {esperaNovoLink > 0 ? `Enviar de novo em ${esperaNovoLink}s` : 'Enviar novo link'}
+              </Button>
+            </form>
+
+            <Button variant="ghost" className="w-full" onClick={() => navigate('/cadastro')}>
               Voltar ao login
             </Button>
           </CardContent>

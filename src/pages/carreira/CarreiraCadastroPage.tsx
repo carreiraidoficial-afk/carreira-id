@@ -32,6 +32,7 @@ import { salvarPendingRef, lerPendingRef, processarConviteRef, salvarConviteDire
 import { TERMOS_VERSAO } from '@/lib/termosVersao';
 import { resolverSlugPosLogin } from '@/hooks/useCriancaAtiva';
 
+import { pedirLinkRecuperacao, ESPERA_RECUPERACAO_S } from '@/lib/recuperar-senha';
 type Step = 'tutorial' | 'auth' | 'recuperar-senha' | 'profile-type' | 'profile-form';
 
 const loginSchema = z.object({
@@ -110,6 +111,26 @@ export default function CarreiraCadastroPage() {
   const [recuperarLoading, setRecuperarLoading] = useState(false);
   const [recuperarEnviado, setRecuperarEnviado] = useState(false);
   const [recuperarError, setRecuperarError] = useState<string | null>(null);
+  // Segundos até poder pedir outro link (o Supabase aceita 1 pedido por minuto para o mesmo e-mail).
+  const [recuperarEspera, setRecuperarEspera] = useState(0);
+  useEffect(() => {
+    if (recuperarEspera <= 0) return;
+    const t = setTimeout(() => setRecuperarEspera((v) => v - 1), 1000);
+    return () => clearTimeout(t);
+  }, [recuperarEspera]);
+  const enviarLinkRecuperacao = async () => {
+    setRecuperarError(null);
+    setRecuperarLoading(true);
+    const r = await pedirLinkRecuperacao(recuperarEmail);
+    setRecuperarLoading(false);
+    if (r.ok) {
+      setRecuperarEmail(r.email || recuperarEmail);
+      setRecuperarEnviado(true);
+      setRecuperarEspera(ESPERA_RECUPERACAO_S);
+    } else {
+      setRecuperarError(r.erro || null);
+    }
+  };
   const { isInstalled: pwaInstalled } = usePwaInstall();
 
   useEffect(() => {
@@ -783,12 +804,24 @@ export default function CarreiraCadastroPage() {
                     <CheckCircle2 className="w-14 h-14 mx-auto" style={{ color: 'hsl(142 70% 45%)' }} />
                     <div>
                       <p className="text-sm" style={{ color: 'hsl(0 0% 85%)' }}>
-                        Enviamos um link de recuperação para <strong style={{ color: 'hsl(0 0% 100%)' }}>{recuperarEmail}</strong>.
+                        Se <strong style={{ color: 'hsl(0 0% 100%)' }}>{recuperarEmail}</strong> estiver cadastrado, enviamos um link para criar uma nova senha.
                       </p>
-                      <p className="text-xs mt-2" style={{ color: 'hsl(0 0% 55%)' }}>
-                        Não encontrou? Confira também a caixa de spam/lixo eletrônico.
-                      </p>
+                      <ul className="text-xs mt-3 space-y-1.5 text-left list-disc pl-5" style={{ color: 'hsl(0 0% 60%)' }}>
+                        <li>Confira se o e-mail acima é exatamente o da sua conta.</li>
+                        <li>O e-mail pode levar alguns minutos. Olhe também <strong>Spam</strong>, <strong>Lixo eletrônico</strong> e <strong>Outros</strong>.</li>
+                        <li>O link vale por 1 hora e só funciona uma vez. Abra-o no mesmo aparelho em que você pediu.</li>
+                      </ul>
                     </div>
+                    {recuperarError && <p className="text-xs" style={{ color: 'hsl(0 70% 60%)' }}>{recuperarError}</p>}
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      disabled={recuperarLoading || recuperarEspera > 0}
+                      onClick={enviarLinkRecuperacao}
+                    >
+                      {recuperarLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                      {recuperarEspera > 0 ? `Enviar de novo em ${recuperarEspera}s` : 'Não recebi, enviar de novo'}
+                    </Button>
                     <Button
                       className="w-full"
                       size="lg"
@@ -807,23 +840,7 @@ export default function CarreiraCadastroPage() {
                     className="space-y-3"
                     onSubmit={async (e) => {
                       e.preventDefault();
-                      if (!recuperarEmail.trim()) {
-                        setRecuperarError('Digite seu e-mail para recuperar a senha');
-                        return;
-                      }
-                      setRecuperarError(null);
-                      setRecuperarLoading(true);
-                      try {
-                        const { error } = await supabase.auth.resetPasswordForEmail(recuperarEmail.trim(), {
-                          redirectTo: `${window.location.origin}/reset-password`,
-                        });
-                        if (error) throw error;
-                        setRecuperarEnviado(true);
-                      } catch (err: any) {
-                        setRecuperarError(err.message || 'Erro ao enviar e-mail de recuperação. Tente novamente.');
-                      } finally {
-                        setRecuperarLoading(false);
-                      }
+                      await enviarLinkRecuperacao();
                     }}
                   >
                     <div className="space-y-1">
