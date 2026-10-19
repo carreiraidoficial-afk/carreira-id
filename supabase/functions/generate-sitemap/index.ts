@@ -53,6 +53,7 @@ const BLOG_POSTS: { slug: string; lastmod: string }[] = [
   { slug: 'pais-presentes-x-pais-ausentes-no-esporte-de-base', lastmod: '2026-08-27' },
   { slug: 'bruxismo-em-vigilia-no-esporte-de-base', lastmod: '2026-08-30' },
   { slug: 'o-que-e-volei-de-base', lastmod: '2026-09-23' },
+  { slug: 'categorias-de-base-do-volei-guia-por-idade-para-pais', lastmod: '2026-10-19' },
 ];
 
 Deno.serve(async (req) => {
