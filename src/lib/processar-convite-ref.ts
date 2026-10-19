@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
+import { resolverConvite } from '@/lib/contato-perfil';
 /**
  * Processa parâmetros ?ref e ?c=<convite_codigo> e ?a=<atleta_slug> (e ?escola=<slug>)
  * salvos durante o cadastro.
@@ -161,11 +162,7 @@ export async function processarConviteRef(novoUserId: string): Promise<void> {
     let convidanteUserId: string | null = null;
     let convidanteEhEscola = false;
     if (pending.conviteCodigo) {
-      const { data } = await supabase
-        .from('perfis_rede')
-        .select('id, user_id, tipo')
-        .eq('convite_codigo', pending.conviteCodigo)
-        .maybeSingle();
+      const data = await resolverConvite(pending.conviteCodigo);
       if (data) {
         convidantePerfilId = data.id;
         convidanteUserId = data.user_id;

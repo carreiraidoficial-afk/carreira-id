@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 
+import { lerCodigoConvitePerfil } from '@/lib/contato-perfil';
 interface Props {
   perfilId: string;
   nomeEscola: string;
@@ -13,26 +14,18 @@ interface Props {
   accentColor: string;
 }
 
-/** Só pro dono da escola: link de convite que entra direto vinculado (sem precisar aprovar),
- * pra mandar no grupo de pais. Gera o código na primeira vez, se a escola ainda não tem. */
+/** Só pro dono da escola: link de convite pra mandar no grupo de pais. Quem entra por ele fica aguardando a
+ * confirmação do dono antes de aparecer em "Nossos atletas". Gera o código na primeira vez, se a escola ainda não tem. */
 export function EscolaConvidarAlunos({ perfilId, nomeEscola, conviteCodigo, accentColor }: Props) {
   const [codigo, setCodigo] = useState<string | null>(conviteCodigo);
   const [copiado, setCopiado] = useState(false);
 
+  // O código vem do banco (só o dono ou o admin o recebem); gera na primeira vez, se a escola ainda não tem.
   useEffect(() => {
-    if (codigo) return;
     let ativo = true;
-    const novo = Math.random().toString(36).substring(2, 8).toUpperCase();
-    supabase
-      .from('perfis_rede')
-      .update({ convite_codigo: novo } as any)
-      .eq('id', perfilId)
-      .is('convite_codigo', null)
-      .then(({ error }) => {
-        if (ativo && !error) setCodigo(novo);
-      });
+    lerCodigoConvitePerfil('rede', perfilId).then((c) => { if (ativo && c) setCodigo(c); });
     return () => { ativo = false; };
-  }, [codigo, perfilId]);
+  }, [perfilId]);
 
   if (!codigo) return null;
 
@@ -57,7 +50,7 @@ export function EscolaConvidarAlunos({ perfilId, nomeEscola, conviteCodigo, acce
         Convide seus alunos
       </h2>
       <p className="mt-1 text-xs text-muted-foreground">
-        Quem criar o perfil por este link já entra vinculado à escola, sem precisar da sua aprovação. Só você vê este bloco.
+        Quem criar o perfil por este link fica aguardando a sua confirmação de que é aluno (você confirma em Conexões). Só você vê este bloco.
       </p>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         <input

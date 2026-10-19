@@ -30,6 +30,7 @@ import { useCriancaAtiva } from '@/hooks/useCriancaAtiva';
 
 import { COLUNAS_PERFIL_ATLETA, COLUNAS_PERFIL_REDE } from '@/lib/contato-perfil';
 import { carregarContatosPublicos } from '@/lib/contato-perfil';
+import { lerCodigoConviteDaConta } from '@/lib/contato-perfil';
 // Carregado sob demanda: só o dono do perfil vê esse formulário, mas ele
 // carrega heic2any (~1,3MB) -- import estático fazia todo visitante baixar
 // essa biblioteca à toa.
@@ -118,6 +119,13 @@ export default function PerfilPage() {
 
   const { theme: tema, isDarkTheme } = useCarreiraTheme();
 
+  // Código de convite: só o dono do perfil o recebe (o banco não o entrega mais junto do perfil).
+  const { data: meuCodigoConvite } = useQuery({
+    queryKey: ['codigo-convite-perfil', userId, currentUserId],
+    queryFn: () => lerCodigoConviteDaConta(userId),
+    enabled: !!userId && !!currentUserId && currentUserId === userId,
+  });
+
   useEffect(() => {
     if (perfil?.type === 'slug_redirect' && perfil.slug) {
       navigate(carreiraPath(`/${perfil.slug}`), { replace: true });
@@ -159,8 +167,8 @@ export default function PerfilPage() {
 
   const isOwnProfile = currentUserId === redeProfile.user_id;
 
-  const inviteLink = (redeProfile as any).convite_codigo
-    ? `${window.location.origin}${carreiraPath('/cadastro')}?convite=${(redeProfile as any).convite_codigo}`
+  const inviteLink = meuCodigoConvite
+    ? `${window.location.origin}${carreiraPath('/cadastro')}?convite=${meuCodigoConvite}`
     : '';
 
   const handleCopyInvite = () => {

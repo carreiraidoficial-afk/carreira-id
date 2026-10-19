@@ -9,6 +9,7 @@ import { Copy, Check, UserPlus, ArrowRight, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 
+import { lerCodigoConviteDaConta } from '@/lib/contato-perfil';
 interface Props {
   userId: string;
   onSkip: () => void;
@@ -35,12 +36,8 @@ export function InvitePage({ userId, onSkip }: Props) {
   const { data: myProfile } = useQuery({
     queryKey: ['my-perfil-rede', userId],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('perfis_rede')
-        .select('convite_codigo')
-        .eq('user_id', userId)
-        .single();
-      return data;
+      const codigo = await lerCodigoConviteDaConta(userId);
+      return { convite_codigo: codigo };
     },
   });
 

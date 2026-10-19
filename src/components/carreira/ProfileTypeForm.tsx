@@ -44,6 +44,7 @@ import { PaisSelect } from '@/components/shared/PaisSelect';
 import 'react-country-state-city/dist/react-country-state-city.css';
 import { GeoCitySelect } from '@/components/shared/GeoCitySelect';
 import { GEO_DATA_BASE_URL } from '@/lib/geoData';
+import { resolverConvite } from '@/lib/contato-perfil';
 const POSICOES = ['Goleiro', 'Zagueiro', 'Lateral', 'Volante', 'Meia', 'Atacante'];
 
 function getFields(type: ProfileType): FieldDef[] {
@@ -200,7 +201,6 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
   const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [whatsappPublico, setWhatsappPublico] = useState(false);
   const [email, setEmail] = useState('');
-  const [dataNascimento, setDataNascimento] = useState('');
   const [cidade, setCidade] = useState('');
   const [estado, setEstado] = useState('');
   const [pais, setPais] = useState<string>('Brasil');
@@ -225,7 +225,6 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
         if (typeof d.telefoneWhatsapp === 'string') setTelefoneWhatsapp(d.telefoneWhatsapp);
         if (typeof d.whatsappPublico === 'boolean') setWhatsappPublico(d.whatsappPublico);
         if (typeof d.email === 'string') setEmail(d.email);
-        if (typeof d.dataNascimento === 'string') setDataNascimento(d.dataNascimento);
         if (typeof d.cidade === 'string') setCidade(d.cidade);
         if (typeof d.estado === 'string') setEstado(d.estado);
         if (typeof d.pais === 'string') setPais(d.pais);
@@ -246,7 +245,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
     const t = setTimeout(() => {
       try {
         localStorage.setItem(chaveRascunho, JSON.stringify({
-          nome, values, tipoDocumento, telefoneWhatsapp, whatsappPublico, email, dataNascimento,
+          nome, values, tipoDocumento, telefoneWhatsapp, whatsappPublico, email,
           cidade, estado, pais, paisObj, estadoIntlId,
           unidades: unidades.map(({ nome: n, endereco, bairro, referencia, link_mapa, logo_url }) => ({
             nome: n, endereco, bairro, referencia, link_mapa, logo_url: logo_url ?? null,
@@ -257,7 +256,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
       }
     }, 400);
     return () => clearTimeout(t);
-  }, [chaveRascunho, nome, values, tipoDocumento, telefoneWhatsapp, whatsappPublico, email, dataNascimento,
+  }, [chaveRascunho, nome, values, tipoDocumento, telefoneWhatsapp, whatsappPublico, email,
     cidade, estado, pais, paisObj, estadoIntlId, unidades]);
 
   const nomeRef = useRef<HTMLInputElement>(null);
@@ -481,8 +480,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
         }
       }
 
-      // Save data_nascimento, brasao (o e-mail fica só na conta: no perfil ele ficaria legível por qualquer pessoa)
-      if (dataNascimento) dadosPerfil.data_nascimento = dataNascimento;
+      // Save brasao (e-mail e data de nascimento ficam fora do perfil: ali seriam legíveis por qualquer pessoa)
       if (brasaoUrl) dadosPerfil.brasao_url = brasaoUrl;
 
       const { error } = await supabase.from('perfis_rede').insert({
@@ -507,11 +505,7 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
 
       // If there's an invite code, record the connection
       if (inviteCode) {
-        const { data: inviterProfile } = await supabase
-          .from('perfis_rede')
-          .select('id, user_id')
-          .eq('convite_codigo', inviteCode)
-          .maybeSingle();
+        const inviterProfile = await resolverConvite(inviteCode);
 
         if (inviterProfile) {
           // Record the invite
@@ -656,14 +650,6 @@ export function ProfileTypeForm({ type, userId, defaultName, inviteCode, onBack,
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Data de Nascimento</Label>
-            <Input
-              type="date"
-              value={dataNascimento}
-              onChange={(e) => setDataNascimento(e.target.value)}
-            />
-          </div>
         </div>
 
         <div className="space-y-2">

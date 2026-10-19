@@ -36,6 +36,7 @@ import 'react-country-state-city/dist/react-country-state-city.css';
 import { GeoCitySelect } from '@/components/shared/GeoCitySelect';
 import { GEO_DATA_BASE_URL } from '@/lib/geoData';
 
+import { resolverConvite } from '@/lib/contato-perfil';
 function generateSlug(name: string): string {
   return name
     .toLowerCase()
@@ -217,11 +218,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
 
       // 5. Handle invite code if present
       if (inviteCode) {
-        const { data: inviterProfile } = await supabase
-          .from('perfis_rede')
-          .select('id, user_id, tipo')
-          .eq('convite_codigo', inviteCode)
-          .maybeSingle();
+        const inviterProfile = await resolverConvite(inviteCode);
 
         if (inviterProfile) {
           await supabase.from('rede_convites').insert({

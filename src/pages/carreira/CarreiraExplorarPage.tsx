@@ -26,6 +26,7 @@ import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { useSEO } from '@/hooks/useSEO';
 
 import { COLUNAS_PERFIL_ATLETA, COLUNAS_PERFIL_REDE } from '@/lib/contato-perfil';
+import { lerCodigoConviteDaConta } from '@/lib/contato-perfil';
 const TYPE_LABELS: Record<string, string> = {
   professor: 'Professor',
   tecnico: 'Técnico',
@@ -47,7 +48,7 @@ function useMyPerfilRede(userId?: string | null) {
       if (!userId) return null;
       const { data, error } = await supabase
         .from('perfis_rede')
-        .select('id, slug, tipo, convite_codigo, nome, foto_url')
+        .select('id, slug, tipo, nome, foto_url')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -308,6 +309,11 @@ export default function CarreiraExplorarPage() {
   const { theme } = useCarreiraTheme();
   const { perfilAtivo: meuPerfil, isLoading: perfilLoading } = useCriancaAtiva(sessionUserId);
   const { data: meuPerfilRede, isLoading: perfilRedeLoading } = useMyPerfilRede(sessionUserId);
+  const { data: meuCodigoConvite } = useQuery({
+    queryKey: ['meu-codigo-convite', sessionUserId],
+    queryFn: () => lerCodigoConviteDaConta(sessionUserId),
+    enabled: !!sessionUserId && !!meuPerfilRede,
+  });
   const { data: connectionIds = [] } = useMyConnections(sessionUserId, meuPerfil?.id);
   const { data: connectionsCount = 0 } = useConnectionsCount(sessionUserId, meuPerfil?.id);
   const { data: posts, isLoading: postsLoading } = useFeedPosts(connectionIds, sessionUserId);
@@ -346,8 +352,8 @@ export default function CarreiraExplorarPage() {
 
   const isAnonymous = !sessionUserId;
 
-  const inviteLink = meuPerfilRede?.convite_codigo
-    ? `${window.location.origin}${carreiraPath('/cadastro')}?convite=${meuPerfilRede.convite_codigo}`
+  const inviteLink = meuCodigoConvite
+    ? `${window.location.origin}${carreiraPath('/cadastro')}?convite=${meuCodigoConvite}`
     : '';
 
   const handleCopyInvite = () => {

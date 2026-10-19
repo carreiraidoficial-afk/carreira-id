@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { MessageCircle, Mail, Copy, Check, Users, Trophy, Network } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
+import { lerCodigoConviteDaConta } from '@/lib/contato-perfil';
 import {
   TEMPLATES_TORCEDOR,
   TEMPLATES_ATLETA_CRIANCA,
@@ -59,14 +60,9 @@ export function CompartilharPerfilDialog({
   useEffect(() => {
     if (!open || !ownerUserId) return;
     let mounted = true;
-    supabase
-      .from('perfis_rede')
-      .select('convite_codigo')
-      .eq('user_id', ownerUserId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (mounted) setConviteCodigo((data as any)?.convite_codigo ?? null);
-      });
+    lerCodigoConviteDaConta(ownerUserId).then((codigo) => {
+      if (mounted) setConviteCodigo(codigo);
+    });
     return () => {
       mounted = false;
     };
