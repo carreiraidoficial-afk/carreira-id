@@ -51,26 +51,7 @@ export function useCreateCarreiraComunicado() {
         .single();
       if (error) throw error;
 
-      // Send push if requested
-      if (payload.enviar_push) {
-        const userIds = await resolveTargetUserIds(payload.destinatario_tipo, payload.destinatario_filtro);
-        if (userIds.length > 0) {
-          // Send in batches of 100
-          for (let i = 0; i < userIds.length; i += 100) {
-            const batch = userIds.slice(i, i + 100);
-            // send-carreira-push é a função de push em uso (a antiga, send-push-notification, usava uma tabela que não existe mais)
-            await supabase.functions.invoke('send-carreira-push', {
-              body: {
-                user_ids: batch,
-                title: `📢 ${payload.titulo}`,
-                body: payload.mensagem.slice(0, 200),
-                url: '/feed',
-                tag: 'carreira-comunicado',
-              },
-            });
-          }
-        }
-      }
+      // O push sai do servidor: um gatilho do banco dispara quando o comunicado é gravado com enviar_push ligado.
       return data;
     },
     onSuccess: () => {
@@ -209,40 +190,4 @@ export function useUnreadCarreiraComunicados() {
   const { data: comunicados = [], isLoading } = useMyCarreiraComunicados();
   const unreadCount = comunicados.filter((c: any) => !c.lido).length;
   return { unreadCount, isLoading };
-}
-
-// Helper: resolve user IDs based on target type
-async function resolveTargetUserIds(destinatarioTipo: string, filtro: any): Promise<string[]> {
-  if (destinatarioTipo === 'individual') {
-    return filtro?.user_id ? [filtro.user_id] : [];
-  }
-
-  if (destinatarioTipo === 'tipo_perfil') {
-    const tipos = filtro?.tipos || [];
-    const userIds = new Set<string>();
-
-    if (tipos.includes('atleta_filho')) {
-      const { data } = await supabase.from('perfil_atleta').select('user_id').limit(1000);
-      (data || []).forEach((p: any) => userIds.add(p.user_id));
-    }
-
-    const redeTypes = tipos.filter((t: string) => t !== 'atleta_filho');
-    if (redeTypes.length > 0) {
-      const { data } = await supabase
-        .from('perfis_rede')
-        .select('user_id')
-        .in('tipo', redeTypes)
-        .limit(1000);
-      (data || []).forEach((p: any) => userIds.add(p.user_id));
-    }
-    return Array.from(userIds);
-  }
-
-  // todos - get all users with profiles
-  const userIds = new Set<string>();
-  const { data: atletaUsers } = await supabase.from('perfil_atleta').select('user_id').limit(1000);
-  (atletaUsers || []).forEach((p: any) => userIds.add(p.user_id));
-  const { data: redeUsers } = await supabase.from('perfis_rede').select('user_id').limit(1000);
-  (redeUsers || []).forEach((p: any) => userIds.add(p.user_id));
-  return Array.from(userIds);
 }

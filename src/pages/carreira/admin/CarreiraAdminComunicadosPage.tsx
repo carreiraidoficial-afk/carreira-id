@@ -186,33 +186,8 @@ export default function CarreiraAdminComunicadosPage() {
         criado_por: user.id,
       });
 
-      // Send push notification if enabled
-      if (enviarPush) {
-        try {
-          const { data: pushResult, error: pushError } = await supabase.functions.invoke('send-carreira-push', {
-            body: {
-              title: titulo.trim(),
-              body: mensagem.trim(),
-              url: '/carreira',
-              tag: `comunicado-${tipo}`,
-              destinatario_tipo: destinatarioTipo,
-              destinatario_filtro: filtro,
-              category: 'comunicado_push',
-            },
-          });
-          if (pushError) {
-            console.error('Push error:', pushError);
-            toast.warning('Comunicado salvo, mas houve erro no push');
-          } else {
-            toast.success(`Comunicado enviado! Push: ${pushResult?.sent || 0} enviados`);
-          }
-        } catch (pushErr) {
-          console.error('Push invoke error:', pushErr);
-          toast.warning('Comunicado salvo, mas push falhou');
-        }
-      } else {
-        toast.success('Comunicado enviado com sucesso!');
-      }
+      // O push é disparado pelo servidor quando o comunicado é gravado (não depende mais deste navegador).
+      toast.success(enviarPush ? 'Comunicado enviado! O push sai em instantes para quem tem notificações ativas.' : 'Comunicado enviado com sucesso!');
 
       resetForm();
       setDialogOpen(false);
