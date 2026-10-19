@@ -159,7 +159,7 @@ export default function CarreiraAdminGamificacaoPage() {
     try {
       const { data: profile } = await supabase.from('profiles').select('user_id').eq('email', userEmail).maybeSingle();
       if (!profile) { toast.error('Usuário não encontrado'); return; }
-      const { error } = await supabase.rpc('adicionar_pontos', {
+      const { error } = await (supabase as any).rpc('admin_adicionar_pontos', {
         p_user_id: profile.user_id, p_acao_tipo: 'bonus_admin',
         p_pontos: parseInt(pontos), p_descricao: descricao,
       });

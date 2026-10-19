@@ -58,15 +58,14 @@ export function useCreateCarreiraComunicado() {
           // Send in batches of 100
           for (let i = 0; i < userIds.length; i += 100) {
             const batch = userIds.slice(i, i + 100);
-            await supabase.functions.invoke('send-push-notification', {
+            // send-carreira-push é a função de push em uso (a antiga, send-push-notification, usava uma tabela que não existe mais)
+            await supabase.functions.invoke('send-carreira-push', {
               body: {
                 user_ids: batch,
                 title: `📢 ${payload.titulo}`,
                 body: payload.mensagem.slice(0, 200),
                 url: '/feed',
                 tag: 'carreira-comunicado',
-                tipo: 'carreira_comunicado',
-                referencia_id: data.id,
               },
             });
           }
