@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export type EtapaOnboardingFunil = 'tipo_perfil_exibido' | 'tipo_selecionado' | 'formulario_enviado';
+export type EtapaOnboardingFunil = 'tipo_perfil_exibido' | 'tipo_selecionado' | 'formulario_enviado' | 'adolescente_pre_cadastro';
 
 /**
  * Registra uma etapa do funil de cadastro (entre login/signup bem-sucedido

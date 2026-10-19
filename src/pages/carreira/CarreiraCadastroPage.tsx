@@ -948,7 +948,7 @@ export default function CarreiraCadastroPage() {
         {step === 'adolescente-form' && userId && (
           <AdolescenteCadastroForm
             onBack={() => setStep('profile-type')}
-            onCriado={(token) => { setAdolescenteToken(token); setStep('adolescente-aguardando'); }}
+            onCriado={(token) => { trackOnboardingFunil(userId, 'adolescente_pre_cadastro', 'atleta_adolescente'); setAdolescenteToken(token); setStep('adolescente-aguardando'); }}
           />
         )}
 

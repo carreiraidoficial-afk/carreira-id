@@ -36,12 +36,14 @@ const handler = async (req: Request): Promise<Response> => {
       .select("user_id, nome, email, created_at, excluir_lembretes");
     if (profilesError) throw profilesError;
 
-    const [{ data: atletas }, { data: redes }, { data: colaboradores }, { data: jaEnviados }, { data: catalogo }] = await Promise.all([
+    const [{ data: atletas }, { data: redes }, { data: colaboradores }, { data: jaEnviados }, { data: catalogo }, { data: adolescentes }] = await Promise.all([
       supabase.from("perfil_atleta").select("user_id"),
       supabase.from("perfis_rede").select("user_id"),
       supabase.from("perfil_atleta_colaboradores").select("user_id").eq("status", "ativo"),
       supabase.from("carreira_lembretes_perfil_enviados").select("user_id, numero_lembrete"),
       supabase.from("carreira_email_catalogo").select("tipo_email, cooldown_dias").like("tipo_email", "lembrete_perfil_%"),
+      // Menores com cadastro iniciado sozinhos (aguardando o responsável): nunca recebem lembrete de cadastro.
+      supabase.from("pre_cadastro_adolescente").select("adolescente_user_id"),
     ]);
 
     // Cooldown: não manda lembrete se a pessoa recebeu QUALQUER email
@@ -63,6 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
       ...(atletas || []).map((a: any) => a.user_id),
       ...(redes || []).map((r: any) => r.user_id),
       ...(colaboradores || []).map((c: any) => c.user_id),
+      ...(adolescentes || []).map((a: any) => a.adolescente_user_id),
     ]);
     const enviadosPorUser = new Map<string, Set<number>>();
     for (const e of jaEnviados || []) {
