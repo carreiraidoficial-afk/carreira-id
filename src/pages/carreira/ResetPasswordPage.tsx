@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Loader2, Lock, CheckCircle, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import logoCarreiraId from '@/assets/logo-carreira-id-dark.png';
 
-import { pedirLinkRecuperacao, ESPERA_RECUPERACAO_S } from '@/lib/recuperar-senha';
+import { pedirLinkRecuperacao, traduzirErroNovaSenha, ESPERA_RECUPERACAO_S } from '@/lib/recuperar-senha';
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const { isPasswordRecovery, isLoading: authLoading } = useAuth();
@@ -46,6 +46,7 @@ export default function ResetPasswordPage() {
     supabase.auth.getSession().then(({ data }) => { if (!cancelado && data.session) setRecuperacaoLocal(true); });
     return () => { cancelado = true; };
   }, [isPasswordRecovery]);
+  useEffect(() => { if (isPasswordRecovery) setRecuperacaoLocal(true); }, [isPasswordRecovery]);
   const emRecuperacao = isPasswordRecovery || recuperacaoLocal;
 
   // Link no formato novo (token_hash): só gasta o link quando a pessoa clica em "Continuar".
@@ -106,14 +107,16 @@ export default function ResetPasswordPage() {
       const { error } = await supabase.auth.updateUser({ password });
 
       if (error) {
-        setFormError(error.message || 'Erro ao alterar senha. Tente novamente.');
+        setFormError(traduzirErroNovaSenha(error.message));
       } else {
         // Encerra a sessão de recuperação imediatamente após trocar a senha,
         // para não deixá-la "pendurada" enquanto a navegação acontece
         // (evita corrida com o AuthContext processando essa sessão no meio
         // da troca de tela) e leva o usuário a um login limpo.
-        await supabase.auth.signOut();
+        // Marca como concluído ANTES de sair: o signOut dispara um evento que zera o estado de recuperação, e sem isso
+        // a tela mostrava "link inválido ou expirado" logo depois de a senha ter sido trocada com sucesso.
         setDone(true);
+        await supabase.auth.signOut();
         setTimeout(() => navigate('/cadastro'), 2500);
       }
     } catch {
@@ -121,6 +124,20 @@ export default function ResetPasswordPage() {
     }
     setIsLoading(false);
   };
+
+  if (done) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center space-y-4">
+            <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
+            <h2 className="text-xl font-bold">Senha alterada!</h2>
+            <p className="text-muted-foreground">Redirecionando...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Enquanto o AuthContext ainda está processando a sessão inicial (que é quando
   // o evento de recuperação é capturado), mostra um loading em vez de decidir
@@ -198,20 +215,6 @@ export default function ResetPasswordPage() {
             <Button variant="ghost" className="w-full" onClick={() => navigate('/cadastro')}>
               Voltar ao login
             </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (done) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center space-y-4">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
-            <h2 className="text-xl font-bold">Senha alterada!</h2>
-            <p className="text-muted-foreground">Redirecionando...</p>
           </CardContent>
         </Card>
       </div>

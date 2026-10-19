@@ -46,3 +46,15 @@ export async function pedirLinkRecuperacao(emailDigitado: string): Promise<Resul
     return { ok: false, erro: traduzirErroRecuperacao(e?.message) };
   }
 }
+
+/** Erros ao SALVAR a nova senha (updateUser), em português e com o que fazer. */
+export function traduzirErroNovaSenha(mensagem?: string | null): string {
+  const m = String(mensagem || '').toLowerCase();
+  if (m.includes('different from the old') || m.includes('same password')) return 'A nova senha precisa ser diferente da senha atual.';
+  if (m.includes('session missing') || m.includes('expired') || m.includes('not authenticated') || m.includes('jwt')) {
+    return 'A sessão deste link terminou antes de salvar. Volte ao login e peça um novo link de recuperação.';
+  }
+  if (m.includes('at least') || m.includes('weak') || m.includes('too short')) return 'A senha é muito curta ou fraca. Use pelo menos 6 caracteres, de preferência com letras e números.';
+  if (m.includes('network') || m.includes('failed to fetch')) return 'Sem conexão. Verifique sua internet e tente salvar de novo.';
+  return 'Não foi possível salvar a nova senha agora. Tente novamente; se continuar, peça um novo link.';
+}
