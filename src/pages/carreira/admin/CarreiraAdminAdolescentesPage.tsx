@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, RefreshCw, UserCheck } from 'lucide-react';
+import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 
 interface Resumo {
   iniciaram: number; aguardando: number; enviaram: number; responsavel_abriu: number;
@@ -35,6 +36,61 @@ function etapa(l: Linha): string {
   if (!l.enviado_em) return 'Não mandou o pedido';
   if (!l.link_aberto_em) return 'Mandou; responsável não abriu';
   return 'Responsável abriu; não autorizou';
+}
+
+interface AdultoConferir {
+  id: string; slug: string; nome: string; idade: number; nascimento: string; criado_em: string;
+  cadastro_proprio: boolean; declarou_maioridade: boolean; conta_igual_atleta: boolean; modalidade: string; local: string | null;
+}
+
+/** Atletas de 18 e 19 anos que se cadastraram sozinhos: faixa em que mais se erra a data de nascimento. */
+function ConferirAdultos() {
+  const { data = [], isLoading } = useQuery({
+    queryKey: ['admin-adultos-conferir'],
+    queryFn: async (): Promise<AdultoConferir[]> => {
+      const { data, error } = await (supabase as any).rpc('admin_adultos_para_conferir');
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 0,
+  });
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Conferir: atletas de 18 e 19 anos que se cadastraram sozinhos ({data.length})</CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Últimos 90 dias, conta no nome do próprio atleta ou cadastro próprio. Olhe a foto e o perfil: se parecer menor, converse e peça o cadastro com o responsável.
+        </p>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        {isLoading ? <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /> : data.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-3">Nenhum caso para conferir.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Atleta</TableHead><TableHead>Nasc.</TableHead><TableHead>Como se cadastrou</TableHead><TableHead>Declarou 18+</TableHead><TableHead>Criado</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.map((a) => (
+                <TableRow key={a.id}>
+                  <TableCell className="whitespace-nowrap">
+                    <a href={carreiraPath(`/${a.slug}`)} target="_blank" rel="noopener noreferrer" className="font-medium underline">{a.nome}</a>
+                    <p className="text-xs text-muted-foreground">{[a.idade + ' anos', a.modalidade, a.local].filter(Boolean).join(' · ')}</p>
+                  </TableCell>
+                  <TableCell className="text-xs">{a.nascimento}</TableCell>
+                  <TableCell className="text-xs">{a.cadastro_proprio ? 'Formulário do atleta' : 'Formulário do responsável (conta no nome do atleta)'}</TableCell>
+                  <TableCell className="text-xs">{a.declarou_maioridade ? 'Sim' : 'Não (cadastro antigo)'}</TableCell>
+                  <TableCell className="text-xs whitespace-nowrap">{fmt(a.criado_em)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function CarreiraAdminAdolescentesPage() {
@@ -145,6 +201,7 @@ export default function CarreiraAdminAdolescentesPage() {
             </p>
           </>
         )}
+        <ConferirAdultos />
       </div>
     </CarreiraAdminLayout>
   );

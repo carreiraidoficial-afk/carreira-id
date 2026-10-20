@@ -118,6 +118,7 @@ for (const [nome, corpo] of [
   ['adolescente_reenviar_link', {}],
   ['adolescente_marcar_envio', {}],
   ['admin_pre_cadastros', {}],
+  ['admin_adultos_para_conferir', {}],
   ['responsavel_aprovar_pre_cadastro', { p_token: 'x', p_cpf: '52998224725', p_termo_versao: 'v1' }],
 ]) {
   await teste('Cadastro de adolescente', `${nome} negada a visitante`, async () => negado(await rpc(nome, corpo)));

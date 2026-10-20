@@ -1,8 +1,13 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { copiarTelefoneParaConta } from '@/lib/telefone-conta';
 import { TelefoneInput } from '@/components/shared/TelefoneInput';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { UfCidadeSelect } from '@/components/shared/UfCidadeSelect';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,6 +35,8 @@ interface Props {
   allowMultiple?: boolean;
   /** 'proprio': atleta com 18 anos ou mais se cadastrando (dados dele, sem responsável). Padrão: responsável cadastrando o atleta. */
   modo?: 'responsavel' | 'proprio';
+  /** Quando a pessoa diz que é o próprio atleta e tem menos de 18 anos: leva ao cadastro com autorização do responsável. */
+  onSouMenor?: () => void;
 }
 
 import { MODALIDADES, CATEGORIAS_BASE as CATEGORIAS } from '@/constants/esportes';
@@ -40,6 +47,8 @@ import { GeoCitySelect } from '@/components/shared/GeoCitySelect';
 import { GEO_DATA_BASE_URL } from '@/lib/geoData';
 
 import { resolverConvite } from '@/lib/contato-perfil';
+const normalizarNome = (n: string) => n.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+
 function generateSlug(name: string): string {
   return name
     .toLowerCase()
@@ -52,9 +61,14 @@ function generateSlug(name: string): string {
     + '-' + Math.random().toString(36).substring(2, 6);
 }
 
-export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onComplete, allowMultiple = false, modo = 'responsavel' }: Props) {
+export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onComplete, allowMultiple = false, modo = 'responsavel', onSouMenor }: Props) {
   const [nome, setNome] = useState('');
-  const proprio = modo === 'proprio';
+  // Pode mudar no meio do caminho: se o nome do atleta é igual ao do responsável, perguntamos se é o próprio atleta.
+  const [modoAtual, setModoAtual] = useState<'responsavel' | 'proprio'>(modo);
+  const proprio = modoAtual === 'proprio';
+  const [declaraMaioridade, setDeclaraMaioridade] = useState(false);
+  const [perguntaAtleta, setPerguntaAtleta] = useState(false);
+  const jaConfirmouResponsavel = useRef(false);
   const [nomeResponsavel, setNomeResponsavel] = useState(defaultName || '');
   const [dataNascimento, setDataNascimento] = useState('');
   const [modalidade, setModalidade] = useState('Futebol');
@@ -95,6 +109,15 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
     }
     if (!dataNascimento) {
       toast.error('Data de nascimento é obrigatória');
+      return;
+    }
+    // Nome do atleta igual ao do responsável: provavelmente é o próprio atleta se cadastrando. Pergunta antes de seguir.
+    if (!proprio && !jaConfirmouResponsavel.current && normalizarNome(nome) !== '' && normalizarNome(nome) === normalizarNome(nomeResponsavel)) {
+      setPerguntaAtleta(true);
+      return;
+    }
+    if (proprio && !declaraMaioridade) {
+      toast.error('Marque a declaração de que você tem 18 anos ou mais para continuar.');
       return;
     }
     if (proprio && idadeEmAnos(dataNascimento) < 18) {
@@ -206,6 +229,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
           telefone_whatsapp: cleanPhone || null,
           origem: 'carreira',
           cadastro_proprio: proprio,
+          maioridade_declarada_em: proprio ? new Date().toISOString() : null,
         } as any)
         .select('id')
         .single();
@@ -323,7 +347,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form id="form-atleta" onSubmit={handleSubmit} className="space-y-4">
         {/* Nome do Atleta */}
         <div className="space-y-2">
           <Label htmlFor="nome-atleta">{proprio ? 'Seu nome *' : 'Nome do Atleta *'}</Label>
@@ -380,6 +404,13 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
             <TelefoneInput value={telefoneWhatsapp} onChange={setTelefoneWhatsapp} />
           </div>
         </div>
+
+        {proprio && (
+          <label className="flex items-start gap-2 rounded-lg border border-border p-3 text-xs text-muted-foreground cursor-pointer">
+            <Checkbox checked={declaraMaioridade} onCheckedChange={(v) => setDeclaraMaioridade(!!v)} className="mt-0.5" />
+            <span>Declaro que tenho <strong className="text-foreground">18 anos ou mais</strong> e que as informações que informei são verdadeiras. Quem tem menos de 18 anos precisa do cadastro com a autorização do responsável.</span>
+          </label>
+        )}
 
         {/* Foto */}
         <div className="space-y-2">
@@ -503,6 +534,41 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
           </a>
         </p>
       </form>
+
+      <AlertDialog open={perguntaAtleta} onOpenChange={setPerguntaAtleta}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você é o próprio atleta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O nome do atleta é igual ao nome do responsável. Este formulário é para pai, mãe ou responsável cadastrando o atleta.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                // Sou o próprio atleta: a idade decide o caminho.
+                if (idadeEmAnos(dataNascimento) < 18) {
+                  if (onSouMenor) onSouMenor();
+                  else toast.error('Quem tem menos de 18 anos faz o cadastro com a autorização do responsável.');
+                } else {
+                  setModoAtual('proprio');
+                  toast.info('Certo! Vamos usar o cadastro com os seus dados.');
+                }
+              }}
+            >
+              Sim, sou o atleta
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                jaConfirmouResponsavel.current = true;
+                setTimeout(() => (document.getElementById('form-atleta') as HTMLFormElement | null)?.requestSubmit(), 0);
+              }}
+            >
+              Não, sou o responsável
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

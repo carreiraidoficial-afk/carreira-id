@@ -1004,6 +1004,7 @@ export default function CarreiraCadastroPage() {
             onComplete={handleProfileCreated}
             allowMultiple={wantsNewProfile}
             modo={cadastroProprio ? 'proprio' : 'responsavel'}
+            onSouMenor={() => { setCadastroProprio(false); setSelectedType(null); setStep('adolescente-form'); }}
           />
         )}
 
