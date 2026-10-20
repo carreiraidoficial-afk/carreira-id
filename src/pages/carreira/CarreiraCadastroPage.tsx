@@ -49,7 +49,7 @@ async function desvioPosLogin(): Promise<{ tipo: 'autorizar'; codigo: string } |
   return null;
 }
 
-type Step = 'tutorial' | 'auth' | 'recuperar-senha' | 'profile-type' | 'profile-form' | 'adolescente-form' | 'adolescente-aguardando' | 'quem-cadastra';
+type Step = 'tutorial' | 'auth' | 'recuperar-senha' | 'profile-type' | 'profile-form' | 'adolescente-form' | 'adolescente-aguardando' | 'quem-cadastra' | 'equipe-entrar';
 
 const loginSchema = z.object({
   email: z.string().trim().email('Email inválido'),
@@ -86,7 +86,7 @@ export default function CarreiraCadastroPage() {
   const conviteNaUrl = searchParams.get('convite');
   // Sem o parâmetro na URL (e-mail de confirmação aberto em outra aba), usa o código guardado no cadastro.
   const inviteCode = conviteNaUrl || lerConviteDireto();
-  const refParam = searchParams.get('ref') as 'torcedor' | 'atleta' | 'rede' | null;
+  const refParam = searchParams.get('ref') as 'torcedor' | 'atleta' | 'rede' | 'equipe' | null;
   const refConviteCodigo = searchParams.get('c');
   const refAtletaSlug = searchParams.get('a');
   const refEscolaSlug = searchParams.get('escola');
@@ -110,6 +110,9 @@ export default function CarreiraCadastroPage() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [selectedType, setSelectedType] = useState<ProfileType | null>(null);
   const [adolescenteToken, setAdolescenteToken] = useState<string | null>(null);
+  // Convite de professor da escola: nome da escola e envio do pedido (quem já tem perfil de professor/técnico/preparador).
+  const [equipeEscola, setEquipeEscola] = useState<{ nome: string } | null>(null);
+  const [equipeEnviando, setEquipeEnviando] = useState(false);
   // Atleta com 18+ se cadastrando (formulário com os dados dele, sem responsável).
   const [cadastroProprio, setCadastroProprio] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -273,6 +276,22 @@ export default function CarreiraCadastroPage() {
           return true;
         }
       } catch { /* ignore */ }
+
+      // Convite de professor da escola: quem já tem perfil de professor/técnico/preparador só confirma o pedido.
+      try {
+        const ref = refParam || lerPendingRef()?.ref;
+        const escolaSlug = refEscolaSlug || lerPendingRef()?.escolaSlug;
+        if (ref === 'equipe' && escolaSlug) {
+          const { data: meuPerfil } = await supabase.from('perfis_rede').select('id').eq('user_id', session.user.id).in('tipo', ['professor', 'tecnico', 'preparador_fisico']).limit(1).maybeSingle();
+          if (meuPerfil) {
+            const { data: esc } = await supabase.from('perfis_rede').select('nome').eq('slug', escolaSlug).eq('tipo', 'dono_escola').maybeSingle();
+            setEquipeEscola({ nome: esc?.nome || 'a escola' });
+            setStep('equipe-entrar');
+            setCheckingAuth(false);
+            return true;
+          }
+        }
+      } catch { /* segue o fluxo normal */ }
 
       try {
         if (!wantsNewProfile) {
@@ -947,7 +966,39 @@ export default function CarreiraCadastroPage() {
             }}
             onSelectAdolescente={wantsNewProfile ? undefined : () => setStep('adolescente-form')}
             onSelectAdulto={wantsNewProfile ? undefined : () => { setCadastroProprio(true); setSelectedType('atleta_filho'); setStep('profile-form'); }}
+            somenteEquipe={(refParam || lerPendingRef()?.ref) === 'equipe'}
           />
+        )}
+
+        {step === 'equipe-entrar' && (
+          <div className="animate-fade-in text-center space-y-4 py-6">
+            <h1 className="text-xl font-bold text-foreground">Entrar na equipe técnica</h1>
+            <p className="text-sm" style={{ color: 'hsl(0 0% 60%)' }}>
+              Você foi convidado(a) para a equipe técnica de <strong style={{ color: 'hsl(0 0% 95%)' }}>{equipeEscola?.nome}</strong>. Seu pedido fica aguardando a confirmação do dono da escola.
+            </p>
+            <Button
+              className="w-full" size="lg" disabled={equipeEnviando}
+              style={{ backgroundColor: 'hsl(25 95% 55%)', color: 'hsl(0 0% 100%)' }}
+              onClick={async () => {
+                setEquipeEnviando(true);
+                try {
+                  const escolaSlug = refEscolaSlug || lerPendingRef()?.escolaSlug;
+                  const { error } = await (supabase as any).rpc('equipe_solicitar_entrada', { p_escola_slug: escolaSlug });
+                  if (error) throw error;
+                  limparPendingRef();
+                  toast.success('Pedido enviado! O dono da escola vai confirmar.');
+                  if (userId) { const slug = await resolverSlugPosLogin(userId); navigate(slug ? carreiraPath(`/${slug}`) : carreiraPath('/feed'), { replace: true }); }
+                } catch (e: any) {
+                  toast.error(e?.message || 'Não foi possível enviar o pedido.');
+                } finally {
+                  setEquipeEnviando(false);
+                }
+              }}
+            >
+              {equipeEnviando ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Pedir para entrar na equipe
+            </Button>
+          </div>
         )}
 
         {step === 'quem-cadastra' && (

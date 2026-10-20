@@ -1339,7 +1339,7 @@ export default function CarreiraPerfilPage() {
             )}
 
             {isDonoEscolaProfile && (
-              <EquipeEscolaSection escolaPerfilId={perfil.id} accentColor={accentColor} podeGerenciar={isOwnerOuSuporte} />
+              <EquipeEscolaSection escolaPerfilId={perfil.id} accentColor={accentColor} podeGerenciar={isOwnerOuSuporte} escolaSlug={perfil.slug} nomeEscola={displayProfileName} />
             )}
 
             {isDonoEscolaProfile && isAnonymous && perfil.slug && (

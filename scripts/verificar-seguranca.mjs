@@ -119,6 +119,7 @@ for (const [nome, corpo] of [
   ['adolescente_marcar_envio', {}],
   ['admin_pre_cadastros', {}],
   ['admin_adultos_para_conferir', {}],
+  ['equipe_solicitar_entrada', { p_escola_slug: 'taquara-volei-clube' }],
   ['responsavel_aprovar_pre_cadastro', { p_token: 'x', p_cpf: '52998224725', p_termo_versao: 'v1' }],
 ]) {
   await teste('Cadastro de adolescente', `${nome} negada a visitante`, async () => negado(await rpc(nome, corpo)));

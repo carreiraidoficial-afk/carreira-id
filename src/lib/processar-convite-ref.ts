@@ -18,7 +18,7 @@ const STORAGE_KEY = 'carreira_pending_ref';
 const VALIDADE_ESPELHO_MS = 24 * 60 * 60 * 1000;
 
 export interface PendingRef {
-  ref: 'torcedor' | 'atleta' | 'rede';
+  ref: 'torcedor' | 'atleta' | 'rede' | 'equipe';
   conviteCodigo?: string;
   atletaSlug?: string;
   /** Slug da escola de onde o aluno veio (pedido de vínculo pendente). */
@@ -155,6 +155,18 @@ async function solicitarVinculoComEscola(novoUserId: string, novoPerfilAtletaId:
 export async function processarConviteRef(novoUserId: string): Promise<void> {
   const pending = lerPendingRefComEspelho();
   if (!pending || !novoUserId) return;
+
+  // Convite de professor da escola (?ref=equipe&escola=slug): pedido PENDENTE na equipe técnica; o dono confirma.
+  if (pending.ref === 'equipe') {
+    try {
+      if (pending.escolaSlug) await (supabase as any).rpc('equipe_solicitar_entrada', { p_escola_slug: pending.escolaSlug });
+    } catch (err) {
+      console.error('[processarConviteRef] equipe:', err);
+    } finally {
+      limparPendingRef();
+    }
+    return;
+  }
 
   try {
     // 1) Resolver convidante via convite_codigo

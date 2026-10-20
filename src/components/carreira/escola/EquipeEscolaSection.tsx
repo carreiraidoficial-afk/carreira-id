@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { LucideIcon } from 'lucide-react';
-import { UserCog, User, Star, Trophy, Dumbbell, LineChart, HeartPulse, Pencil, Plus, Trash2 } from 'lucide-react';
+import { UserCog, User, Star, Trophy, Dumbbell, LineChart, HeartPulse, Pencil, Plus, Trash2, Copy, Check, MessageCircle, Send, Clock, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
-import { useEquipeEscola, type MembroEquipe } from '@/hooks/useEquipeEscola';
+import { useEquipeEscola, useEquipePendentes, type MembroEquipe } from '@/hooks/useEquipeEscola';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,6 +20,9 @@ interface Props {
   accentColor: string;
   /** Dono da escola (ou admin em Modo Suporte): adiciona, edita e remove membros. */
   podeGerenciar?: boolean;
+  /** Para o link de convite de professores (só o dono vê). */
+  escolaSlug?: string | null;
+  nomeEscola?: string;
 }
 
 const PREVIEW = 6;
@@ -37,8 +40,11 @@ function iconeFuncao(funcao: string): LucideIcon {
 }
 
 /** Equipe técnica da escola: vitrine pública (membros aceitos) + gestão pelo dono/suporte. */
-export function EquipeEscolaSection({ escolaPerfilId, accentColor, podeGerenciar = false }: Props) {
+export function EquipeEscolaSection({ escolaPerfilId, accentColor, podeGerenciar = false, escolaSlug = null, nomeEscola = 'a escola' }: Props) {
   const { data: equipe = [], isLoading } = useEquipeEscola(escolaPerfilId);
+  const { data: pedidos = [] } = useEquipePendentes(escolaPerfilId, podeGerenciar);
+  const [copiado, setCopiado] = useState(false);
+  const [respondendo, setRespondendo] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const [mostrarTodos, setMostrarTodos] = useState(false);
   const [dialogAberto, setDialogAberto] = useState(false);
@@ -55,6 +61,38 @@ export function EquipeEscolaSection({ escolaPerfilId, accentColor, podeGerenciar
   const abrirEdicao = (m: MembroEquipe) => {
     setEmEdicao({ id: m.id, nome: m.nome, foto_url: m.foto_url, funcao: m.funcao, funcao_secundaria: m.funcao_secundaria });
     setDialogAberto(true);
+  };
+
+  const linkProfessores = escolaSlug ? `${window.location.origin}${carreiraPath('/cadastro')}?ref=equipe&escola=${escolaSlug}` : null;
+  const mensagemProfessores = `Olá! A ${nomeEscola} está no Carreira ID. Crie seu perfil de professor(a) por este link para entrar na nossa equipe técnica: ${linkProfessores}`;
+
+  const copiarLinkProfessores = async () => {
+    if (!linkProfessores) return;
+    try {
+      await navigator.clipboard.writeText(linkProfessores);
+      setCopiado(true);
+      toast.success('Link copiado!');
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      toast.error('Não foi possível copiar. Selecione e copie o link manualmente.');
+    }
+  };
+
+  const responderPedido = async (id: string, aceitar: boolean) => {
+    setRespondendo(id);
+    const consulta = aceitar
+      ? supabase.from('escola_equipe').update({ status: 'aceita' } as any).eq('id', id).select('id')
+      : supabase.from('escola_equipe').delete().eq('id', id).select('id');
+    const { data, error } = await consulta;
+    setRespondendo(null);
+    // RLS que bloqueia devolve 0 linhas sem erro.
+    if (error || !data || data.length === 0) {
+      toast.error('Não foi possível responder ao pedido. Tente novamente.');
+      return;
+    }
+    toast.success(aceitar ? 'Profissional adicionado à equipe!' : 'Pedido recusado.');
+    queryClient.invalidateQueries({ queryKey: ['equipe-escola', escolaPerfilId] });
+    queryClient.invalidateQueries({ queryKey: ['equipe-escola-pendentes', escolaPerfilId] });
   };
 
   const remover = async () => {
@@ -100,6 +138,59 @@ export function EquipeEscolaSection({ escolaPerfilId, accentColor, podeGerenciar
           )}
         </div>
       </div>
+
+      {podeGerenciar && pedidos.length > 0 && (
+        <div className="mb-4 rounded-xl border p-3" style={{ borderColor: '#f59e0b60', backgroundColor: '#f59e0b0f' }}>
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Clock className="w-4 h-4 shrink-0 text-amber-500" />
+            Aguardando sua confirmação ({pedidos.length})
+          </h3>
+          <p className="mb-3 mt-0.5 text-xs text-muted-foreground">Estes profissionais pediram para entrar na equipe pelo seu convite. Só aparecem na vitrine depois que você confirmar.</p>
+          <ul className="space-y-2">
+            {pedidos.map((p) => (
+              <li key={p.id} className="flex items-center gap-3 rounded-lg border bg-background/40 p-2">
+                {p.foto_url ? <img src={p.foto_url} alt="" className="h-10 w-10 rounded-full object-cover" /> : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-sm font-bold">{p.nome[0]}</div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-foreground">{p.nome}</p>
+                  <p className="truncate text-xs text-muted-foreground">{p.funcao}</p>
+                </div>
+                <Button size="sm" className="gap-1" disabled={respondendo === p.id} onClick={() => responderPedido(p.id, true)}>
+                  <Check className="w-3.5 h-3.5" />Confirmar
+                </Button>
+                <Button size="sm" variant="outline" className="gap-1" disabled={respondendo === p.id} onClick={() => responderPedido(p.id, false)}>
+                  <X className="w-3.5 h-3.5" />Recusar
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {podeGerenciar && linkProfessores && (
+        <div className="mb-4 rounded-xl border p-3" style={{ borderColor: `${accentColor}40` }}>
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Send className="w-4 h-4 shrink-0" style={{ color: accentColor }} />
+            Convide seus professores
+          </h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">Envie este link no WhatsApp. Quem criar o perfil por ele fica aguardando a sua confirmação para entrar na equipe. Só você vê este bloco.</p>
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+            <input
+              readOnly value={linkProfessores} onFocus={(e) => e.currentTarget.select()} aria-label="Link de convite para professores"
+              className="min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-xs text-foreground"
+            />
+            <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={copiarLinkProfessores}>
+              {copiado ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}{copiado ? 'Copiado' : 'Copiar'}
+            </Button>
+            <Button asChild type="button" size="sm" className="gap-1.5" style={{ backgroundColor: '#25d366', color: '#fff' }}>
+              <a href={`https://wa.me/?text=${encodeURIComponent(mensagemProfessores)}`} target="_blank" rel="noopener noreferrer">
+                <MessageCircle className="w-3.5 h-3.5" />WhatsApp
+              </a>
+            </Button>
+          </div>
+        </div>
+      )}
 
       {equipe.length === 0 ? (
         <p className="text-sm text-muted-foreground">

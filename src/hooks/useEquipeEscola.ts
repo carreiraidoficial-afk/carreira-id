@@ -63,3 +63,39 @@ export function useEquipeEscola(escolaPerfilId: string | undefined) {
     refetchOnMount: true,
   });
 }
+
+export interface PedidoEquipe {
+  id: string;
+  nome: string;
+  foto_url: string | null;
+  funcao: string;
+  slug: string | null;
+}
+
+/** Pedidos pendentes de entrada na equipe (convite de professor). Só o dono da escola (ou o admin) enxerga. */
+export function useEquipePendentes(escolaPerfilId: string | undefined, ativo: boolean) {
+  return useQuery({
+    queryKey: ['equipe-escola-pendentes', escolaPerfilId],
+    queryFn: async (): Promise<PedidoEquipe[]> => {
+      if (!escolaPerfilId) return [];
+      const { data, error } = await supabase
+        .from('escola_equipe')
+        .select('id, membro_perfil_id, funcao')
+        .eq('escola_perfil_id', escolaPerfilId)
+        .eq('status', 'pendente');
+      if (error) throw error;
+      const linhas = (data || []).filter((l) => l.membro_perfil_id);
+      if (linhas.length === 0) return [];
+      const { data: perfis } = await supabase
+        .from('perfis_rede').select('id, nome, foto_url, slug').in('id', linhas.map((l) => l.membro_perfil_id as string));
+      const porId = new Map((perfis || []).map((p) => [p.id, p]));
+      return linhas.map((l) => {
+        const p = porId.get(l.membro_perfil_id as string);
+        return { id: l.id, nome: p?.nome || 'Profissional', foto_url: p?.foto_url || null, funcao: l.funcao, slug: p?.slug || null };
+      });
+    },
+    enabled: !!escolaPerfilId && ativo,
+    staleTime: 0,
+    refetchOnMount: true,
+  });
+}

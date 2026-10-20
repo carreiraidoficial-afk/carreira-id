@@ -65,10 +65,29 @@ interface Props {
   onSelectAdolescente?: () => void;
   /** Atleta com 18 anos ou mais se cadastrando sozinho. */
   onSelectAdulto?: () => void;
+  /** Convite de professor da escola: mostra direto só as funções de equipe técnica. */
+  somenteEquipe?: boolean;
 }
 
-export function ProfileTypeSelector({ onSelect, onSelectAdolescente, onSelectAdulto }: Props) {
+export function ProfileTypeSelector({ onSelect, onSelectAdolescente, onSelectAdulto, somenteEquipe }: Props) {
   const [grupoAberto, setGrupoAberto] = useState<Entrada | null>(null);
+
+  if (somenteEquipe) {
+    const equipe = ENTRADAS.find((e) => e.chave === 'treinadores');
+    return (
+      <div className="animate-fade-in">
+        <div className="text-center mb-6">
+          <h1 className="text-xl font-bold text-foreground">Qual é a sua função?</h1>
+          <p className="text-sm text-muted-foreground mt-1">Para entrar na equipe técnica da escola</p>
+        </div>
+        <div className="grid gap-2">
+          {(equipe?.grupo || []).map((t) => (
+            <CartaoOpcao key={t} icon={OPCOES[t].icon} label={OPCOES[t].label} description={OPCOES[t].description} onClick={() => onSelect(t)} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (grupoAberto?.grupo) {
     return (
