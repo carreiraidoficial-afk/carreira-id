@@ -41,7 +41,7 @@ const handler = async (req: Request): Promise<Response> => {
     const templatePorTipo = new Map(templates.map((t: any) => [t.tipo, t]));
 
     const [{ data: perfis, error: perfisError }, { data: experiencias }, { data: jogos }, { data: catalogo }] = await Promise.all([
-      supabase.from("perfil_atleta").select("id, user_id, crianca_id, nome, created_at").eq("is_teste", false),
+      supabase.from("perfil_atleta").select("id, user_id, crianca_id, nome, created_at, cadastro_proprio").eq("is_teste", false),
       supabase.from("carreira_experiencias").select("crianca_id"),
       supabase.from("carreira_jogos").select("crianca_id"),
       supabase.from("carreira_email_catalogo").select("tipo_email, cooldown_dias").in("tipo_email", ["perfil_sem_experiencia", "perfil_sem_jornada"]),
@@ -112,10 +112,11 @@ const handler = async (req: Request): Promise<Response> => {
           body: JSON.stringify({
             nome: responsavel.nome,
             email: responsavel.email,
-            assunto: template.assunto,
-            titulo: template.titulo,
-            corpo: template.corpo,
-            ctaTexto: template.cta_texto,
+            // Atleta com 18+ que se cadastrou sozinho recebe a versão "você" do texto (se existir).
+            assunto: perfil.cadastro_proprio && template.assunto_proprio ? template.assunto_proprio : template.assunto,
+            titulo: perfil.cadastro_proprio && template.titulo_proprio ? template.titulo_proprio : template.titulo,
+            corpo: perfil.cadastro_proprio && template.corpo_proprio ? template.corpo_proprio : template.corpo,
+            ctaTexto: perfil.cadastro_proprio && template.cta_texto_proprio ? template.cta_texto_proprio : template.cta_texto,
             userId: perfil.user_id,
             tipoEmail: tipoCandidato,
           }),

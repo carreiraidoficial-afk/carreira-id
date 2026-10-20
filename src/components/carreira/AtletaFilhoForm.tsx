@@ -14,6 +14,7 @@ import { validateCPF, formatCPF } from '@/lib/cpf-validator';
 import { validatePhone, limparTelefone, formatPhoneInput, SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
 import { trackOnboardingFunil } from '@/lib/onboardingFunil';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
+import { idadeEmAnos } from '@/lib/adolescente-anuencia';
 
 interface Props {
   userId: string;
@@ -27,6 +28,8 @@ interface Props {
   /** Permite cadastrar um atleta mesmo que o responsável já tenha outro
    * (irmãos). Sem isso, o form bloqueia um segundo cadastro por engano. */
   allowMultiple?: boolean;
+  /** 'proprio': atleta com 18 anos ou mais se cadastrando (dados dele, sem responsável). Padrão: responsável cadastrando o atleta. */
+  modo?: 'responsavel' | 'proprio';
 }
 
 import { MODALIDADES, CATEGORIAS_BASE as CATEGORIAS } from '@/constants/esportes';
@@ -49,8 +52,9 @@ function generateSlug(name: string): string {
     + '-' + Math.random().toString(36).substring(2, 6);
 }
 
-export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onComplete, allowMultiple = false }: Props) {
+export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onComplete, allowMultiple = false, modo = 'responsavel' }: Props) {
   const [nome, setNome] = useState('');
+  const proprio = modo === 'proprio';
   const [nomeResponsavel, setNomeResponsavel] = useState(defaultName || '');
   const [dataNascimento, setDataNascimento] = useState('');
   const [modalidade, setModalidade] = useState('Futebol');
@@ -91,6 +95,10 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
     }
     if (!dataNascimento) {
       toast.error('Data de nascimento é obrigatória');
+      return;
+    }
+    if (proprio && idadeEmAnos(dataNascimento) < 18) {
+      toast.error('Quem tem menos de 18 anos faz o cadastro com a autorização do responsável. Volte e escolha essa opção.');
       return;
     }
 
@@ -197,6 +205,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
           tipo_documento: cleanDoc ? 'cpf' : null,
           telefone_whatsapp: cleanPhone || null,
           origem: 'carreira',
+          cadastro_proprio: proprio,
         } as any)
         .select('id')
         .single();
@@ -246,14 +255,16 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user?.email) {
-          const primeiroNomeResponsavel = (nomeResponsavel || 'responsável').trim().split(' ')[0];
+          const primeiroNomeResponsavel = ((proprio ? nome : nomeResponsavel) || (proprio ? 'atleta' : 'responsável')).trim().split(' ')[0];
           await supabase.functions.invoke('send-perfil-incompleto-email', {
             body: {
-              nome: nomeResponsavel.trim() || 'Responsável',
+              nome: (proprio ? nome : nomeResponsavel).trim() || (proprio ? 'Atleta' : 'Responsável'),
               email: user.email,
               assunto: `Bem-vindo ao Carreira ID, ${primeiroNomeResponsavel}! 🎉`,
-              titulo: `O perfil de ${nome.trim()} já está no ar`,
-              corpo: `Seu cadastro foi concluído com sucesso. Agora é só completar o perfil de ${nome.trim()} pra ele aparecer com tudo pra quem importa no esporte de base.`,
+              titulo: proprio ? 'Seu perfil já está no ar' : `O perfil de ${nome.trim()} já está no ar`,
+              corpo: proprio
+                ? 'Seu cadastro foi concluído com sucesso. Agora é só completar o seu perfil pra aparecer com tudo pra quem importa no esporte.'
+                : `Seu cadastro foi concluído com sucesso. Agora é só completar o perfil de ${nome.trim()} pra ele aparecer com tudo pra quem importa no esporte de base.`,
               ctaTexto: 'Ver o perfil',
               profileUrl: `https://carreiraid.com.br${carreiraPath(`/${slug}`)}`,
               userId,
@@ -288,7 +299,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
         </div>
         <h2 className="text-xl font-bold text-foreground">Perfil criado com sucesso! 🎉</h2>
         <p className="text-sm text-muted-foreground">
-          O perfil de <strong className="text-foreground">{nome.trim()}</strong> já está pronto.
+          {proprio ? 'Seu perfil já está pronto.' : <>O perfil de <strong className="text-foreground">{nome.trim()}</strong> já está pronto.</>}
         </p>
         <Button className="w-full" size="lg" onClick={() => onComplete(cupomAplicado)}>
           Continuar
@@ -305,22 +316,22 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
 
       <div className="text-center mb-6">
         <h1 className="text-xl font-bold text-foreground">⚽ Perfil do Atleta</h1>
-        <p className="text-sm text-muted-foreground mt-1">Cadastre os dados do seu atleta</p>
+        <p className="text-sm text-muted-foreground mt-1">{proprio ? 'Cadastre os seus dados de atleta' : 'Cadastre os dados do seu atleta'}</p>
         <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
           <Shield className="w-3.5 h-3.5" />
-          Perfil administrado por você (responsável)
+          {proprio ? 'Perfil administrado por você' : 'Perfil administrado por você (responsável)'}
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Nome do Atleta */}
         <div className="space-y-2">
-          <Label htmlFor="nome-atleta">Nome do Atleta *</Label>
+          <Label htmlFor="nome-atleta">{proprio ? 'Seu nome *' : 'Nome do Atleta *'}</Label>
           <Input
             id="nome-atleta"
             value={nome}
             onChange={(e) => setNome(e.target.value)}
-            placeholder="Nome completo do atleta"
+            placeholder={proprio ? 'Seu nome completo' : 'Nome completo do atleta'}
             required
             maxLength={100}
           />
@@ -342,19 +353,21 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
         <div className="rounded-lg border border-border p-4 space-y-4 bg-muted/30">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <Lock className="w-4 h-4" />
-            Dados do responsável (não serão exibidos publicamente)
+            {proprio ? 'Seus dados de contato (não serão exibidos publicamente)' : 'Dados do responsável (não serão exibidos publicamente)'}
           </div>
+          {!proprio && (
+            <div className="space-y-2">
+              <Label>Nome do Responsável *</Label>
+              <Input
+                value={nomeResponsavel}
+                onChange={(e) => setNomeResponsavel(e.target.value)}
+                placeholder="Nome completo do responsável"
+                maxLength={100}
+              />
+            </div>
+          )}
           <div className="space-y-2">
-            <Label>Nome do Responsável *</Label>
-            <Input
-              value={nomeResponsavel}
-              onChange={(e) => setNomeResponsavel(e.target.value)}
-              placeholder="Nome completo do responsável"
-              maxLength={100}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>CPF do Responsável</Label>
+            <Label>{proprio ? 'Seu CPF' : 'CPF do Responsável'}</Label>
             <Input
               value={cpf}
               onChange={(e) => setCpf(formatCPF(e.target.value))}
@@ -363,7 +376,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
             />
           </div>
           <div className="space-y-2">
-            <Label>WhatsApp do Responsável</Label>
+            <Label>{proprio ? 'Seu WhatsApp' : 'WhatsApp do Responsável'}</Label>
             <TelefoneInput value={telefoneWhatsapp} onChange={setTelefoneWhatsapp} />
           </div>
         </div>

@@ -113,7 +113,7 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
           <TabsList className="flex w-full overflow-x-auto justify-start gap-1 h-auto p-1">
             <TabsTrigger value="responsavel" className="shrink-0 flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3">
               <UserCircle className="w-3.5 h-3.5" />
-              Responsável
+              {(perfil as any)?.cadastro_proprio ? 'Seus dados' : 'Responsável'}
             </TabsTrigger>
             <TabsTrigger value="assinatura" className="shrink-0 flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3">
               <CreditCard className="w-3.5 h-3.5" />
@@ -132,7 +132,7 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
           </TabsList>
 
           <TabsContent value="responsavel" className="mt-4">
-            <ResponsavelTab userId={perfil.user_id} comCpf={isAtleta} />
+            <ResponsavelTab userId={perfil.user_id} comCpf={isAtleta} proprio={!!(perfil as any)?.cadastro_proprio} />
           </TabsContent>
 
           <TabsContent value="assinatura" className="mt-4">
@@ -351,7 +351,7 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
 }
 
 /* --- Responsável Tab --- */
-function ResponsavelTab({ userId, comCpf = false }: { userId: string; comCpf?: boolean }) {
+function ResponsavelTab({ userId, comCpf = false, proprio = false }: { userId: string; comCpf?: boolean; proprio?: boolean }) {
   const queryClient = useQueryClient();
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
@@ -455,7 +455,7 @@ function ResponsavelTab({ userId, comCpf = false }: { userId: string; comCpf?: b
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['responsavel-profile', userId] });
-      toast.success('Dados do responsável atualizados!');
+      toast.success(proprio ? 'Seus dados foram atualizados!' : 'Dados do responsável atualizados!');
       setDirty(false);
     },
     onError: (e: any) => toast.error(e?.message?.includes('CPF inválido') ? e.message : 'Erro ao atualizar dados'),
@@ -469,18 +469,18 @@ function ResponsavelTab({ userId, comCpf = false }: { userId: string; comCpf?: b
   };
 
   if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
-  if (!profile) return <p className="text-sm text-muted-foreground text-center py-8">Dados do responsável não encontrados.</p>;
+  if (!profile) return <p className="text-sm text-muted-foreground text-center py-8">{proprio ? 'Seus dados não foram encontrados.' : 'Dados do responsável não encontrados.'}</p>;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 p-2.5 rounded-lg bg-muted/60 border border-border">
         <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
-        <p className="text-xs text-muted-foreground">Dados do responsável não são exibidos publicamente</p>
+        <p className="text-xs text-muted-foreground">{proprio ? 'Seus dados não são exibidos publicamente' : 'Dados do responsável não são exibidos publicamente'}</p>
       </div>
 
       <div className="space-y-3">
         <div>
-          <label className="text-sm font-medium mb-1 block">Nome do Responsável *</label>
+          <label className="text-sm font-medium mb-1 block">{proprio ? 'Seu nome *' : 'Nome do Responsável *'}</label>
           <Input value={nome} onChange={(e) => { setNome(e.target.value); setDirty(true); }} placeholder="Nome completo" />
         </div>
         <div>
@@ -498,7 +498,7 @@ function ResponsavelTab({ userId, comCpf = false }: { userId: string; comCpf?: b
         </div>
         {comCpf && (
           <div>
-            <label className="text-sm font-medium mb-1 block">CPF do Responsável</label>
+            <label className="text-sm font-medium mb-1 block">{proprio ? 'Seu CPF' : 'CPF do Responsável'}</label>
             <Input
               value={cpf}
               disabled={!cpfCarregado}
@@ -516,7 +516,7 @@ function ResponsavelTab({ userId, comCpf = false }: { userId: string; comCpf?: b
       <div className="flex justify-end pt-2">
         <Button onClick={() => updateProfile.mutate()} disabled={updateProfile.isPending || !dirty || !nome.trim()}>
           {updateProfile.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-          Salvar Responsável
+          {proprio ? 'Salvar meus dados' : 'Salvar Responsável'}
         </Button>
       </div>
     </div>

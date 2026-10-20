@@ -110,6 +110,8 @@ export default function CarreiraCadastroPage() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [selectedType, setSelectedType] = useState<ProfileType | null>(null);
   const [adolescenteToken, setAdolescenteToken] = useState<string | null>(null);
+  // Atleta com 18+ se cadastrando (formulário com os dados dele, sem responsável).
+  const [cadastroProprio, setCadastroProprio] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [showSubscriptionPopup, setShowSubscriptionPopup] = useState(false);
   const [subscriptionConfirmed, setSubscriptionConfirmed] = useState(false);
@@ -939,10 +941,12 @@ export default function CarreiraCadastroPage() {
           <ProfileTypeSelector
             onSelect={(type) => {
               if (userId) trackOnboardingFunil(userId, 'tipo_selecionado', type);
+              setCadastroProprio(false);
               setSelectedType(type);
               setStep('profile-form');
             }}
             onSelectAdolescente={wantsNewProfile ? undefined : () => setStep('adolescente-form')}
+            onSelectAdulto={wantsNewProfile ? undefined : () => { setCadastroProprio(true); setSelectedType('atleta_filho'); setStep('profile-form'); }}
           />
         )}
 
@@ -954,9 +958,9 @@ export default function CarreiraCadastroPage() {
             </div>
             <div className="grid gap-2">
               {[
-                { icon: '👨‍👩‍👧', titulo: 'Sou pai, mãe ou responsável', desc: 'Vou cadastrar o atleta e administrar o perfil', ir: () => { setSelectedType('atleta_filho'); setStep('profile-form'); } },
+                { icon: '👨‍👩‍👧', titulo: 'Sou pai, mãe ou responsável', desc: 'Vou cadastrar o atleta e administrar o perfil', ir: () => { setCadastroProprio(false); setSelectedType('atleta_filho'); setStep('profile-form'); } },
                 { icon: '🎽', titulo: 'Sou atleta e tenho menos de 18 anos', desc: 'Faço meu cadastro; meu responsável confirma depois', ir: () => setStep('adolescente-form') },
-                { icon: '⚽', titulo: 'Sou atleta com 18 anos ou mais', desc: 'Faço o meu próprio cadastro', ir: () => { setSelectedType('atleta_filho'); setStep('profile-form'); } },
+                { icon: '⚽', titulo: 'Sou atleta com 18 anos ou mais', desc: 'Faço o meu próprio cadastro', ir: () => { setCadastroProprio(true); setSelectedType('atleta_filho'); setStep('profile-form'); } },
               ].map((o) => (
                 <button key={o.titulo} type="button" onClick={o.ir}
                   className="flex items-center gap-3 rounded-xl border p-3 text-left transition-all hover:border-primary/50 hover:shadow-md active:scale-[0.98]"
@@ -999,6 +1003,7 @@ export default function CarreiraCadastroPage() {
             onBack={() => setStep('profile-type')}
             onComplete={handleProfileCreated}
             allowMultiple={wantsNewProfile}
+            modo={cadastroProprio ? 'proprio' : 'responsavel'}
           />
         )}
 
