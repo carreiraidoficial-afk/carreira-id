@@ -56,6 +56,18 @@ Fica registrado no perfil: data/hora e versão do texto. Aviso curto ao lado do 
 8. **Declaração de maioridade e aviso de dados falsos:** o texto das seções 2 e 2.1 é adequado e proporcional? Há risco de afirmar efeitos (ex.: campeonatos por idade) que o app não controla?
 9. **WhatsApp:** o adolescente fornece o número do responsável. Há risco de tratamento sem base legal sobre dado de terceiro? (Coletamos só nome e telefone; o envio é feito pelo próprio adolescente.)
 
+## 4.1 Termos de Uso e Política de Privacidade atualizados em 20/10/2026 (rascunho, aguardando revisão)
+
+Alterações feitas nos textos públicos (`public/termos-de-uso.html` e `public/politica-de-privacidade.html`):
+- **Menores:** antes dizia que perfis de menores de **14** anos eram "gerenciados exclusivamente pelos responsáveis". Agora: menores de 12 só pelos responsáveis; de 12 a 17 anos o adolescente inicia o cadastro e o perfil só é ativado com a autorização do responsável, que é o titular da conta e pode retirar o acesso, mudar a visibilidade ou excluir.
+- **Imagens de terceiros:** nova vedação de publicar imagens, vídeos ou dados de outras pessoas (em especial menores) sem autorização, e declaração do usuário de ter os direitos sobre o conteúdo.
+- **Dados falsos:** vedação e aviso de que podem prejudicar o atleta (inclusive em campeonatos por idade) e levar à suspensão.
+- **Visibilidade:** nova seção explicando as duas opções existentes (público ou só quem tem conta) e que telefone, CPF, nascimento e documentos nunca são públicos.
+- **Privacidade:** inclui o cadastro de adolescentes (retenção de até 21 dias para pedidos não autorizados), a visibilidade do perfil e "prestadores que operam o serviço" (hospedagem, e-mail, notificações e métricas).
+- A versão dos termos (`TERMOS_VERSAO`) foi atualizada para `2026-10-20`. Usuários antigos recebem o registro de aceite automático no próximo acesso (método "sessão automática"); considerar uma tela de novo aceite explícito.
+
+Perguntas adicionais: (a) o texto sobre a "licença de uso para exibição" é suficiente para imagens de menores? (b) falta cláusula sobre ferramentas de métricas/anúncios (o site usa Google Analytics/Tag Manager e pixel do Facebook)? (c) a suspensão por dados falsos precisa de procedimento descrito?
+
 ## 5. Fontes consultadas (orientação pública, sem validação jurídica)
 
 - Lei 15.211/2025 (ECA Digital), em vigor desde março de 2026: contas de menores de 16 anos vinculadas a responsável; proibição de autodeclaração onde há restrição etária; vedação de perfilamento para publicidade.

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { copiarTelefoneParaConta } from '@/lib/telefone-conta';
 import { TelefoneInput } from '@/components/shared/TelefoneInput';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,6 +20,7 @@ import { validatePhone, limparTelefone, formatPhoneInput, SUPPORT_WHATSAPP_URL }
 import { trackOnboardingFunil } from '@/lib/onboardingFunil';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { idadeEmAnos, AVISO_DATA_REAL, MAIORIDADE_DECLARACAO_VERSAO } from '@/lib/adolescente-anuencia';
+import { VisibilidadePerfilEscolha, type VisibilidadePerfil } from '@/components/carreira/VisibilidadePerfilEscolha';
 
 interface Props {
   userId: string;
@@ -85,6 +86,12 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   const [cupomCodigo, setCupomCodigo] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  // Quem pode ver o perfil. Adulto e atleta de 16+ já vêm com "Público" marcado; para menor de 16 a escolha é obrigatória e explícita.
+  const [visibilidade, setVisibilidade] = useState<VisibilidadePerfil | null>(null);
+  const idadeAtleta = dataNascimento ? idadeEmAnos(dataNascimento) : -1;
+  useEffect(() => {
+    if (visibilidade === null && (proprio || idadeAtleta >= 16)) setVisibilidade('publico');
+  }, [proprio, idadeAtleta, visibilidade]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [cupomAplicado, setCupomAplicado] = useState<{ diasTrial: number; cupomId: string } | undefined>();
 
@@ -118,6 +125,10 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
     }
     if (proprio && !declaraMaioridade) {
       toast.error('Marque a declaração de que você tem 18 anos ou mais para continuar.');
+      return;
+    }
+    if (!visibilidade) {
+      toast.error('Escolha quem pode ver o perfil: público ou só quem tem conta.');
       return;
     }
     if (proprio && idadeEmAnos(dataNascimento) < 18) {
@@ -223,7 +234,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
           bio: null,
           foto_url: fotoUrl,
           crianca_id: criancaId,
-          is_public: true,
+          is_public: visibilidade === 'publico',
           cpf_cnpj: cleanDoc || null,
           tipo_documento: cleanDoc ? 'cpf' : null,
           telefone_whatsapp: cleanPhone || null,
@@ -406,6 +417,12 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
             <TelefoneInput value={telefoneWhatsapp} onChange={setTelefoneWhatsapp} />
           </div>
         </div>
+
+        <VisibilidadePerfilEscolha
+          value={visibilidade}
+          onChange={setVisibilidade}
+          ajuda={!proprio && idadeAtleta < 16 ? 'Para atletas com menos de 16 anos, escolha com cuidado: você decide quem vê o perfil.' : undefined}
+        />
 
         {proprio && (
           <label className="flex items-start gap-2 rounded-lg border border-border p-3 text-xs text-muted-foreground cursor-pointer">

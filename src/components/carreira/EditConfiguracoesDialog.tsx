@@ -200,7 +200,7 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
                       {isPublic ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium">Perfil {isPublic ? 'público' : 'oculto'}</p>
+                      <p className="text-sm font-medium">Perfil {isPublic ? 'público' : 'visível só para quem tem conta'}</p>
                       <p className="text-xs text-muted-foreground">
                         {isPublic ? 'Visível pra qualquer pessoa com o link' : 'Visível só pra quem tem conta no Carreira ID'}
                       </p>

@@ -4,4 +4,4 @@
  * forma relevante (mesma data usada em "Última atualização" nas
  * páginas /termos-de-uso e /politica-de-privacidade).
  */
-export const TERMOS_VERSAO = '2026-02-25';
+export const TERMOS_VERSAO = '2026-10-20';

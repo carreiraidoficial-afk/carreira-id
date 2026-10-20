@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { VisibilidadePerfilEscolha, type VisibilidadePerfil } from '@/components/carreira/VisibilidadePerfilEscolha';
 import { useCarreiraSession } from '@/hooks/useCarreiraSession';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
@@ -43,6 +44,7 @@ export default function AutorizarAdolescentePage() {
   const { theme } = useCarreiraTheme();
   const [cpf, setCpf] = useState('');
   const [aceite, setAceite] = useState(false);
+  const [visibilidade, setVisibilidade] = useState<VisibilidadePerfil | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [recusado, setRecusado] = useState(false);
 
@@ -87,11 +89,12 @@ export default function AutorizarAdolescentePage() {
 
   const autorizar = async () => {
     if (!validateCPF(cpf.replace(/\D/g, ''))) { toast.error('CPF inválido. Confira os números.'); return; }
+    if (!visibilidade) { toast.error('Escolha quem pode ver o perfil.'); return; }
     if (!aceite) { toast.error('Marque a caixa de autorização para continuar.'); return; }
     setEnviando(true);
     try {
       const { data, error } = await (supabase as any).rpc('responsavel_aprovar_pre_cadastro', {
-        p_token: codigo, p_cpf: cpf.replace(/\D/g, ''), p_termo_versao: TERMO_ANUENCIA_VERSAO,
+        p_token: codigo, p_cpf: cpf.replace(/\D/g, ''), p_termo_versao: TERMO_ANUENCIA_VERSAO, p_perfil_publico: visibilidade === 'publico',
       });
       if (error) throw error;
       try { localStorage.removeItem(PENDING_AUTORIZAR_KEY); } catch { /* ignore */ }
@@ -188,6 +191,7 @@ export default function AutorizarAdolescentePage() {
             <Label htmlFor="resp-cpf">Seu CPF *</Label>
             <Input id="resp-cpf" inputMode="numeric" value={cpf} onChange={(e) => setCpf(formatCPF(e.target.value))} placeholder="000.000.000-00" maxLength={14} />
           </div>
+          <VisibilidadePerfilEscolha value={visibilidade} onChange={setVisibilidade} ajuda={`Você decide quem pode ver o perfil de ${nome}.`} />
           <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
             <Checkbox checked={aceite} onCheckedChange={(v) => setAceite(!!v)} className="mt-0.5" />
             <span>
