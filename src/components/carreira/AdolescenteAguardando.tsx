@@ -88,6 +88,8 @@ export function AdolescenteAguardando({ userId, tokenInicial = null, onAprovado 
         setGerando(false);
       }
     }
+    // Acompanhamento do admin (não bloqueia nada).
+    (supabase as any).rpc('adolescente_marcar_envio').then(() => {}, () => {});
     const msg = mensagemParaResponsavel(pre.responsavel_nome, linkAnuencia(t!), pre.escola_nome);
     window.open(linkWhatsApp(pre.responsavel_whatsapp, msg), '_blank', 'noopener');
   };

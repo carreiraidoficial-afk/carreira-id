@@ -116,6 +116,8 @@ for (const [nome, corpo] of [
   ['adolescente_criar_pre_cadastro', { p_nome: 'x', p_data_nascimento: '2011-01-01', p_modalidade: 'Futebol', p_categoria: null, p_cidade: null, p_estado: null, p_pais: 'Brasil', p_resp_nome: 'x', p_resp_whatsapp: '11999999999', p_resp_email: null }],
   ['adolescente_meu_pre_cadastro', {}],
   ['adolescente_reenviar_link', {}],
+  ['adolescente_marcar_envio', {}],
+  ['admin_pre_cadastros', {}],
   ['responsavel_aprovar_pre_cadastro', { p_token: 'x', p_cpf: '52998224725', p_termo_versao: 'v1' }],
 ]) {
   await teste('Cadastro de adolescente', `${nome} negada a visitante`, async () => negado(await rpc(nome, corpo)));

@@ -13,7 +13,7 @@ import {
 import { NavLink } from '@/components/NavLink';
 import logoCarreira from '@/assets/logo-carreira-id.webp';
 
-import { Settings2, Megaphone, GraduationCap, Stethoscope, Bell, Star, Ticket, Mail, Database, Flag, BadgeCheck } from 'lucide-react';
+import { Settings2, Megaphone, GraduationCap, Stethoscope, Bell, Star, Ticket, Mail, Database, Flag, BadgeCheck, UserCheck } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -25,6 +25,7 @@ const navItems = [
   { title: 'Cupons de Convite', url: '/carreira/admin/cupons', icon: Ticket },
   { title: 'Comunicados', url: '/carreira/admin/comunicados', icon: Megaphone },
   { title: 'Lembretes de Cadastro', url: '/carreira/admin/lembretes-perfil', icon: Mail },
+  { title: 'Cadastro de adolescentes', url: '/carreira/admin/adolescentes', icon: UserCheck },
   { title: 'Emails enviados', url: '/carreira/admin/emails', icon: Mail },
   { title: 'Banco de campeonatos', url: '/carreira/admin/banco-campeonatos', icon: Database },
   { title: 'Notificações Push', url: '/carreira/admin/push', icon: Bell },
