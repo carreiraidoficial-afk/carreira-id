@@ -19,7 +19,7 @@ import { validateCPF, formatCPF } from '@/lib/cpf-validator';
 import { validatePhone, limparTelefone, formatPhoneInput, SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
 import { trackOnboardingFunil } from '@/lib/onboardingFunil';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
-import { idadeEmAnos } from '@/lib/adolescente-anuencia';
+import { idadeEmAnos, AVISO_DATA_REAL, MAIORIDADE_DECLARACAO_VERSAO } from '@/lib/adolescente-anuencia';
 
 interface Props {
   userId: string;
@@ -230,6 +230,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
           origem: 'carreira',
           cadastro_proprio: proprio,
           maioridade_declarada_em: proprio ? new Date().toISOString() : null,
+          maioridade_declaracao_versao: proprio ? MAIORIDADE_DECLARACAO_VERSAO : null,
         } as any)
         .select('id')
         .single();
@@ -371,6 +372,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
             onChange={(e) => setDataNascimento(e.target.value)}
             required
           />
+          <p className="text-xs text-muted-foreground">{AVISO_DATA_REAL}</p>
         </div>
 
         {/* CPF and WhatsApp - Private fields */}
@@ -408,7 +410,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
         {proprio && (
           <label className="flex items-start gap-2 rounded-lg border border-border p-3 text-xs text-muted-foreground cursor-pointer">
             <Checkbox checked={declaraMaioridade} onCheckedChange={(v) => setDeclaraMaioridade(!!v)} className="mt-0.5" />
-            <span>Declaro que tenho <strong className="text-foreground">18 anos ou mais</strong> e que as informações que informei são verdadeiras. Quem tem menos de 18 anos precisa do cadastro com a autorização do responsável.</span>
+            <span>Declaro que tenho <strong className="text-foreground">18 anos ou mais</strong> e que as informações que informei são verdadeiras. Estou ciente de que dados falsos, como a data de nascimento, podem prejudicar o meu perfil e a minha participação em campeonatos organizados por idade. Quem tem menos de 18 anos precisa do cadastro com a autorização do responsável.</span>
           </label>
         )}
 

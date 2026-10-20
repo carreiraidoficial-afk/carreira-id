@@ -16,7 +16,7 @@ mostrado ao responsável e as dúvidas que não conseguimos fechar sozinhos.
 8. Menores de 12 anos não podem se cadastrar sozinhos (a tela orienta o responsável a criar o perfil).
 9. O app não faz publicidade nem perfilamento de menores.
 
-## 2. Texto mostrado ao responsável (versão `anuencia-2026-10-v1`)
+## 2. Texto mostrado ao responsável (versão `anuencia-2026-10-v2`)
 
 > **{Nome} quer criar um perfil de atleta.** Como {Nome} é menor de idade, o cadastro só vale com a sua autorização como responsável legal.
 >
@@ -30,7 +30,13 @@ mostrado ao responsável e as dúvidas que não conseguimos fechar sozinhos.
 >
 > Usamos seu CPF apenas para identificar você como responsável. Ele não aparece no perfil.
 >
-> ☐ Declaro que sou pai, mãe ou responsável legal de {Nome}, li os Termos de Uso e a Política de Privacidade e autorizo o tratamento dos dados pessoais de {Nome} para criar e manter o perfil esportivo.
+> ☐ Declaro que sou pai, mãe ou responsável legal de {Nome}, li os Termos de Uso e a Política de Privacidade e autorizo o tratamento dos dados pessoais de {Nome} para criar e manter o perfil esportivo. Confirmo que as informações de {Nome}, inclusive a data de nascimento, são verdadeiras e estou ciente de que dados falsos podem prejudicar o atleta, inclusive em campeonatos organizados por idade.
+
+### 2.1 Declaração de maioridade (atleta com 18+ se cadastrando; versão `maioridade-2026-10-v2`)
+
+> ☐ Declaro que tenho 18 anos ou mais e que as informações que informei são verdadeiras. Estou ciente de que dados falsos, como a data de nascimento, podem prejudicar o meu perfil e a minha participação em campeonatos organizados por idade. Quem tem menos de 18 anos precisa do cadastro com a autorização do responsável.
+
+Fica registrado no perfil: data/hora e versão do texto. Aviso curto ao lado do campo de data de nascimento (todos os formulários): "Informe a data real. Dados falsos podem prejudicar o atleta, inclusive em campeonatos organizados por idade."
 
 ## 3. Mensagem enviada pelo adolescente ao responsável (WhatsApp)
 
@@ -47,7 +53,8 @@ mostrado ao responsável e as dúvidas que não conseguimos fechar sozinhos.
 5. **Política de privacidade:** precisa de seção específica sobre dados de crianças e adolescentes (finalidade, base legal, retenção, direitos do titular exercidos pelo responsável, encarregado/DPO).
 6. **Termos de Uso:** idade mínima, responsabilidade do responsável, hipóteses de suspensão de conta de menor.
 7. **Retenção:** pedido pendente guardado 7 dias (+14 se expirado/recusado). Prazos adequados?
-8. **WhatsApp:** o adolescente fornece o número do responsável. Há risco de tratamento sem base legal sobre dado de terceiro? (Coletamos só nome e telefone; o envio é feito pelo próprio adolescente.)
+8. **Declaração de maioridade e aviso de dados falsos:** o texto das seções 2 e 2.1 é adequado e proporcional? Há risco de afirmar efeitos (ex.: campeonatos por idade) que o app não controla?
+9. **WhatsApp:** o adolescente fornece o número do responsável. Há risco de tratamento sem base legal sobre dado de terceiro? (Coletamos só nome e telefone; o envio é feito pelo próprio adolescente.)
 
 ## 5. Fontes consultadas (orientação pública, sem validação jurídica)
 

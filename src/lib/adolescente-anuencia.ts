@@ -41,4 +41,10 @@ export function linkWhatsApp(numero: string, mensagem: string): string {
 export const PENDING_AUTORIZAR_KEY = 'carreira_pending_autorizar_codigo';
 
 /** Versão do texto da página de autorização, gravada como prova da anuência. Mude sempre que o texto mudar. */
-export const TERMO_ANUENCIA_VERSAO = 'anuencia-2026-10-v1';
+export const TERMO_ANUENCIA_VERSAO = 'anuencia-2026-10-v2';
+
+/** Versão do texto da declaração de maioridade (cadastro próprio, 18+). */
+export const MAIORIDADE_DECLARACAO_VERSAO = 'maioridade-2026-10-v2';
+
+/** Aviso curto ao lado da data de nascimento. */
+export const AVISO_DATA_REAL = 'Informe a data real. Dados falsos podem prejudicar o atleta, inclusive em campeonatos organizados por idade.';

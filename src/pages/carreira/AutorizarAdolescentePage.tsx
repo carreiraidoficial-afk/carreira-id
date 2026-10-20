@@ -193,7 +193,7 @@ export default function AutorizarAdolescentePage() {
             <span>
               Declaro que sou pai, mãe ou responsável legal de {nome}, li os{' '}
               <Link to="/termos-de-uso" className="underline" target="_blank">Termos de Uso</Link> e a{' '}
-              <Link to="/politica-de-privacidade" className="underline" target="_blank">Política de Privacidade</Link> e autorizo o tratamento dos dados pessoais de {nome} para criar e manter o perfil esportivo.
+              <Link to="/politica-de-privacidade" className="underline" target="_blank">Política de Privacidade</Link> e autorizo o tratamento dos dados pessoais de {nome} para criar e manter o perfil esportivo. Confirmo que as informações de {nome}, inclusive a data de nascimento, são verdadeiras e estou ciente de que dados falsos podem prejudicar o atleta, inclusive em campeonatos organizados por idade.
             </span>
           </label>
           <Button className="w-full" size="lg" onClick={autorizar} disabled={enviando}>

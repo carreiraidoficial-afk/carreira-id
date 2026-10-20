@@ -10,7 +10,7 @@ import { UfCidadeSelect } from '@/components/shared/UfCidadeSelect';
 import { TelefoneInput } from '@/components/shared/TelefoneInput';
 import { MODALIDADES, CATEGORIAS_BASE as CATEGORIAS } from '@/constants/esportes';
 import { validatePhone, limparTelefone } from '@/lib/form-validators';
-import { idadeEmAnos, whatsappParaWaMe } from '@/lib/adolescente-anuencia';
+import { idadeEmAnos, whatsappParaWaMe, AVISO_DATA_REAL } from '@/lib/adolescente-anuencia';
 
 interface Props {
   onBack: () => void;
@@ -90,7 +90,7 @@ export function AdolescenteCadastroForm({ onBack, onCriado, conviteCodigo = null
         <div className="space-y-2">
           <Label htmlFor="adol-nasc">Data de nascimento *</Label>
           <Input id="adol-nasc" type="date" value={dataNascimento} max={hoje} onChange={(e) => setDataNascimento(e.target.value)} required />
-          <p className="text-xs text-muted-foreground">Cadastro próprio a partir de 12 anos. Ela não aparece no seu perfil público.</p>
+          <p className="text-xs text-muted-foreground">Cadastro próprio a partir de 12 anos. Ela não aparece no seu perfil público. {AVISO_DATA_REAL}</p>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
