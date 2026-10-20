@@ -103,7 +103,8 @@ export default function CarreiraCadastroPage() {
     const atletaSlug = refAtletaSlug || lerPendingRef()?.atletaSlug;
     if ((ref === 'torcedor' || ref === 'atleta') && atletaSlug && atletaSlug !== slugProprio) {
       limparPendingRef();
-      return carreiraPath(`/${atletaSlug}?torcida=1`);
+      // Link de torcedor (família): convite para torcer. Link de atleta (colega de turma/time): convite para se conectar.
+      return carreiraPath(`/${atletaSlug}?${ref === 'atleta' ? 'conectar=1' : 'torcida=1'}`);
     }
     return carreiraPath(`/${slugProprio}`);
   };
@@ -1044,6 +1045,7 @@ export default function CarreiraCadastroPage() {
             conviteCodigo={inviteCode || lerPendingRef()?.conviteCodigo || null}
             escolaSlug={refEscolaSlug || lerPendingRef()?.escolaSlug || null}
             unidade={refUnidade || lerPendingRef()?.unidade || null}
+            atletaSlug={(refParam || lerPendingRef()?.ref) === 'atleta' ? (refAtletaSlug || lerPendingRef()?.atletaSlug || null) : null}
             onBack={() => setStep(refParam === 'atleta' || lerPendingRef()?.ref === 'atleta' ? 'quem-cadastra' : 'profile-type')}
             onCriado={(token) => { limparConviteDireto(); limparPendingRef(); trackOnboardingFunil(userId, 'adolescente_pre_cadastro', 'atleta_adolescente'); setAdolescenteToken(token); setStep('adolescente-aguardando'); }}
           />

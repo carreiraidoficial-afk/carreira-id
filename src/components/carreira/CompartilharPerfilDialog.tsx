@@ -172,7 +172,7 @@ export function CompartilharPerfilDialog({
             )}
             {!profissional && tab === 'atleta' && (
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">Convide outros atletas pra plataforma.</p>
+                <p className="text-xs text-muted-foreground">Convide colegas de turma e de time. Quem aceitar já fica conectado(a) com {atletaNome || 'você'}, sem precisar de aprovação.</p>
                 <div className="flex gap-1.5">
                   <Button
                     type="button"

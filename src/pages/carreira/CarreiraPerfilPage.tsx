@@ -752,6 +752,7 @@ export default function CarreiraPerfilPage() {
       {/* Auto-subscribe to push notifications for logged-in users */}
       {isOwner && <CarreiraPushAutoSubscribe />}
       {perfil?.type === 'atleta' && <ConviteTorcida perfil={perfil} currentUserId={currentUserId} isOwner={isOwner} />}
+      {perfil?.type === 'atleta' && <ConviteConexao perfil={perfil} currentUserId={currentUserId} isOwner={isOwner} meuPerfilAtletaId={meuPerfilAtivo?.id || null} />}
       {/* Accent top bar */}
       <div className="h-1 w-full" style={{ backgroundColor: accentColor }} />
 
@@ -1732,6 +1733,76 @@ function MeuPerfilIdentidadeSeletor({
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/** Quem abriu o link de colega de um atleta (?conectar=1) e já tem conta: um toque e a conexão fica aceita, sem aprovação
+ * (são colegas de turma/time; o responsável acompanha as conexões). */
+function ConviteConexao({ perfil, currentUserId, isOwner, meuPerfilAtletaId }: { perfil: any; currentUserId: string | null; isOwner: boolean; meuPerfilAtletaId: string | null }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
+  const [salvando, setSalvando] = useState(false);
+  const pedido = searchParams.get('conectar') === '1';
+
+  const { data: existente, isLoading } = useQuery({
+    queryKey: ['convite-conexao-existente', currentUserId, perfil.user_id, perfil.id, meuPerfilAtletaId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('rede_conexoes')
+        .select('id, status, solicitante_id, solicitante_perfil_atleta_id, destinatario_perfil_atleta_id')
+        .or(`and(solicitante_id.eq.${currentUserId},destinatario_id.eq.${perfil.user_id}),and(solicitante_id.eq.${perfil.user_id},destinatario_id.eq.${currentUserId})`);
+      return (data || []).filter((c: any) => c.status === 'aceita' || c.status === 'pendente').length > 0;
+    },
+    enabled: pedido && !!currentUserId && !isOwner,
+  });
+
+  const fechar = () => {
+    const novo = new URLSearchParams(searchParams);
+    novo.delete('conectar');
+    setSearchParams(novo, { replace: true });
+  };
+  useEffect(() => {
+    if (pedido && (isOwner || (!isLoading && existente === true))) fechar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pedido, isOwner, isLoading, existente]);
+
+  const aberto = pedido && !!currentUserId && !isOwner && !isLoading && existente === false;
+  const primeiroNome = String(perfil.nome || '').split(' ')[0] || 'o atleta';
+
+  const conectar = async () => {
+    if (!currentUserId) return;
+    setSalvando(true);
+    const { error } = await supabase.from('rede_conexoes').insert({
+      solicitante_id: currentUserId,
+      destinatario_id: perfil.user_id,
+      status: 'aceita',
+      origem: 'convite',
+      solicitante_perfil_atleta_id: meuPerfilAtletaId,
+      destinatario_perfil_atleta_id: perfil.id,
+    } as any);
+    setSalvando(false);
+    if (error) { toast.error('Não foi possível conectar agora. Tente novamente.'); return; }
+    toast.success(`Você agora está conectado(a) com ${primeiroNome}!`);
+    ['conexao-status', 'profile-connections-list', 'connections-count', 'user-connections', 'my-connections-accepted', 'conexoes-count', 'convite-conexao-existente']
+      .forEach((chave) => queryClient.invalidateQueries({ queryKey: [chave] }));
+    fechar();
+  };
+
+  return (
+    <AlertDialog open={aberto} onOpenChange={(v) => { if (!v) fechar(); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{primeiroNome} convidou você para se conectar</AlertDialogTitle>
+          <AlertDialogDescription>
+            Quer se conectar com {perfil.nome || primeiroNome}? Vocês passam a aparecer nas conexões um do outro. Não há conversa pelo app.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Agora não</AlertDialogCancel>
+          <AlertDialogAction disabled={salvando} onClick={(e) => { e.preventDefault(); conectar(); }}>Conectar</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
