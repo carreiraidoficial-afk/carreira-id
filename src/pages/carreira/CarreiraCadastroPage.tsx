@@ -96,6 +96,18 @@ export default function CarreiraCadastroPage() {
   // na mesma conta (botão "Adicionar outro tipo de perfil" nas Configurações).
   const wantsNewProfile = searchParams.get('novo') === '1';
 
+  // Link de torcida de um atleta (?a=slug): quem já tem conta e abre o link vai direto ao perfil de quem convidou,
+  // onde aparece o convite para torcer. (Quem ainda não tem conta segue o cadastro normal e o vínculo é criado no final.)
+  const destinoComConviteDeTorcida = (slugProprio: string): string => {
+    const ref = refParam || lerPendingRef()?.ref;
+    const atletaSlug = refAtletaSlug || lerPendingRef()?.atletaSlug;
+    if ((ref === 'torcedor' || ref === 'atleta') && atletaSlug && atletaSlug !== slugProprio) {
+      limparPendingRef();
+      return carreiraPath(`/${atletaSlug}?torcida=1`);
+    }
+    return carreiraPath(`/${slugProprio}`);
+  };
+
   const [step, setStep] = useState<Step>('tutorial');
   const [isLogin, setIsLogin] = useState(false);
   const [email, setEmail] = useState('');
@@ -297,7 +309,7 @@ export default function CarreiraCadastroPage() {
         if (!wantsNewProfile) {
           const slug = await resolverSlugPosLogin(session.user.id);
           if (slug) {
-            navigate(carreiraPath(`/${slug}`), { replace: true });
+            navigate(destinoComConviteDeTorcida(slug), { replace: true });
             return true;
           }
         }
@@ -383,7 +395,7 @@ export default function CarreiraCadastroPage() {
           if (desvio?.tipo === 'autorizar') {
             navigate(carreiraPath(`/autorizar?codigo=${encodeURIComponent(desvio.codigo)}`), { replace: true });
           } else if (slug) {
-            navigate(carreiraPath(`/${slug}`), { replace: true });
+            navigate(destinoComConviteDeTorcida(slug), { replace: true });
           } else if (desvio?.tipo === 'espera') {
             setStep('adolescente-aguardando');
           } else {

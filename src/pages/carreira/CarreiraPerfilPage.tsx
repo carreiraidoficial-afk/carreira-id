@@ -65,6 +65,10 @@ import { useSEO } from '@/hooks/useSEO';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { useCarreiraRanking } from '@/hooks/useCarreiraRanking';
@@ -747,6 +751,7 @@ export default function CarreiraPerfilPage() {
     <div className="min-h-screen bg-background lg:pt-14" data-theme={carreiraTheme}>
       {/* Auto-subscribe to push notifications for logged-in users */}
       {isOwner && <CarreiraPushAutoSubscribe />}
+      {perfil?.type === 'atleta' && <ConviteTorcida perfil={perfil} currentUserId={currentUserId} isOwner={isOwner} />}
       {/* Accent top bar */}
       <div className="h-1 w-full" style={{ backgroundColor: accentColor }} />
 
@@ -1727,6 +1732,49 @@ function MeuPerfilIdentidadeSeletor({
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/** Quem abriu o link de torcida de um atleta (?torcida=1) e já tem conta: pergunta se quer torcer, com um toque. */
+function ConviteTorcida({ perfil, currentUserId, isOwner }: { perfil: any; currentUserId: string | null; isOwner: boolean }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { data: isFollowing, isLoading } = useIsFollowing(perfil.id);
+  const toggleFollow = useToggleFollow();
+  const pedido = searchParams.get('torcida') === '1';
+  const aberto = pedido && !!currentUserId && !isOwner && !isLoading && isFollowing === false;
+
+  const fechar = () => {
+    const novo = new URLSearchParams(searchParams);
+    novo.delete('torcida');
+    setSearchParams(novo, { replace: true });
+  };
+  // Já torce (ou é o dono): o parâmetro só atrapalha a URL.
+  useEffect(() => {
+    if (pedido && (isOwner || (!isLoading && isFollowing === true))) fechar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pedido, isOwner, isLoading, isFollowing]);
+
+  const primeiroNome = String(perfil.nome || '').split(' ')[0] || 'o atleta';
+  return (
+    <AlertDialog open={aberto} onOpenChange={(v) => { if (!v) fechar(); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{primeiroNome} convidou você para a torcida</AlertDialogTitle>
+          <AlertDialogDescription>
+            Quer torcer por {primeiroNome}? Você passa a acompanhar a jornada esportiva {perfil.nome ? `de ${perfil.nome}` : 'dele(a)'} no seu feed.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Agora não</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={toggleFollow.isPending}
+            onClick={() => toggleFollow.mutate({ perfilId: perfil.id, isFollowing: false }, { onSuccess: () => toast.success(`Você agora torce por ${primeiroNome}!`) })}
+          >
+            Torcer agora
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
