@@ -52,6 +52,28 @@ const handler = async (req: Request): Promise<Response> => {
       categoria = "lifecycle",
     }: PerfilIncompletoEmailRequest = await req.json();
 
+    // Autenticação: chave do servidor (rotinas diárias) ou o próprio usuário logado enviando para o e-mail da própria conta.
+    // Sem isso, qualquer pessoa poderia mandar e-mail com a marca do Carreira ID para qualquer endereço.
+    const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const doServidor = !!token && token === serviceKey;
+    if (!doServidor) {
+      const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey);
+      const { data: { user } } = token ? await admin.auth.getUser(token) : { data: { user: null } };
+      if (!user || !email || String(user.email || "").toLowerCase() !== String(email).trim().toLowerCase()) {
+        return new Response(
+          JSON.stringify({ success: false, error: "não autorizado" }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      if (userId && userId !== user.id) {
+        return new Response(
+          JSON.stringify({ success: false, error: "não autorizado" }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
+
     if (!nome || !email || !assunto || !titulo || !corpo) {
       return new Response(
         JSON.stringify({ success: false, error: "nome, email, assunto, titulo e corpo são obrigatórios" }),

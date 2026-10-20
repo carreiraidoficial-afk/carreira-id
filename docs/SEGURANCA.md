@@ -85,6 +85,7 @@ select policyname, cmd from pg_policies where schemaname = 'storage' and tablena
 | 18/10/2026 | **Fase 1:** funções de pontos, selos e papel fechadas a visitante (`admin_adicionar_pontos` para o admin); `carreira-assets` restrito; registro de erros do navegador com limites; função de push antiga removida; avisos de admin passaram a ter lista de destinatários. |
 | 18–19/10/2026 | **Fase 2:** CPF/CNPJ, tipo de documento e telefone fechados por coluna e lidos por funções; e-mail e data de nascimento removidos de `dados_perfil`; experiências de perfil privado e lista de seguidores restritas; código de convite lido, gerado e resolvido por funções; CPF do responsável com campo próprio e gravado no pagamento. |
 | 19/10/2026 | **Cadastro de adolescente (12–17) com anuência:** dados do menor ficam em tabela fechada, sem perfil, até o responsável confirmar por link único de 7 dias (hash no banco); perfil nasce no nome do responsável; colaborador autorizado edita só campos leves (trava no banco). Material jurídico em `docs/ANUENCIA-ADOLESCENTES-REVISAO-JURIDICA.md`. |
+| 20/10/2026 | **Revisão geral:** função de teste do webhook de pagamento e a de push de peneira legada apagadas; e-mail de lembrete e moderação de conteúdo passaram a exigir login (ou chave do servidor); rotinas diárias (dicas e lembretes) trocaram a chave pública pelo segredo interno; lista de admins fechada a visitante; gatilhos de bônus/aviso não travam mais o cadastro de dados. |
 
 Reversões prontas: `docs/rollback-seguranca-fase2-etapa3.sql` e `docs/rollback-seguranca-convites.sql`.
 

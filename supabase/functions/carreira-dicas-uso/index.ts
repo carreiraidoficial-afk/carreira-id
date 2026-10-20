@@ -104,6 +104,13 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Só o cron do servidor (segredo interno) pode disparar esta rotina.
+    const segredoInterno = Deno.env.get("PUSH_INTERNAL_SECRET") || "";
+    if (!segredoInterno || req.headers.get("x-internal-secret") !== segredoInterno) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);

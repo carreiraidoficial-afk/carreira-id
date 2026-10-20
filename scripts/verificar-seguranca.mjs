@@ -137,6 +137,26 @@ for (const antiga of ['send-push-notification', 'update-user-email', 'seed-test-
   });
 }
 
+for (const [nome, corpo] of [
+  ['send-perfil-incompleto-email', { nome: 'x', email: 'vitima@example.com', assunto: 'a', titulo: 'b', corpo: 'c' }],
+  ['moderate-content', { content: 'oi', user_id: 'x' }],
+  ['carreira-dicas-uso', {}],
+  ['carreira-lembrete-perfil-incompleto', {}],
+  ['carreira-lembrete-perfil-atleta-incompleto', {}],
+]) {
+  await teste('Funções de servidor', `${nome} recusa visitante (só o servidor ou o usuário logado)`, async () => {
+    const r = await fetch(`${URL_BASE}/functions/v1/${nome}`, { method: 'POST', headers: H, body: JSON.stringify(corpo) });
+    return r.status === 401 || r.status === 403 ? true : `HTTP ${r.status}`;
+  });
+}
+for (const apagada of ['asaas-webhook-sandbox', 'send-peneira-push']) {
+  await teste('Funções de servidor', `${apagada} não existe mais`, async () => {
+    const r = await fetch(`${URL_BASE}/functions/v1/${apagada}`, { method: 'POST', headers: H, body: '{}' });
+    return r.status === 404 ? true : `HTTP ${r.status}`;
+  });
+}
+await teste('Funções do banco', 'admin_destinatarios_ids negada a visitante', async () => negado(await rpc('admin_destinatarios_ids')));
+
 // Relatório
 let falhas = 0, grupoAtual = '';
 for (const r of resultados) {

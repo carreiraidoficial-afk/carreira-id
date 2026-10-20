@@ -25,6 +25,16 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Só usuário logado: a análise usa a chave da OpenAI e não pode ficar aberta a visitantes.
+    const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+    const { data: { user: autor } } = token ? await supabase.auth.getUser(token) : { data: { user: null } };
+    if (!autor) {
+      return new Response(JSON.stringify({ error: 'unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // ===== LEVEL 1: Word filter =====
     const { data: blockedWords } = await supabase
       .from('blocked_words')
