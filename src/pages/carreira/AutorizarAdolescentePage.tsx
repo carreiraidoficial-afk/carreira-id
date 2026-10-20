@@ -22,6 +22,7 @@ interface Pedido {
   primeiro_nome?: string;
   modalidade?: string;
   responsavel_nome?: string;
+  escola_nome?: string | null;
 }
 
 function Moldura({ children, theme }: { children: React.ReactNode; theme: string }) {
@@ -154,6 +155,11 @@ export default function AutorizarAdolescentePage() {
         <p className="text-sm text-muted-foreground">
           Como {nome} é menor de idade, o cadastro só vale com a sua autorização como responsável legal.
         </p>
+        {pedido.escola_nome && (
+          <p className="text-sm text-muted-foreground">
+            {nome} veio pelo convite da escola <strong className="text-foreground">{pedido.escola_nome}</strong>. Depois da autorização, a escola confirma o vínculo.
+          </p>
+        )}
       </div>
 
       <div className="rounded-lg bg-muted/40 p-3 text-sm space-y-2">

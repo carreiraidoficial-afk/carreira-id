@@ -14,6 +14,7 @@ interface PreCadastro {
   responsavel_nome: string;
   responsavel_whatsapp: string;
   expira_em: string;
+  escola_nome?: string | null;
 }
 
 export function usePreCadastroAdolescente(userId: string | null | undefined) {
@@ -87,7 +88,7 @@ export function AdolescenteAguardando({ userId, tokenInicial = null, onAprovado 
         setGerando(false);
       }
     }
-    const msg = mensagemParaResponsavel(pre.responsavel_nome, linkAnuencia(t!));
+    const msg = mensagemParaResponsavel(pre.responsavel_nome, linkAnuencia(t!), pre.escola_nome);
     window.open(linkWhatsApp(pre.responsavel_whatsapp, msg), '_blank', 'noopener');
   };
 

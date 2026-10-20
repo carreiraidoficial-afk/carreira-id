@@ -28,7 +28,7 @@ import { PushNotificationPopup } from '@/components/shared/PushNotificationPopup
 import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { trackCompleteRegistration, trackProfileCreated, trackInitiateCheckout, trackSubscribe, pushDataLayer } from '@/lib/fbPixel';
 import { trackOnboardingFunil } from '@/lib/onboardingFunil';
-import { salvarPendingRef, lerPendingRef, processarConviteRef, salvarConviteDireto, lerConviteDireto, limparConviteDireto } from '@/lib/processar-convite-ref';
+import { salvarPendingRef, lerPendingRef, processarConviteRef, salvarConviteDireto, lerConviteDireto, limparConviteDireto, limparPendingRef } from '@/lib/processar-convite-ref';
 import { TERMOS_VERSAO } from '@/lib/termosVersao';
 import { PENDING_AUTORIZAR_KEY } from '@/lib/adolescente-anuencia';
 import { AdolescenteCadastroForm } from '@/components/carreira/AdolescenteCadastroForm';
@@ -49,7 +49,7 @@ async function desvioPosLogin(): Promise<{ tipo: 'autorizar'; codigo: string } |
   return null;
 }
 
-type Step = 'tutorial' | 'auth' | 'recuperar-senha' | 'profile-type' | 'profile-form' | 'adolescente-form' | 'adolescente-aguardando';
+type Step = 'tutorial' | 'auth' | 'recuperar-senha' | 'profile-type' | 'profile-form' | 'adolescente-form' | 'adolescente-aguardando' | 'quem-cadastra';
 
 const loginSchema = z.object({
   email: z.string().trim().email('Email inválido'),
@@ -181,8 +181,9 @@ export default function CarreiraCadastroPage() {
       setSelectedType('torcedor');
       setStep('profile-form');
     } else if (ref === 'atleta') {
-      setSelectedType('atleta_filho');
-      setStep('profile-form');
+      // Link de atleta (ex.: convite da escola): antes do formulário, pergunta quem está se cadastrando.
+      // Menor de 18 anos não pode criar o próprio perfil sem a autorização do responsável.
+      setStep('quem-cadastra');
     }
   }, [step, refParam, selectedType]);
 
@@ -945,10 +946,37 @@ export default function CarreiraCadastroPage() {
           />
         )}
 
+        {step === 'quem-cadastra' && (
+          <div className="animate-fade-in">
+            <div className="text-center mb-6">
+              <h1 className="text-xl font-bold text-foreground">Quem está se cadastrando?</h1>
+              <p className="text-sm text-muted-foreground mt-1">Escolha a opção que descreve você</p>
+            </div>
+            <div className="grid gap-2">
+              {[
+                { icon: '👨‍👩‍👧', titulo: 'Sou pai, mãe ou responsável', desc: 'Vou cadastrar o atleta e administrar o perfil', ir: () => { setSelectedType('atleta_filho'); setStep('profile-form'); } },
+                { icon: '🎽', titulo: 'Sou atleta e tenho menos de 18 anos', desc: 'Faço meu cadastro; meu responsável confirma depois', ir: () => setStep('adolescente-form') },
+                { icon: '⚽', titulo: 'Sou atleta com 18 anos ou mais', desc: 'Faço o meu próprio cadastro', ir: () => { setSelectedType('atleta_filho'); setStep('profile-form'); } },
+              ].map((o) => (
+                <button key={o.titulo} type="button" onClick={o.ir}
+                  className="flex items-center gap-3 rounded-xl border p-3 text-left transition-all hover:border-primary/50 hover:shadow-md active:scale-[0.98]"
+                  style={{ backgroundColor: 'hsl(220 15% 10%)', borderColor: 'hsl(220 10% 20%)', color: 'hsl(0 0% 95%)' }}>
+                  <span className="text-2xl flex-shrink-0">{o.icon}</span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold">{o.titulo}</span>
+                    <span className="block text-xs" style={{ color: 'hsl(0 0% 60%)' }}>{o.desc}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {step === 'adolescente-form' && userId && (
           <AdolescenteCadastroForm
-            onBack={() => setStep('profile-type')}
-            onCriado={(token) => { trackOnboardingFunil(userId, 'adolescente_pre_cadastro', 'atleta_adolescente'); setAdolescenteToken(token); setStep('adolescente-aguardando'); }}
+            conviteCodigo={inviteCode || lerPendingRef()?.conviteCodigo || null}
+            onBack={() => setStep(refParam === 'atleta' || lerPendingRef()?.ref === 'atleta' ? 'quem-cadastra' : 'profile-type')}
+            onCriado={(token) => { limparConviteDireto(); limparPendingRef(); trackOnboardingFunil(userId, 'adolescente_pre_cadastro', 'atleta_adolescente'); setAdolescenteToken(token); setStep('adolescente-aguardando'); }}
           />
         )}
 

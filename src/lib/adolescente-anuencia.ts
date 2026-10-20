@@ -21,10 +21,10 @@ export function linkAnuencia(token: string): string {
 }
 
 /** Mensagem curta e identificável, enviada do WhatsApp do próprio adolescente. */
-export function mensagemParaResponsavel(nomeResponsavel: string, link: string): string {
+export function mensagemParaResponsavel(nomeResponsavel: string, link: string, escola?: string | null): string {
   const primeiro = nomeResponsavel.trim().split(' ')[0] || '';
   return [
-    `Oi${primeiro ? `, ${primeiro}` : ''}! Sou eu. Quero montar meu perfil de atleta no *Carreira ID*, uma plataforma brasileira onde atletas de base registram a trajetória esportiva (jogos, campeonatos e conquistas).`,
+    `Oi${primeiro ? `, ${primeiro}` : ''}! Sou eu. Quero montar meu perfil de atleta no *Carreira ID*, uma plataforma brasileira onde atletas de base registram a trajetória esportiva (jogos, campeonatos e conquistas).${escola ? ` Recebi o convite da escola *${escola}*.` : ''}`,
     '',
     'Como sou menor de idade, preciso da sua autorização. Leva 2 minutos e o perfil só é ativado depois que você confirmar:',
     link,
