@@ -1,3 +1,4 @@
+import { converterHeicSeNecessario } from '@/lib/heic';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { CurriculoEditor } from '@/components/carreira/perfis/CurriculoEditor';
 import {
@@ -423,11 +424,12 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
     }
     setBrasaoUploading(true);
     try {
-      const ext = file.name.split('.').pop();
+      const arquivo = await converterHeicSeNecessario(file);
+      const ext = arquivo.name.split('.').pop();
       const path = `${effectiveId}/brasao-${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from('atleta-fotos')
-        .upload(path, file, { upsert: true });
+        .upload(path, arquivo, { upsert: true });
       if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage.from('atleta-fotos').getPublicUrl(path);
       setBrasaoUrl(urlData.publicUrl);
@@ -587,11 +589,12 @@ export function EditPerfilRedeDialog({ open, onOpenChange, perfil }: EditPerfilR
         newDados.unidades = await Promise.all(validUnidades.map(async (u, idx) => {
           let logoUrl = u.logo_url || null;
           if (u.logoFile && effectiveId) {
-            const ext = u.logoFile.name.split('.').pop();
+            const logoArquivo = await converterHeicSeNecessario(u.logoFile);
+            const ext = logoArquivo.name.split('.').pop();
             const path = `${effectiveId}/unidade-logo-${Date.now()}-${idx}.${ext}`;
             const { error: uploadError } = await supabase.storage
               .from('atleta-fotos')
-              .upload(path, u.logoFile, { upsert: true });
+              .upload(path, logoArquivo, { upsert: true });
             if (!uploadError) {
               const { data: urlData } = supabase.storage.from('atleta-fotos').getPublicUrl(path);
               logoUrl = urlData.publicUrl;

@@ -1,3 +1,4 @@
+import { converterHeicSeNecessario } from '@/lib/heic';
 import { useState, useRef, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -88,12 +89,14 @@ export function ProfilePhotoUpload({
 
     setUploadingBanner(true);
     try {
-      const fileExt = file.name.split('.').pop();
+      // HEIC (iPhone) não abre no navegador: vira JPEG antes de subir, senão o banner aparece quebrado.
+      const arquivo = await converterHeicSeNecessario(file);
+      const fileExt = arquivo.name.split('.').pop();
       const fileName = `${effectiveUserId}/banner-${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('atleta-fotos')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, arquivo, { upsert: true });
 
       if (uploadError) throw uploadError;
 

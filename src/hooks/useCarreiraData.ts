@@ -780,8 +780,11 @@ async function buscarAtletasDaEscola(escolaUserId: string, status: 'aceita' | 'p
 
   let consulta = supabase
     .from('perfil_atleta')
-    .select('id, nome, foto_url, slug, modalidade, categoria')
-    .in('id', [...origemPorAtleta.keys()]);
+    .select('id, nome, foto_url, slug, modalidade, categoria, crianca_id')
+    .in('id', [...origemPorAtleta.keys()])
+    // Perfil da plataforma (ex.: o próprio Carreira ID) conecta com a escola, mas não é aluno: aparece só em Conexões.
+    .not('crianca_id', 'is', null)
+    .or('modalidade.is.null,modalidade.neq.Plataforma');
   // A página pública só mostra perfis públicos; a lista de pedidos é da escola e mostra quem pediu.
   if (status === 'aceita') consulta = consulta.eq('is_public', true);
   const { data: atletas, error: atletasError } = await consulta;
