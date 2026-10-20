@@ -16,12 +16,15 @@ interface Props {
   onBack: () => void;
   /** Código do convite (ex.: link da escola): vira vínculo pendente quando o responsável autoriza. */
   conviteCodigo?: string | null;
+  /** Escola e unidade vindas do link (?escola=slug&unidade=...): viram pedido de vínculo pendente quando o responsável autoriza. */
+  escolaSlug?: string | null;
+  unidade?: string | null;
   /** Cadastro salvo: devolve o token do link do responsável (só existe neste momento). */
   onCriado: (token: string) => void;
 }
 
 /** Cadastro iniciado pelo adolescente (12 a 17 anos). Nada vira perfil até o responsável confirmar. */
-export function AdolescenteCadastroForm({ onBack, onCriado, conviteCodigo = null }: Props) {
+export function AdolescenteCadastroForm({ onBack, onCriado, conviteCodigo = null, escolaSlug = null, unidade = null }: Props) {
   const [nome, setNome] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
   const [modalidade, setModalidade] = useState('Futebol');
@@ -62,6 +65,8 @@ export function AdolescenteCadastroForm({ onBack, onCriado, conviteCodigo = null
         p_resp_whatsapp: whatsappParaWaMe(tel),
         p_resp_email: email || null,
         p_convite_codigo: conviteCodigo || null,
+        p_escola_slug: escolaSlug || null,
+        p_unidade: unidade || null,
       });
       if (error) throw error;
       onCriado((data as any).token);

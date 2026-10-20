@@ -979,6 +979,8 @@ export default function CarreiraCadastroPage() {
         {step === 'adolescente-form' && userId && (
           <AdolescenteCadastroForm
             conviteCodigo={inviteCode || lerPendingRef()?.conviteCodigo || null}
+            escolaSlug={refEscolaSlug || lerPendingRef()?.escolaSlug || null}
+            unidade={refUnidade || lerPendingRef()?.unidade || null}
             onBack={() => setStep(refParam === 'atleta' || lerPendingRef()?.ref === 'atleta' ? 'quem-cadastra' : 'profile-type')}
             onCriado={(token) => { limparConviteDireto(); limparPendingRef(); trackOnboardingFunil(userId, 'adolescente_pre_cadastro', 'atleta_adolescente'); setAdolescenteToken(token); setStep('adolescente-aguardando'); }}
           />
