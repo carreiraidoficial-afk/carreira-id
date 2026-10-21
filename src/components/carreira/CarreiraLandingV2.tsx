@@ -275,22 +275,22 @@ interface EscolaParceira {
 
 function EscolaParceiraCard({ escola }: { escola: EscolaParceira }) {
   const nomeEscola = escola.dados_perfil?.nome_escola || escola.nome;
+  // O logo preenche o quadrado: cada escola tem o próprio fundo (preto, amarelo, branco), então não forçamos cor única.
   const conteudo = (
-    <div className="w-52 shrink-0 rounded-2xl bg-[#1a2332] border border-[#2a3a4e] overflow-hidden hover:border-emerald-500/40 transition-colors">
-      <div className="w-full h-32 bg-[#0d1420] flex items-center justify-center overflow-hidden">
+    <div className="group w-36 shrink-0 text-center">
+      <div className="w-36 h-36 rounded-2xl bg-[#141a24] border border-[#2a3a4e] flex items-center justify-center overflow-hidden transition-colors group-hover:border-emerald-500/40">
         {escola.foto_url ? (
-          <img src={escola.foto_url} alt={nomeEscola} className="w-full h-full object-cover" loading="lazy" />
+          <img
+            src={escola.foto_url}
+            alt={nomeEscola}
+            className="w-full h-full object-cover opacity-90 transition duration-300 group-hover:opacity-100 group-hover:scale-105"
+            loading="lazy"
+          />
         ) : (
           <School className="w-10 h-10 text-gray-600" />
         )}
       </div>
-      <div className="p-4">
-        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-full px-2 py-0.5 mb-2">
-          🤝 Escola Parceira
-        </span>
-        <h4 className="text-white font-bold text-sm truncate">{nomeEscola}</h4>
-        {escola.cidade && <p className="text-gray-400 text-xs truncate">{escola.cidade}</p>}
-      </div>
+      <p className="mt-2 text-xs text-gray-500 truncate group-hover:text-gray-300 transition-colors">{nomeEscola}</p>
     </div>
   );
 
@@ -303,24 +303,32 @@ function EscolaParceiraCard({ escola }: { escola: EscolaParceira }) {
 
 export function EscolasParceirasSection() {
   const { data: escolas = [] } = useQuery({
-    queryKey: ['escolas-parceiras-landing'],
+    queryKey: ['escolas-landing-faixa'],
     queryFn: async () => {
-      // Os ids das escolas parceiras vêm do servidor (a tabela de cupons não é pública); os dados públicos delas vêm do perfil.
-      const { data: ids, error: erroIds } = await (supabase as any).rpc('carreira_escolas_parceiras_ids');
-      if (erroIds) throw erroIds;
-      const lista = (ids || []) as string[];
-      if (lista.length === 0) return [] as EscolaParceira[];
+      // Escolas com perfil público e logo. As parceiras (cupom ativo vinculado, ids vindos do servidor porque a tabela de cupons não é pública) vêm primeiro.
+      const { data: ids } = await (supabase as any).rpc('carreira_escolas_parceiras_ids');
+      const parceiras = ((ids || []) as string[]);
       const { data, error } = await supabase
         .from('perfis_rede')
         .select('id, nome, foto_url, slug, cidade, dados_perfil')
-        .in('id', lista);
+        .not('dados_perfil->>nome_escola', 'is', null)
+        .not('foto_url', 'is', null)
+        .limit(40);
       if (error) throw error;
-      const porId = new Map(((data || []) as any[]).map((p) => [p.id, p]));
-      return lista.map((id) => porId.get(id)).filter(Boolean) as EscolaParceira[];
+      const lista = (data || []) as unknown as EscolaParceira[];
+      const posicao = (id: string) => {
+        const i = parceiras.indexOf(id);
+        return i === -1 ? Number.MAX_SAFE_INTEGER : i;
+      };
+      return [...lista].sort((x, y) => posicao(x.id) - posicao(y.id));
     },
   });
 
   if (escolas.length === 0) return null;
+
+  // Só gira quando há escolas suficientes; com poucas, duplicar só faria parecer repetido.
+  const usaMarquee = escolas.length >= 5;
+  const linha = usaMarquee ? [...escolas, ...escolas] : escolas;
 
   return (
     <section className="bg-[#0d1420] py-20 overflow-hidden border-t border-[#1a2332]">
@@ -334,10 +342,24 @@ export function EscolasParceirasSection() {
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-5 justify-center container mx-auto px-4">
-        {escolas.map((escola) => (
-          <EscolaParceiraCard key={escola.id} escola={escola} />
-        ))}
+      <div className="relative">
+        <div
+          className={
+            usaMarquee
+              ? 'flex gap-8 w-max animate-marquee hover:[animation-play-state:paused]'
+              : 'flex flex-wrap gap-8 justify-center container mx-auto px-4'
+          }
+        >
+          {linha.map((escola, i) => (
+            <EscolaParceiraCard key={`${escola.id}-${i}`} escola={escola} />
+          ))}
+        </div>
+        {usaMarquee && (
+          <>
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#0d1420] to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#0d1420] to-transparent" />
+          </>
+        )}
       </div>
     </section>
   );
