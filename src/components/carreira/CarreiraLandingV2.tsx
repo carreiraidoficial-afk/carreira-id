@@ -651,13 +651,13 @@ export function CarreiraLandingV2() {
       </section>
 
       {/* ═══ Como Funciona ═══ */}
-      <section className="bg-[#0d1420] py-20">
+      <section className="bg-gradient-to-br from-emerald-800 to-emerald-900 py-20">
         <div className="container max-w-6xl mx-auto px-4 text-center">
           <SectionBadge>Como Funciona</SectionBadge>
           <h2 className="mt-6 text-3xl sm:text-4xl md:text-5xl font-extrabold">
             Simples de começar.
           </h2>
-          <p className="mt-2 text-gray-400">Estratégico no longo prazo.</p>
+          <p className="mt-2 text-emerald-100/80">Estratégico no longo prazo.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-14">
             {[
               { step: '1', title: 'Crie o perfil', desc: 'Cadastre-se gratuitamente em menos de 2 minutos.' },
@@ -665,14 +665,14 @@ export function CarreiraLandingV2() {
               { step: '3', title: 'Organize a linha do tempo', desc: 'Construa a trajetória completa do atleta.' },
               { step: '4', title: 'Compartilhe', desc: 'Envie o link quando surgir oportunidade.' },
             ].map((item, i) => (
-              <div key={item.step} className="bg-[#1a2332] border border-[#2a3a4e] rounded-2xl p-6 text-left relative">
-                <div className="w-11 h-11 rounded-xl bg-emerald-500 flex items-center justify-center text-white font-bold text-lg mb-4">
+              <div key={item.step} className="bg-emerald-700/20 border border-emerald-500/20 rounded-2xl p-6 text-left relative">
+                <div className="w-11 h-11 rounded-xl bg-orange-500 flex items-center justify-center text-white font-bold text-lg mb-4">
                   {item.step}
                 </div>
                 <h3 className="text-white font-bold mb-2">{item.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+                <p className="text-emerald-100/80 text-sm leading-relaxed">{item.desc}</p>
                 {i < 3 && (
-                  <div className="hidden lg:block absolute top-1/2 -right-3 w-6 text-emerald-500/50">—</div>
+                  <div className="hidden lg:block absolute top-1/2 -right-3 w-6 text-emerald-300/60">—</div>
                 )}
               </div>
             ))}
