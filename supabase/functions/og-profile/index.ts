@@ -84,6 +84,74 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
+  // Links de cadastro com convite (/cadastro?convite=CÓDIGO, ?escola=slug ou ?a=slug): sem isto o preview cai no card
+  // genérico do site e ninguém sabe de quem é o convite. Só usa dados que já são públicos (escola, perfil público).
+  if (slug === "cadastro") {
+    const params = new URLSearchParams(url.searchParams);
+    params.delete("slug");
+    const canonicalCad = `${APP_BASE}/cadastro${params.toString() ? `?${params.toString()}` : ""}`;
+    const noindex = { "X-Robots-Tag": "noindex" };
+    const resposta = (title: string, description: string, image: string, wide = false) =>
+      new Response(
+        renderHtml({ title, description, image, canonical: canonicalCad, internalRoute: canonicalCad, type: "website", wideImage: wide }),
+        { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=300, s-maxage=300", ...noindex } },
+      );
+    const convite = url.searchParams.get("convite") || url.searchParams.get("c");
+    const escolaSlug = url.searchParams.get("escola");
+    const atletaSlug = url.searchParams.get("a");
+    const ref = url.searchParams.get("ref");
+
+    // 1) Convite de uma escola (pelo código do convite ou pelo slug da escola)
+    let convidante: { nome: string; foto_url: string | null; banner_url: string | null; tipo: string; dados_perfil: unknown } | null = null;
+    if (convite) {
+      const { data } = await supabase.from("perfis_rede").select("nome, foto_url, banner_url, tipo, dados_perfil").eq("convite_codigo", convite).limit(1).maybeSingle();
+      convidante = data;
+    } else if (escolaSlug) {
+      const { data } = await supabase.from("perfis_rede").select("nome, foto_url, banner_url, tipo, dados_perfil").eq("slug", escolaSlug).eq("tipo", "dono_escola").limit(1).maybeSingle();
+      convidante = data;
+    }
+    if (convidante) {
+      if (convidante.tipo === "dono_escola") {
+        const dados = (convidante.dados_perfil || {}) as Record<string, unknown>;
+        const cartao = typeof dados.og_image_url === "string" ? dados.og_image_url : null;
+        return resposta(
+          `${convidante.nome} convida você para o Carreira ID`,
+          `A ${convidante.nome} está no Carreira ID. Crie o perfil do atleta e registre a jornada esportiva: jogos, campeonatos e conquistas. Toque para se cadastrar.`,
+          cartao || convidante.banner_url || convidante.foto_url || GENERIC_IMAGE,
+          !!cartao,
+        );
+      }
+      return resposta(
+        `${convidante.nome} convidou você para o Carreira ID`,
+        `Crie seu perfil no Carreira ID e acompanhe a trajetória esportiva de atletas de base. Toque para se cadastrar.`,
+        convidante.foto_url || GENERIC_IMAGE,
+      );
+    }
+
+    // 2) Convite de um atleta (torcida ou colega), só se o perfil dele for público
+    if (atletaSlug) {
+      const { data: amigo } = await supabase.from("perfil_atleta").select("nome, foto_url, is_public").eq("slug", atletaSlug).maybeSingle();
+      if (amigo && amigo.is_public !== false) {
+        const primeiro = (amigo.nome || "").split(" ")[0] || "Um atleta";
+        const colega = ref === "atleta";
+        return resposta(
+          `${primeiro} convidou você para ${colega ? "o Carreira ID" : "a torcida"}`,
+          colega
+            ? `${amigo.nome} convidou você para o Carreira ID, a plataforma da trajetória esportiva do atleta de base. Toque para se cadastrar e se conectar.`
+            : `${amigo.nome} quer você na torcida. Cadastre-se no Carreira ID e acompanhe a jornada esportiva dele(a). Toque para entrar.`,
+          amigo.foto_url || GENERIC_IMAGE,
+        );
+      }
+    }
+
+    // 3) Cadastro sem convite identificável: card de cadastro, mais claro que o genérico
+    return resposta(
+      "Cadastre-se no Carreira ID",
+      "A plataforma da trajetória esportiva do atleta de base: jogos, campeonatos, conquistas e evolução num perfil só. Cadastro rápido.",
+      GENERIC_IMAGE,
+    );
+  }
+
   // Convite de colaborador (/colaborar?codigo=XXX) -- não é slug de perfil,
   // mas precisa de card próprio, senão cai no genérico e ninguém entende
   // que é um convite antes de clicar.
