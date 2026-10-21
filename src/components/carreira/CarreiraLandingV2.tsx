@@ -8,7 +8,6 @@ import mockupScoutPerfil from '@/assets/mockup-scout-perfil.webp';
 import mockupScoutBusca from '@/assets/mockup-scout-busca.webp';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import logoCarreira from '@/assets/logo-carreira-id.webp';
-import logoAtletaIdDark from '@/assets/logo-atleta-id-dark.webp';
 import heroLandingV2Bg from '@/assets/hero-landing-v2-bg.webp';
 import heroSolucaoBg from '@/assets/hero-solucao-bg.webp';
 import mockupCelular from '@/assets/mockup-carreira-celular.webp';
@@ -436,10 +435,6 @@ export function CarreiraLandingV2() {
             <p className="mt-6 text-gray-400 text-lg leading-relaxed max-w-lg">
               O Carreira ID é a identidade esportiva digital que organiza e valoriza a trajetória do atleta desde a base.
             </p>
-            <p className="mt-2 text-gray-500 text-sm">
-              Para atletas independentes ou integrados a escolas que utilizam o{' '}
-              <span className="text-emerald-400 font-medium">Atleta ID</span>.
-            </p>
             <div className="mt-8 flex flex-col sm:flex-row flex-wrap gap-3">
               <Link
                 to={cadastroAtletaLink}
@@ -609,44 +604,6 @@ export function CarreiraLandingV2() {
                   Criar Perfil Profissional
                   <ArrowRight className="w-4 h-4" />
                 </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ Integração Atleta ID ═══ */}
-      <section className="bg-gradient-to-br from-emerald-800 to-emerald-900 py-20">
-        <div className="container max-w-6xl mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="bg-emerald-700/20 border border-emerald-500/20 rounded-2xl p-8">
-              <div className="flex items-center gap-4 mb-6">
-                <img src={logoAtletaIdDark} alt="Atleta ID" className="h-14 rounded-lg" />
-                <div>
-                  <p className="text-emerald-200 text-sm">Integrado com</p>
-                  <p className="text-white font-bold text-xl">Atleta ID</p>
-                </div>
-              </div>
-              <ul className="space-y-3">
-                {['Registro oficial de participações', 'Frequência documentada', 'Campeonatos organizados', 'Premiações registradas'].map((t) => (
-                  <li key={t} className="flex items-center gap-2 text-white text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-300 shrink-0" /> {t}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <SectionBadge>Integração</SectionBadge>
-              <h2 className="mt-6 text-3xl sm:text-4xl font-extrabold text-white">
-                Integrado ao Atleta ID.
-              </h2>
-              <p className="mt-4 text-emerald-100/80 leading-relaxed">
-                Se o atleta participa de uma escolinha que utiliza o Atleta ID, o histórico pode ser alimentado com dados técnicos registrados pela própria escola.
-              </p>
-              <div className="mt-6 bg-emerald-700/20 border border-emerald-500/20 rounded-xl p-5">
-                <p className="text-white font-semibold">Mais precisão.</p>
-                <p className="text-white font-semibold">Mais credibilidade.</p>
-                <p className="text-emerald-300 font-semibold">Mais valorização do trabalho da base.</p>
               </div>
             </div>
           </div>
@@ -953,6 +910,38 @@ export function CarreiraLandingV2() {
         </div>
       </section>
 
+      {/* ═══ Titulares da Base — TESTE: fotos e nomes abaixo são só placeholder,
+          precisam ser trocados por apoiadores reais antes de publicar de vez ═══ */}
+      <TitularesDaBaseSection />
+      <EscolasParceirasSection />
+
+      {/* ═══ Comunidade WhatsApp ═══ */}
+      <section className="bg-gradient-to-br from-emerald-800 to-emerald-900 py-16">
+        <div className="container max-w-4xl mx-auto px-4">
+          <div className="bg-[#0a0f18]/40 border border-emerald-500/20 rounded-2xl p-8 sm:p-10 flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+            <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+              <MessageCircle className="w-8 h-8 text-white" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl sm:text-2xl font-bold text-white">
+                Entre para a comunidade Carreira ID no WhatsApp
+              </h2>
+              <p className="mt-2 text-emerald-100/80">
+                Dicas, novidades e troca com outros pais e mães de atletas de base — direto no seu WhatsApp.
+              </p>
+            </div>
+            <a
+              href="https://chat.whatsapp.com/HowU46FP9KfE5da6g9PORV"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-3 rounded-full transition-colors whitespace-nowrap"
+            >
+              Entrar na comunidade
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* ═══ FAQ ═══ */}
       <section id="faq" className="bg-[#0a0f18] py-20">
         <div className="container max-w-3xl mx-auto px-4">
@@ -989,10 +978,6 @@ export function CarreiraLandingV2() {
                 a: 'São faixas de progressão, como Cria, Promessa e Craque, baseadas nos seus pontos. Você sobe de nível conforme participa.',
               },
               {
-                q: 'O que é a integração com o Atleta ID?',
-                a: 'O Atleta ID é a plataforma de gestão para escolinhas esportivas. Se o atleta está matriculado em uma escolinha que usa o Atleta ID, dados como frequência, participações em campeonatos e premiações podem ser importados automaticamente para o Carreira ID.',
-              },
-              {
                 q: 'Meus dados ficam seguros?',
                 a: 'Sim. Informações sensíveis nunca são exibidas publicamente. Você tem controle total sobre o que aparece no seu perfil. Utilizamos criptografia e práticas modernas de segurança para proteger seus dados.',
               },
@@ -1019,38 +1004,6 @@ export function CarreiraLandingV2() {
               </AccordionItem>
             ))}
           </Accordion>
-        </div>
-      </section>
-
-      {/* ═══ Titulares da Base — TESTE: fotos e nomes abaixo são só placeholder,
-          precisam ser trocados por apoiadores reais antes de publicar de vez ═══ */}
-      <TitularesDaBaseSection />
-      <EscolasParceirasSection />
-
-      {/* ═══ Comunidade WhatsApp ═══ */}
-      <section className="bg-gradient-to-br from-emerald-800 to-emerald-900 py-16">
-        <div className="container max-w-4xl mx-auto px-4">
-          <div className="bg-[#0a0f18]/40 border border-emerald-500/20 rounded-2xl p-8 sm:p-10 flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
-            <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-              <MessageCircle className="w-8 h-8 text-white" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-xl sm:text-2xl font-bold text-white">
-                Entre para a comunidade Carreira ID no WhatsApp
-              </h2>
-              <p className="mt-2 text-emerald-100/80">
-                Dicas, novidades e troca com outros pais e mães de atletas de base — direto no seu WhatsApp.
-              </p>
-            </div>
-            <a
-              href="https://chat.whatsapp.com/HowU46FP9KfE5da6g9PORV"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shrink-0 inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-3 rounded-full transition-colors whitespace-nowrap"
-            >
-              Entrar na comunidade
-            </a>
-          </div>
         </div>
       </section>
 
