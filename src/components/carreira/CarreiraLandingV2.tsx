@@ -275,15 +275,15 @@ interface EscolaParceira {
 
 function EscolaParceiraCard({ escola }: { escola: EscolaParceira }) {
   const nomeEscola = escola.dados_perfil?.nome_escola || escola.nome;
-  // O logo preenche o quadrado: cada escola tem o próprio fundo (preto, amarelo, branco), então não forçamos cor única.
+  // Quadrado preto em volta: cada escola tem o próprio fundo no arquivo do logo (preto, amarelo, branco).
   const conteudo = (
     <div className="group w-36 shrink-0 text-center">
-      <div className="w-36 h-36 rounded-2xl bg-[#141a24] border border-[#2a3a4e] flex items-center justify-center overflow-hidden transition-colors group-hover:border-emerald-500/40">
+      <div className="w-36 h-36 rounded-2xl bg-black border border-[#2a3a4e] flex items-center justify-center overflow-hidden transition-colors group-hover:border-emerald-500/40">
         {escola.foto_url ? (
           <img
             src={escola.foto_url}
             alt={nomeEscola}
-            className="w-full h-full object-cover opacity-90 transition duration-300 group-hover:opacity-100 group-hover:scale-105"
+            className="w-full h-full object-contain p-3 rounded-3xl opacity-90 transition duration-300 group-hover:opacity-100 group-hover:scale-105"
             loading="lazy"
           />
         ) : (
@@ -757,6 +757,72 @@ export function CarreiraLandingV2() {
         </div>
       </section>
 
+      {/* ═══ Segurança ═══ */}
+      <section className="bg-[#0d1420] py-20">
+        <div className="container max-w-6xl mx-auto px-4 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+            <ShieldCheck className="w-8 h-8 text-emerald-400" />
+          </div>
+          <SectionBadge>Segurança</SectionBadge>
+          <h2 className="mt-6 text-3xl sm:text-4xl md:text-5xl font-extrabold">
+            Visibilidade com{' '}
+            <span className="text-orange-400">responsabilidade</span>.
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-14 max-w-4xl mx-auto">
+            {[
+              { icon: Lock, title: 'Controle Parental', desc: 'Perfis de menores são controlados pelos responsáveis.' },
+              { icon: EyeOff, title: 'Dados Protegidos', desc: 'Informações sensíveis não são públicas automaticamente.' },
+              { icon: Settings, title: 'Você Decide', desc: 'Você decide o que aparece e quem pode ver.' },
+            ].map((item) => (
+              <div key={item.title} className="bg-[#1a2332] border border-[#2a3a4e] rounded-2xl p-6 text-left">
+                <div className="w-12 h-12 rounded-xl bg-emerald-700/30 flex items-center justify-center mb-4">
+                  <item.icon className="w-6 h-6 text-emerald-400" />
+                </div>
+                <h3 className="text-white font-bold mb-2">{item.title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ CTA Final ═══ */}
+      <section className="relative py-24 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0d1420] via-emerald-900/30 to-[#0d1420]" />
+        <div className="container max-w-4xl mx-auto px-4 text-center relative">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight">
+            O talento brasileiro não pode depender apenas da{' '}
+            <span className="text-emerald-400">sorte</span> para ser visto.
+          </h2>
+          <p className="mt-6 text-gray-300 text-xl font-semibold">
+            Registre. Organize. <span className="text-emerald-400">Valorize.</span>
+          </p>
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              to={cadastroAtletaLink}
+              className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-10 py-4 rounded-xl text-lg transition shadow-lg shadow-orange-500/20"
+            >
+              Cadastrar Meu Atleta <ArrowRight className="w-5 h-5" />
+            </Link>
+            <Link
+              to={cadastroLink}
+              className="inline-flex items-center justify-center gap-2 border border-orange-500/40 text-orange-400 hover:bg-orange-500/10 font-bold px-10 py-4 rounded-xl text-lg transition"
+            >
+              Criar Perfil Profissional
+            </Link>
+          </div>
+          <p className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500">
+            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            Gratuito para sempre. Sem cartão de crédito.
+          </p>
+        </div>
+      </section>
+
+      {/* ═══ Titulares da Base — TESTE: fotos e nomes abaixo são só placeholder,
+          precisam ser trocados por apoiadores reais antes de publicar de vez ═══ */}
+      <TitularesDaBaseSection />
+      <EscolasParceirasSection />
+
       {/* ═══ Planos ═══ */}
       <section id="planos" className="bg-[#0a0f18] py-20">
         <div className="container max-w-5xl mx-auto px-4 text-center">
@@ -870,72 +936,6 @@ export function CarreiraLandingV2() {
           </p>
         </div>
       </section>
-
-      {/* ═══ Segurança ═══ */}
-      <section className="bg-[#0d1420] py-20">
-        <div className="container max-w-6xl mx-auto px-4 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
-            <ShieldCheck className="w-8 h-8 text-emerald-400" />
-          </div>
-          <SectionBadge>Segurança</SectionBadge>
-          <h2 className="mt-6 text-3xl sm:text-4xl md:text-5xl font-extrabold">
-            Visibilidade com{' '}
-            <span className="text-orange-400">responsabilidade</span>.
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-14 max-w-4xl mx-auto">
-            {[
-              { icon: Lock, title: 'Controle Parental', desc: 'Perfis de menores são controlados pelos responsáveis.' },
-              { icon: EyeOff, title: 'Dados Protegidos', desc: 'Informações sensíveis não são públicas automaticamente.' },
-              { icon: Settings, title: 'Você Decide', desc: 'Você decide o que aparece e quem pode ver.' },
-            ].map((item) => (
-              <div key={item.title} className="bg-[#1a2332] border border-[#2a3a4e] rounded-2xl p-6 text-left">
-                <div className="w-12 h-12 rounded-xl bg-emerald-700/30 flex items-center justify-center mb-4">
-                  <item.icon className="w-6 h-6 text-emerald-400" />
-                </div>
-                <h3 className="text-white font-bold mb-2">{item.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ CTA Final ═══ */}
-      <section className="relative py-24 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0d1420] via-emerald-900/30 to-[#0d1420]" />
-        <div className="container max-w-4xl mx-auto px-4 text-center relative">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight">
-            O talento brasileiro não pode depender apenas da{' '}
-            <span className="text-emerald-400">sorte</span> para ser visto.
-          </h2>
-          <p className="mt-6 text-gray-300 text-xl font-semibold">
-            Registre. Organize. <span className="text-emerald-400">Valorize.</span>
-          </p>
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              to={cadastroAtletaLink}
-              className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-10 py-4 rounded-xl text-lg transition shadow-lg shadow-orange-500/20"
-            >
-              Cadastrar Meu Atleta <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link
-              to={cadastroLink}
-              className="inline-flex items-center justify-center gap-2 border border-orange-500/40 text-orange-400 hover:bg-orange-500/10 font-bold px-10 py-4 rounded-xl text-lg transition"
-            >
-              Criar Perfil Profissional
-            </Link>
-          </div>
-          <p className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500">
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-            Gratuito para sempre. Sem cartão de crédito.
-          </p>
-        </div>
-      </section>
-
-      {/* ═══ Titulares da Base — TESTE: fotos e nomes abaixo são só placeholder,
-          precisam ser trocados por apoiadores reais antes de publicar de vez ═══ */}
-      <TitularesDaBaseSection />
-      <EscolasParceirasSection />
 
       {/* ═══ Comunidade WhatsApp ═══ */}
       <section className="bg-gradient-to-br from-emerald-800 to-emerald-900 py-16">
