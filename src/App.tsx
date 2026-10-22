@@ -6,7 +6,8 @@ import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { capturarOrigemVisita, registrarOrigemCadastro } from "@/lib/origem-cadastro";
 import { PushContextPrompter } from "@/components/carreira/PushContextPrompter";
 import { PWAUpdatePrompt } from "@/components/shared/PWAUpdatePrompt";
 import { OfflineBanner } from "@/components/shared/OfflineBanner";
@@ -98,6 +99,18 @@ const GaPageviewTracker = () => {
   return null;
 };
 
+/** Guarda de onde a pessoa chegou e, quando a conta é nova, registra a origem do cadastro (uma vez). */
+const OrigemCadastroTracker = () => {
+  const { session } = useAuth();
+  useEffect(() => {
+    capturarOrigemVisita();
+  }, []);
+  useEffect(() => {
+    if (session?.user) registrarOrigemCadastro(session.user.id, session.user.created_at);
+  }, [session?.user?.id]);
+  return null;
+};
+
 const App = () => {
   useTrackDicaClick();
 
@@ -157,6 +170,7 @@ const App = () => {
         <OfflineBanner />
         <BrowserRouter>
           <GaPageviewTracker />
+          <OrigemCadastroTracker />
           <CarreiraErrorBoundary>
           <AnonymousGateProvider enabled={true}>
             <Suspense fallback={
