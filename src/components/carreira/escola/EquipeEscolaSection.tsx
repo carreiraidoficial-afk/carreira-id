@@ -63,7 +63,7 @@ export function EquipeEscolaSection({ escolaPerfilId, accentColor, podeGerenciar
     setDialogAberto(true);
   };
 
-  const linkProfessores = escolaSlug ? `${window.location.origin}${carreiraPath('/cadastro')}?ref=equipe&escola=${escolaSlug}` : null;
+  const linkProfessores = escolaSlug ? `${window.location.origin}${carreiraPath(`/convite/${escolaSlug}/professor`)}` : null;
   const mensagemProfessores = `Olá! A ${nomeEscola} está no Carreira ID. Crie seu perfil de professor(a) por este link para entrar na nossa equipe técnica: ${linkProfessores}`;
 
   const copiarLinkProfessores = async () => {

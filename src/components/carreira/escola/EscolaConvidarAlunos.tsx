@@ -10,13 +10,15 @@ import { lerCodigoConvitePerfil } from '@/lib/contato-perfil';
 interface Props {
   perfilId: string;
   nomeEscola: string;
+  /** Slug público da escola: gera o link curto /convite/nome-da-escola. */
+  escolaSlug?: string | null;
   conviteCodigo: string | null;
   accentColor: string;
 }
 
 /** Só pro dono da escola: link de convite pra mandar no grupo de pais. Quem entra por ele fica aguardando a
  * confirmação do dono antes de aparecer em "Nossos atletas". Gera o código na primeira vez, se a escola ainda não tem. */
-export function EscolaConvidarAlunos({ perfilId, nomeEscola, conviteCodigo, accentColor }: Props) {
+export function EscolaConvidarAlunos({ perfilId, nomeEscola, escolaSlug, conviteCodigo, accentColor }: Props) {
   const [codigo, setCodigo] = useState<string | null>(conviteCodigo);
   const [copiado, setCopiado] = useState(false);
 
@@ -27,9 +29,12 @@ export function EscolaConvidarAlunos({ perfilId, nomeEscola, conviteCodigo, acce
     return () => { ativo = false; };
   }, [perfilId]);
 
-  if (!codigo) return null;
+  if (!codigo && !escolaSlug) return null;
 
-  const link = `${window.location.origin}${carreiraPath('/cadastro')}?ref=atleta&convite=${codigo}`;
+  // Link curto com o nome da escola; sem slug, cai no link longo com o código (que continua valendo).
+  const link = escolaSlug
+    ? `${window.location.origin}${carreiraPath(`/convite/${escolaSlug}`)}`
+    : `${window.location.origin}${carreiraPath('/cadastro')}?ref=atleta&convite=${codigo}`;
   const mensagem = `Olá! A ${nomeEscola} agora está no Carreira ID. Crie o perfil do seu atleta por este link e acompanhe a trajetória esportiva dele: ${link}`;
 
   const copiar = async () => {

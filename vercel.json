@@ -45,6 +45,20 @@
       ],
       "destination": "https://fppsotlycinwqsjpoybg.supabase.co/functions/v1/og-profile?slug=:slug"
     },
+    {
+      "source": "/convite/:escola",
+      "has": [
+        { "type": "header", "key": "user-agent", "value": ".*(facebookexternalhit|facebot|whatsapp|twitterbot|linkedinbot|slackbot|telegrambot|discordbot|pinterest|embedly|skypeuripreview|redditbot|tumblr|vkshare|quora|outbrain|opengraph).*" }
+      ],
+      "destination": "https://fppsotlycinwqsjpoybg.supabase.co/functions/v1/og-profile?slug=cadastro&ref=atleta&escola=:escola"
+    },
+    {
+      "source": "/convite/:escola/professor",
+      "has": [
+        { "type": "header", "key": "user-agent", "value": ".*(facebookexternalhit|facebot|whatsapp|twitterbot|linkedinbot|slackbot|telegrambot|discordbot|pinterest|embedly|skypeuripreview|redditbot|tumblr|vkshare|quora|outbrain|opengraph).*" }
+      ],
+      "destination": "https://fppsotlycinwqsjpoybg.supabase.co/functions/v1/og-profile?slug=cadastro&ref=equipe&escola=:escola"
+    },
     { "source": "/termos-de-uso", "destination": "/termos-de-uso.html" },
     { "source": "/politica-de-privacidade", "destination": "/politica-de-privacidade.html" },
     { "source": "/(.*)", "destination": "/index.html" }

@@ -114,6 +114,14 @@ serve(async (req) => {
       if (convidante.tipo === "dono_escola") {
         const dados = (convidante.dados_perfil || {}) as Record<string, unknown>;
         const cartao = typeof dados.og_image_url === "string" ? dados.og_image_url : null;
+        if (ref === "equipe") {
+          return resposta(
+            `${convidante.nome} convida você para a equipe`,
+            `Crie seu perfil de professor(a) no Carreira ID para entrar na equipe técnica da ${convidante.nome}. Toque para se cadastrar.`,
+            cartao || convidante.banner_url || convidante.foto_url || GENERIC_IMAGE,
+            !!cartao,
+          );
+        }
         return resposta(
           `${convidante.nome} convida você para o Carreira ID`,
           `A ${convidante.nome} está no Carreira ID. Crie o perfil do atleta e registre a jornada esportiva: jogos, campeonatos e conquistas. Toque para se cadastrar.`,

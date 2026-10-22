@@ -41,6 +41,9 @@ function canalDoReferrer(host: string | null): string {
 
 function tipoDoLink(p: URLSearchParams): TipoLinkOrigem {
   const ref = p.get('ref');
+  // Link curto da escola: /convite/nome-da-escola (alunos) e /convite/nome-da-escola/professor.
+  const curto = window.location.pathname.replace(/^\/(en|es)(?=\/|$)/, '').match(/^\/convite\/([^/]+)(\/professor)?\/?$/);
+  if (curto) return curto[2] ? 'equipe' : 'escola';
   if (p.get('escola')) return 'escola';
   if (ref === 'equipe') return 'equipe';
   if (ref === 'rede') return 'rede';
@@ -48,6 +51,11 @@ function tipoDoLink(p: URLSearchParams): TipoLinkOrigem {
   if (ref === 'atleta' && p.get('a')) return 'colega';
   if (p.get('convite') || p.get('c')) return 'convite';
   return 'direto';
+}
+
+function escolaDoLinkCurto(): string | null {
+  const m = window.location.pathname.replace(/^\/(en|es)(?=\/|$)/, '').match(/^\/convite\/([^/]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
 }
 
 function lerOrigemSalva(): OrigemVisita | null {
@@ -81,7 +89,7 @@ export function capturarOrigemVisita() {
       tipo_link: tipo,
       canal: limitar((utm || canalDoReferrer(host)).toLowerCase(), 40) || 'direto',
       convidante_slug: limitar(p.get('a'), 120),
-      escola_slug: limitar(p.get('escola'), 120),
+      escola_slug: limitar(p.get('escola') || escolaDoLinkCurto(), 120),
       utm_source: limitar(utm, 80),
       utm_medium: limitar(p.get('utm_medium'), 80),
       utm_campaign: limitar(p.get('utm_campaign'), 120),

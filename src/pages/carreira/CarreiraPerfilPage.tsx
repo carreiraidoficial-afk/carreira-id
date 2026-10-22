@@ -1335,6 +1335,7 @@ export default function CarreiraPerfilPage() {
               <EscolaConvidarAlunos
                 perfilId={perfil.id}
                 nomeEscola={displayProfileName}
+                escolaSlug={perfil.slug}
                 conviteCodigo={null}
                 accentColor={accentColor}
               />
