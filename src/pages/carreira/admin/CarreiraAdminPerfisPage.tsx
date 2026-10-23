@@ -61,6 +61,10 @@ const ORIGENS_FILTRO = [
   { valor: 'convite', rotulo: 'Outro convite' },
   { valor: 'nao_registrado', rotulo: 'Não registrado' },
 ];
+/** Como o responsável configurou quem pode ver o perfil do atleta (para o suporte conferir). */
+const visibilidadeDoAtleta = (p: any): 'publico' | 'conta' | 'conexoes' => (p.is_public ? 'publico' : p.restrito_conexoes ? 'conexoes' : 'conta');
+const ROTULOS_VISIBILIDADE: Record<string, string> = { publico: 'Público', conta: 'Só quem tem conta', conexoes: 'Só conexões' };
+const bateVisibilidade = (p: any, filtro: string) => !filtro || visibilidadeDoAtleta(p) === filtro;
 const bateOrigem = (p: any, filtro: string) => !filtro || (filtro === 'nao_registrado' ? !p.origem : p.origem?.tipo_link === filtro);
 
 /** Origem do cadastro por conta. Se a tabela ainda não existir ou falhar, a lista segue sem a coluna preenchida. */
@@ -699,6 +703,7 @@ function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atlet
               <TableHead>UF</TableHead>
               <TableHead>País</TableHead>
               <TableHead>Origem Auth</TableHead>
+              {type === 'atleta' && <TableHead>Quem vê o perfil</TableHead>}
               <TableHead>Veio de</TableHead>
               <TableHead>Criado em</TableHead>
               <TableHead>Status</TableHead>
@@ -759,6 +764,17 @@ function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atlet
                     {p.provider === 'google' ? '🔵 Google' : '📧 Email'}
                   </Badge>
                 </TableCell>
+                {type === 'atleta' && (
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={`text-xs whitespace-nowrap ${visibilidadeDoAtleta(p) === 'publico' ? 'border-emerald-500/40 text-emerald-600' : visibilidadeDoAtleta(p) === 'conexoes' ? 'border-purple-500/40 text-purple-600' : 'border-amber-500/40 text-amber-600'}`}
+                      title={`Última alteração do perfil: ${p.updated_at ? format(new Date(p.updated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : '—'}`}
+                    >
+                      {ROTULOS_VISIBILIDADE[visibilidadeDoAtleta(p)]}
+                    </Badge>
+                  </TableCell>
+                )}
                 <TableCell className="text-xs" title={p.origem ? [p.origem.utm_source && `utm_source: ${p.origem.utm_source}`, p.origem.utm_medium && `utm_medium: ${p.origem.utm_medium}`, p.origem.utm_campaign && `campanha: ${p.origem.utm_campaign}`, p.origem.referrer_host && `site de origem: ${p.origem.referrer_host}`].filter(Boolean).join(' | ') || undefined : 'Cadastro anterior ao registro de origem'}>
                   <p className={p.origem ? 'font-medium' : 'text-muted-foreground'}>{rotuloOrigem(p.origem)}</p>
                   {p.origem && (
@@ -823,7 +839,7 @@ function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atlet
                 </TableCell>
               </TableRow>
               {type === 'atleta' && expandidos.has(p.id) && (
-                <LinhaCompletudeExpandida completude={completudePorPerfil?.[p.id]} colSpan={13} />
+                <LinhaCompletudeExpandida completude={completudePorPerfil?.[p.id]} colSpan={14} />
               )}
               </Fragment>
             ))}
@@ -855,15 +871,16 @@ function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atlet
   );
 }
 
-function AtletaFiltrosBar({ search, setSearch, estado, setEstado, posicao, setPosicao, esporte, setEsporte, contagemEsporte, origem, setOrigem }: {
+function AtletaFiltrosBar({ search, setSearch, estado, setEstado, posicao, setPosicao, esporte, setEsporte, contagemEsporte, origem, setOrigem, visib, setVisib }: {
   search: string; setSearch: (v: string) => void;
   estado: string; setEstado: (v: string) => void;
   posicao: string; setPosicao: (v: string) => void;
   esporte: string; setEsporte: (v: string) => void;
   contagemEsporte: Record<string, number>;
   origem: string; setOrigem: (v: string) => void;
+  visib: string; setVisib: (v: string) => void;
 }) {
-  const temFiltro = !!estado || !!posicao || !!esporte || !!origem;
+  const temFiltro = !!estado || !!posicao || !!esporte || !!origem || !!visib;
   return (
     <div className="flex flex-col sm:flex-row gap-2">
       <div className="relative flex-1">
@@ -875,6 +892,13 @@ function AtletaFiltrosBar({ search, setSearch, estado, setEstado, posicao, setPo
         <SelectContent>
           <SelectItem value="all">Todos os esportes</SelectItem>
           {ESPORTES_FILTRO.map(e => <SelectItem key={e} value={e}>{e} ({contagemEsporte[e] ?? 0})</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Select value={visib || 'all'} onValueChange={v => setVisib(v === 'all' ? '' : v)}>
+        <SelectTrigger className="w-full sm:w-48"><SelectValue placeholder="Quem vê" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Toda visibilidade</SelectItem>
+          {Object.entries(ROTULOS_VISIBILIDADE).map(([valor, rotulo]) => <SelectItem key={valor} value={valor}>{rotulo}</SelectItem>)}
         </SelectContent>
       </Select>
       <Select value={origem || 'all'} onValueChange={v => setOrigem(v === 'all' ? '' : v)}>
@@ -899,7 +923,7 @@ function AtletaFiltrosBar({ search, setSearch, estado, setEstado, posicao, setPo
         </SelectContent>
       </Select>
       {temFiltro && (
-        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => { setEstado(''); setPosicao(''); setEsporte(''); setOrigem(''); }} title="Limpar filtros">
+        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => { setEstado(''); setPosicao(''); setEsporte(''); setOrigem(''); setVisib(''); }} title="Limpar filtros">
           <X className="w-4 h-4" />
         </Button>
       )}
@@ -916,6 +940,8 @@ export default function CarreiraAdminPerfisPage() {
   const [esporteTeste, setEsporteTeste] = useState('');
   const [origemAtleta, setOrigemAtleta] = useState('');
   const [origemTeste, setOrigemTeste] = useState('');
+  const [visibAtleta, setVisibAtleta] = useState('');
+  const [visibTeste, setVisibTeste] = useState('');
   const [searchTeste, setSearchTeste] = useState('');
   const [estadoTeste, setEstadoTeste] = useState('');
   const [posicaoTeste, setPosicaoTeste] = useState('');
@@ -933,8 +959,8 @@ export default function CarreiraAdminPerfisPage() {
   }, {});
   const contagemAtleta = useMemo(() => contarEsportes(perfisAtletaTodos), [perfisAtletaTodos]);
   const contagemTeste = useMemo(() => contarEsportes(perfisTesteTodos), [perfisTesteTodos]);
-  const perfisAtleta = perfisAtletaTodos?.filter((p: any) => (!esporteAtleta || esporteDaModalidade(p.modalidade) === esporteAtleta) && bateOrigem(p, origemAtleta));
-  const perfisTeste = perfisTesteTodos?.filter((p: any) => (!esporteTeste || esporteDaModalidade(p.modalidade) === esporteTeste) && bateOrigem(p, origemTeste));
+  const perfisAtleta = perfisAtletaTodos?.filter((p: any) => (!esporteAtleta || esporteDaModalidade(p.modalidade) === esporteAtleta) && bateOrigem(p, origemAtleta) && bateVisibilidade(p, visibAtleta));
+  const perfisTeste = perfisTesteTodos?.filter((p: any) => (!esporteTeste || esporteDaModalidade(p.modalidade) === esporteTeste) && bateOrigem(p, origemTeste) && bateVisibilidade(p, visibTeste));
   const { data: perfisRede, isLoading: loadingRede } = useAdminPerfisRede(searchRede);
   const { data: cadastrosIncompletos, isLoading: loadingIncompletos } = useAdminCadastrosIncompletos(searchIncompletos);
   const { data: colaboradores, isLoading: loadingColaboradores } = useAdminColaboradores(searchColaboradores);
@@ -963,6 +989,7 @@ export default function CarreiraAdminPerfisPage() {
               posicao={posicaoAtleta} setPosicao={setPosicaoAtleta}
               esporte={esporteAtleta} setEsporte={setEsporteAtleta} contagemEsporte={contagemAtleta}
               origem={origemAtleta} setOrigem={setOrigemAtleta}
+              visib={visibAtleta} setVisib={setVisibAtleta}
             />
             {loadingAtleta ? <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
               : !perfisAtleta?.length ? <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum perfil encontrado</CardContent></Card>
@@ -987,6 +1014,7 @@ export default function CarreiraAdminPerfisPage() {
               posicao={posicaoTeste} setPosicao={setPosicaoTeste}
               esporte={esporteTeste} setEsporte={setEsporteTeste} contagemEsporte={contagemTeste}
               origem={origemTeste} setOrigem={setOrigemTeste}
+              visib={visibTeste} setVisib={setVisibTeste}
             />
             {loadingTeste ? <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
               : !perfisTeste?.length ? <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum perfil de teste</CardContent></Card>
