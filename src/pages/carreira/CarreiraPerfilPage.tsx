@@ -40,7 +40,7 @@ import { SalaTrofeusEscolaFormDialog } from '@/components/carreira/SalaTrofeusEs
 import { useCreateTrofeuEscola, useUpdateTrofeuEscola, useDeleteTrofeuEscola, type TrofeuEscola, type TrofeuEscolaInput } from '@/hooks/useSalaTrofeusEscola';
 import { EditPerfilDialog } from '@/components/carreira/EditPerfilDialog';
 import { EditConfiguracoesDialog } from '@/components/carreira/EditConfiguracoesDialog';
-import { PerfilRestritoCard } from '@/components/carreira/PerfilRestritoCard';
+import { PerfilRestritoCard, PerfilSoComContaCard } from '@/components/carreira/PerfilRestritoCard';
 import { ConvidarColaboradorBanner } from '@/components/carreira/ConvidarColaboradorBanner';
 // EditContaDialog removed — unified into EditPerfilRedeDialog
 import { ConectarButton } from '@/components/carreira/ConectarButton';
@@ -233,6 +233,12 @@ function useProfileBySlug(slug: string) {
       const { data: atletaData, error: atletaError } = await (currentUid ? atletaQuery : atletaQuery.eq('is_public', true)).maybeSingle();
       if (atletaError && atletaError.code !== 'PGRST116') throw atletaError;
       if (atletaData) return { type: 'atleta' as const, ...atletaData } as UnifiedProfile;
+
+      // Visitante sem conta diante de um perfil que não é público: explica que precisa entrar, em vez de "não encontrado".
+      if (!currentUid) {
+        const { data: nivel } = await (supabase as any).rpc('perfil_atleta_visibilidade_publica', { p_slug: slug });
+        if (nivel === 'conta' || nivel === 'conexoes') return { type: 'so_com_conta' as const, slug, nivel } as unknown as UnifiedProfile;
+      }
 
       // Perfil restrito às conexões aprovadas: quem não é conexão não recebe nenhum dado, só a informação de que é restrito.
       if (currentUid) {
@@ -589,6 +595,10 @@ export default function CarreiraPerfilPage() {
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  if ((perfil as any)?.type === 'so_com_conta') {
+    return <PerfilSoComContaCard slug={(perfil as any).slug} nivel={(perfil as any).nivel} carreiraTheme={carreiraTheme} />;
   }
 
   if ((perfil as any)?.type === 'restrito') {

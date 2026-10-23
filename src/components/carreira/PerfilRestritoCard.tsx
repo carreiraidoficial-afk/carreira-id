@@ -60,3 +60,32 @@ export function PerfilRestritoCard({ slug, carreiraTheme }: { slug: string; carr
     </div>
   );
 }
+
+/** Visitante sem conta diante de um perfil que não é público. Não mostra nenhum dado do perfil. */
+export function PerfilSoComContaCard({ slug, nivel, carreiraTheme }: { slug: string; nivel: 'conta' | 'conexoes'; carreiraTheme?: string }) {
+  const irParaEntrar = `/auth?next=${encodeURIComponent(`/${slug}`)}`;
+  return (
+    <div className="min-h-screen bg-background" data-theme={carreiraTheme}>
+      <div className="container py-20 text-center max-w-md">
+        <Lock className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+        <h1 className="text-2xl font-bold mb-2">Este perfil não é público</h1>
+        <p className="text-muted-foreground mb-6">
+          {nivel === 'conexoes'
+            ? 'O responsável permite que apenas as conexões aprovadas vejam este perfil. Entre ou crie sua conta no Carreira ID para pedir conexão.'
+            : 'O responsável escolheu que só quem tem conta no Carreira ID pode ver este perfil. Entre ou crie sua conta gratuita para acessar.'}
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2 justify-center">
+          <Button asChild>
+            <Link to={irParaEntrar}>Entrar ou criar conta</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar ao início
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

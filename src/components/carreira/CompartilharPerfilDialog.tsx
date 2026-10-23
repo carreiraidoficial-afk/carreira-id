@@ -34,6 +34,8 @@ interface Props {
   profissional?: boolean;
   /** Função mostrada na mensagem ("Professor de Vôlei de Areia"). */
   funcao?: string;
+  /** false = o perfil só abre para quem tem conta (ou só conexões): avisa antes de compartilhar o link. */
+  perfilPublico?: boolean;
 }
 
 type TabKey = 'torcedor' | 'atleta' | 'rede';
@@ -47,6 +49,7 @@ export function CompartilharPerfilDialog({
   accentColor,
   profissional = false,
   funcao,
+  perfilPublico = true,
 }: Props) {
   // Profissional: "rede" = convidar colegas; "atleta" = convidar atletas/alunos e famílias.
   const [tab, setTab] = useState<TabKey>(profissional ? 'rede' : 'torcedor');
@@ -134,6 +137,11 @@ export function CompartilharPerfilDialog({
               <DialogTitle>Compartilhar perfil</DialogTitle>
               <DialogDescription>Escolha quem você quer convidar e a mensagem.</DialogDescription>
             </DialogHeader>
+            {!perfilPublico && (
+              <p className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-300">
+                Este perfil não é público: quem receber o link precisa entrar ou criar uma conta no Carreira ID para ver. Para qualquer pessoa abrir sem conta, deixe o perfil público em Configurações, Privacidade.
+              </p>
+            )}
             <TabsList className={`grid w-full ${profissional ? 'grid-cols-2' : 'grid-cols-3'}`}>
             {!profissional && (
               <TabsTrigger value="torcedor" className="text-xs gap-1">

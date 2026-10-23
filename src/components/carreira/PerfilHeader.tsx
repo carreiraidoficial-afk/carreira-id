@@ -406,6 +406,7 @@ export function PerfilHeader({ perfil, isOwner = false, podeEditarPerfil = false
         atletaNome={perfil.nome}
         atletaSlug={perfil.slug}
         accentColor={perfil.cor_destaque || undefined}
+        perfilPublico={(perfil as any).is_public !== false}
       />
     </>
   );
