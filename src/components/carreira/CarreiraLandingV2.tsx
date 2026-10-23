@@ -44,6 +44,7 @@ import {
   Trophy,
   MessageCircle,
   HelpCircle,
+  Globe,
 } from 'lucide-react';
 
 /* ─── Section badge ─── */
@@ -490,6 +491,27 @@ export function CarreiraLandingV2() {
             />
           </div>
         </div>
+        </div>
+      </section>
+
+      {/* ═══ Brasileiros no exterior ═══ */}
+      <section className="bg-gradient-to-r from-emerald-900/50 via-[#0d1420] to-[#0d1420] border-y border-emerald-500/20 py-10">
+        <div className="container max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
+            <Globe className="w-7 h-7 text-emerald-400" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-2xl sm:text-3xl font-extrabold">Seu esporte não tem fronteiras.</h2>
+            <p className="mt-2 text-gray-300 leading-relaxed max-w-3xl">
+              Você é brasileiro e joga no exterior? O Carreira ID também é para você! Cadastre-se normalmente e registre sua trajetória esportiva, suas conquistas e experiências, esteja você no Brasil ou em qualquer outro país.
+            </p>
+          </div>
+          <Link
+            to={cadastroAtletaLink}
+            className="shrink-0 inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-3 rounded-xl transition"
+          >
+            Cadastrar meu atleta <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
       </section>
 
@@ -982,6 +1004,10 @@ export function CarreiraLandingV2() {
               {
                 q: 'Quem pode criar um perfil?',
                 a: 'Qualquer pessoa ligada ao esporte: atletas, pais/responsáveis, profissionais de educação física e escolinhas esportivas. Perfis de menores de idade são controlados exclusivamente pelos responsáveis.',
+              },
+              {
+                q: 'Moro fora do Brasil. Posso me cadastrar no Carreira ID?',
+                a: 'Sim! Atletas brasileiros que moram ou jogam no exterior podem se cadastrar normalmente, como qualquer outro atleta, e construir seu histórico esportivo na plataforma. Basta informar o país onde você está. O plano Base é gratuito em qualquer lugar; o pagamento do plano Elite, por enquanto, funciona só com meios de pagamento do Brasil.',
               },
               {
                 q: 'Como funciona para atletas menores de idade?',
