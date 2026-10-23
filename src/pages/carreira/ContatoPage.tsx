@@ -1,3 +1,4 @@
+import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 import { ArrowLeft, Mail, MessageCircle, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
@@ -26,7 +27,7 @@ export default function ContatoPage() {
         <div className="container flex items-center h-14 px-4">
           <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
-            <img src={logo} alt={brand} className="h-10" />
+            {isCarreira ? <CarreiraLogo className="h-10" /> : <img src={logo} alt={brand} className="h-10" />}
           </button>
         </div>
       </header>

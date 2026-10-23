@@ -1,3 +1,4 @@
+import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,7 +10,6 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { SUPPORT_WHATSAPP_URL } from '@/lib/form-validators';
 import { z } from 'zod';
-import logoCarreiraId from '@/assets/logo-carreira-id-dark.png';
 import PwaInstallButton from '@/components/shared/PwaInstallButton';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -161,7 +161,7 @@ const Auth = () => {
       <div className="w-full max-w-md relative animate-fade-in">
         {/* Logo/Brand */}
         <div className="text-center mb-8">
-          <img src={logoCarreiraId} alt="Carreira ID" className="h-32 w-auto mx-auto mb-4" />
+          <CarreiraLogo className="h-14 mx-auto mb-4" />
           <p className="text-gray-400">Carreira Esportiva</p>
         </div>
 

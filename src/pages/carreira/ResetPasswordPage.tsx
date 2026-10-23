@@ -1,3 +1,4 @@
+import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, Lock, CheckCircle, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import logoCarreiraId from '@/assets/logo-carreira-id-dark.png';
 
 import { pedirLinkRecuperacao, traduzirErroNovaSenha, ESPERA_RECUPERACAO_S } from '@/lib/recuperar-senha';
 export default function ResetPasswordPage() {
@@ -156,7 +156,7 @@ export default function ResetPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center space-y-4">
-            <img src={logoCarreiraId} alt="Carreira ID" className="h-20 mx-auto" />
+            <CarreiraLogo className="h-12 mx-auto" />
             <h2 className="text-lg font-semibold">Criar nova senha</h2>
             <p className="text-sm text-muted-foreground">Toque em continuar para definir a nova senha da sua conta.</p>
             <Button className="w-full" size="lg" onClick={continuarComToken} disabled={verificando}>
@@ -175,7 +175,7 @@ export default function ResetPasswordPage() {
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 space-y-4">
             <div className="text-center">
-              <img src={logoCarreiraId} alt="Carreira ID" className="h-20 mx-auto mb-4" />
+              <CarreiraLogo className="h-12 mx-auto mb-4" />
               <h2 className="text-lg font-semibold">Não conseguimos abrir este link</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 {erroVerificacao
@@ -225,7 +225,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img src={logoCarreiraId} alt="Carreira ID" className="h-20 mx-auto mb-4" />
+          <CarreiraLogo className="h-12 mx-auto mb-4" />
         </div>
 
         <Card>

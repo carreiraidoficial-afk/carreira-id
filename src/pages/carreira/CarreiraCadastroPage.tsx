@@ -1,3 +1,4 @@
+import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 import { SuporteWhatsappLink } from '@/components/carreira/SuporteWhatsappLink';
 import { AjudaWhatsappCard } from '@/components/carreira/AjudaWhatsappCard';
 import { useState, useEffect, useRef } from 'react';
@@ -713,7 +714,7 @@ export default function CarreiraCadastroPage() {
         <div className="container flex items-center justify-between h-16 px-4">
           <button onClick={() => navigate(carreiraPath('/'))} className="flex items-center gap-2 transition-colors" style={{ color: 'hsl(0 0% 60%)' }}>
             <ArrowLeft className="w-4 h-4" />
-            <img src={currentLogo} alt={brandName} className="h-9" />
+            {isCarreira ? <CarreiraLogo className="h-10" /> : <img src={currentLogo} alt={brandName} className="h-9" />}
           </button>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 text-xs" style={{ color: 'hsl(0 0% 50%)' }}>

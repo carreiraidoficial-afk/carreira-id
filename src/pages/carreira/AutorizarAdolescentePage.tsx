@@ -1,3 +1,4 @@
+import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, Navigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -16,7 +17,6 @@ import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { useSEO } from '@/hooks/useSEO';
 import { validateCPF, formatCPF } from '@/lib/cpf-validator';
 import { PENDING_AUTORIZAR_KEY, TERMO_ANUENCIA_VERSAO } from '@/lib/adolescente-anuencia';
-import logoCarreira from '@/assets/logo-carreira-id-dark.png';
 
 interface Pedido {
   status: 'pendente' | 'invalido' | 'expirado' | 'aprovado' | 'recusado';
@@ -29,7 +29,7 @@ interface Pedido {
 function Moldura({ children, theme }: { children: React.ReactNode; theme: string }) {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center px-4 py-8" data-theme={theme}>
-      <img src={logoCarreira} alt="Carreira ID" className="h-14 mb-6" />
+      <CarreiraLogo className="h-11 mb-6" />
       <Card className="max-w-md w-full p-6 space-y-4">{children}</Card>
     </div>
   );

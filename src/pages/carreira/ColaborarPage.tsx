@@ -1,3 +1,4 @@
+import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 import { useState } from 'react';
 import { useSearchParams, useNavigate, Navigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -10,7 +11,6 @@ import { useCarreiraSession } from '@/hooks/useCarreiraSession';
 import { useCarreiraTheme } from '@/hooks/useCarreiraTheme';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
 import { useSEO } from '@/hooks/useSEO';
-import logoCarreira from '@/assets/logo-carreira-id-dark.png';
 
 /** Guarda o código do convite antes de mandar a pessoa criar conta/logar,
  * pra CarreiraCadastroPage trazer ela de volta pra cá assim que autenticar
@@ -114,7 +114,7 @@ export default function ColaborarPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4" data-theme={theme}>
-      <img src={logoCarreira} alt="Carreira" className="h-16 mb-6" />
+      <CarreiraLogo className="h-11 mb-6" />
       <Card className="max-w-sm w-full p-6 text-center space-y-4">
         {!sessionUserId ? (
           <>
