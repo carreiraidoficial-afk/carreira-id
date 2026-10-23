@@ -6,7 +6,7 @@ import type { LucideIcon } from 'lucide-react';
 import { UserCog, User, Star, Trophy, Dumbbell, LineChart, HeartPulse, Pencil, Plus, Trash2, Copy, Check, MessageCircle, Send, Clock, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
-import { useEquipeEscola, useEquipePendentes, type MembroEquipe } from '@/hooks/useEquipeEscola';
+import { useEquipeEscola, useEquipePendentes, type MembroEquipe, type PedidoEquipe } from '@/hooks/useEquipeEscola';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -45,6 +45,8 @@ export function EquipeEscolaSection({ escolaPerfilId, accentColor, podeGerenciar
   const { data: pedidos = [] } = useEquipePendentes(escolaPerfilId, podeGerenciar);
   const [copiado, setCopiado] = useState(false);
   const [respondendo, setRespondendo] = useState<string | null>(null);
+  // Pedido -> cadastro manual (sem perfil) que a escola já tinha na lista e que é a mesma pessoa.
+  const [juntarCom, setJuntarCom] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
   const [mostrarTodos, setMostrarTodos] = useState(false);
   const [dialogAberto, setDialogAberto] = useState(false);
@@ -91,6 +93,29 @@ export function EquipeEscolaSection({ escolaPerfilId, accentColor, podeGerenciar
       return;
     }
     toast.success(aceitar ? 'Profissional adicionado à equipe!' : 'Pedido recusado.');
+    queryClient.invalidateQueries({ queryKey: ['equipe-escola', escolaPerfilId] });
+    queryClient.invalidateQueries({ queryKey: ['equipe-escola-pendentes', escolaPerfilId] });
+  };
+
+  // Junta o pedido de quem criou o perfil com o cadastro manual que a escola já tinha dela: o cartão passa a abrir o perfil,
+  // mantém a função e a posição na lista, e o pedido duplicado some.
+  const juntarComCadastro = async (pedido: PedidoEquipe, manualId: string) => {
+    setRespondendo(pedido.id);
+    const { data, error } = await supabase
+      .from('escola_equipe')
+      .update({ membro_perfil_id: pedido.membro_perfil_id, status: 'aceita', updated_at: new Date().toISOString() } as any)
+      .eq('id', manualId)
+      .is('membro_perfil_id', null)
+      .select('id');
+    if (error || !data || data.length === 0) {
+      setRespondendo(null);
+      toast.error('Não foi possível juntar. Tente novamente.');
+      return;
+    }
+    const { error: erroApagar } = await supabase.from('escola_equipe').delete().eq('id', pedido.id);
+    setRespondendo(null);
+    if (erroApagar) console.error('[equipe] pedido duplicado não removido:', erroApagar);
+    toast.success('Perfil associado ao cadastro da equipe!');
     queryClient.invalidateQueries({ queryKey: ['equipe-escola', escolaPerfilId] });
     queryClient.invalidateQueries({ queryKey: ['equipe-escola-pendentes', escolaPerfilId] });
   };
@@ -147,8 +172,11 @@ export function EquipeEscolaSection({ escolaPerfilId, accentColor, podeGerenciar
           </h3>
           <p className="mb-3 mt-0.5 text-xs text-muted-foreground">Estes profissionais pediram para entrar na equipe pelo seu convite. Só aparecem na vitrine depois que você confirmar.</p>
           <ul className="space-y-2">
-            {pedidos.map((p) => (
-              <li key={p.id} className="flex items-center gap-3 rounded-lg border bg-background/40 p-2">
+            {pedidos.map((p) => {
+              const cadastrosManuais = equipe.filter((m) => !m.slug);
+              return (
+              <li key={p.id} className="rounded-lg border bg-background/40 p-2">
+              <div className="flex items-center gap-3">
                 {p.foto_url ? <img src={p.foto_url} alt="" className="h-10 w-10 rounded-full object-cover" /> : (
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-sm font-bold">{p.nome[0]}</div>
                 )}
@@ -162,8 +190,27 @@ export function EquipeEscolaSection({ escolaPerfilId, accentColor, podeGerenciar
                 <Button size="sm" variant="outline" className="gap-1" disabled={respondendo === p.id} onClick={() => responderPedido(p.id, false)}>
                   <X className="w-3.5 h-3.5" />Recusar
                 </Button>
+              </div>
+              {cadastrosManuais.length > 0 && (
+                <div className="mt-2 flex flex-col gap-2 border-t pt-2 sm:flex-row sm:items-center">
+                  <label className="text-xs text-muted-foreground sm:shrink-0">Esta pessoa já está na lista?</label>
+                  <select
+                    value={juntarCom[p.id] ?? ''}
+                    onChange={(e) => setJuntarCom((atual) => ({ ...atual, [p.id]: e.target.value }))}
+                    className="min-w-0 flex-1 rounded-md border bg-background px-2 py-1.5 text-xs text-foreground"
+                    aria-label="Cadastro da equipe que é a mesma pessoa"
+                  >
+                    <option value="">Escolha o cadastro...</option>
+                    {cadastrosManuais.map((m) => <option key={m.id} value={m.id}>{m.nome} ({m.funcao})</option>)}
+                  </select>
+                  <Button size="sm" variant="secondary" disabled={!juntarCom[p.id] || respondendo === p.id} onClick={() => juntarComCadastro(p, juntarCom[p.id])}>
+                    Juntar ao cadastro
+                  </Button>
+                </div>
+              )}
               </li>
-            ))}
+              );
+            })}
           </ul>
         </div>
       )}

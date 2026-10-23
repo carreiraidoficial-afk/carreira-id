@@ -66,6 +66,8 @@ export function useEquipeEscola(escolaPerfilId: string | undefined) {
 
 export interface PedidoEquipe {
   id: string;
+  /** Perfil de quem pediu (para juntar a um cadastro manual que já esteja na lista). */
+  membro_perfil_id: string;
   nome: string;
   foto_url: string | null;
   funcao: string;
@@ -91,7 +93,7 @@ export function useEquipePendentes(escolaPerfilId: string | undefined, ativo: bo
       const porId = new Map((perfis || []).map((p) => [p.id, p]));
       return linhas.map((l) => {
         const p = porId.get(l.membro_perfil_id as string);
-        return { id: l.id, nome: p?.nome || 'Profissional', foto_url: p?.foto_url || null, funcao: l.funcao, slug: p?.slug || null };
+        return { id: l.id, membro_perfil_id: l.membro_perfil_id as string, nome: p?.nome || 'Profissional', foto_url: p?.foto_url || null, funcao: l.funcao, slug: p?.slug || null };
       });
     },
     enabled: !!escolaPerfilId && ativo,
