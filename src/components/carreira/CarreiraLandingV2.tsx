@@ -12,6 +12,7 @@ import heroLandingV2Bg from '@/assets/hero-landing-v2-bg.webp';
 import heroSolucaoBg from '@/assets/hero-solucao-bg.webp';
 import mockupCelular from '@/assets/mockup-carreira-celular.webp';
 import torcidaPaisBg from '@/assets/torcida-pais-bg.jpg';
+import globoConexao from '@/assets/globo-conexao-global.webp';
 import {
   Accordion,
   AccordionContent,
@@ -495,23 +496,52 @@ export function CarreiraLandingV2() {
       </section>
 
       {/* ═══ Brasileiros no exterior ═══ */}
-      <section className="bg-gradient-to-r from-emerald-900/50 via-[#0d1420] to-[#0d1420] border-y border-emerald-500/20 py-10">
-        <div className="container max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
-            <Globe className="w-7 h-7 text-emerald-400" />
+      <section className="overflow-hidden border-y border-[#153c3a] bg-[radial-gradient(ellipse_at_15%_50%,#07312c_0%,transparent_48%),linear-gradient(110deg,#07151c,#0c1421_75%)] py-10 md:py-12">
+        <div className="container max-w-6xl mx-auto px-4 grid items-center gap-6 md:gap-10 md:grid-cols-[minmax(250px,.85fr)_1.5fr] text-center md:text-left">
+          <div className="flex justify-center">
+            <img
+              src={globoConexao}
+              alt="Globo conectando o Brasil ao mundo"
+              width={760}
+              height={733}
+              loading="lazy"
+              className="w-[75%] max-w-[260px] md:w-full md:max-w-[380px]"
+              style={{ WebkitMaskImage: 'radial-gradient(circle at center, #000 58%, transparent 72%)', maskImage: 'radial-gradient(circle at center, #000 58%, transparent 72%)' }}
+            />
           </div>
-          <div className="flex-1">
-            <h2 className="text-2xl sm:text-3xl font-extrabold">Seu esporte não tem fronteiras.</h2>
-            <p className="mt-2 text-gray-300 leading-relaxed max-w-3xl">
+          <div>
+            <span className="text-[11px] font-bold tracking-[2px] text-[#14dba2]">CARREIRA ID • CONEXÃO GLOBAL</span>
+            <h2 className="mt-3 mb-4 text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-[1.1] tracking-tight">
+              Seu esporte não tem <br className="hidden md:block" />
+              <span className="text-orange-400">fronteiras.</span>
+            </h2>
+            <p className="max-w-2xl mx-auto md:mx-0 text-[#c4ceda] leading-relaxed">
               Você é brasileiro e joga no exterior? O Carreira ID também é para você! Cadastre-se normalmente e registre sua trajetória esportiva, suas conquistas e experiências, esteja você no Brasil ou em qualquer outro país.
             </p>
+            <div className="my-6 flex flex-wrap justify-center md:justify-start gap-x-8 gap-y-4">
+              {[
+                { icon: Trophy, titulo: 'Registre', texto: 'Jogos e conquistas' },
+                { icon: TrendingUp, titulo: 'Acompanhe', texto: 'Sua evolução' },
+                { icon: Users, titulo: 'Conecte-se', texto: 'A oportunidades' },
+              ].map((b) => (
+                <div key={b.titulo} className="flex items-center gap-3 text-left">
+                  <div className="w-10 h-10 rounded-xl border border-emerald-500/40 bg-emerald-500/10 flex items-center justify-center shrink-0">
+                    <b.icon className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold">{b.titulo}</p>
+                    <p className="text-xs text-[#aab7c8]">{b.texto}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Link
+              to={cadastroAtletaLink}
+              className="inline-flex items-center justify-center gap-3 bg-orange-500 hover:bg-orange-600 hover:-translate-y-0.5 text-white font-bold text-sm px-6 py-3.5 rounded-lg transition"
+            >
+              Cadastrar meu atleta <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
-          <Link
-            to={cadastroAtletaLink}
-            className="shrink-0 inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-3 rounded-xl transition"
-          >
-            Cadastrar meu atleta <ArrowRight className="w-4 h-4" />
-          </Link>
         </div>
       </section>
 
