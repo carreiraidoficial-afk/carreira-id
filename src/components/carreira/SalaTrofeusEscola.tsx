@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Trophy, Plus, MoreVertical, Pencil, Trash2, Calendar, Loader2 } from 'lucide-react';
 import { CabecalhoSala, FaixaConquistas, SeloTrofeu, resumoConquistas, tipoDoSelo } from './trofeus-ui';
 import { useTrofeusEscola, type ColocacaoTrofeuEscola, type TrofeuEscola } from '@/hooks/useSalaTrofeusEscola';
+import { GaleriaFotosDialog } from './GaleriaFotosDialog';
 
 const COLOCACAO_META: Record<ColocacaoTrofeuEscola, { label: string; emoji: string; color: string }> = {
   campeao: { label: 'Campeão', emoji: '🏆', color: '#f59e0b' },
@@ -117,15 +118,53 @@ export function SalaTrofeusEscola({ perfilRedeId, isOwner, podeExcluir, accentCo
 function TrofeuRow({ item, isOwner, podeExcluir, onEdit, onDelete }: { item: TrofeuEscola; isOwner?: boolean; podeExcluir?: boolean; onEdit?: (item: TrofeuEscola) => void; onDelete?: (id: string) => void }) {
   const meta = COLOCACAO_META[item.colocacao];
   const subLinha = [meta.label, item.categoria].filter(Boolean).join(' • ');
+  const fotos = item.fotos || [];
+  const [galeria, setGaleria] = useState<number | null>(null);
+  const abrir = (indice: number) => setGaleria(indice);
 
   return (
-    <div className="relative flex items-center gap-3 p-3 rounded-xl border" style={{ borderColor: `${meta.color}40`, backgroundColor: `${meta.color}10` }}>
+    <div className="relative flex flex-wrap sm:flex-nowrap items-center gap-3 p-3 rounded-xl border" style={{ borderColor: `${meta.color}40`, backgroundColor: `${meta.color}10` }}>
       <SeloTrofeu tipo={tipoDoSelo(item.colocacao)} />
       <div className="flex-1 min-w-0 pr-6">
         <h5 className="font-semibold text-sm leading-snug">{item.titulo}</h5>
         <p className="text-xs font-medium mt-0.5" style={{ color: meta.color }}>{subLinha}</p>
         {item.organizador && <p className="text-xs text-muted-foreground mt-0.5">{item.organizador}</p>}
       </div>
+      {fotos.length > 0 && (
+        <div className="basis-full sm:basis-auto flex items-center gap-2 order-last sm:order-none">
+          {fotos.slice(0, 3).map((f, i) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => abrir(i)}
+              aria-label={`Ver foto ${i + 1} de ${fotos.length} — ${item.titulo}`}
+              className={`${i === 2 ? 'hidden sm:block' : ''} h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-muted`}
+            >
+              <img src={f.thumb_url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform hover:scale-105" />
+            </button>
+          ))}
+          {fotos.length > 2 && (
+            <button
+              type="button"
+              onClick={() => abrir(fotos.length > 3 ? 3 : 2)}
+              aria-label={`Ver mais fotos — ${item.titulo}`}
+              className={`${fotos.length === 3 ? 'sm:hidden' : ''} flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/30 text-sm font-semibold hover:bg-black/50`}
+            >
+              <span className="sm:hidden">+{fotos.length - 2}</span>
+              <span className="hidden sm:inline">+{fotos.length - 3}</span>
+            </button>
+          )}
+        </div>
+      )}
+      {galeria !== null && (
+        <GaleriaFotosDialog
+          fotos={fotos.map((f) => ({ id: f.id, url: f.url }))}
+          indiceInicial={galeria}
+          aberto
+          titulo={`${item.titulo} — ${subLinha}`}
+          onFechar={() => setGaleria(null)}
+        />
+      )}
       {isOwner && (onEdit || onDelete) && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

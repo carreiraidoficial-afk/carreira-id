@@ -38,6 +38,7 @@ import { EscolaOgCardAuto } from '@/components/carreira/escola/EscolaOgCardAuto'
 import { EscolaSobreCard } from '@/components/carreira/escola/EscolaSobreCard';
 import { SalaTrofeusEscolaFormDialog } from '@/components/carreira/SalaTrofeusEscolaFormDialog';
 import { useCreateTrofeuEscola, useUpdateTrofeuEscola, useDeleteTrofeuEscola, type TrofeuEscola, type TrofeuEscolaInput } from '@/hooks/useSalaTrofeusEscola';
+import { enviarFotosTrofeu, removerFotosTrofeu, type TrofeuFoto } from '@/lib/fotos-trofeu';
 import { EditPerfilDialog } from '@/components/carreira/EditPerfilDialog';
 import { EditConfiguracoesDialog } from '@/components/carreira/EditConfiguracoesDialog';
 import { PerfilRestritoCard, PerfilSoComContaCard } from '@/components/carreira/PerfilRestritoCard';
@@ -719,14 +720,28 @@ export default function CarreiraPerfilPage() {
     toast.success('Experiência removida');
   };
 
-  const handleSaveTrofeuEscola = async (input: TrofeuEscolaInput, editingId?: string) => {
+  const handleSaveTrofeuEscola = async (input: TrofeuEscolaInput, editingId: string | undefined, fotos: { novas: File[]; removidas: TrofeuFoto[] }) => {
+    let trofeuId = editingId;
     if (editingId) {
       await updateTrofeuEscola.mutateAsync({ id: editingId, input });
-      toast.success('Troféu atualizado!');
     } else {
-      await createTrofeuEscola.mutateAsync(input);
-      toast.success('Troféu adicionado!');
+      trofeuId = await createTrofeuEscola.mutateAsync(input);
     }
+    try {
+      if (fotos.removidas.length > 0) await removerFotosTrofeu(fotos.removidas);
+      if (fotos.novas.length > 0 && trofeuId) {
+        const jaTem = (editingTrofeuEscola?.fotos?.length ?? 0) - fotos.removidas.length;
+        await enviarFotosTrofeu(trofeuId, fotos.novas, Math.max(0, jaTem));
+      }
+    } catch (e: any) {
+      // O troféu já foi salvo; só as fotos falharam. Fecha normalmente (para não salvar a conquista duas vezes); dá para editar e tentar de novo.
+      queryClient.invalidateQueries({ queryKey: ['rede-trofeus', perfil?.id] });
+      toast.error(`Conquista salva, mas as fotos não foram enviadas: ${e?.message || 'tente de novo'}`, { duration: 8000 });
+      setEditingTrofeuEscola(null);
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['rede-trofeus', perfil?.id] });
+    toast.success(editingId ? 'Troféu atualizado!' : 'Troféu adicionado!');
     setEditingTrofeuEscola(null);
   };
 
@@ -1671,6 +1686,7 @@ export default function CarreiraPerfilPage() {
           onOpenChange={setTrofeuEscolaDialogOpen}
           editing={editingTrofeuEscola}
           onSave={handleSaveTrofeuEscola}
+          podeRemoverFotos={isOwner}
         />
       )}
 
