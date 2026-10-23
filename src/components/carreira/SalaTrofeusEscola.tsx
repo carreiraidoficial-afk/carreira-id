@@ -138,7 +138,7 @@ function TrofeuRow({ item, isOwner, podeExcluir, onEdit, onDelete }: { item: Tro
               type="button"
               onClick={() => abrir(i)}
               aria-label={`Ver foto ${i + 1} de ${fotos.length} — ${item.titulo}`}
-              className={`${i === 2 ? 'hidden sm:block' : ''} h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-muted`}
+              className={`${i === 2 ? 'hidden sm:block' : ''} min-w-0 max-w-[110px] flex-1 aspect-[4/3] sm:aspect-auto sm:max-w-none sm:flex-none sm:h-16 sm:w-20 lg:h-20 lg:w-28 overflow-hidden rounded-lg border border-white/10 bg-muted`}
             >
               <img src={f.thumb_url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform hover:scale-105" />
             </button>
@@ -148,7 +148,7 @@ function TrofeuRow({ item, isOwner, podeExcluir, onEdit, onDelete }: { item: Tro
               type="button"
               onClick={() => abrir(fotos.length > 3 ? 3 : 2)}
               aria-label={`Ver mais fotos — ${item.titulo}`}
-              className={`${fotos.length === 3 ? 'sm:hidden' : ''} flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/30 text-sm font-semibold hover:bg-black/50`}
+              className={`${fotos.length === 3 ? 'sm:hidden' : ''} flex min-w-0 max-w-[110px] flex-1 aspect-[4/3] sm:aspect-auto sm:max-w-none sm:flex-none sm:h-16 sm:w-20 lg:h-20 lg:w-28 items-center justify-center rounded-lg border border-white/10 bg-black/30 text-sm font-semibold hover:bg-black/50`}
             >
               <span className="sm:hidden">+{fotos.length - 2}</span>
               <span className="hidden sm:inline">+{fotos.length - 3}</span>

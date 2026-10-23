@@ -1686,7 +1686,7 @@ export default function CarreiraPerfilPage() {
           onOpenChange={setTrofeuEscolaDialogOpen}
           editing={editingTrofeuEscola}
           onSave={handleSaveTrofeuEscola}
-          podeRemoverFotos={isOwner}
+          podeRemoverFotos
         />
       )}
 
