@@ -394,6 +394,17 @@ function CadastrosIncompletosTable({ pessoas }: { pessoas: any[] }) {
                       <Copy className="w-3 h-3" />
                     </Button>
                   </div>
+                  {p.telefone && (
+                    <a
+                      href={`https://wa.me/${telefoneParaWhatsapp(p.telefone)}?text=${encodeURIComponent(`Olá ${String(p.nome || '').split(' ')[0]}! Aqui é do Carreira ID. Vi que você começou seu cadastro e queria ajudar a concluir. Posso te ajudar?`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 flex items-center gap-1 text-xs text-emerald-600 hover:underline w-fit"
+                      title="Chamar no WhatsApp com mensagem pronta"
+                    >
+                      <MessageCircle className="w-3 h-3 shrink-0" /><span>{p.telefone}</span>
+                    </a>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className="text-xs">

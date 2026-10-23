@@ -1,3 +1,4 @@
+import { AjudaWhatsappCard } from '@/components/carreira/AjudaWhatsappCard';
 import { useState, useEffect, useRef } from 'react';
 import { dataLocalISO } from '@/lib/datas';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -7,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2, Mail, Lock, User, ArrowLeft, LogOut, Rocket, Eye, EyeOff, CheckCircle2, Sparkles } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowLeft, LogOut, Rocket, Eye, EyeOff, CheckCircle2, Sparkles, MessageCircle } from 'lucide-react';
+import { validatePhone, limparTelefone, formatPhoneInput, formatarTelefoneExibicao } from '@/lib/form-validators';
 import { z } from 'zod';
 import { ProfileTypeSelector, type ProfileType } from '@/components/carreira/ProfileTypeSelector';
 import { ProfileTypeForm } from '@/components/carreira/ProfileTypeForm';
@@ -114,6 +116,7 @@ export default function CarreiraCadastroPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nome, setNome] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
   const [aceitouTermos, setAceitouTermos] = useState(false);
   // Ref (não state) porque precisa estar disponível de forma síncrona pro
   // listener onAuthStateChange, que pode disparar antes do await de signUp()
@@ -415,6 +418,12 @@ export default function CarreiraCadastroPage() {
           setIsLoading(false);
           return;
         }
+        const whatsappLimpo = limparTelefone(whatsapp);
+        if (!validatePhone(whatsappLimpo)) {
+          toast.error('Digite um WhatsApp válido, com DDD. É por ele que a nossa equipe te ajuda com o cadastro.');
+          setIsLoading(false);
+          return;
+        }
         justAcceptedRef.current = true;
 
         const { data, error } = await supabase.auth.signUp({
@@ -422,7 +431,7 @@ export default function CarreiraCadastroPage() {
           password,
           options: {
             emailRedirectTo: `${window.location.origin}${carreiraPath('/cadastro')}`,
-            data: { nome, full_name: nome },
+            data: { nome, full_name: nome, telefone: formatarTelefoneExibicao(whatsappLimpo) },
           },
         });
 
@@ -809,6 +818,16 @@ export default function CarreiraCadastroPage() {
                       <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="pl-10" style={{ backgroundColor: 'hsl(220 15% 8%)', borderColor: 'hsl(220 10% 20%)', color: 'hsl(0 0% 95%)' }} disabled={isLoading} maxLength={255} />
                     </div>
                   </div>
+                  {!isLogin && (
+                    <div className="space-y-1">
+                      <Label htmlFor="whatsapp" style={{ color: 'hsl(0 0% 80%)' }}>WhatsApp</Label>
+                      <div className="relative">
+                        <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'hsl(0 0% 40%)' }} />
+                        <Input id="whatsapp" type="tel" inputMode="tel" autoComplete="tel" placeholder="(21) 90000-0000" value={whatsapp} onChange={(e) => setWhatsapp(formatPhoneInput(e.target.value))} className="pl-10" style={{ backgroundColor: 'hsl(220 15% 8%)', borderColor: 'hsl(220 10% 20%)', color: 'hsl(0 0% 95%)' }} disabled={isLoading} maxLength={16} />
+                      </div>
+                      <p className="text-xs" style={{ color: 'hsl(0 0% 50%)' }}>Para a nossa equipe te ajudar a concluir o cadastro. Não enviamos propaganda.</p>
+                    </div>
+                  )}
                   <div className="space-y-1">
                     <Label htmlFor="password" style={{ color: 'hsl(0 0% 80%)' }}>Senha</Label>
                     <div className="relative">
@@ -968,6 +987,8 @@ export default function CarreiraCadastroPage() {
             </Card>
           </div>
         )}
+
+        {step === 'profile-type' && userId && !wantsNewProfile && <AjudaWhatsappCard userId={userId} />}
 
         {step === 'profile-type' && (
           <ProfileTypeSelector
