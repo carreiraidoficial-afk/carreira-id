@@ -7,7 +7,7 @@ import mockupPerfilCelular from '@/assets/mockup-perfil-celular.webp';
 import mockupScoutPerfil from '@/assets/mockup-scout-perfil.webp';
 import mockupScoutBusca from '@/assets/mockup-scout-busca.webp';
 import { carreiraPath } from '@/hooks/useCarreiraBasePath';
-import logoCarreira from '@/assets/logo-carreira-id.webp';
+import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 import heroLandingV2Bg from '@/assets/hero-landing-v2-bg.webp';
 import heroSolucaoBg from '@/assets/hero-solucao-bg.webp';
 import mockupCelular from '@/assets/mockup-carreira-celular.webp';
@@ -401,7 +401,7 @@ export function CarreiraLandingV2() {
       <header className="sticky top-0 z-50 bg-[#000000] border-b border-white/5">
         <div className="container flex items-center justify-between h-16 px-4 max-w-6xl mx-auto">
           <Link to={carreiraPath('/')} className="flex items-center">
-            <img src={logoCarreira} alt="Carreira ID" className="h-9" />
+            <CarreiraLogo className="h-9 sm:h-10 md:h-11" />
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm text-gray-400">
             <a href="#problema" className="hover:text-white transition">O Problema</a>
@@ -410,7 +410,7 @@ export function CarreiraLandingV2() {
             <a href="#faq" className="hover:text-white transition">FAQ</a>
             <a href="/blog" className="hover:text-white transition">Blog</a>
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               to={loginLink}
               className="text-gray-300 hover:text-white text-sm font-medium transition"
@@ -1088,7 +1088,7 @@ export function CarreiraLandingV2() {
       {/* ═══ Footer ═══ */}
       <footer className="border-t border-white/5 py-8 bg-[#0a0f18]">
         <div className="container max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          <img src={logoCarreira} alt="Carreira ID" className="h-8" />
+          <CarreiraLogo className="h-9" />
           <nav className="flex items-center gap-6 text-sm text-gray-500">
             <a href="/termos-de-uso" className="hover:text-white transition">Termos de Uso</a>
             <a href="/politica-de-privacidade" className="hover:text-white transition">Privacidade</a>

@@ -11,7 +11,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { NavLink } from '@/components/NavLink';
-import logoCarreira from '@/assets/logo-carreira-id.webp';
+import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
 
 import { Settings2, Megaphone, GraduationCap, Stethoscope, Bell, Star, Ticket, Mail, Database, Flag, BadgeCheck, UserCheck } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -150,7 +150,7 @@ export default function CarreiraAdminLayout({ children }: { children: ReactNode 
           <header className="h-14 flex items-center justify-between border-b px-4">
             <div className="flex items-center gap-2">
               <SidebarTrigger className="ml-0" />
-              <img src={logoCarreira} alt="Carreira ID" className="h-7 w-auto hidden sm:block" />
+              <CarreiraLogo className="h-8 hidden sm:block" />
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground hidden sm:inline">{user.name}</span>
