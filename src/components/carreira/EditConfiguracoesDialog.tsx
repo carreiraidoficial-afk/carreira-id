@@ -1,3 +1,4 @@
+import { VisibilidadePerfilEscolha, type VisibilidadePerfil } from '@/components/carreira/VisibilidadePerfilEscolha';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -32,6 +33,7 @@ interface ConfigPerfil {
   user_id: string;
   crianca_id?: string | null;
   is_public?: boolean;
+  restrito_conexoes?: boolean;
 }
 
 interface EditConfiguracoesDialogProps {
@@ -58,26 +60,32 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [enviandoReset, setEnviandoReset] = useState(false);
-  const [isPublic, setIsPublic] = useState(perfil.is_public);
+  const visibilidadeDoPerfil = (p: ConfigPerfil): VisibilidadePerfil => (p.is_public ? 'publico' : p.restrito_conexoes ? 'conexoes' : 'conta');
+  const [visibilidade, setVisibilidade] = useState<VisibilidadePerfil>(visibilidadeDoPerfil(perfil));
   const { isSupported: pushSupported, isSubscribed, isLoading: pushLoading, subscribe, unsubscribe } = usePushNotifications();
 
   useEffect(() => {
-    setIsPublic(perfil.is_public);
-  }, [perfil.is_public]);
+    setVisibilidade(visibilidadeDoPerfil(perfil));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [perfil.is_public, perfil.restrito_conexoes]);
 
-  const togglePublic = useMutation({
-    mutationFn: async (novoValor: boolean) => {
+  const alterarVisibilidade = useMutation({
+    mutationFn: async (novoValor: VisibilidadePerfil) => {
       const { error } = await supabase
         .from('perfil_atleta')
-        .update({ is_public: novoValor })
+        .update({ is_public: novoValor === 'publico', restrito_conexoes: novoValor === 'conexoes' } as any)
         .eq('id', perfil.id);
       if (error) throw error;
       return novoValor;
     },
     onSuccess: (novoValor) => {
-      setIsPublic(novoValor);
+      setVisibilidade(novoValor);
       queryClient.invalidateQueries({ queryKey: ['carreira-profile-by-slug'] });
-      toast.success(novoValor ? 'Perfil agora está público.' : 'Perfil agora está oculto.');
+      toast.success(
+        novoValor === 'publico' ? 'Perfil agora está público.'
+          : novoValor === 'conexoes' ? 'Perfil agora é visível só para conexões aprovadas.'
+          : 'Perfil agora é visível só para quem tem conta.',
+      );
     },
     onError: () => toast.error('Não foi possível alterar a privacidade do perfil.'),
   });
@@ -193,31 +201,8 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
             {isAtleta && (
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Privacidade</p>
-              <div className="rounded-lg border p-3 space-y-2.5">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
-                      {isPublic ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">Perfil {isPublic ? 'público' : 'visível só para quem tem conta'}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {isPublic ? 'Visível pra qualquer pessoa com o link' : 'Visível só pra quem tem conta no Carreira ID'}
-                      </p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={isPublic}
-                    disabled={togglePublic.isPending}
-                    onCheckedChange={(checked) => togglePublic.mutate(checked)}
-                    className="shrink-0"
-                  />
-                </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed pt-2 border-t">
-                  {isPublic
-                    ? 'Com o perfil público, qualquer pessoa que tiver o link consegue ver a página — mesmo sem estar logada ou ter conta no Carreira ID, inclusive fora do app (ex: no Google ou compartilhado no WhatsApp).'
-                    : 'Com o perfil oculto, a página só abre pra quem estiver logado com uma conta no Carreira ID. Visitantes sem conta (inclusive buscas do Google) não conseguem mais acessar, mesmo com o link em mãos.'}
-                </p>
+              <div className={`rounded-lg border p-3 ${alterarVisibilidade.isPending ? 'opacity-60 pointer-events-none' : ''}`}>
+                <VisibilidadePerfilEscolha value={visibilidade} onChange={(v) => alterarVisibilidade.mutate(v)} incluirConexoes />
               </div>
             </div>
             )}

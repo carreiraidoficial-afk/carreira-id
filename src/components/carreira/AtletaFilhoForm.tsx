@@ -128,7 +128,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
       return;
     }
     if (!visibilidade) {
-      toast.error('Escolha quem pode ver o perfil: público ou só quem tem conta.');
+      toast.error('Escolha quem pode ver o perfil.');
       return;
     }
     if (proprio && idadeEmAnos(dataNascimento) < 18) {
@@ -235,6 +235,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
           foto_url: fotoUrl,
           crianca_id: criancaId,
           is_public: visibilidade === 'publico',
+          restrito_conexoes: visibilidade === 'conexoes',
           cpf_cnpj: cleanDoc || null,
           tipo_documento: cleanDoc ? 'cpf' : null,
           telefone_whatsapp: cleanPhone || null,
@@ -421,6 +422,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
         <VisibilidadePerfilEscolha
           value={visibilidade}
           onChange={setVisibilidade}
+          incluirConexoes
           ajuda={!proprio && idadeAtleta < 16 ? 'Para atletas com menos de 16 anos, escolha com cuidado: você decide quem vê o perfil.' : undefined}
         />
 

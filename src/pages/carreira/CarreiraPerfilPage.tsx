@@ -40,6 +40,7 @@ import { SalaTrofeusEscolaFormDialog } from '@/components/carreira/SalaTrofeusEs
 import { useCreateTrofeuEscola, useUpdateTrofeuEscola, useDeleteTrofeuEscola, type TrofeuEscola, type TrofeuEscolaInput } from '@/hooks/useSalaTrofeusEscola';
 import { EditPerfilDialog } from '@/components/carreira/EditPerfilDialog';
 import { EditConfiguracoesDialog } from '@/components/carreira/EditConfiguracoesDialog';
+import { PerfilRestritoCard } from '@/components/carreira/PerfilRestritoCard';
 import { ConvidarColaboradorBanner } from '@/components/carreira/ConvidarColaboradorBanner';
 // EditContaDialog removed — unified into EditPerfilRedeDialog
 import { ConectarButton } from '@/components/carreira/ConectarButton';
@@ -232,6 +233,12 @@ function useProfileBySlug(slug: string) {
       const { data: atletaData, error: atletaError } = await (currentUid ? atletaQuery : atletaQuery.eq('is_public', true)).maybeSingle();
       if (atletaError && atletaError.code !== 'PGRST116') throw atletaError;
       if (atletaData) return { type: 'atleta' as const, ...atletaData } as UnifiedProfile;
+
+      // Perfil restrito às conexões aprovadas: quem não é conexão não recebe nenhum dado, só a informação de que é restrito.
+      if (currentUid) {
+        const { data: restrito } = await (supabase as any).rpc('perfil_atleta_e_restrito', { p_slug: slug });
+        if (restrito === true) return { type: 'restrito' as const, slug } as unknown as UnifiedProfile;
+      }
 
       // 2. Try perfis_rede
       const { data: redeData, error: redeError } = await supabase
@@ -582,6 +589,10 @@ export default function CarreiraPerfilPage() {
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  if ((perfil as any)?.type === 'restrito') {
+    return <PerfilRestritoCard slug={(perfil as any).slug} carreiraTheme={carreiraTheme} />;
   }
 
   if (error || !perfil) {
