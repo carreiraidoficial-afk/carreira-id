@@ -4,10 +4,12 @@ import { useSuporteAlvo } from '@/hooks/useSuporteAlvo';
 import { Home, Users, User, LogOut, Gamepad2, Search, Bell, CalendarDays, Shield, ClipboardList } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { carreiraPath, isCarreiraDomain } from '@/hooks/useCarreiraBasePath';
 import { useUnreadCarreiraComunicados } from '@/hooks/useCarreiraComunicadosData';
 import { CarreiraLogo } from '@/components/carreira/CarreiraLogo';
+import { useMeusAmbientes, getUltimoAmbiente, salvarUltimoAmbiente, type Ambiente } from '@/hooks/useCriancaAtiva';
 
 const ADMIN_EMAIL = 'carreiraidoficial@gmail.com';
 
@@ -89,8 +91,34 @@ export function CarreiraBottomNav({ currentUserId, profileSlug: profileSlugProp 
   });
 
   const { liberada: ligaLiberada } = useLigaVisivel();
-  const isScoutingProfile = perfilRede ? SCOUTING_TYPES.includes(perfilRede.tipo) : false;
-  const isPeneiraCreator = perfilRede ? PENEIRA_TYPES.includes(perfilRede.tipo) : false;
+
+  // Conta com os dois tipos de perfil (atleta E profissional): o menu segue o ambiente em uso, o mesmo do seletor de ambiente.
+  // Ambiente de atleta mostra Liga e Currículo; o profissional mostra Descobrir e Eventos. Contas com um tipo só não mudam.
+  const { atletaSlug: meuAtletaSlug, redeSlug: minhaRedeSlug, temMultiploAmbiente } = useMeusAmbientes(currentUserId);
+  const caminhoRede = minhaRedeSlug ? carreiraPath(`/${minhaRedeSlug}`) : null;
+  const caminhoAtleta = meuAtletaSlug ? carreiraPath(`/${meuAtletaSlug}`) : null;
+  const ambienteAtual: Ambiente | null =
+    suporte.ativo || !temMultiploAmbiente || !currentUserId
+      ? null
+      : location.pathname === caminhoRede
+        ? 'rede'
+        : location.pathname === caminhoAtleta
+          ? 'atleta'
+          : getUltimoAmbiente(currentUserId) ?? 'atleta';
+
+  // Abrir o próprio perfil de um dos ambientes (por qualquer caminho) também troca o ambiente lembrado.
+  useEffect(() => {
+    if (!currentUserId || !temMultiploAmbiente || suporte.ativo) return;
+    if (location.pathname === caminhoRede) salvarUltimoAmbiente(currentUserId, 'rede');
+    else if (location.pathname === caminhoAtleta) salvarUltimoAmbiente(currentUserId, 'atleta');
+  }, [currentUserId, temMultiploAmbiente, suporte.ativo, location.pathname, caminhoRede, caminhoAtleta]);
+
+  // "Meu Perfil" leva ao perfil do ambiente em uso (contas com os dois tipos); nas demais, ao perfil de sempre.
+  const slugMeuPerfil = (ambienteAtual === 'rede' ? minhaRedeSlug : ambienteAtual === 'atleta' ? meuAtletaSlug : null) || profileSlug;
+  const ocultarProfissional = ambienteAtual === 'atleta';
+  const ocultarAtleta = ambienteAtual === 'rede';
+  const isScoutingProfile = perfilRede && !ocultarProfissional ? SCOUTING_TYPES.includes(perfilRede.tipo) : false;
+  const isPeneiraCreator = perfilRede && !ocultarProfissional ? PENEIRA_TYPES.includes(perfilRede.tipo) : false;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -103,8 +131,8 @@ export function CarreiraBottomNav({ currentUserId, profileSlug: profileSlugProp 
   };
 
   const goToProfile = async () => {
-    if (profileSlug) {
-      navigate(carreiraPath(`/${profileSlug}`), { replace: true });
+    if (slugMeuPerfil) {
+      navigate(carreiraPath(`/${slugMeuPerfil}`), { replace: true });
     } else if (currentUserId) {
       const { data: pa } = await supabase
         .from('perfil_atleta')
@@ -182,7 +210,7 @@ export function CarreiraBottomNav({ currentUserId, profileSlug: profileSlugProp 
         active: location.pathname === descobrirPath,
         badge: 0,
       }
-    : temPerfilAtleta === false || !ligaLiberada
+    : temPerfilAtleta === false || !ligaLiberada || ocultarAtleta
       ? null
       : {
           icon: Gamepad2,
@@ -209,7 +237,7 @@ export function CarreiraBottomNav({ currentUserId, profileSlug: profileSlugProp 
       badge: 0,
     }] : []),
     ...(middleItem ? [middleItem] : []),
-    ...(temPerfilAtleta ? [{
+    ...(temPerfilAtleta && !ocultarAtleta ? [{
       icon: ClipboardList,
       label: 'Currículo',
       onClick: () => navigate(curriculoPath, { replace: true }),
@@ -220,7 +248,7 @@ export function CarreiraBottomNav({ currentUserId, profileSlug: profileSlugProp 
       icon: User,
       label: 'Meu Perfil',
       onClick: goToProfile,
-      active: !!profileSlug && location.pathname === carreiraPath(`/${profileSlug}`),
+      active: !!slugMeuPerfil && location.pathname === carreiraPath(`/${slugMeuPerfil}`),
       badge: unreadComunicados || 0,
     },
     ...(isAdmin ? [{
