@@ -162,38 +162,6 @@
   </head>
 
   <body>
-    <!-- Abertura com imagem (teste): só em celular e só nos aparelhos em que foi ligada com ?splash=1 (desliga com ?splash=0).
-         Aparece uma vez por sessão, logo depois da tela do Android, e some quando o app termina de carregar. -->
-    <div id="carreira-splash" style="display:none;position:fixed;inset:0;z-index:2147483000;background:#000 url(data:image/webp;base64,UklGRroAAABXRUJQVlA4IK4AAAAwBACdASoQABwAPu1iqU2ppaOiMAgBMB2JYgCdFQAAcXztzH6hXaK5yAAA/uzlaCQw0yMGwUuCtkmotwS6d7oAzPXMiZYIjtKaCCVlZc6BUFIo0cQgbDUK+ndOOlvwUaNMFKwnDw16uTLppO+gOH46Nlo1yTiDcK0YRrD9LgmiGRT+IiUyhBLfUh+NdR5oaS4j7nm82khnpSeOMZkAba6JyaMR8PX47BP08LckAAA=) center/cover no-repeat;transition:opacity .3s ease"></div>
-    <script>
-      (function () {
-        try {
-          var q = new URLSearchParams(location.search).get('splash');
-          if (q === '1') localStorage.setItem('carreira_splash', '1');
-          if (q === '0') localStorage.removeItem('carreira_splash');
-          var el = document.getElementById('carreira-splash');
-          if (!el || localStorage.getItem('carreira_splash') !== '1') return;
-          if (!window.matchMedia('(max-width: 767px)').matches) return;
-          if (sessionStorage.getItem('carreira_splash_visto') === '1') return;
-          sessionStorage.setItem('carreira_splash_visto', '1');
-          var inicio = Date.now();
-          el.style.display = 'block';
-          var img = new Image();
-          img.onload = function () { el.style.backgroundImage = 'url(/splash-abertura.webp)'; };
-          img.src = '/splash-abertura.webp';
-          var fechando = false;
-          window.fecharSplashCarreira = function () {
-            if (fechando) return;
-            fechando = true;
-            setTimeout(function () {
-              el.style.opacity = '0';
-              setTimeout(function () { el.remove(); }, 350);
-            }, Math.max(0, 1100 - (Date.now() - inicio)));
-          };
-          setTimeout(window.fecharSplashCarreira, 7000);
-        } catch (e) {}
-      })();
-    </script>
     <div id="root" style="background:#000;min-height:100vh">
       <span style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">
         <h1>O esporte de base brasileiro precisa de registro, organização e valorização.</h1>

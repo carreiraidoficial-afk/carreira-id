@@ -100,15 +100,6 @@ const GaPageviewTracker = () => {
   return null;
 };
 
-/** Fecha a abertura com imagem (quando ligada) assim que o app sabe se há alguém logado. */
-const FechaSplash = () => {
-  const { isLoading } = useAuth();
-  useEffect(() => {
-    if (!isLoading) (window as any).fecharSplashCarreira?.();
-  }, [isLoading]);
-  return null;
-};
-
 /** Guarda de onde a pessoa chegou e, quando a conta é nova, registra a origem do cadastro (uma vez). */
 const OrigemCadastroTracker = () => {
   const { session } = useAuth();
@@ -181,7 +172,6 @@ const App = () => {
         <BrowserRouter>
           <GaPageviewTracker />
           <OrigemCadastroTracker />
-          <FechaSplash />
           <CarreiraErrorBoundary>
           <AnonymousGateProvider enabled={true}>
             <Suspense fallback={
