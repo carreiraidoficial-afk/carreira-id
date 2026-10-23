@@ -1,3 +1,4 @@
+import { SuporteWhatsappLink } from '@/components/carreira/SuporteWhatsappLink';
 import { AjudaWhatsappCard } from '@/components/carreira/AjudaWhatsappCard';
 import { useState, useEffect, useRef } from 'react';
 import { dataLocalISO } from '@/lib/datas';
@@ -825,7 +826,6 @@ export default function CarreiraCadastroPage() {
                         <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'hsl(0 0% 40%)' }} />
                         <Input id="whatsapp" type="tel" inputMode="tel" autoComplete="tel" placeholder="(21) 90000-0000" value={whatsapp} onChange={(e) => setWhatsapp(formatPhoneInput(e.target.value))} className="pl-10" style={{ backgroundColor: 'hsl(220 15% 8%)', borderColor: 'hsl(220 10% 20%)', color: 'hsl(0 0% 95%)' }} disabled={isLoading} maxLength={16} />
                       </div>
-                      <p className="text-xs" style={{ color: 'hsl(0 0% 50%)' }}>Para a nossa equipe te ajudar a concluir o cadastro. Não enviamos propaganda.</p>
                     </div>
                   )}
                   <div className="space-y-1">
@@ -886,6 +886,7 @@ export default function CarreiraCadastroPage() {
                     {isLogin ? 'Cadastre-se' : 'Faça login'}
                   </button>
                 </div>
+                <SuporteWhatsappLink className="mt-3" mensagem={isLogin ? 'Olá, preciso de ajuda para entrar no Carreira ID' : 'Olá, estou com dúvida para criar minha conta no Carreira ID'} />
               </CardContent>
             </Card>
           </div>
@@ -1003,6 +1004,7 @@ export default function CarreiraCadastroPage() {
             somenteEquipe={(refParam || lerPendingRef()?.ref) === 'equipe'}
           />
         )}
+        {step === 'profile-type' && <SuporteWhatsappLink className="mt-4" />}
 
         {step === 'equipe-entrar' && (
           <div className="animate-fade-in text-center space-y-4 py-6">

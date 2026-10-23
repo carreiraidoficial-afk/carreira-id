@@ -37,7 +37,7 @@ export function AjudaWhatsappCard({ userId }: { userId: string }) {
     await copiarTelefoneParaConta(userId, limpo);
     setSalvando(false);
     setSalvo(true);
-    toast.success('Anotado! Se precisar, a gente te chama no WhatsApp.');
+    toast.success('Anotado!');
   };
 
   return (
@@ -48,27 +48,22 @@ export function AjudaWhatsappCard({ userId }: { userId: string }) {
           <p className="text-sm font-semibold" style={{ color: 'hsl(0 0% 95%)' }}>Quer ajuda para concluir o cadastro?</p>
           {salvo ? (
             <p className="mt-1 flex items-center gap-1.5 text-xs" style={{ color: 'hsl(142 70% 55%)' }}>
-              <Check className="h-3.5 w-3.5" />Anotado! Se precisar, a gente te chama no WhatsApp.
+              <Check className="h-3.5 w-3.5" />Anotado!
             </p>
           ) : (
-            <>
-              <p className="mt-1 text-xs" style={{ color: 'hsl(0 0% 70%)' }}>
-                Deixe seu WhatsApp (opcional) e nossa equipe te ajuda a terminar. Usamos o número só para isso.
-              </p>
-              <div className="mt-2 flex gap-2">
-                <Input
-                  inputMode="tel"
-                  placeholder="(21) 90000-0000"
-                  value={numero}
-                  onChange={(e) => setNumero(formatPhoneInput(e.target.value))}
-                  className="min-w-0 flex-1"
-                  aria-label="Seu WhatsApp"
-                />
-                <Button type="button" size="sm" disabled={salvando || numero.length < 10} onClick={salvar}>
-                  {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Enviar'}
-                </Button>
-              </div>
-            </>
+            <div className="mt-2 flex gap-2">
+              <Input
+                inputMode="tel"
+                placeholder="Seu WhatsApp (opcional)"
+                value={numero}
+                onChange={(e) => setNumero(formatPhoneInput(e.target.value))}
+                className="min-w-0 flex-1"
+                aria-label="Seu WhatsApp"
+              />
+              <Button type="button" size="sm" disabled={salvando || numero.length < 10} onClick={salvar}>
+                {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Enviar'}
+              </Button>
+            </div>
           )}
         </div>
       </div>
