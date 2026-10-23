@@ -346,7 +346,7 @@ export default function CarreiraPerfilPage() {
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
-  const [configDialogTab, setConfigDialogTab] = useState('responsavel');
+  const [configDialogTab, setConfigDialogTab] = useState('conta');
   const [historicoDialogOpen, setHistoricoDialogOpen] = useState(false);
   const [editingHistorico, setEditingHistorico] = useState<HistoricoProfissional | null>(null);
   const [trofeuEscolaDialogOpen, setTrofeuEscolaDialogOpen] = useState(false);

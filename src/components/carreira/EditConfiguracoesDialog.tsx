@@ -54,7 +54,7 @@ interface EditConfiguracoesDialogProps {
  * só com dados do atleta: foto, cor, modalidades etc) porque misturar as
  * duas coisas num só dialog com 5 abas estourava a tela no celular.
  */
-export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo = 'atleta', defaultTab = 'responsavel' }: EditConfiguracoesDialogProps) {
+export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo = 'atleta', defaultTab = 'conta' }: EditConfiguracoesDialogProps) {
   const isAtleta = perfilTipo === 'atleta';
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -118,25 +118,26 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
         </DialogHeader>
 
         <Tabs defaultValue={defaultTab} className="w-full min-w-0">
-          <TabsList className="flex w-full overflow-x-auto justify-start gap-1 h-auto p-1">
-            <TabsTrigger value="responsavel" className="shrink-0 flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3">
-              <UserCircle className="w-3.5 h-3.5" />
+          {/* Todas as abas cabem na largura do celular (2 por linha, sem rolagem lateral); a "Conta" vem primeiro. */}
+          <TabsList className={`grid w-full h-auto gap-1 p-1 ${isAtleta ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
+            <TabsTrigger value="conta" className="min-w-0 flex items-center justify-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-2">
+              <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+              Conta
+            </TabsTrigger>
+            <TabsTrigger value="responsavel" className="min-w-0 flex items-center justify-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-2">
+              <UserCircle className="w-3.5 h-3.5 shrink-0" />
               {(perfil as any)?.cadastro_proprio ? 'Seus dados' : 'Responsável'}
             </TabsTrigger>
-            <TabsTrigger value="assinatura" className="shrink-0 flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3">
-              <CreditCard className="w-3.5 h-3.5" />
+            <TabsTrigger value="assinatura" className="min-w-0 flex items-center justify-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-2">
+              <CreditCard className="w-3.5 h-3.5 shrink-0" />
               Assinatura
             </TabsTrigger>
             {isAtleta && (
-              <TabsTrigger value="usuarios" className="shrink-0 flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3">
-                <Users className="w-3.5 h-3.5" />
+              <TabsTrigger value="usuarios" className="min-w-0 flex items-center justify-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-2">
+                <Users className="w-3.5 h-3.5 shrink-0" />
                 Colaboradores
               </TabsTrigger>
             )}
-            <TabsTrigger value="conta" className="shrink-0 flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              Conta
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="responsavel" className="mt-4">
