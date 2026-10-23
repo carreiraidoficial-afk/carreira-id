@@ -238,6 +238,7 @@ serve(async (req) => {
     .from("perfis_rede")
     .select("nome, foto_url, banner_url, bio, tipo, user_id, cidade, estado, dados_perfil")
     .eq("slug", slug)
+    .or("status_conta.is.null,status_conta.neq.inativo") // perfil oculto pelo admin não gera prévia
     .maybeSingle();
 
   if (rede) {

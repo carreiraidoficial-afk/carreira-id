@@ -111,10 +111,12 @@ export async function registrarOrigemCadastro(userId: string, contaCriadaEm?: st
     if (localStorage.getItem(chaveFeito)) return;
     const o = lerOrigemSalva();
     const { salvoEm: _ignorado, ...campos } = o ?? ({} as Partial<OrigemVisita>);
+    // INSERT simples (não upsert): o banco recusa "ON CONFLICT" aqui porque a tabela só pode ser lida pelo admin. Registro repetido
+    // (código 23505) significa que a origem já foi gravada antes, então vale como feito.
     const { error } = await (supabase as any)
       .from('carreira_origem_cadastro')
-      .upsert({ user_id: userId, ...(o ? campos : { tipo_link: 'direto', canal: 'direto' }) }, { onConflict: 'user_id', ignoreDuplicates: true });
-    if (error) {
+      .insert({ user_id: userId, ...(o ? campos : { tipo_link: 'direto', canal: 'direto' }) });
+    if (error && error.code !== '23505') {
       console.error('[origemCadastro] erro ao registrar:', error);
       return;
     }

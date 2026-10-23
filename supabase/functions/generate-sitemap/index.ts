@@ -104,6 +104,7 @@ Deno.serve(async (req) => {
         .from('perfis_rede')
         .select('slug, updated_at')
         .neq('tipo', 'pai_responsavel')
+        .or('status_conta.is.null,status_conta.neq.inativo') // perfil oculto pelo admin sai do mapa do site
         .not('slug', 'is', null);
 
       for (const r of redes || []) {

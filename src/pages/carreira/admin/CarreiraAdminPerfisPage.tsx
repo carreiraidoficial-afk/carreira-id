@@ -490,6 +490,23 @@ function useCompletudePerfis(enabled: boolean) {
   });
 }
 
+/** Oculta (ou volta a mostrar) um perfil profissional, por exemplo um cadastro falso. */
+function useOcultarPerfilRede() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status_conta }: { id: string; status_conta: 'ativo' | 'inativo' }) => {
+      const { data, error } = await supabase.from('perfis_rede').update({ status_conta } as any).eq('id', id).select('id');
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error('Nada foi alterado.');
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['carreira-admin-perfis-rede'] });
+      toast.success(vars.status_conta === 'inativo' ? 'Perfil oculto: ninguém mais o vê (só o dono e o admin).' : 'Perfil visível de novo.');
+    },
+    onError: (e: any) => toast.error('Erro: ' + e.message),
+  });
+}
+
 function useToggleVisibility() {
   const qc = useQueryClient();
   return useMutation({
@@ -661,6 +678,7 @@ function LinhaCompletudeExpandida({ completude, colSpan }: { completude?: Perfil
 
 function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atleta' | 'rede'; isTesteTab?: boolean }) {
   const toggle = useToggleVisibility();
+  const ocultarRede = useOcultarPerfilRede();
   const toggleTeste = useToggleTeste();
   const qc = useQueryClient();
   const [editing, setEditing] = useState<any>(null);
@@ -798,7 +816,7 @@ function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atlet
                 <TableCell>
                   <Badge variant={p.status_conta === 'ativo' || !p.status_conta ? 'default' : 'destructive'}
                     className={p.status_conta !== 'inativo' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : ''}>
-                    {p.status_conta === 'inativo' ? 'Inativo' : 'Ativo'}
+                    {p.status_conta === 'inativo' ? (type === 'rede' ? 'Oculto' : 'Inativo') : 'Ativo'}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
@@ -829,6 +847,20 @@ function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atlet
                         onClick={() => toggle.mutate({ id: p.id, is_public: !p.is_public })}
                         title={p.is_public ? 'Ocultar' : 'Tornar público'}>
                         {p.is_public ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </Button>
+                    )}
+                    {type === 'rede' && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8"
+                        disabled={ocultarRede.isPending}
+                        onClick={() => {
+                          const ocultando = p.status_conta !== 'inativo';
+                          const ok = window.confirm(ocultando
+                            ? `Ocultar o perfil de ${p.nome}?\n\nEle deixa de aparecer para todos (página pública, buscas e equipe da escola). A pessoa continua conseguindo entrar. Dá para desfazer.`
+                            : `Mostrar de novo o perfil de ${p.nome}?`);
+                          if (ok) ocultarRede.mutate({ id: p.id, status_conta: ocultando ? 'inativo' : 'ativo' });
+                        }}
+                        title={p.status_conta === 'inativo' ? 'Perfil oculto: clique para mostrar de novo' : 'Ocultar este perfil (cadastro falso, por exemplo)'}>
+                        {p.status_conta === 'inativo' ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                       </Button>
                     )}
                     {p.slug && (
