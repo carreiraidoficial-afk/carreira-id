@@ -19,7 +19,7 @@ const TIPO_ICONS: Record<string, string> = {
 };
 
 export function NotificacoesBell({ accentColor }: { accentColor?: string }) {
-  const { data: comunicados = [] } = useMyCarreiraComunicados();
+  const { data: comunicados = [], isFetched } = useMyCarreiraComunicados();
   const { unreadCount } = useUnreadCarreiraComunicados();
   const markRead = useMarkComunicadoRead();
   const dismiss = useDismissComunicado();
@@ -55,6 +55,20 @@ export function NotificacoesBell({ accentColor }: { accentColor?: string }) {
     setSelected(c);
     setPopoverOpen(false);
   };
+
+  // Toque no push de comunicado: o link traz ?aviso=<id>; abre o aviso direto (e marca como lido) e limpa o endereço.
+  useEffect(() => {
+    if (!userId || !isFetched) return;
+    const params = new URLSearchParams(window.location.search);
+    const avisoId = params.get('aviso');
+    if (!avisoId) return;
+    params.delete('aviso');
+    const resto = params.toString();
+    window.history.replaceState(null, '', window.location.pathname + (resto ? `?${resto}` : '') + window.location.hash);
+    const alvo = comunicados.find((c: any) => c.id === avisoId);
+    if (alvo) handleOpenComunicado(alvo);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, isFetched, comunicados]);
 
   const handleEnablePush = async () => {
     const result = await subscribe();
