@@ -121,9 +121,11 @@ export function useMyCarreiraComunicados() {
       // Fetch read status
       const { data: leituras } = await supabase
         .from('carreira_comunicados_leituras')
-        .select('comunicado_id')
+        .select('comunicado_id, dispensado_em')
         .eq('user_id', userId);
       const lidos = new Set((leituras || []).map((l: any) => l.comunicado_id));
+      // Os que a pessoa excluiu da própria lista não voltam (e não contam como não lidos).
+      const dispensados = new Set((leituras || []).filter((l: any) => l.dispensado_em).map((l: any) => l.comunicado_id));
 
       // Get user's profile type to filter. Um responsável pode ter mais de
       // um perfil_atleta (irmãos) -- .limit(1) em vez de .maybeSingle() puro,
@@ -158,7 +160,7 @@ export function useMyCarreiraComunicados() {
         return true;
       });
 
-      return filtered.map((c: any) => ({
+      return filtered.filter((c: any) => !dispensados.has(c.id)).map((c: any) => ({
         ...c,
         lido: lidos.has(c.id),
       }));
@@ -176,6 +178,23 @@ export function useMarkComunicadoRead() {
       const { error } = await supabase
         .from('carreira_comunicados_leituras')
         .upsert({ comunicado_id: comunicadoId, user_id: userId } as any, { onConflict: 'comunicado_id,user_id' });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['my-carreira-comunicados'] });
+      qc.invalidateQueries({ queryKey: ['unread-carreira-comunicados'] });
+    },
+  });
+}
+
+// User: tira o comunicado da própria lista (já conta como lido)
+export function useDismissComunicado() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ comunicadoId, userId }: { comunicadoId: string; userId: string }) => {
+      const { error } = await supabase
+        .from('carreira_comunicados_leituras')
+        .upsert({ comunicado_id: comunicadoId, user_id: userId, dispensado_em: new Date().toISOString() } as any, { onConflict: 'comunicado_id,user_id' });
       if (error) throw error;
     },
     onSuccess: () => {

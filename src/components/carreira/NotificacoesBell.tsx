@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Bell, BellRing } from 'lucide-react';
+import { Bell, BellRing, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { useMyCarreiraComunicados, useMarkComunicadoRead, useUnreadCarreiraComunicados } from '@/hooks/useCarreiraComunicadosData';
+import { useMyCarreiraComunicados, useMarkComunicadoRead, useDismissComunicado, useUnreadCarreiraComunicados } from '@/hooks/useCarreiraComunicadosData';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -22,6 +22,7 @@ export function NotificacoesBell({ accentColor }: { accentColor?: string }) {
   const { data: comunicados = [] } = useMyCarreiraComunicados();
   const { unreadCount } = useUnreadCarreiraComunicados();
   const markRead = useMarkComunicadoRead();
+  const dismiss = useDismissComunicado();
   const [userId, setUserId] = useState<string | null>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [selected, setSelected] = useState<any | null>(null);
@@ -38,6 +39,15 @@ export function NotificacoesBell({ accentColor }: { accentColor?: string }) {
   const handleMarkRead = (comunicadoId: string) => {
     if (!userId) return;
     markRead.mutate({ comunicadoId, userId });
+  };
+
+  // Excluir só tira da lista desta pessoa; quem não excluir continua vendo o aviso (já lido).
+  const handleDismiss = (comunicadoId: string) => {
+    if (!userId) return;
+    dismiss.mutate(
+      { comunicadoId, userId },
+      { onSuccess: () => toast.success('Aviso removido da sua lista'), onError: () => toast.error('Não foi possível remover agora') },
+    );
   };
 
   const handleOpenComunicado = (c: any) => {
@@ -113,6 +123,16 @@ export function NotificacoesBell({ accentColor }: { accentColor?: string }) {
                         {format(new Date(c.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
                       </p>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                      title="Excluir da minha lista"
+                      aria-label="Excluir da minha lista"
+                      onClick={(e) => { e.stopPropagation(); handleDismiss(c.id); }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -148,6 +168,16 @@ export function NotificacoesBell({ accentColor }: { accentColor?: string }) {
                   </a>
                 </Button>
               )}
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setSelected(null)}>Manter na lista</Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-1.5 text-destructive hover:text-destructive"
+                  onClick={() => { handleDismiss(selected.id); setSelected(null); }}
+                >
+                  <Trash2 className="w-4 h-4" /> Excluir
+                </Button>
+              </div>
             </>
           )}
         </DialogContent>
