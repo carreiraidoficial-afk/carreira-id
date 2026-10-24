@@ -86,6 +86,46 @@ async function lerOrigens(userIds: string[]): Promise<Record<string, any>> {
   }
 }
 
+/** Para cada torcedor: quem ele torce (atleta) e, se o atleta estiver ligado a uma escola, qual. Se a leitura falhar, a lista segue sem a coluna preenchida. */
+async function lerTorcidas(userIds: string[]): Promise<Record<string, { nome: string; slug: string | null; escola: string | null }[]>> {
+  if (userIds.length === 0) return {};
+  try {
+    const { data: follows, error } = await supabase.from('atleta_follows').select('follower_id, following_perfil_id').in('follower_id', userIds);
+    if (error || !follows?.length) return {};
+    const { data: atletas } = await supabase.from('perfil_atleta').select('id, user_id, nome, slug').in('id', [...new Set(follows.map((f: any) => f.following_perfil_id))]);
+    const atletaPorId = new Map((atletas || []).map((a: any) => [a.id, a]));
+    const atletaIds = (atletas || []).map((a: any) => a.id);
+    const escolaPorAtleta = new Map<string, string>();
+    if (atletaIds.length > 0) {
+      const { data: conex } = await (supabase as any)
+        .from('rede_conexoes')
+        .select('solicitante_id, destinatario_id, solicitante_perfil_atleta_id, destinatario_perfil_atleta_id')
+        .eq('status', 'aceita')
+        .or(`solicitante_perfil_atleta_id.in.(${atletaIds.join(',')}),destinatario_perfil_atleta_id.in.(${atletaIds.join(',')})`);
+      const escolaUserPorAtleta = new Map<string, string>();
+      (conex || []).forEach((c: any) => {
+        if (c.solicitante_perfil_atleta_id && !c.destinatario_perfil_atleta_id) escolaUserPorAtleta.set(c.solicitante_perfil_atleta_id, c.destinatario_id);
+        if (c.destinatario_perfil_atleta_id && !c.solicitante_perfil_atleta_id) escolaUserPorAtleta.set(c.destinatario_perfil_atleta_id, c.solicitante_id);
+      });
+      const escolaUserIds = [...new Set(escolaUserPorAtleta.values())];
+      if (escolaUserIds.length > 0) {
+        const { data: escolas } = await supabase.from('perfis_rede').select('user_id, nome').eq('tipo', 'dono_escola').in('user_id', escolaUserIds);
+        const nomeEscola = new Map((escolas || []).map((e: any) => [e.user_id, e.nome]));
+        escolaUserPorAtleta.forEach((uid, atletaId) => { const n = nomeEscola.get(uid); if (n) escolaPorAtleta.set(atletaId, n); });
+      }
+    }
+    const out: Record<string, { nome: string; slug: string | null; escola: string | null }[]> = {};
+    follows.forEach((f: any) => {
+      const a: any = atletaPorId.get(f.following_perfil_id);
+      if (!a) return;
+      (out[f.follower_id] ||= []).push({ nome: a.nome, slug: a.slug, escola: escolaPorAtleta.get(a.id) ?? null });
+    });
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 function useAdminPerfisAtleta(filtros: AtletaFiltros) {
   const { search, isTeste, estado, posicao } = filtros;
   return useQuery({
@@ -160,8 +200,9 @@ function useAdminPerfisRede(search: string) {
         if (profiles) profiles.forEach((p: any) => { profilesMap[p.user_id] = p; });
       }
       const origens = await lerOrigens(userIds as string[]);
+      const torcidas = await lerTorcidas((data || []).filter((p: any) => p.tipo === 'torcedor').map((p: any) => p.user_id));
       const contatosRede = new Map((await lerContatosAdmin({ redeIds: (data || []).map((p: any) => p.id) })).map((c) => [c.id, c]));
-      let perfis = (data || []).map((p: any) => ({ ...p, telefone_whatsapp: contatosRede.get(p.id)?.telefone_whatsapp ?? null, cpf_cnpj: contatosRede.get(p.id)?.cpf_cnpj ?? null, tipo_documento: contatosRede.get(p.id)?.tipo_documento ?? null, email: profilesMap[p.user_id]?.email, provider: profilesMap[p.user_id]?.provider, origem: origens[p.user_id] ?? null, cidade: (p.dados_perfil as any)?.localizacao || (p.dados_perfil as any)?.cidade || null }));
+      let perfis = (data || []).map((p: any) => ({ ...p, telefone_whatsapp: contatosRede.get(p.id)?.telefone_whatsapp ?? null, cpf_cnpj: contatosRede.get(p.id)?.cpf_cnpj ?? null, tipo_documento: contatosRede.get(p.id)?.tipo_documento ?? null, email: profilesMap[p.user_id]?.email, provider: profilesMap[p.user_id]?.provider, origem: origens[p.user_id] ?? null, torce_por: torcidas[p.user_id] ?? [], cidade: (p.dados_perfil as any)?.localizacao || (p.dados_perfil as any)?.cidade || null }));
       if (search) {
         const s = search.toLowerCase();
         perfis = perfis.filter((p: any) => p.nome?.toLowerCase().includes(s) || p.slug?.toLowerCase().includes(s) || p.email?.toLowerCase().includes(s));
@@ -681,6 +722,7 @@ function LinhaCompletudeExpandida({ completude, colSpan }: { completude?: Perfil
 }
 
 function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atleta' | 'rede'; isTesteTab?: boolean }) {
+  const mostrarTorcida = type === 'rede' && perfis.some((p: any) => p.tipo === 'torcedor');
   const toggle = useToggleVisibility();
   const ocultarRede = useOcultarPerfilRede();
   const toggleTeste = useToggleTeste();
@@ -730,6 +772,7 @@ function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atlet
               {type === 'atleta' && <TableHead>Responsável</TableHead>}
               <TableHead className="min-w-[180px]">Contato</TableHead>
               {type === 'rede' && <TableHead>Tipo</TableHead>}
+              {mostrarTorcida && <TableHead className="min-w-[160px]">Torce por</TableHead>}
               {type === 'atleta' && <TableHead>Modalidade</TableHead>}
               {type === 'atleta' && <TableHead>Posição</TableHead>}
               <TableHead>Cidade</TableHead>
@@ -781,6 +824,20 @@ function PerfilTable({ perfis, type, isTesteTab }: { perfis: any[]; type: 'atlet
                   </div>
                 </TableCell>
                 {type === 'rede' && <TableCell className="text-sm">{TYPE_LABELS[p.tipo] || p.tipo}</TableCell>}
+                {mostrarTorcida && (
+                  <TableCell className="text-xs">
+                    {p.tipo === 'torcedor' && p.torce_por?.length > 0 ? (
+                      p.torce_por.map((t: any, i: number) => (
+                        <div key={i}>
+                          <p className="font-medium">{t.nome}</p>
+                          {t.escola && <p className="text-muted-foreground">escola {t.escola}</p>}
+                        </div>
+                      ))
+                    ) : (
+                      <span className="text-muted-foreground">{p.tipo === 'torcedor' ? 'Ainda não torce por ninguém' : ''}</span>
+                    )}
+                  </TableCell>
+                )}
                 {type === 'atleta' && <TableCell className="text-sm">{p.modalidade}</TableCell>}
                 {type === 'atleta' && <TableCell className="text-sm">{p.posicao_principal || '—'}</TableCell>}
                 <TableCell className="text-sm text-muted-foreground">{p.cidade || '—'}</TableCell>
