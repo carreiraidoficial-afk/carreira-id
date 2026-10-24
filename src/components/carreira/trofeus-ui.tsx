@@ -67,13 +67,13 @@ export function SeloTrofeu({ tipo }: { tipo: Tipo }) {
   );
 }
 
-export function CabecalhoSala({ icone, resumo, direita }: { icone: ReactNode; resumo: string | null; direita?: ReactNode }) {
+export function CabecalhoSala({ icone, resumo, direita, titulo = 'Sala de Troféus' }: { icone: ReactNode; resumo: string | null; direita?: ReactNode; titulo?: string }) {
   return (
     <div className="flex items-center justify-between gap-2">
       <div className="min-w-0">
         <div className="flex items-center gap-2 text-lg font-semibold">
           {icone}
-          Sala de Troféus
+          {titulo}
         </div>
         {resumo && <p className="mt-0.5 text-xs text-muted-foreground">{resumo}</p>}
       </div>

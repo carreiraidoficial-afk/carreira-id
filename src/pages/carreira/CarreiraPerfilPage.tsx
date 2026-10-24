@@ -352,6 +352,7 @@ export default function CarreiraPerfilPage() {
   const [editingHistorico, setEditingHistorico] = useState<HistoricoProfissional | null>(null);
   const [trofeuEscolaDialogOpen, setTrofeuEscolaDialogOpen] = useState(false);
   const [editingTrofeuEscola, setEditingTrofeuEscola] = useState<TrofeuEscola | null>(null);
+  const [modalidadeNovoTrofeu, setModalidadeNovoTrofeu] = useState<string | undefined>(undefined);
   const [avisoAmbienteVisto, setAvisoAmbienteVisto] = useState(true);
   const { theme: carreiraTheme, isDarkTheme, setDarkTheme } = useCarreiraTheme();
   const isOwner = !!(currentUserId && perfil && currentUserId === perfil.user_id);
@@ -1400,10 +1401,11 @@ export default function CarreiraPerfilPage() {
             {isDonoEscolaProfile && (
               <SalaTrofeusEscola
                 perfilRedeId={perfil.id}
+                modalidades={modalidadesRede}
                 isOwner={isOwnerOuSuporte}
                 podeExcluir={isOwner}
                 accentColor={accentColor}
-                onAdd={() => { setEditingTrofeuEscola(null); setTrofeuEscolaDialogOpen(true); }}
+                onAdd={(modalidade) => { setEditingTrofeuEscola(null); setModalidadeNovoTrofeu(modalidade); setTrofeuEscolaDialogOpen(true); }}
                 onEdit={(item) => { setEditingTrofeuEscola(item); setTrofeuEscolaDialogOpen(true); }}
                 onDelete={handleDeleteTrofeuEscola}
               />
@@ -1687,6 +1689,8 @@ export default function CarreiraPerfilPage() {
           editing={editingTrofeuEscola}
           onSave={handleSaveTrofeuEscola}
           podeRemoverFotos
+          modalidades={modalidadesRede}
+          modalidadePadrao={modalidadeNovoTrofeu}
         />
       )}
 
