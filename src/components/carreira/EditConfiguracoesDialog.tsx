@@ -112,7 +112,7 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="max-w-lg max-h-[calc(100dvh-8rem)] sm:max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle>Configurações</DialogTitle>
         </DialogHeader>
@@ -317,8 +317,8 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
               </div>
             </div>
 
-            <div className="pt-2 border-t">
-              <Button type="button" variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 mt-4" onClick={() => setDeleteDialogOpen(true)}>
+            <div className="pt-2 pb-2 border-t">
+              <Button type="button" variant="outline" className="w-full border-destructive/50 text-destructive hover:text-destructive hover:bg-destructive/10 mt-4" onClick={() => setDeleteDialogOpen(true)}>
                 <Trash2 className="w-4 h-4 mr-2" />Apagar minha conta
               </Button>
             </div>
