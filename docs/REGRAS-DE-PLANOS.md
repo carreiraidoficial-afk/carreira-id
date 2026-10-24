@@ -74,7 +74,7 @@ Implementado em `src/hooks/useCarreiraPlano.ts` (telas) e em `check_carreira_ati
 
 ## 6. Plano anual (publicado em 14/10/2026; ainda sem teste real de pagamento)
 
-- R$ 120,00 por 365 dias, pagamento único: PIX, ou cartão à vista / até 12x. **Não renova sozinho**; aviso 7 dias antes de vencer.
+- R$ 120,00 por 365 dias, pagamento único à vista: PIX ou cartão (sem parcelamento desde 24/10/2026). **Não renova sozinho**; aviso 7 dias antes de vencer.
 - Quem já tem assinatura ativa só contrata o anual quando ela vencer ou for cancelada.
 - Colunas novas em `carreira_assinaturas`: `ciclo` (mensal/anual), `duracao_dias`, `ultimo_pagamento_id`.
 - A validade passa a somar ao que resta, e cada cobrança é contada uma vez.

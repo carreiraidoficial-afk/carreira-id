@@ -951,7 +951,7 @@ export function CarreiraLandingV2() {
                 <span className="text-sm text-gray-400">{premiumAnual ? '/ano' : '/mês'}</span>
               </p>
               {premiumAnual && (
-                <p className="text-xs text-emerald-400 mt-1">Equivale a R$ 10,00 por mês • economize R$ 24,00 • até 12x no cartão</p>
+                <p className="text-xs text-emerald-400 mt-1">Equivale a R$ 10,00 por mês • economize R$ 24,00</p>
               )}
               <p className="text-xs text-purple-300 mt-1">Experimente por 15 dias, sem cartão (+15 ao completar o perfil). O plano Base é sempre gratuito.</p>
               <div className="border-t border-purple-500/20 my-4" />

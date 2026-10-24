@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Lock, Star, Zap, Trophy, Copy, CheckCircle, Loader2, CreditCard, QrCode, Crown, AlertCircle } from 'lucide-react';
 import { CarreiraLimitResult } from '@/hooks/useCarreiraFreemium';
-import { PLANOS, CarreiraPlano, normalizePlano, PRECO_PREMIUM_ANUAL, PARCELAS_MAX_ANUAL } from '@/config/carreiraPlanos';
+import { PLANOS, CarreiraPlano, normalizePlano, PRECO_PREMIUM_ANUAL } from '@/config/carreiraPlanos';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -70,7 +70,6 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
       return (data || []).length > 0;
     },
   });
-  const [parcelas, setParcelas] = useState(1);
   const [selectedPlan] = useState<CarreiraPlano>(
     planoSelecionado ? normalizePlano(planoSelecionado) : 'premium'
   );
@@ -282,7 +281,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
           email: resolvedUser.email,
           sandbox: isSandboxTest,
           ciclo,
-          parcelas: anual ? parcelas : 1,
+          parcelas: 1,
           card: {
             holderName: cardForm.holderName.trim().toUpperCase(),
             number: numberDigits,
@@ -599,22 +598,6 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
               onChange={(e) => updateCard({ phone: formatPhone(e.target.value) })}
             />
           </div>
-          {anual && (
-            <div className="space-y-1">
-              <Label className="text-xs">Parcelas</Label>
-              <select
-                value={parcelas}
-                onChange={(e) => setParcelas(Number(e.target.value))}
-                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                {Array.from({ length: PARCELAS_MAX_ANUAL }, (_, i) => i + 1).map((n) => (
-                  <option key={n} value={n}>
-                    {n === 1 ? `À vista — R$ ${brl(PRECO_PREMIUM_ANUAL)}` : `${n}x de R$ ${brl(PRECO_PREMIUM_ANUAL / n)} sem juros`}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
         </div>
 
         {cardError && (
@@ -639,7 +622,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
           {cardSubmitting
             ? 'Processando...'
             : anual
-              ? (parcelas > 1 ? `Pagar ${parcelas}x de R$ ${brl(PRECO_PREMIUM_ANUAL / parcelas)}` : `Pagar R$ ${brl(PRECO_PREMIUM_ANUAL)}`)
+              ? `Pagar R$ ${brl(PRECO_PREMIUM_ANUAL)} à vista`
               : `Assinar por R$ ${brl(planInfo.preco)}/mês`}
         </Button>
         <p className="text-[10px] text-center text-muted-foreground">
@@ -763,7 +746,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
             </span>
           )}
           <div className="text-sm font-semibold">Anual</div>
-          <div className="text-[11px] text-muted-foreground">R$ {brl(PRECO_PREMIUM_ANUAL)} • até {PARCELAS_MAX_ANUAL}x no cartão</div>
+          <div className="text-[11px] text-muted-foreground">R$ {brl(PRECO_PREMIUM_ANUAL)} • à vista no PIX ou no cartão</div>
         </button>
       </div>
 
@@ -821,7 +804,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
                 <CreditCard className="w-4 h-4 flex-shrink-0" />
                 <div className="text-left">
                   <div>Cartão</div>
-                  <div className="text-[10px] font-normal text-muted-foreground">{anual ? `Até ${PARCELAS_MAX_ANUAL}x` : 'Recorrente'}</div>
+                  <div className="text-[10px] font-normal text-muted-foreground">{anual ? 'À vista' : 'Recorrente'}</div>
                 </div>
               </button>
               <button
@@ -901,7 +884,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
           <p className="text-xs text-center text-muted-foreground">
             {anual
               ? (paymentMethod === 'cartao'
-                  ? 'Pagamento único • 365 dias de acesso • Parcele em até 12x • Não renova sozinho'
+                  ? 'Pagamento único à vista • 365 dias de acesso • Não renova sozinho'
                   : 'Pagamento único via PIX • 365 dias de acesso • Não renova sozinho')
               : (paymentMethod === 'cartao'
                   ? 'Cartão de crédito • Cobrança mensal automática • Cancele quando quiser'

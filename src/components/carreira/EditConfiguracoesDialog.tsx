@@ -1,3 +1,4 @@
+import { CondicoesAssinaturaCard } from '@/components/carreira/CondicoesAssinaturaCard';
 import { VisibilidadePerfilEscolha, type VisibilidadePerfil } from '@/components/carreira/VisibilidadePerfilEscolha';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -146,7 +147,10 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
 
           <TabsContent value="assinatura" className="mt-4">
             {perfil.crianca_id ? (
-              <AssinaturaCard userId={perfil.user_id} criancaId={perfil.crianca_id} />
+              <>
+                <AssinaturaCard userId={perfil.user_id} criancaId={perfil.crianca_id} />
+                <CondicoesAssinaturaCard />
+              </>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">Assinatura disponível apenas para perfis de atleta.</p>
             )}

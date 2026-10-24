@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       card, holderInfo,
     } = payload;
     const ciclo: 'mensal' | 'anual' = payload.ciclo === 'anual' ? 'anual' : 'mensal';
-    const parcelas = Math.min(12, Math.max(1, Math.floor(Number(payload.parcelas) || 1)));
+    const parcelas = 1; // plano anual é à vista: ignora qualquer número de parcelas que venha do navegador
 
     if (!user_id || !crianca_id || !cpf || !nome || !email || !card || !holderInfo) {
       return new Response(JSON.stringify({ error: 'Dados obrigatórios não informados' }),
@@ -165,7 +165,7 @@ Deno.serve(async (req) => {
       phone: String(holderInfo.phone).replace(/\D/g, ''),
     };
 
-    // Plano anual: UMA cobrança de 365 dias (à vista ou em até 12x no cartão), sem renovação automática.
+    // Plano anual: UMA cobrança de 365 dias (à vista no cartão), sem renovação automática.
     if (ciclo === 'anual') {
       console.log('Creating annual card payment for user', user_id, 'crianca', crianca_id, 'parcelas', parcelas);
       const payResp = await fetch(`${ASAAS_API_URL}/payments`, {
@@ -178,7 +178,7 @@ Deno.serve(async (req) => {
           description: 'Carreira ID Elite - Plano anual',
           externalReference: `carreira_premium_${user_id}_${crianca_id}`,
           notificationDisabled: true,
-          ...(parcelas > 1 ? { installmentCount: parcelas, totalValue: valor } : { value: valor }),
+          value: valor,
           creditCard: cartaoAsaas,
           creditCardHolderInfo: titularAsaas,
           remoteIp,
