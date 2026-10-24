@@ -221,6 +221,20 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
           </p>
         )}
 
+        {/* Garantia de 7 dias: só enquanto o prazo vale (a contar do início da assinatura paga) */}
+        {assinatura && assinatura.status !== 'trial' && assinatura.metodo_pagamento !== 'isento' && assinatura.inicio_em
+          && (Date.now() - new Date(assinatura.inicio_em).getTime()) < 7 * 24 * 60 * 60 * 1000 && (
+          <p className="mt-2 pt-2 border-t text-xs text-muted-foreground" style={{ borderColor: `${currentPlanoInfo.cor}20` }}>
+            Você está na garantia de 7 dias: se não gostar, peça o dinheiro de volta por{' '}
+            <a
+              href="mailto:contato@carreiraid.com.br?subject=Garantia%20de%207%20dias%20-%20Carreira%20ID&body=Quero%20desistir%20da%20assinatura%20e%20receber%20o%20valor%20de%20volta."
+              className="underline text-foreground"
+            >
+              contato@carreiraid.com.br
+            </a>.
+          </p>
+        )}
+
         {assinatura?.inicio_em && (
           <p className="text-[10px] text-muted-foreground mt-1">
             Desde {new Date(assinatura.inicio_em).toLocaleDateString('pt-BR')}

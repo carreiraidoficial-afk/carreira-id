@@ -199,6 +199,18 @@ export default function CarreiraPlanos() {
           })}
         </div>
 
+        {/* Como funciona a cobrança (Termos de Uso, seção 9) */}
+        <div className="mx-auto max-w-2xl rounded-xl border border-white/10 bg-white/5 p-4 text-left text-xs leading-relaxed text-white/50">
+          <p className="mb-1 font-semibold text-white/70">Como funciona a cobrança</p>
+          <p>
+            Mensal no cartão renova sozinho todo mês; mensal no PIX gera um novo PIX a cada mês; o anual é um pagamento único de 365 dias e não renova.
+            Cancele quando quiser, sem multa, pelo app. Você pode desistir em até 7 dias e receber tudo de volta.{' '}
+            <a href="/termos-de-uso#assinatura" target="_blank" rel="noopener noreferrer" className="underline text-white/70 hover:text-white">
+              Condições da assinatura
+            </a>
+          </p>
+        </div>
+
         {/* Footer info */}
         <div className="text-center space-y-1.5 pt-4 pb-8">
           <p className="text-xs text-white/30">

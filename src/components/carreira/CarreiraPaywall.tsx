@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { TERMOS_VERSAO } from '@/lib/termosVersao';
 
 interface CarreiraPaywallProps {
   limitResult: CarreiraLimitResult;
@@ -201,7 +202,37 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
     }
   };
 
-  const handleSubscribe = () => {
+  // Aceite das Condições da assinatura (Termos de Uso, seção 9): marcado na tela e gravado antes de gerar qualquer cobrança.
+  const [aceitouCondicoes, setAceitouCondicoes] = useState(false);
+
+  const registrarAceite = async (): Promise<boolean> => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const uid = user?.id || sessionData.session?.user?.id;
+    if (!uid) {
+      toast.error('Sessão expirada. Entre novamente para continuar.');
+      return false;
+    }
+    const { error } = await (supabase as any).from('carreira_aceites_assinatura').insert({
+      user_id: uid,
+      crianca_id: criancaId || null,
+      versao: TERMOS_VERSAO,
+      ciclo: anual ? 'anual' : 'mensal',
+      metodo: paymentMethod === 'pix' ? 'pix' : 'cartao',
+    });
+    if (error) {
+      console.error('[aceite-assinatura] erro:', error);
+      toast.error('Não foi possível registrar o seu aceite. Tente novamente.');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubscribe = async () => {
+    if (!aceitouCondicoes) {
+      toast.error('Marque que leu e aceita as Condições da assinatura.');
+      return;
+    }
+    if (!(await registrarAceite())) return;
     if (paymentMethod === 'pix') {
       generatePix();
     } else {
@@ -811,6 +842,37 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
             </div>
           </div>
 
+          <div className="rounded-lg border bg-muted/30 p-3 space-y-1.5 text-xs text-muted-foreground">
+            <p className="text-sm font-semibold text-foreground">
+              Elite · {anual ? `R$ ${brl(precoCiclo)} por ano` : `R$ ${brl(preco)} por mês`}
+            </p>
+            <p>
+              • {anual
+                ? 'Pagamento único por 365 dias. Não renova sozinho.'
+                : paymentMethod === 'cartao'
+                  ? 'Renova automaticamente todo mês no cartão, até você cancelar.'
+                  : 'Todo mês geramos um novo PIX e avisamos você. Não há cobrança automática.'}
+            </p>
+            <p>• Cancele quando quiser em Configurações, aba Assinatura, sem multa. Você mantém o Elite até o fim do período pago.</p>
+            <p>• Garantia de 7 dias: desista e receba o valor de volta.</p>
+          </div>
+
+          <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+            <input
+              type="checkbox"
+              checked={aceitouCondicoes}
+              onChange={(e) => setAceitouCondicoes(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0"
+            />
+            <span>
+              Li e aceito as{' '}
+              <a href="/termos-de-uso#assinatura" target="_blank" rel="noopener noreferrer" className="underline text-primary">
+                Condições da assinatura
+              </a>
+              .
+            </span>
+          </label>
+
           <Button
             type="button"
             className="w-full text-white gap-2"
@@ -820,7 +882,7 @@ export function CarreiraPaywall({ limitResult, childName, criancaId, planoSeleci
               e.stopPropagation();
               handleSubscribe();
             }}
-            disabled={step === 'loading' || !cpfValid}
+            disabled={step === 'loading' || !cpfValid || !aceitouCondicoes}
           >
             {step === 'loading' ? (
               <Loader2 className="w-4 h-4 animate-spin" />

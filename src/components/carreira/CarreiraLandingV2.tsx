@@ -986,6 +986,11 @@ export function CarreiraLandingV2() {
               ? 'Pagamento único por 365 dias • Não renova sozinho: avisamos antes de vencer'
               : 'Cancele quando quiser • Sem taxa de cancelamento'}
           </p>
+          <p className="mx-auto mt-3 max-w-2xl text-xs leading-relaxed text-gray-500">
+            Mensal no cartão renova sozinho todo mês; mensal no PIX gera um novo PIX a cada mês; o anual é um pagamento único de 365 dias e não renova.
+            Você pode desistir em até 7 dias e receber tudo de volta.{' '}
+            <a href="/termos-de-uso#assinatura" target="_blank" rel="noopener noreferrer" className="underline hover:text-white">Condições da assinatura</a>
+          </p>
         </div>
       </section>
 
@@ -1092,6 +1097,7 @@ export function CarreiraLandingV2() {
           <nav className="flex items-center gap-6 text-sm text-gray-500">
             <a href="/termos-de-uso" className="hover:text-white transition">Termos de Uso</a>
             <a href="/politica-de-privacidade" className="hover:text-white transition">Privacidade</a>
+            <a href="/termos-de-uso#assinatura" className="hover:text-white transition">Condições da assinatura</a>
             <a href={carreiraPath('/contato')} className="hover:text-white transition">Contato</a>
           </nav>
           <p className="text-xs text-gray-600">© 2024 Carreira ID. Todos os direitos reservados.</p>
