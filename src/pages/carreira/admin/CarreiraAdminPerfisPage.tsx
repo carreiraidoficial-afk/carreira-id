@@ -33,6 +33,10 @@ const TYPE_LABELS: Record<string, string> = {
   torcedor: 'Torcedor', jogador_profissional: 'Jogador Profissional', plataforma: 'Plataforma',
 };
 
+/** A aba "Rede" foi separada em três para ficar mais fácil de ler: escolas, torcedores e os demais profissionais. */
+type GrupoRede = 'escola' | 'profissional' | 'torcedor';
+const grupoDaRede = (tipo?: string | null): GrupoRede => (tipo === 'dono_escola' ? 'escola' : tipo === 'torcedor' ? 'torcedor' : 'profissional');
+
 interface AtletaFiltros {
   search: string;
   isTeste: boolean;
@@ -1005,6 +1009,11 @@ export default function CarreiraAdminPerfisPage() {
   const perfisAtleta = perfisAtletaTodos?.filter((p: any) => (!esporteAtleta || esporteDaModalidade(p.modalidade) === esporteAtleta) && bateOrigem(p, origemAtleta) && bateVisibilidade(p, visibAtleta));
   const perfisTeste = perfisTesteTodos?.filter((p: any) => (!esporteTeste || esporteDaModalidade(p.modalidade) === esporteTeste) && bateOrigem(p, origemTeste) && bateVisibilidade(p, visibTeste));
   const { data: perfisRede, isLoading: loadingRede } = useAdminPerfisRede(searchRede);
+  const redePorGrupo = useMemo(() => ({
+    escola: (perfisRede || []).filter((p: any) => grupoDaRede(p.tipo) === 'escola'),
+    profissional: (perfisRede || []).filter((p: any) => grupoDaRede(p.tipo) === 'profissional'),
+    torcedor: (perfisRede || []).filter((p: any) => grupoDaRede(p.tipo) === 'torcedor'),
+  }), [perfisRede]);
   const { data: cadastrosIncompletos, isLoading: loadingIncompletos } = useAdminCadastrosIncompletos(searchIncompletos);
   const { data: colaboradores, isLoading: loadingColaboradores } = useAdminColaboradores(searchColaboradores);
 
@@ -1017,9 +1026,11 @@ export default function CarreiraAdminPerfisPage() {
         </div>
 
         <Tabs defaultValue="atleta">
-          <TabsList>
+          <TabsList className="h-auto flex-wrap justify-start">
             <TabsTrigger value="atleta">Atletas ({perfisAtleta?.length || 0})</TabsTrigger>
-            <TabsTrigger value="rede">Rede Profissional ({perfisRede?.length || 0})</TabsTrigger>
+            <TabsTrigger value="escola">Escolas ({redePorGrupo.escola.length})</TabsTrigger>
+            <TabsTrigger value="profissional">Profissionais ({redePorGrupo.profissional.length})</TabsTrigger>
+            <TabsTrigger value="torcedor">Torcedores ({redePorGrupo.torcedor.length})</TabsTrigger>
             <TabsTrigger value="teste" className="gap-1.5"><FlaskConical className="w-3.5 h-3.5" />Perfil de Teste ({perfisTeste?.length || 0})</TabsTrigger>
             <TabsTrigger value="incompletos" className="gap-1.5"><UserX className="w-3.5 h-3.5" />Perfil Incompleto ({cadastrosIncompletos?.length || 0})</TabsTrigger>
             <TabsTrigger value="colaboradores" className="gap-1.5"><Users className="w-3.5 h-3.5" />Colaboradores ({colaboradores?.length || 0})</TabsTrigger>
@@ -1039,15 +1050,17 @@ export default function CarreiraAdminPerfisPage() {
               : <PerfilTable perfis={perfisAtleta} type="atleta" />}
           </TabsContent>
 
-          <TabsContent value="rede" className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input placeholder="Buscar por nome, slug ou email..." value={searchRede} onChange={(e) => setSearchRede(e.target.value)} className="pl-10" />
-            </div>
-            {loadingRede ? <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-              : !perfisRede?.length ? <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum perfil encontrado</CardContent></Card>
-              : <PerfilTable perfis={perfisRede} type="rede" />}
-          </TabsContent>
+          {(['escola', 'profissional', 'torcedor'] as GrupoRede[]).map((grupo) => (
+            <TabsContent key={grupo} value={grupo} className="space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input placeholder="Buscar por nome, slug ou email..." value={searchRede} onChange={(e) => setSearchRede(e.target.value)} className="pl-10" />
+              </div>
+              {loadingRede ? <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+                : !redePorGrupo[grupo].length ? <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum perfil encontrado</CardContent></Card>
+                : <PerfilTable perfis={redePorGrupo[grupo]} type="rede" />}
+            </TabsContent>
+          ))}
 
           <TabsContent value="teste" className="space-y-4">
             <p className="text-xs text-muted-foreground">Perfis de teste/dev nao entram nas contagens do dashboard nem na aba Atletas.</p>
