@@ -318,6 +318,16 @@ export function EditConfiguracoesDialog({ open, onOpenChange, perfil, perfilTipo
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                 </a>
+                <a href="/regras-da-comunidade" target="_blank" rel="noopener noreferrer"
+                  className="w-full flex items-center justify-between gap-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-full bg-orange-500/10 flex items-center justify-center shrink-0">
+                      <Users className="w-4 h-4 text-orange-500" />
+                    </div>
+                    <p className="text-sm font-medium truncate">Regras da comunidade</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                </a>
               </div>
             </div>
 

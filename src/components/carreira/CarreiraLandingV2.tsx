@@ -1098,6 +1098,7 @@ export function CarreiraLandingV2() {
             <a href="/termos-de-uso" className="hover:text-white transition">Termos de Uso</a>
             <a href="/politica-de-privacidade" className="hover:text-white transition">Privacidade</a>
             <a href="/termos-de-uso#assinatura" className="hover:text-white transition">Condições da assinatura</a>
+            <a href="/regras-da-comunidade" className="hover:text-white transition">Regras da comunidade</a>
             <a href={carreiraPath('/contato')} className="hover:text-white transition">Contato</a>
           </nav>
           <p className="text-xs text-gray-600">© 2024 Carreira ID. Todos os direitos reservados.</p>

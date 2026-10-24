@@ -60,6 +60,7 @@
       "destination": "https://fppsotlycinwqsjpoybg.supabase.co/functions/v1/og-profile?slug=cadastro&ref=equipe&escola=:escola"
     },
     { "source": "/termos-de-uso", "destination": "/termos-de-uso.html" },
+    { "source": "/regras-da-comunidade", "destination": "/regras-da-comunidade.html" },
     { "source": "/politica-de-privacidade", "destination": "/politica-de-privacidade.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],

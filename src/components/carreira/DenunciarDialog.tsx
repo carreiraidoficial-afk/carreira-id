@@ -17,6 +17,7 @@ export const MOTIVOS_DENUNCIA: { valor: string; rotulo: string }[] = [
   { valor: 'violencia', rotulo: 'Violência ou ameaça' },
   { valor: 'menor_exposto', rotulo: 'Exposição indevida de criança ou adolescente' },
   { valor: 'info_falsa', rotulo: 'Informação falsa ou perfil falso' },
+  { valor: 'fora_do_tema', rotulo: 'Fora do tema (propaganda, política, meme)' },
   { valor: 'outro', rotulo: 'Outro motivo' },
 ];
 
@@ -79,6 +80,15 @@ export function DenunciarDialog({ open, onOpenChange, tipo, conteudoId }: Denunc
           placeholder="Quer explicar melhor? (opcional)"
           rows={3}
         />
+        {motivo === 'menor_exposto' && (
+          <p className="text-xs text-muted-foreground">
+            Esse tipo de denúncia tem prioridade. Se for urgente, escreva também para contato@carreiraid.com.br.
+          </p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Nossa equipe analisa em até 2 dias úteis. Sua denúncia não aparece para quem foi denunciado. Veja as{' '}
+          <a href="/regras-da-comunidade" target="_blank" rel="noopener noreferrer" className="underline">Regras da comunidade</a>.
+        </p>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={enviando}>Cancelar</Button>
           <Button onClick={enviar} disabled={!motivo || enviando}>

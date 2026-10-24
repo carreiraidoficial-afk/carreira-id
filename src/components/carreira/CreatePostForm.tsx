@@ -532,6 +532,10 @@ export function CreatePostForm({ perfil, perfilRedeId, perfilRedeNome, perfilRed
                   )}
                 </Button>
               </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Aqui é sobre esporte: sem política, propaganda ou assuntos fora do esporte. Foque na sua evolução. Ao publicar, você concorda com as{' '}
+                <a href="/regras-da-comunidade" target="_blank" rel="noopener noreferrer" className="underline">Regras da comunidade</a>.
+              </p>
             </div>
           </div>
         </div>
