@@ -5,6 +5,40 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+
+const ASAAS_API_URL = "https://api.asaas.com/v3";
+
+// Antes de apagar a conta, para a cobrança recorrente no Asaas. Sem isso, as assinaturas somem do nosso banco mas o cartão da pessoa
+// continua sendo cobrado. Se o Asaas recusar (que não seja "já não existe"), a exclusão é interrompida para a pessoa tentar de novo.
+async function cancelarCobrancasRecorrentes(adminClient: any, userId: string): Promise<{ ok: true } | { ok: false; erro: string }> {
+  const { data: individuais } = await adminClient
+    .from("carreira_assinaturas").select("gateway_subscription_id").eq("user_id", userId).not("gateway_subscription_id", "is", null);
+  const { data: familias } = await adminClient
+    .from("carreira_assinaturas_familia").select("gateway_subscription_id").eq("user_id", userId).not("gateway_subscription_id", "is", null);
+  const ids = [...new Set([...(individuais || []), ...(familias || [])].map((x: any) => x.gateway_subscription_id).filter(Boolean))] as string[];
+  if (ids.length === 0) return { ok: true };
+
+  const apiKey = Deno.env.get("ASAAS_API_KEY");
+  if (!apiKey) return { ok: false, erro: "Configuração de pagamento não encontrada." };
+  for (const subId of ids) {
+    try {
+      const res = await fetch(`${ASAAS_API_URL}/subscriptions/${subId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", access_token: apiKey },
+      });
+      // 404 = já não existe mais no Asaas (cancelada por outro caminho): vale como cancelada.
+      if (!res.ok && res.status !== 404) {
+        console.error("[cancelarCobrancasRecorrentes] Asaas recusou:", res.status, await res.text().catch(() => ""));
+        return { ok: false, erro: "Não foi possível cancelar a cobrança recorrente. Sua conta não foi apagada; tente novamente em instantes." };
+      }
+    } catch (e) {
+      console.error("[cancelarCobrancasRecorrentes] erro de rede:", e);
+      return { ok: false, erro: "Não foi possível falar com o sistema de pagamento. Sua conta não foi apagada; tente novamente em instantes." };
+    }
+  }
+  return { ok: true };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -37,6 +71,15 @@ Deno.serve(async (req) => {
 
     const userId = user.id;
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    // ====== STEP -1: PARA A COBRANÇA RECORRENTE (se falhar, nada é apagado) ======
+    const cobranca = await cancelarCobrancasRecorrentes(adminClient, userId);
+    if (!cobranca.ok) {
+      return new Response(JSON.stringify({ error: cobranca.erro }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // ====== STEP 0: BACKUP ALL DATA BEFORE DELETING ======
     console.log(`[delete-account] Backing up data for user ${userId}...`);
@@ -144,6 +187,7 @@ Deno.serve(async (req) => {
 
     // Delete carreira data
     await adminClient.from("carreira_assinaturas").delete().eq("user_id", userId);
+    await adminClient.from("carreira_assinaturas_familia").delete().eq("user_id", userId);
     await adminClient.from("carreira_experiencias").delete().eq("user_id", userId);
 
     // Delete push subscriptions

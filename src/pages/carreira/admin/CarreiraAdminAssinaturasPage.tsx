@@ -184,6 +184,18 @@ function getEfetivo(ass: any): { acessoAtivo: boolean; statusLabel: string; stat
       notaPlano: (!acessoAtivo && ass.plano_display === 'Elite') ? 'contratou Elite' : null,
     };
   }
+  if (ass.status === 'cancelada_vigente') {
+    // Cancelou, não será mais cobrada, mas já pagou: o Elite vale até a validade.
+    const acessoAtivo = !venceu;
+    return {
+      acessoAtivo,
+      statusLabel: acessoAtivo ? 'Cancelada (vale até o fim)' : 'Cancelada',
+      statusClass: acessoAtivo ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' : 'bg-muted text-muted-foreground',
+      planoEfetivo: acessoAtivo ? ass.plano_display : 'Base',
+      venceu: !acessoAtivo,
+      notaPlano: !acessoAtivo && ass.plano_display === 'Elite' ? 'contratou Elite' : null,
+    };
+  }
   if (ass.status === 'trial') {
     const acessoAtivo = !venceu;
     return {
@@ -197,7 +209,7 @@ function getEfetivo(ass: any): { acessoAtivo: boolean; statusLabel: string; stat
       notaPlano: (!acessoAtivo && ass.plano_display === 'Elite') ? 'testou o Elite (não converteu)' : null,
     };
   }
-  const labelMap: Record<string, string> = { cancelada: 'Cancelada', pendente: 'Pendente', expirada: 'Expirada' };
+  const labelMap: Record<string, string> = { cancelada: 'Cancelada', cancelada_vigente: 'Cancelada (acesso até a validade)', pendente: 'Pendente', expirada: 'Expirada' };
   return {
     acessoAtivo: false,
     statusLabel: labelMap[ass.status] || ass.status,
@@ -393,7 +405,7 @@ export default function CarreiraAdminAssinaturasPage() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{format(new Date(ass.inicio_em), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {ass.status === 'cancelada' && ass.cancelada_em
+                        {(ass.status === 'cancelada' || ass.status === 'cancelada_vigente') && ass.cancelada_em
                           ? <span className="text-destructive">{format(new Date(ass.cancelada_em), 'dd/MM/yyyy', { locale: ptBR })}</span>
                           : ass.expira_em
                             ? <span className={efetivo.venceu ? 'text-destructive' : ''}>{format(new Date(ass.expira_em), 'dd/MM/yyyy', { locale: ptBR })}</span>

@@ -3,7 +3,7 @@
 Documento de consulta. Responde: "o que cada plano permite, quem decide isso, onde está implementado e o que ainda está pendente".
 Atualize este arquivo sempre que uma regra mudar (veja o Histórico no fim).
 
-Última revisão: 15/10/2026.
+Última revisão: 24/10/2026.
 
 > **Nome do plano pago: Elite** (desde 15/10/2026, antes se chamava Premium). Só o nome que as pessoas veem mudou: no banco e no código o identificador interno continua sendo `premium` (ex.: `plano = 'premium'`, `carreira_valor_premium`).
 
@@ -94,6 +94,9 @@ Implementado em `src/hooks/useCarreiraPlano.ts` (telas) e em `check_carreira_ati
 | 8 | Google Play: cobrança de assinatura dentro do app pode exigir o sistema do Google | Decidir antes de publicar na loja |
 
 ## 8. Histórico de mudanças nas regras
+
+- **24/10/2026** — **Cancelar não tira mais o Elite na hora.** Novo status `cancelada_vigente`: a pessoa cancelou (a cobrança recorrente para no Asaas), já pagou o período e continua com o Elite até `expira_em`; depois a função `expirar_trials_carreira` muda para `cancelada`. Reembolso e chargeback seguem usando `cancelada` com validade encerrada (sem acesso). Funções do banco atualizadas: `carreira_atleta_e_premium`, `check_carreira_atividade_limit`, `get_premium_crianca_ids`, `has_atividades_externas_access` e `_for_child`. Tela Assinatura mostra "Cancelada: vale até dd/mm". Plano Família ainda cancela na hora.
+- **24/10/2026** — **Apagar a conta (pela pessoa ou pelo admin) agora cancela antes a cobrança recorrente no Asaas** (assinatura individual e Família). Se o Asaas recusar, a conta não é apagada e a pessoa vê a mensagem para tentar de novo.
 
 - **16/10/2026** — Currículo em PDF volta ao app como recurso do Elite: botão "Currículo PDF" ao lado de Premiações, com janela para escolher Resumo ou Completo e aparência clara ou escura. Em fase de teste: liberado só para o João Guilherme (tabela `carreira_recursos_liberados`); chave `curriculo_pdf` do Elite desligada até a liberação geral.
 

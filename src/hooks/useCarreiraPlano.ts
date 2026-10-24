@@ -81,7 +81,7 @@ export function useCarreiraPlano(criancaId: string | null): CarreiraPlanoResult 
         .from('carreira_assinaturas')
         .select('plano, status, expira_em')
         .eq('crianca_id', criancaId)
-        .in('status', ['ativa', 'trial'])
+        .in('status', ['ativa', 'trial', 'cancelada_vigente'])
         .order('created_at', { ascending: false })
         .limit(1);
 

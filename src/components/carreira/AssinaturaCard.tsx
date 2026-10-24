@@ -52,7 +52,7 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
         .select('id, plano, status, metodo_pagamento, valor, inicio_em, expira_em, familia_id, ciclo')
         .eq('user_id', userId)
         .eq('crianca_id', criancaId)
-        .in('status', ['ativa', 'trial'])
+        .in('status', ['ativa', 'trial', 'cancelada_vigente'])
         .order('created_at', { ascending: false })
         .limit(1);
       if (error) throw error;
@@ -115,7 +115,7 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
       toast.success(
         confirmAction?.type === 'upgrade' 
           ? 'Plano atualizado com sucesso!' 
-          : 'Downgrade agendado. Você mantém os benefícios até o fim do período.'
+          : 'Assinatura cancelada. Você mantém os benefícios até o fim do período já pago.'
       );
     },
     onError: (e: any) => {
@@ -133,8 +133,11 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
   const isTrialActive = !!assinatura && assinatura.status === 'trial'
     
     && assinatura?.expira_em && new Date(assinatura.expira_em) > new Date();
+  // Cancelada pela própria pessoa, mas já paga: continua com o plano até a validade (sem novas cobranças).
+  const cancelamentoVigente = !!assinatura && assinatura.status === 'cancelada_vigente'
+    && !!assinatura.expira_em && new Date(assinatura.expira_em) > new Date();
   const currentPlano: CarreiraPlano = assinatura
-    ? (isTrialActive ? 'premium' : (assinatura.status === 'ativa' ? normalizePlano(assinatura.plano) : 'base'))
+    ? (isTrialActive ? 'premium' : ((assinatura.status === 'ativa' || cancelamentoVigente) ? normalizePlano(assinatura.plano) : 'base'))
     : 'base';
   const currentPlanoInfo = PLANOS[currentPlano];
   const metodo = assinatura?.metodo_pagamento ? METODO_LABELS[assinatura.metodo_pagamento] : null;
@@ -144,7 +147,7 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
   const souFamilia = assinatura?.status !== 'trial' && !!assinatura?.familia_id;
 
   // Available plan changes
-  const availablePlans = (['base', 'premium'] as CarreiraPlano[]).filter(p => p !== currentPlano);
+  const availablePlans = cancelamentoVigente ? [] : (['base', 'premium'] as CarreiraPlano[]).filter(p => p !== currentPlano);
 
   const diasRestantesTrial = isTrialActive
     ? Math.max(0, Math.ceil((new Date(assinatura.expira_em).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
@@ -184,11 +187,19 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
           <Badge className="text-[10px] shrink-0" style={{ backgroundColor: `${currentPlanoInfo.cor}20`, color: currentPlanoInfo.cor, border: `1px solid ${currentPlanoInfo.cor}40` }}>
             {isTrialActive ? (
               <><Clock className="w-3 h-3 mr-0.5" /> Trial</>
+            ) : cancelamentoVigente ? (
+              <><Clock className="w-3 h-3 mr-0.5" /> Cancelada</>
             ) : (
               <><CheckCircle2 className="w-3 h-3 mr-0.5" /> Ativo</>
             )}
           </Badge>
         </div>
+
+        {cancelamentoVigente && assinatura?.expira_em && (
+          <p className="mt-2 pt-2 border-t text-xs text-muted-foreground" style={{ borderColor: `${currentPlanoInfo.cor}20` }}>
+            Assinatura cancelada: não haverá novas cobranças. Você continua com o Elite até <strong className="text-foreground">{new Date(assinatura.expira_em).toLocaleDateString('pt-BR')}</strong>.
+          </p>
+        )}
 
         {isTrialActive && (
           <div className="mt-2 pt-2 border-t text-xs" style={{ borderColor: `${currentPlanoInfo.cor}20`, color: currentPlanoInfo.cor }}>
@@ -315,7 +326,7 @@ export function AssinaturaCard({ userId, criancaId, accentColor = '#3b82f6' }: A
           })}
 
           {/* Cancel subscription button */}
-          {currentPlano !== 'base' && assinatura && (
+          {currentPlano !== 'base' && assinatura && !cancelamentoVigente && (
             <button
               className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-destructive/30 p-2.5 hover:bg-destructive/5 transition-colors text-left"
               onClick={() => setConfirmAction({ type: 'downgrade', target: 'base' })}

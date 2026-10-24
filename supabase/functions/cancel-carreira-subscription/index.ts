@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Essa assinatura não pertence a você' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
-    if (assinatura.status === 'cancelada') {
+    if (assinatura.status === 'cancelada' || assinatura.status === 'cancelada_vigente') {
       return new Response(JSON.stringify({ success: true, alreadyCancelled: true }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
@@ -90,16 +90,21 @@ Deno.serve(async (req) => {
       }
     }
 
-    const canceladaEm = new Date().toISOString();
+    const agora = new Date();
+    const canceladaEm = agora.toISOString();
     const expiraEm = assinatura.expira_em ||
       new Date(new Date(assinatura.inicio_em).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
+    // Quem já pagou o período mantém o Elite até a validade ("cancelada_vigente"): a cobrança para agora, o acesso só termina na data.
+    // Assinatura que não estava ativa (ex.: PIX ainda pendente) é encerrada na hora, como antes.
+    const mantemAcesso = assinatura.status === 'ativa' && new Date(expiraEm) > agora;
+
     await adminClient
       .from('carreira_assinaturas')
-      .update({ status: 'cancelada', cancelada_em: canceladaEm, expira_em: expiraEm })
+      .update({ status: mantemAcesso ? 'cancelada_vigente' : 'cancelada', cancelada_em: canceladaEm, expira_em: expiraEm })
       .eq('id', assinaturaId);
 
-    return new Response(JSON.stringify({ success: true }),
+    return new Response(JSON.stringify({ success: true, acesso_ate: mantemAcesso ? expiraEm : null }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (err: any) {
     console.error('cancel-carreira-subscription error:', err);
