@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
  * Se uma coluna nova for criada em perfil_atleta ou perfis_rede, inclua aqui para ela aparecer nas telas.
  */
 export const COLUNAS_PERFIL_ATLETA =
-  'id, user_id, slug, nome, foto_url, modalidade, categoria, cidade, estado, bio, is_public, restrito_conexoes, created_at, updated_at, crianca_id, banner_url, modalidades, dados_publicos, instagram_url, cor_destaque, followers_count, conexoes_count, tema, status_conta, origem, atleta_app_id, pe_dominante, posicao_principal, posicao_secundaria, is_teste, pais, aceita_convites_peneira, aceita_convites_peneira_em, cadastro_proprio' as const;
+  'id, user_id, slug, nome, foto_url, modalidade, categoria, cidade, estado, bio, is_public, restrito_conexoes, created_at, updated_at, crianca_id, banner_url, modalidades, dados_publicos, instagram_url, cor_destaque, followers_count, conexoes_count, tema, status_conta, origem, atleta_app_id, pe_dominante, posicao_principal, posicao_secundaria, is_teste, usa_nome_esportivo, pais, aceita_convites_peneira, aceita_convites_peneira_em, cadastro_proprio' as const;
 
 export const COLUNAS_PERFIL_REDE =
   'id, user_id, tipo, nome, foto_url, bio, instagram, slug, dados_perfil, created_at, updated_at, tema, status_conta, whatsapp_publico, site, cidade, estado, pais, banner_url, verificado, verificado_em, verificado_por' as const;

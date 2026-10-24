@@ -54,7 +54,7 @@ export function ComunidadeEscolaSection({ escolaUserId, nomeEscola, accentColor 
       toast.error('Não foi possível desvincular. Tente novamente.');
       return;
     }
-    toast.success(`${nomeAbreviado(paraDesvincular.nome)} foi desvinculado da escola.`);
+    toast.success(`${nomeAbreviado(paraDesvincular.nome, paraDesvincular.usa_nome_esportivo)} foi desvinculado da escola.`);
     setParaDesvincular(null);
     ['comunidade-escola', 'profile-connections-list', 'connections-count', 'user-connections', 'my-connections-accepted', 'conexoes-count', 'conexao-status']
       .forEach((chave) => queryClient.invalidateQueries({ queryKey: [chave] }));
@@ -113,7 +113,7 @@ export function ComunidadeEscolaSection({ escolaUserId, nomeEscola, accentColor 
               type="button"
               onClick={() => setParaDesvincular(atleta)}
               title="Desvincular da escola"
-              aria-label={`Desvincular ${nomeAbreviado(atleta.nome)} da escola`}
+              aria-label={`Desvincular ${nomeAbreviado(atleta.nome, atleta.usa_nome_esportivo)} da escola`}
               className="absolute right-2 top-2 z-10 rounded-full border bg-background/80 p-1.5 text-muted-foreground backdrop-blur transition-colors hover:text-destructive"
               style={{ borderColor: `${accentColor}40` }}
             >
@@ -136,7 +136,7 @@ export function ComunidadeEscolaSection({ escolaUserId, nomeEscola, accentColor 
             </div>
             <div className="flex flex-col gap-1.5 px-2.5 py-2">
               <p className="text-sm font-semibold text-foreground truncate w-full">
-                {nomeAbreviado(atleta.nome)}
+                {nomeAbreviado(atleta.nome, atleta.usa_nome_esportivo)}
               </p>
               {(atleta.categoria || atleta.modalidade) && (
                 <div className="flex flex-wrap gap-1.5">
@@ -184,7 +184,7 @@ export function ComunidadeEscolaSection({ escolaUserId, nomeEscola, accentColor 
       <AlertDialog open={!!paraDesvincular} onOpenChange={(aberto) => { if (!aberto && !desvinculando) setParaDesvincular(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Desvincular {paraDesvincular ? nomeAbreviado(paraDesvincular.nome) : ''}?</AlertDialogTitle>
+            <AlertDialogTitle>Desvincular {paraDesvincular ? nomeAbreviado(paraDesvincular.nome, paraDesvincular.usa_nome_esportivo) : ''}?</AlertDialogTitle>
             <AlertDialogDescription>
               O atleta deixa de aparecer em "Nossos atletas" e perde o vínculo com {nomeEscola || 'a escola'}. O perfil dele no Carreira ID
               continua normal, e ele pode pedir o vínculo de novo quando quiser.

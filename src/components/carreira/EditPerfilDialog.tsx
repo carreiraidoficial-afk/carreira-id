@@ -46,6 +46,7 @@ const PES_DOMINANTES = [
 
 const formSchema = z.object({
   nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  nome_esportivo: z.string().max(60).optional(),
   categoria: z.string().optional(),
   cidade: z.string().optional(),
   estado: z.string().optional(),
@@ -145,7 +146,7 @@ export function EditPerfilDialog({ open, onOpenChange, perfil, modoColaborador =
       if (!perfil.crianca_id) return null;
       const { data } = await supabase
         .from('criancas')
-        .select('data_nascimento')
+        .select('data_nascimento, nome')
         .eq('id', perfil.crianca_id)
         .maybeSingle();
       return data;
@@ -159,6 +160,7 @@ export function EditPerfilDialog({ open, onOpenChange, perfil, modoColaborador =
     resolver: zodResolver(formSchema),
     defaultValues: {
       nome: perfil.nome,
+      nome_esportivo: (perfil as any).usa_nome_esportivo ? perfil.nome : '',
       categoria: perfil.categoria || '',
       cidade: perfil.cidade || '',
       estado: perfil.estado || '',
@@ -171,7 +173,9 @@ export function EditPerfilDialog({ open, onOpenChange, perfil, modoColaborador =
   useEffect(() => {
     if (open) {
       form.reset({
-        nome: perfil.nome,
+        // O nome completo fica em criancas.nome; sem ele, perfil.nome é o melhor palpite.
+        nome: (perfil.crianca_id && (criancaData as any)?.nome) || perfil.nome,
+        nome_esportivo: (perfil as any).usa_nome_esportivo ? perfil.nome : '',
         categoria: perfil.categoria || '',
         cidade: perfil.cidade || '',
         estado: perfil.estado || '',
@@ -217,7 +221,7 @@ export function EditPerfilDialog({ open, onOpenChange, perfil, modoColaborador =
     if (!modoColaborador && perfil.crianca_id && data.data_nascimento) {
       const { error: criancaError } = await supabase
         .from('criancas')
-        .upsert({ id: perfil.crianca_id, nome: perfil.nome, data_nascimento: data.data_nascimento });
+        .upsert({ id: perfil.crianca_id, nome: data.nome, data_nascimento: data.data_nascimento });
       if (criancaError) {
         toast.error('Erro ao salvar data de nascimento: ' + criancaError.message);
       }
@@ -239,9 +243,15 @@ export function EditPerfilDialog({ open, onOpenChange, perfil, modoColaborador =
       return;
     }
 
+    // Nome que aparece no perfil: o esportivo, se houver; senão o completo. Só atletas com registro de criança têm os dois campos.
+    const usaEsportivo = !!perfil.crianca_id && !!data.nome_esportivo?.trim();
+    if (perfil.crianca_id && !data.data_nascimento) {
+      await supabase.from('criancas').update({ nome: data.nome }).eq('id', perfil.crianca_id);
+    }
     const updateData: any = {
       id: perfil.id,
-      nome: data.nome,
+      nome: usaEsportivo ? data.nome_esportivo!.trim() : data.nome,
+      usa_nome_esportivo: usaEsportivo,
       cidade: data.cidade || null,
       estado: data.estado || null,
       pais: data.pais || 'Brasil',
@@ -293,6 +303,16 @@ export function EditPerfilDialog({ open, onOpenChange, perfil, modoColaborador =
               <FormItem>
                 <FormLabel>Nome completo *</FormLabel>
                 <FormControl><Input placeholder="Seu nome" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />}
+
+            {/* Nome esportivo */}
+            {!modoColaborador && perfil.crianca_id && <FormField control={form.control} name="nome_esportivo" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nome esportivo (opcional)</FormLabel>
+                <FormControl><Input placeholder="Ex: Enzo Lima" {...field} /></FormControl>
+                <p className="text-xs text-muted-foreground">É o nome que aparece no perfil. Em branco, usamos o nome completo.</p>
                 <FormMessage />
               </FormItem>
             )} />}

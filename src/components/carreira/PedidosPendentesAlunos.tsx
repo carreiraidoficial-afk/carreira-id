@@ -5,11 +5,12 @@ import { Check, X, Clock, Link2, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePendentesEscola, type ComunidadeAtleta } from '@/hooks/useCarreiraData';
 
-/** "Maria Clara Souza" -> "Maria C." -- não expõe o nome completo de menor. */
-export function nomeAbreviado(nome: string) {
+/** Nome para listas: o nome esportivo vai como está; o nome completo vira primeiro + último nome ("Maria Clara Souza" -> "Maria Souza"). */
+export function nomeAbreviado(nome: string, usaNomeEsportivo?: boolean | null) {
   const partes = nome.trim().split(/\s+/).filter(Boolean);
+  if (usaNomeEsportivo) return partes.join(' ');
   if (partes.length <= 1) return partes[0] || '';
-  return `${partes[0]} ${partes[partes.length - 1][0].toUpperCase()}.`;
+  return `${partes[0]} ${partes[partes.length - 1]}`;
 }
 
 function dataCurta(iso?: string | null) {
@@ -54,7 +55,7 @@ export function PedidosPendentesAlunos({ escolaUserId, accentColor = '#3b82f6', 
       toast.error('Não foi possível responder ao pedido. Tente novamente.');
       return;
     }
-    toast.success(aceitar ? `${nomeAbreviado(atleta.nome)} agora faz parte dos alunos da escola.` : 'Pedido recusado.');
+    toast.success(aceitar ? `${nomeAbreviado(atleta.nome, atleta.usa_nome_esportivo)} agora faz parte dos alunos da escola.` : 'Pedido recusado.');
     ['comunidade-escola', 'comunidade-escola-pendentes', 'profile-connections-list', 'connections-count', 'user-connections', 'pending-connection-requests', 'my-connections-accepted', 'conexoes-count', 'conexao-status']
       .forEach((chave) => queryClient.invalidateQueries({ queryKey: [chave] }));
   };
@@ -79,7 +80,7 @@ export function PedidosPendentesAlunos({ escolaUserId, accentColor = '#3b82f6', 
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-foreground">{nomeAbreviado(atleta.nome)}</p>
+            <p className="truncate text-sm font-semibold text-foreground">{nomeAbreviado(atleta.nome, atleta.usa_nome_esportivo)}</p>
             <p className="truncate text-xs text-muted-foreground">{[atleta.categoria, atleta.modalidade].filter(Boolean).join(' · ')}</p>
             <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
               {atleta.origem === 'convite' ? <Link2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}

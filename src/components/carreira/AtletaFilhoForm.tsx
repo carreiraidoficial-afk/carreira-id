@@ -64,6 +64,8 @@ function generateSlug(name: string): string {
 
 export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onComplete, allowMultiple = false, modo = 'responsavel', onSouMenor }: Props) {
   const [nome, setNome] = useState('');
+  // Opcional: como o atleta quer aparecer no perfil. Em branco, o perfil usa o nome completo.
+  const [nomeEsportivo, setNomeEsportivo] = useState('');
   // Pode mudar no meio do caminho: se o nome do atleta é igual ao do responsável, perguntamos se é o próprio atleta.
   const [modoAtual, setModoAtual] = useState<'responsavel' | 'proprio'>(modo);
   const proprio = modoAtual === 'proprio';
@@ -219,12 +221,14 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
       }
 
       // 3. Create perfil_atleta linked to crianca
-      const slug = generateSlug(nome);
+      const nomeExibicao = nomeEsportivo.trim() || nome.trim();
+      const slug = generateSlug(nomeExibicao);
       const { data: novoPerfil, error: perfilError } = await supabase
         .from('perfil_atleta')
         .insert({
           user_id: userId,
-          nome: nome.trim(),
+          nome: nomeExibicao,
+          usa_nome_esportivo: !!nomeEsportivo.trim(),
           slug,
           modalidade: modalidade || 'Futebol',
           categoria: categoria || null,
@@ -363,7 +367,7 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
       <form id="form-atleta" onSubmit={handleSubmit} className="space-y-4">
         {/* Nome do Atleta */}
         <div className="space-y-2">
-          <Label htmlFor="nome-atleta">{proprio ? 'Seu nome *' : 'Nome do Atleta *'}</Label>
+          <Label htmlFor="nome-atleta">{proprio ? 'Seu nome completo *' : 'Nome completo do atleta *'}</Label>
           <Input
             id="nome-atleta"
             value={nome}
@@ -372,6 +376,20 @@ export function AtletaFilhoForm({ userId, defaultName, inviteCode, onBack, onCom
             required
             maxLength={100}
           />
+          <p className="text-xs text-muted-foreground">Como está na certidão ou nos documentos do campeonato. Ajuda a encontrar {proprio ? 'você' : 'o atleta'} nas súmulas.</p>
+        </div>
+
+        {/* Nome esportivo */}
+        <div className="space-y-2">
+          <Label htmlFor="nome-esportivo">Nome esportivo (opcional)</Label>
+          <Input
+            id="nome-esportivo"
+            value={nomeEsportivo}
+            onChange={(e) => setNomeEsportivo(e.target.value)}
+            placeholder="Ex: Enzo Lima"
+            maxLength={60}
+          />
+          <p className="text-xs text-muted-foreground">É o nome que aparece no perfil. Se deixar em branco, usamos o nome completo.</p>
         </div>
 
         {/* Data de Nascimento */}
