@@ -373,10 +373,7 @@ export function PostCard({ post, showAuthor = true, accentColor }: PostCardProps
               </div>
             )}
             {isAuthenticated && (
-              <p className="text-[10px] text-muted-foreground">
-                Aqui é sobre esporte.{' '}
-                <a href="/regras-da-comunidade" target="_blank" rel="noopener noreferrer" className="underline">Regras da comunidade</a>
-              </p>
+              <p className="text-[10px] text-muted-foreground">Incentive quem está na jornada. 💪</p>
             )}
           </div>
         )}

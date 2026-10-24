@@ -535,8 +535,7 @@ export function CreatePostForm({ perfil, perfilRedeId, perfilRedeNome, perfilRed
             </div>
             {/* Orientação da comunidade: fica numa linha própria, abaixo dos botões */}
             <p className="text-[11px] leading-relaxed text-muted-foreground">
-              Aqui é sobre esporte: sem política, propaganda ou assuntos fora do esporte. Foque na sua evolução. Ao publicar, você concorda com as{' '}
-              <a href="/regras-da-comunidade" target="_blank" rel="noopener noreferrer" className="underline">Regras da comunidade</a>.
+              Esta comunidade é para impulsionar a sua carreira. Compartilhe jogos, conquistas e novidades do seu esporte.
             </p>
           </div>
         </div>
