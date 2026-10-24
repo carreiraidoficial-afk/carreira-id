@@ -352,7 +352,6 @@ export default function CarreiraPerfilPage() {
   const [editingHistorico, setEditingHistorico] = useState<HistoricoProfissional | null>(null);
   const [trofeuEscolaDialogOpen, setTrofeuEscolaDialogOpen] = useState(false);
   const [editingTrofeuEscola, setEditingTrofeuEscola] = useState<TrofeuEscola | null>(null);
-  const [modalidadeNovoTrofeu, setModalidadeNovoTrofeu] = useState<string | undefined>(undefined);
   const [avisoAmbienteVisto, setAvisoAmbienteVisto] = useState(true);
   const { theme: carreiraTheme, isDarkTheme, setDarkTheme } = useCarreiraTheme();
   const isOwner = !!(currentUserId && perfil && currentUserId === perfil.user_id);
@@ -744,6 +743,17 @@ export default function CarreiraPerfilPage() {
     queryClient.invalidateQueries({ queryKey: ['rede-trofeus', perfil?.id] });
     toast.success(editingId ? 'Troféu atualizado!' : 'Troféu adicionado!');
     setEditingTrofeuEscola(null);
+  };
+
+  // O banner da Sala de Troféus fica em dados_perfil.sala_banner; relê o perfil antes de gravar para não apagar outros campos.
+  const handleEscolherBannerSala = async (banner: string) => {
+    if (!perfil?.id) return;
+    const { data: atual, error: erroLeitura } = await supabase.from('perfis_rede').select('dados_perfil').eq('id', perfil.id).single();
+    if (erroLeitura) { toast.error('Não foi possível salvar o banner'); throw erroLeitura; }
+    const dados = { ...((atual?.dados_perfil as Record<string, any>) || {}), sala_banner: banner };
+    const { error } = await supabase.from('perfis_rede').update({ dados_perfil: dados }).eq('id', perfil.id);
+    if (error) { toast.error('Não foi possível salvar o banner'); throw error; }
+    queryClient.invalidateQueries({ queryKey: ['carreira-profile-by-slug'] });
   };
 
   const handleDeleteTrofeuEscola = async (id: string) => {
@@ -1402,10 +1412,12 @@ export default function CarreiraPerfilPage() {
               <SalaTrofeusEscola
                 perfilRedeId={perfil.id}
                 modalidades={modalidadesRede}
+                bannerEscolhido={(perfil.dados_perfil as any)?.sala_banner ?? null}
+                onEscolherBanner={isOwnerOuSuporte ? handleEscolherBannerSala : undefined}
                 isOwner={isOwnerOuSuporte}
                 podeExcluir={isOwner}
                 accentColor={accentColor}
-                onAdd={(modalidade) => { setEditingTrofeuEscola(null); setModalidadeNovoTrofeu(modalidade); setTrofeuEscolaDialogOpen(true); }}
+                onAdd={() => { setEditingTrofeuEscola(null); setTrofeuEscolaDialogOpen(true); }}
                 onEdit={(item) => { setEditingTrofeuEscola(item); setTrofeuEscolaDialogOpen(true); }}
                 onDelete={handleDeleteTrofeuEscola}
               />
@@ -1689,8 +1701,6 @@ export default function CarreiraPerfilPage() {
           editing={editingTrofeuEscola}
           onSave={handleSaveTrofeuEscola}
           podeRemoverFotos
-          modalidades={modalidadesRede}
-          modalidadePadrao={modalidadeNovoTrofeu}
         />
       )}
 

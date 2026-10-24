@@ -19,8 +19,6 @@ export interface TrofeuEscola {
   colocacao: ColocacaoTrofeuEscola;
   categoria: string | null;
   ano: number;
-  /** Esporte do troféu (ex.: 'futebol', 'volei'). */
-  modalidade: string;
   created_at: string;
   updated_at: string;
   /** Fotos da conquista (até 6), na ordem de exibição. */
@@ -33,7 +31,6 @@ export type TrofeuEscolaInput = {
   colocacao: ColocacaoTrofeuEscola;
   categoria?: string | null;
   ano: number;
-  modalidade: string;
 };
 
 export function useTrofeusEscola(perfilRedeId: string | null | undefined) {
@@ -68,7 +65,6 @@ export function useCreateTrofeuEscola(perfilRedeId: string | null | undefined) {
         colocacao: input.colocacao,
         categoria: input.categoria || null,
         ano: input.ano,
-        modalidade: input.modalidade,
       }).select('id').single();
       if (error) throw error;
       return data.id as string;
@@ -91,7 +87,6 @@ export function useUpdateTrofeuEscola(perfilRedeId: string | null | undefined) {
           colocacao: input.colocacao,
           categoria: input.categoria || null,
           ano: input.ano,
-          modalidade: input.modalidade,
           updated_at: new Date().toISOString(),
         })
         .eq('id', id);

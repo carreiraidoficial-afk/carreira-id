@@ -19,53 +19,52 @@ const COLOCACAO_META: Record<ColocacaoTrofeuEscola, { label: string; emoji: stri
   fase_grupos: { label: 'Fase de grupos', emoji: '🎖️', color: '#64748b' },
 };
 
-/** Esportes que têm banner próprio; os demais usam o fundo dourado genérico. */
-const IMAGEM_BANNER: Record<string, string> = {
-  futebol: '/sala-trofeus/futebol.webp',
-  volei: '/sala-trofeus/volei.webp',
-};
+export type BannerSala = 'futebol' | 'volei' | 'padrao';
 
-export interface ModalidadeSala { slug: string; label: string }
+/** Opções de banner que o dono escolhe ao criar a sala. */
+export const OPCOES_BANNER: { id: BannerSala; rotulo: string; imagem?: string }[] = [
+  { id: 'futebol', rotulo: 'Futebol', imagem: '/sala-trofeus/futebol.webp' },
+  { id: 'volei', rotulo: 'Vôlei', imagem: '/sala-trofeus/volei.webp' },
+  { id: 'padrao', rotulo: 'Outro esporte' },
+];
 
-/** "Vôlei" -> "volei": chave estável gravada no troféu. */
-export const slugModalidade = (nome: string) => {
-  const base = nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-  // Varia\u00e7\u00f5es do mesmo esporte (V\u00f4lei de Quadra/Areia, Futebol de Campo/7) dividem a mesma sala.
-  if (base.includes('volei')) return 'volei';
-  if (base.includes('futebol')) return 'futebol';
-  return base.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-};
+const FUNDO_PADRAO = 'linear-gradient(120deg, #0b0b0f 0%, #1c1508 55%, #5a3d0a 100%)';
 
-const ROTULO_ESPORTE: Record<string, string> = { futebol: 'Futebol', volei: 'V\u00f4lei' };
-export const rotuloModalidade = (slug: string, nome?: string) => ROTULO_ESPORTE[slug] || nome || slug.charAt(0).toUpperCase() + slug.slice(1);
+const semAcento = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+/** Banner sugerido enquanto o dono não escolhe: pelo esporte do perfil da escola. */
+export function bannerSugerido(modalidades?: string[]): BannerSala {
+  const nomes = (modalidades || []).map(semAcento);
+  const futebol = nomes.some((n) => n.includes('futebol'));
+  const volei = nomes.some((n) => n.includes('volei'));
+  if (volei && !futebol) return 'volei';
+  if (futebol) return 'futebol';
+  return nomes.length > 0 ? 'padrao' : 'futebol';
+}
 
 interface Props {
   perfilRedeId: string;
-  /** Esportes da escola, na ordem do perfil. Vazio = só futebol. */
+  /** Esportes do perfil da escola: só servem para sugerir o banner. */
   modalidades?: string[];
-  className?: string;
-  isOwner?: boolean;
+  /** Banner já escolhido pelo dono (guardado no perfil da escola). */
+  bannerEscolhido?: string | null;
   /** Quem pode excluir -- por padrão igual a isOwner, mas em Modo Suporte
    * o admin edita/adiciona sem poder apagar (mesma régua do dono real). */
   podeExcluir?: boolean;
+  isOwner?: boolean;
   accentColor?: string;
-  onAdd?: (modalidade: string) => void;
+  onAdd?: () => void;
   onEdit?: (item: TrofeuEscola) => void;
   onDelete?: (id: string) => void;
+  /** Grava o banner escolhido; o dono só consegue escolher quando isto vem preenchido. */
+  onEscolherBanner?: (banner: BannerSala) => Promise<void>;
 }
 
-export function SalaTrofeusEscola({ perfilRedeId, modalidades, isOwner, podeExcluir, accentColor = '#3b82f6', onAdd, onEdit, onDelete }: Props) {
+export function SalaTrofeusEscola({ perfilRedeId, modalidades, bannerEscolhido, isOwner, podeExcluir, accentColor = '#3b82f6', onAdd, onEdit, onDelete, onEscolherBanner }: Props) {
   const { data: trofeus, isLoading } = useTrofeusEscola(perfilRedeId);
-  const [aberta, setAberta] = useState<string | null>(null);
-
-  // Esportes da escola + qualquer esporte que já tenha troféu (mesmo que saia do perfil depois).
-  const salas = useMemo<ModalidadeSala[]>(() => {
-    const lista: ModalidadeSala[] = [];
-    const add = (slug: string, label: string) => { if (slug && !lista.some((m) => m.slug === slug)) lista.push({ slug, label }); };
-    (modalidades?.length ? modalidades : ['Futebol']).forEach((nome) => { const slug = slugModalidade(nome); add(slug, rotuloModalidade(slug, nome)); });
-    (trofeus || []).forEach((t) => add(t.modalidade, rotuloModalidade(t.modalidade)));
-    return lista;
-  }, [modalidades, trofeus]);
+  const [aberta, setAberta] = useState(false);
+  const [escolhendo, setEscolhendo] = useState(false);
+  const [salvando, setSalvando] = useState(false);
 
   if (isLoading) {
     return (
@@ -77,95 +76,136 @@ export function SalaTrofeusEscola({ perfilRedeId, modalidades, isOwner, podeExcl
     );
   }
 
-  const doEsporte = (slug: string) => (trofeus || []).filter((t) => t.modalidade === slug);
-  // Visitante só vê o banner do esporte que tem conquista; o dono vê todos para poder cadastrar.
-  const visiveis = salas.filter((m) => isOwner || doEsporte(m.slug).length > 0);
-  if (visiveis.length === 0) return null;
-  const salaAberta = salas.find((m) => m.slug === aberta) || null;
-  const faltantes = Object.keys(IMAGEM_BANNER).filter((slug) => !visiveis.some((m) => m.slug === slug));
+  const itens = trofeus || [];
+  // Visitante só vê a sala se houver conquista; o dono vê sempre, para criar.
+  if (itens.length === 0 && !isOwner) return null;
+
+  const atual = (OPCOES_BANNER.find((o) => o.id === bannerEscolhido)?.id ?? bannerSugerido(modalidades)) as BannerSala;
+  const criando = itens.length === 0 && !bannerEscolhido;
+
+  const escolher = async (banner: BannerSala) => {
+    if (!onEscolherBanner) return;
+    setSalvando(true);
+    try {
+      await onEscolherBanner(banner);
+      setEscolhendo(false);
+      // Sala nova: logo depois de escolher o banner, já abre o cadastro da primeira conquista.
+      if (itens.length === 0) onAdd?.();
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const opcao = OPCOES_BANNER.find((o) => o.id === atual)!;
+  const titulos = itens.filter((t) => t.colocacao === 'campeao').length;
+  const resumo = itens.length === 0
+    ? 'Adicione os títulos e conquistas da escola.'
+    : `${itens.length} ${itens.length === 1 ? 'conquista' : 'conquistas'}${titulos > 0 ? ` · ${titulos} ${titulos === 1 ? 'título' : 'títulos'}` : ''}. Veja todas as conquistas e momentos especiais da nossa escola.`;
 
   return (
     <div className="space-y-3">
-      {visiveis.map((m) => (
-        <BannerSala key={m.slug} sala={m} itens={doEsporte(m.slug)} isOwner={isOwner} onAbrir={() => setAberta(m.slug)} />
-      ))}
-      {isOwner && onAdd && faltantes.length > 0 && (
-        <div className="rounded-xl border border-dashed p-3 space-y-2">
-          <p className="text-sm font-medium">Criar uma sala de troféus</p>
-          <p className="text-xs text-muted-foreground">Escolha o esporte. O banner aparece no perfil assim que você adicionar a primeira conquista.</p>
-          <div className="grid grid-cols-2 gap-2">
-            {faltantes.map((slug) => (
-              <button key={slug} type="button" onClick={() => onAdd(slug)} className="group relative overflow-hidden rounded-lg border border-amber-500/30 h-20 text-left">
-                <img src={IMAGEM_BANNER[slug]} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover object-right transition group-hover:scale-105" />
-                <span className="absolute inset-0 bg-gradient-to-r from-black/85 to-black/10" />
-                <span className="relative flex h-full flex-col justify-center gap-0.5 px-3">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-amber-300">{rotuloModalidade(slug)}</span>
-                  <span className="inline-flex items-center gap-1 text-sm font-bold text-white"><Plus className="h-3.5 w-3.5" /> Criar sala</span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      <Dialog open={!!salaAberta} onOpenChange={(v) => { if (!v) setAberta(null); }}>
-        <DialogContent className="max-w-2xl max-h-[calc(100dvh-8rem)] overflow-y-auto p-0 border-0 bg-transparent shadow-none [&>button]:hidden sm:[&>button]:flex">
-          <DialogTitle className="sr-only">Sala de Troféus — {salaAberta?.label}</DialogTitle>
-          <DialogDescription className="sr-only">Conquistas da escola neste esporte</DialogDescription>
-          {salaAberta && (
-            <ListaSala
-              itens={doEsporte(salaAberta.slug)}
-              titulo={`Sala de Troféus · ${salaAberta.label}`}
-              isOwner={isOwner}
-              podeExcluir={podeExcluir ?? isOwner}
-              accentColor={accentColor}
-              onAdd={onAdd ? () => onAdd(salaAberta.slug) : undefined}
-              onEdit={onEdit}
-              onDelete={onDelete}
-            />
+      {criando && isOwner && onEscolherBanner ? (
+        <SeletorBanner sugerido={atual} salvando={salvando} onEscolher={escolher} />
+      ) : (
+        <section
+          className="relative overflow-hidden rounded-xl border border-amber-500/30 bg-black"
+          style={opcao.imagem ? undefined : { backgroundImage: FUNDO_PADRAO }}
+        >
+          {opcao.imagem && <img src={opcao.imagem} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover object-right" />}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/10 sm:via-black/40" />
+          {isOwner && onEscolherBanner && (
+            <button type="button" onClick={() => setEscolhendo(true)} className="absolute right-2 top-2 z-10 inline-flex items-center gap-1 rounded-md bg-black/50 px-2 py-1 text-[11px] text-white/80 hover:bg-black/70">
+              <Pencil className="h-3 w-3" /> Trocar banner
+            </button>
           )}
+          <div className="relative flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:gap-8 sm:p-7 min-h-[170px]">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2 border-amber-400/80 bg-black/40 sm:h-14 sm:w-14">
+                <Trophy className="h-6 w-6 text-amber-400 sm:h-7 sm:w-7" />
+              </div>
+              <div className="leading-none">
+                <h3 className="text-2xl font-black italic uppercase text-white sm:text-3xl" style={{ textShadow: '0 2px 10px rgba(0,0,0,.6)' }}>Sala de</h3>
+                <h3 className="-mt-0.5 text-3xl font-black italic uppercase text-amber-400 sm:text-4xl" style={{ textShadow: '0 2px 10px rgba(0,0,0,.6)' }}>Troféus</h3>
+              </div>
+            </div>
+            <div className="max-w-sm space-y-3">
+              <p className="text-sm text-white/90">{resumo}</p>
+              <button
+                type="button"
+                onClick={() => setAberta(true)}
+                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-b from-amber-300 to-amber-500 px-4 py-2 text-sm font-bold text-black shadow-lg transition hover:brightness-110"
+              >
+                {itens.length === 0 && isOwner ? 'Abrir e adicionar' : 'Acessar Sala de Troféus'}
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <Dialog open={escolhendo} onOpenChange={setEscolhendo}>
+        <DialogContent className="max-w-lg">
+          <DialogTitle>Banner da Sala de Troféus</DialogTitle>
+          <DialogDescription>Escolha a imagem que aparece no perfil da escola.</DialogDescription>
+          <SeletorBanner sugerido={atual} salvando={salvando} onEscolher={escolher} semMoldura />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={aberta} onOpenChange={setAberta}>
+        <DialogContent className="max-w-2xl max-h-[calc(100dvh-8rem)] overflow-y-auto p-0 border-0 bg-transparent shadow-none [&>button]:hidden sm:[&>button]:flex">
+          <DialogTitle className="sr-only">Sala de Troféus</DialogTitle>
+          <DialogDescription className="sr-only">Conquistas da escola</DialogDescription>
+          <ListaSala
+            itens={itens}
+            titulo="Sala de Troféus"
+            isOwner={isOwner}
+            podeExcluir={podeExcluir ?? isOwner}
+            accentColor={accentColor}
+            onAdd={onAdd}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
         </DialogContent>
       </Dialog>
     </div>
   );
 }
 
-function BannerSala({ sala, itens, isOwner, onAbrir }: { sala: ModalidadeSala; itens: TrofeuEscola[]; isOwner?: boolean; onAbrir: () => void }) {
-  const imagem = IMAGEM_BANNER[sala.slug];
-  const titulos = itens.filter((t) => t.colocacao === 'campeao').length;
-  const resumo = itens.length === 0
-    ? 'Adicione os títulos e conquistas da escola.'
-    : `${itens.length} ${itens.length === 1 ? 'conquista' : 'conquistas'}${titulos > 0 ? ` · ${titulos} ${titulos === 1 ? 'título' : 'títulos'}` : ''}. Veja todas as conquistas e momentos especiais da nossa escola.`;
+/** Os banners lado a lado; o sugerido vem marcado. */
+function SeletorBanner({ sugerido, salvando, onEscolher, semMoldura }: { sugerido: BannerSala; salvando: boolean; onEscolher: (b: BannerSala) => void; semMoldura?: boolean }) {
+  const [marcado, setMarcado] = useState<BannerSala>(sugerido);
   return (
-    <section
-      className="relative overflow-hidden rounded-xl border border-amber-500/30 bg-black"
-      style={imagem ? undefined : { backgroundImage: 'linear-gradient(120deg, #0b0b0f 0%, #1c1508 55%, #5a3d0a 100%)' }}
-    >
-      {imagem && <img src={imagem} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover object-right" />}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/10 sm:via-black/40" />
-      <div className="relative flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:gap-8 sm:p-7 min-h-[170px]">
-        <div className="flex items-center gap-3 sm:gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2 border-amber-400/80 bg-black/40 sm:h-14 sm:w-14">
-            <Trophy className="h-6 w-6 text-amber-400 sm:h-7 sm:w-7" />
-          </div>
-          <div className="leading-none">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-300/90">{sala.label}</p>
-            <h3 className="mt-1 text-2xl font-black italic uppercase text-white sm:text-3xl" style={{ textShadow: '0 2px 10px rgba(0,0,0,.6)' }}>Sala de</h3>
-            <h3 className="-mt-0.5 text-3xl font-black italic uppercase text-amber-400 sm:text-4xl" style={{ textShadow: '0 2px 10px rgba(0,0,0,.6)' }}>Troféus</h3>
-          </div>
+    <div className={semMoldura ? 'space-y-3' : 'space-y-3 rounded-xl border border-dashed p-4'}>
+      {!semMoldura && (
+        <div>
+          <p className="text-sm font-semibold flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-500" /> Criar a Sala de Troféus</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Escolha o banner da sala da escola. Depois você cadastra a primeira conquista.</p>
         </div>
-        <div className="max-w-sm space-y-3">
-          <p className="text-sm text-white/90">{resumo}</p>
+      )}
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        {OPCOES_BANNER.map((o) => (
           <button
+            key={o.id}
             type="button"
-            onClick={onAbrir}
-            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-b from-amber-300 to-amber-500 px-4 py-2 text-sm font-bold text-black shadow-lg transition hover:brightness-110"
+            onClick={() => setMarcado(o.id)}
+            disabled={salvando}
+            aria-pressed={marcado === o.id}
+            className={`relative h-24 overflow-hidden rounded-lg border-2 text-left transition ${marcado === o.id ? 'border-amber-400 ring-2 ring-amber-400/40' : 'border-white/10 opacity-80 hover:opacity-100'}`}
+            style={o.imagem ? undefined : { backgroundImage: FUNDO_PADRAO }}
           >
-            {itens.length === 0 && isOwner ? 'Abrir e adicionar' : 'Acessar Sala de Troféus'}
-            <ArrowRight className="h-4 w-4" />
+            {o.imagem && <img src={o.imagem} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover object-right" />}
+            <span className="absolute inset-0 bg-gradient-to-r from-black/85 to-black/10" />
+            <span className="relative flex h-full flex-col justify-end p-2.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-300">{o.rotulo}</span>
+            </span>
           </button>
-        </div>
+        ))}
       </div>
-    </section>
+      <Button size="sm" className="gap-2" disabled={salvando} onClick={() => onEscolher(marcado)}>
+        {salvando && <Loader2 className="h-4 w-4 animate-spin" />}
+        {semMoldura ? 'Salvar banner' : 'Continuar'}
+      </Button>
+    </div>
   );
 }
 

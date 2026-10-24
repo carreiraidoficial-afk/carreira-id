@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ImagePlus, Loader2, X } from 'lucide-react';
 import type { ColocacaoTrofeuEscola, TrofeuEscola, TrofeuEscolaInput } from '@/hooks/useSalaTrofeusEscola';
 import { MAX_FOTOS_POR_TROFEU, type TrofeuFoto } from '@/lib/fotos-trofeu';
-import { slugModalidade, rotuloModalidade } from './SalaTrofeusEscola';
 
 const COLOCACAO_OPTIONS: { value: ColocacaoTrofeuEscola; label: string }[] = [
   { value: 'campeao', label: '🏆 Campeão' },
@@ -29,7 +28,6 @@ const formSchema = z.object({
   categoria: z.string().optional(),
   organizador: z.string().optional(),
   ano: z.coerce.number().min(1990, 'Ano inválido').max(2100, 'Ano inválido'),
-  modalidade: z.string().min(1),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -42,25 +40,15 @@ interface Props {
   onSave: (input: TrofeuEscolaInput, editingId: string | undefined, fotos: { novas: File[]; removidas: TrofeuFoto[] }) => Promise<void>;
   /** Em Modo Suporte o admin adiciona fotos mas não apaga as que já existem. */
   podeRemoverFotos?: boolean;
-  /** Esportes da escola. Com mais de um, o formulário pergunta o esporte do troféu. */
-  modalidades?: string[];
-  modalidadePadrao?: string;
 }
 
-export function SalaTrofeusEscolaFormDialog({ open, onOpenChange, editing, onSave, podeRemoverFotos = true, modalidades = [], modalidadePadrao }: Props) {
-  const chaveModalidades = modalidades.join('|');
-  const opcoes = useMemo(() => {
-    const vistos = new Map<string, string>();
-    [...(chaveModalidades ? chaveModalidades.split('|') : []), 'Futebol', 'Vôlei'].forEach((nome) => { const slug = slugModalidade(nome); if (!vistos.has(slug)) vistos.set(slug, rotuloModalidade(slug, nome)); });
-    return [...vistos].map(([slug, label]) => ({ slug, label }));
-  }, [chaveModalidades]);
-  const modalidadeInicial = editing?.modalidade || modalidadePadrao || opcoes[0].slug;
+export function SalaTrofeusEscolaFormDialog({ open, onOpenChange, editing, onSave, podeRemoverFotos = true }: Props) {
   const [novas, setNovas] = useState<{ file: File; preview: string }[]>([]);
   const [removidas, setRemovidas] = useState<TrofeuFoto[]>([]);
   const inputFotos = useRef<HTMLInputElement>(null);
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { titulo: '', colocacao: 'campeao', categoria: '', organizador: '', ano: new Date().getFullYear(), modalidade: modalidadeInicial },
+    defaultValues: { titulo: '', colocacao: 'campeao', categoria: '', organizador: '', ano: new Date().getFullYear() },
   });
 
   useEffect(() => {
@@ -95,12 +83,11 @@ export function SalaTrofeusEscolaFormDialog({ open, onOpenChange, editing, onSav
         categoria: editing.categoria || '',
         organizador: editing.organizador || '',
         ano: editing.ano,
-        modalidade: editing.modalidade || 'futebol',
       });
     } else if (open) {
-      form.reset({ titulo: '', colocacao: 'campeao', categoria: '', organizador: '', ano: new Date().getFullYear(), modalidade: modalidadePadrao || opcoes[0].slug });
+      form.reset({ titulo: '', colocacao: 'campeao', categoria: '', organizador: '', ano: new Date().getFullYear() });
     }
-  }, [open, editing, form, modalidadePadrao, opcoes]);
+  }, [open, editing, form]);
 
   const saving = form.formState.isSubmitting;
 
@@ -113,7 +100,6 @@ export function SalaTrofeusEscolaFormDialog({ open, onOpenChange, editing, onSav
           categoria: data.categoria || null,
           organizador: data.organizador || null,
           ano: data.ano,
-          modalidade: data.modalidade,
         },
         editing?.id,
         { novas: novas.map((n) => n.file), removidas },
@@ -132,20 +118,6 @@ export function SalaTrofeusEscolaFormDialog({ open, onOpenChange, editing, onSav
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {opcoes.length > 1 && (
-              <FormField control={form.control} name="modalidade" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Esporte *</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      {opcoes.map((m) => <SelectItem key={m.slug} value={m.slug}>{m.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )} />
-            )}
-
             <FormField control={form.control} name="titulo" render={({ field }) => (
               <FormItem>
                 <FormLabel>Nome do Campeonato/Torneio *</FormLabel>
